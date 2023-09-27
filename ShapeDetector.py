@@ -22,7 +22,8 @@ class ShapeDetector(ABC):
                 distance_threshold, 
                 ransac_n, 
                 num_iterations, 
-                probability):
+                probability,
+                max_point_distance):
         
         if probability <= 0 or probability > 1:
             raise ValueError('Probability must be > 0 and <= 1.0')
@@ -35,6 +36,7 @@ class ShapeDetector(ABC):
         self.ransac_n = ransac_n
         self.num_iterations = num_iterations
         self.probability = probability
+        self.max_point_distance = max_point_distance
     
     @staticmethod
     @abstractmethod
@@ -45,6 +47,26 @@ class ShapeDetector(ABC):
     @abstractmethod
     def get_model(points, inliers):
         pass
+    
+    def get_samples(self, points, num_points):
+        samples = set()
+        
+        samples.add(random.randint(0, num_points))
+        
+        while len(samples) < self.ransac_n:
+            sample = random.randint(0, num_points)
+            point = points[sample]
+            
+            if sample in samples:
+                continue
+            
+            distances = np.linalg.norm(points(list(samples)) - point, axis=1)
+            if min(distances) > self.max_point_distance:
+                continue
+            
+            samples.add(sample)
+            
+        return list(samples)
    
     def get_inliers_and_error(self, points, model):
 
@@ -87,7 +109,8 @@ class ShapeDetector(ABC):
             if(iteration_count > break_iteration):
                 continue
             
-            samples = random.sample(range(num_points), self.ransac_n)
+            # samples = 
+            samples = self.get_samples(points, num_points)
             t_ = time.time()
             model = self.get_model(points, samples)
             times['get_model'] += time.time() - t_

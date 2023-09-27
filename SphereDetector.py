@@ -22,12 +22,14 @@ class SphereDetector(ShapeDetector):
                 distance_threshold=0.01, 
                 ransac_n=_ransac_n_min, 
                 num_iterations=100, 
-                probability=0.99999999):
+                probability=0.99999999, 
+                max_point_distance=None):
         
         super().__init__(distance_threshold, 
                          ransac_n, 
                          num_iterations, 
-                         probability)
+                         probability,
+                         max_point_distance)
     
     @staticmethod
     def get_distances(points, model):
