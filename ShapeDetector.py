@@ -49,8 +49,11 @@ class ShapeDetector(ABC):
         pass
     
     def get_samples(self, points, num_points):
-        samples = set()
         
+        if self.max_point_distance is None:
+            return random.sample(range(num_points), self.ransac_n)
+        
+        samples = set()
         samples.add(random.randint(0, num_points))
         
         while len(samples) < self.ransac_n:
@@ -60,7 +63,7 @@ class ShapeDetector(ABC):
             if sample in samples:
                 continue
             
-            distances = np.linalg.norm(points(list(samples)) - point, axis=1)
+            distances = np.linalg.norm(points[list(samples)] - point, axis=1)
             if min(distances) > self.max_point_distance:
                 continue
             
