@@ -35,10 +35,10 @@ class ShapeDetector(ABC):
         self.ransac_n = ransac_n
         self.num_iterations = num_iterations
         self.probability = probability
-        
+    
     @staticmethod
     @abstractmethod
-    def get_distance(point, model):
+    def get_distances(points, model):
         pass
         
     @staticmethod
@@ -47,16 +47,10 @@ class ShapeDetector(ABC):
         pass
    
     def get_inliers_and_error(self, points, model):
-        error = 0
-        inliers = []
-        
-        for idx in range(len(points)):
-                
-            distance = self.get_distance(points[idx], model)
 
-            if (distance < self.distance_threshold):
-                error += distance * distance
-                inliers.append(idx)
+        distances = self.get_distances(np.asarray(points), model)
+        error = distances.dot(distances)
+        inliers = np.where(distances < self.distance_threshold)[0]
             
         return inliers, error 
     

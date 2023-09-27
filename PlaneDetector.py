@@ -28,10 +28,10 @@ class PlaneDetector(ShapeDetector):
                          ransac_n, 
                          num_iterations, 
                          probability)
-        
+    
     @staticmethod
-    def get_distance(point, model):
-        return abs(point.dot(model[:3]) + model[3])
+    def get_distances(points, model):
+        return np.abs(points.dot(model[:3]) + model[3])
     
     @staticmethod
     def get_model(points, samples):
