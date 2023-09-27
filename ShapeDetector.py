@@ -103,7 +103,8 @@ class ShapeDetector(ABC):
             
             
             if inlier_num == 0:
-                fitness, rmse = 0
+                fitness = 0
+                rmse = 0
             else:
                 fitness = inlier_num / len(points)
                 rmse = np.sqrt(error / inlier_num)
