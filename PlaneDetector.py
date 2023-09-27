@@ -20,7 +20,7 @@ class PlaneDetector(ShapeDetector):
     
     def __init__(self, 
                 distance_threshold=0.01, 
-                ransac_n=3, 
+                ransac_n=_ransac_n_min, 
                 num_iterations=100, 
                 probability=0.99999999):
         

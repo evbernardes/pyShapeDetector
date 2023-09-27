@@ -8,3 +8,4 @@ Created on Tue Sep 26 16:02:34 2023
 
 from .ShapeDetector import ShapeDetector
 from .PlaneDetector import PlaneDetector
+from .SphereDetector import SphereDetector
