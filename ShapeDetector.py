@@ -7,6 +7,7 @@ Created on Tue Sep 26 15:59:55 2023
 """
 
 from abc import ABC, abstractmethod
+import time
 import random
 import numpy as np
 # import open3d as o3d
@@ -59,7 +60,7 @@ class ShapeDetector(ABC):
             
         return inliers, error 
     
-    def run_ransac(self, points, print_iteration=False):
+    def run_ransac(self, points, debug=False):
         
         points = np.asarray(points)
         num_points = len(points)
@@ -76,22 +77,37 @@ class ShapeDetector(ABC):
         break_iteration = 18446744073709551615
         iteration_count = 0
         
+        times = {
+            'get_inliers_and_error': 0,
+            'get_inliers_and_error_final': 0,
+            'get_model': 0,
+            'get_model_final': 0,
+            }
+        
         for itr in range(self.num_iterations):
-            if print_iteration:
-                print(f'Iteration {itr+1}/{self.num_iterations}')
+            
+            start_itr = time.time()
+            
+            # if debug:
+            #     print(f'Starting iteration {itr+1}/{self.num_iterations}...')
             
             if(iteration_count > break_iteration):
                 continue
             
             samples = random.sample(range(num_points), self.ransac_n)
+            t_ = time.time()
             model = self.get_model(points, samples)
+            times['get_model'] += time.time() - t_
             
             # if model is all zeros
             if not np.any(model):
                 continue
             
+            t_ = time.time()
             inliers, error = self.get_inliers_and_error(points, model)
+            times['get_inliers_and_error'] += time.time() - t_
             inlier_num = len(inliers)
+            
             
             if inlier_num == 0:
                 fitness, rmse = 0
@@ -114,9 +130,24 @@ class ShapeDetector(ABC):
                     break_iteration = 0
                 
             iteration_count += 1
+            
+            if debug:
+                print(f'Iteration {itr+1}/{self.num_iterations} : {time.time() - start_itr:.5f}s')
+            
+            # times[f'itr_{itr}'] = time.time() - start_itr
         
         # Find the final inliers using best_plane_model
+        t_ = time.time()
         final_inliers, _ = self.get_inliers_and_error(points, best_model)
+        times['get_inliers_and_error_final'] += time.time() - t_
+        t_ = time.time()
         best_plane_model = self.get_model(points, final_inliers)
+        times['get_model_final'] += time.time() - t_
+        
+        
+        if debug:
+            print('times:')
+            for t_ in times:
+                print (f'{t_} : {times[t_]:.5f}s')
         
         return best_plane_model, final_inliers
