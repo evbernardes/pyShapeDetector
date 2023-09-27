@@ -54,7 +54,7 @@ class ShapeDetector(ABC):
             
         return inliers, error 
     
-    def run_ransac(self, points, debug=False):
+    def run_ransac(self, points, debug=False, filter_model=False):
         
         points = np.asarray(points)
         num_points = len(points)
@@ -62,11 +62,10 @@ class ShapeDetector(ABC):
         if num_points < self.ransac_n:
             raise ValueError('There must be at least \'ransac_n\' points.')
         
-        # result = {'fitness': 0, 'inlier_rmse': 0}
-        best_fitness = 0
+        fitness_best = 0
         best_rmse = 0
         
-        best_model = np.zeros(self._model_args_n)
+        model_best = np.zeros(self._model_args_n)
 
         break_iteration = 18446744073709551615
         iteration_count = 0
@@ -109,16 +108,16 @@ class ShapeDetector(ABC):
                 fitness = inlier_num / len(points)
                 rmse = np.sqrt(error / inlier_num)
             
-            if (fitness > best_fitness or \
-                (fitness == best_fitness and rmse < best_rmse)):
+            if (fitness > fitness_best or \
+                (fitness == fitness_best and rmse < best_rmse)):
                 
-                best_fitness, best_rmse = fitness, rmse
-                best_model = model
+                fitness_best, best_rmse = fitness, rmse
+                model_best = model
                 
-                if (best_fitness < 1.0):
+                if (fitness_best < 1.0):
                     break_iteration = min(
                         self.num_iterations,
-                        np.log(1 - self.probability) / np.log(1 - best_fitness ** self.ransac_n)
+                        np.log(1 - self.probability) / np.log(1 - fitness_best ** self.ransac_n)
                         )
                 else:
                     break_iteration = 0
@@ -127,21 +126,21 @@ class ShapeDetector(ABC):
             
             if debug:
                 print(f'Iteration {itr+1}/{self.num_iterations} : {time.time() - start_itr:.5f}s')
-            
-            # times[f'itr_{itr}'] = time.time() - start_itr
         
-        # Find the final inliers using best_plane_model
+        # Find the final inliers using model_best...
         t_ = time.time()
-        final_inliers, _ = self.get_inliers_and_error(points, best_model)
-        times['get_inliers_and_error_final'] += time.time() - t_
-        t_ = time.time()
-        best_plane_model = self.get_model(points, final_inliers)
-        times['get_model_final'] += time.time() - t_
+        inliers_final, _ = self.get_inliers_and_error(points, model_best)
+        times['get_inliers_and_error_final'] = time.time() - t_
         
+        if filter_model:
+            # ... and then find the final model using the final inliers
+            t_ = time.time()
+            model_best = self.get_model(points, inliers_final)
+            times['get_model_final'] = time.time() - t_
         
         if debug:
             print('times:')
             for t_ in times:
                 print (f'{t_} : {times[t_]:.5f}s')
         
-        return best_plane_model, final_inliers
+        return model_best, inliers_final
