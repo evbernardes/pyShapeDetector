@@ -54,7 +54,7 @@ class ShapeDetector(ABC):
             
         return inliers, error 
     
-    def run_ransac(self, points, debug=False, filter_model=False):
+    def run_ransac(self, points, debug=False, filter_model=True):
         
         points = np.asarray(points)
         num_points = len(points)
