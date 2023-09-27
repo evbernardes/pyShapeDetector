@@ -130,7 +130,7 @@ class ShapeDetector(ABC):
         
         # Find the final inliers using model_best...
         t_ = time.time()
-        inliers_final, _ = self.get_inliers_and_error(points, model_best)
+        inliers_final, error_final = self.get_inliers_and_error(points, model_best)
         times['get_inliers_and_error_final'] = time.time() - t_
         
         if filter_model:
@@ -143,5 +143,8 @@ class ShapeDetector(ABC):
             print('times:')
             for t_ in times:
                 print (f'{t_} : {times[t_]:.5f}s')
+            print(f'{num_points} points and {len(inliers_final)} inliers')
+            print(f'fitness: {int(100*len(inliers_final)/num_points)}%')
+            print(f'rmse: {np.sqrt(error_final / len(inliers_final))}')
         
         return model_best, inliers_final
