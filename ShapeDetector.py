@@ -48,6 +48,16 @@ class ShapeDetector(ABC):
     def get_model(points, inliers):
         pass
         
+    def get_probabilities(self, distances):
+        
+        probabilities = np.empty(len(distances))
+        mask = distances > self.distance_threshold
+        
+        probabilities[mask] = 1 - distances(mask) / self.distance_threshold
+        probabilities[~mask] = 0
+        
+        return probabilities
+    
     def get_samples(self, points, num_points):
         
         if self.max_point_distance is None:
