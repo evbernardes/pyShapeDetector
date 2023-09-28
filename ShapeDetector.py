@@ -43,11 +43,6 @@ class ShapeDetector(ABC):
     def get_distances(points, model):
         pass
         
-    @staticmethod
-    @abstractmethod
-    def get_model(points, inliers):
-        pass
-    
     def get_samples(self, points, num_points):
         
         if self.max_point_distance is None:
