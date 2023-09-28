@@ -33,6 +33,7 @@ class PlaneDetector(ShapeDetector):
     
     @staticmethod
     def get_distances(points, model):
+        points = np.asarray(points)
         return np.abs(points.dot(model[:3]) + model[3])
     
     @staticmethod
