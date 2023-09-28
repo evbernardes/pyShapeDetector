@@ -142,10 +142,11 @@ class ShapeDetector(ABC):
                 model_best = model
                 
                 if (fitness_best < 1.0):
-                    break_iteration = min(
-                        self.num_iterations,
-                        np.log(1 - self.probability) / np.log(1 - fitness_best ** self.ransac_n)
-                        )
+                    num = np.log(1 - self.probability)
+                    den = np.log(1 - fitness_best ** self.ransac_n)
+                    
+                    break_iteration = min(self.num_iterations, num / den) \
+                        if den else self.num_iterations
                 else:
                     break_iteration = 0
                 
