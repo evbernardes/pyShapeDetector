@@ -31,6 +31,7 @@ class SphereDetector(ShapeDetector):
     
     @staticmethod
     def get_distances(points, model):
+        points = np.asarray(points)
         distances = np.linalg.norm(points - model[:3], axis=1) - model[3]
         return np.abs(distances)
     

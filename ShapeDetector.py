@@ -48,11 +48,10 @@ class ShapeDetector(ABC):
         
     def get_probabilities(self, distances):
         
-        probabilities = np.empty(len(distances))
-        mask = distances > self.distance_threshold
+        probabilities = np.zeros(len(distances))
+        mask = distances < self.distance_threshold
         
-        probabilities[mask] = 1 - distances(mask) / self.distance_threshold
-        probabilities[~mask] = 0
+        probabilities[mask] = 1 - distances[mask] / self.distance_threshold
         
         return probabilities
    
