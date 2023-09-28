@@ -45,6 +45,16 @@ class ShapeDetector(ABC):
     @abstractmethod
     def get_model(points, inliers):
         pass
+        
+    def get_probabilities(self, distances):
+        
+        probabilities = np.empty(len(distances))
+        mask = distances > self.distance_threshold
+        
+        probabilities[mask] = 1 - distances(mask) / self.distance_threshold
+        probabilities[~mask] = 0
+        
+        return probabilities
    
     def get_inliers_and_error(self, points, model):
 
