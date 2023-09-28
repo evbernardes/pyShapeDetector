@@ -57,7 +57,7 @@ class ShapeDetector(ABC):
         samples.add(random.randint(0, num_points))
         
         while len(samples) < self.ransac_n:
-            sample = random.randint(0, num_points)
+            sample = random.randint(0, num_points-1)
             point = points[sample]
             
             if sample in samples:
