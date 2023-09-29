@@ -10,6 +10,8 @@ import random
 import copy
 import numpy as np
 import open3d as o3d
+from open3d.geometry import TriangleMesh
+from open3d.utility import Vector3iVector, Vector3dVector
 
 from .PrimitiveBase import PrimitiveBase
     
@@ -17,6 +19,40 @@ class Plane(PrimitiveBase):
     
     _fit_n_min = 3
     _model_args_n = 4
+    
+    @staticmethod
+    def get_mesh(model, pcd):
+        
+        # center = np.mean(np.asarray(points), axis=0)
+        # center, size = args
+        center = np.mean(pcd.points, axis=0)
+        bb = pcd.get_axis_aligned_bounding_box()
+        half_length = np.linalg.norm(bb.max_bound - bb.min_bound) / 2
+        
+        normal = model[:3]
+        if list(normal) == [0, 0, 1]: 
+            v1 = np.cross([0, 1, 0], normal)
+        else:
+            v1 = np.cross([0, 0, 1], normal)
+            
+        v2 = np.cross(v1, normal)
+        v1 /= np.linalg.norm(v1)
+        v2 /= np.linalg.norm(v2)
+
+        vertices = np.vstack([
+            center + v1 * half_length,
+            center + v2 * half_length,
+            center - v1 * half_length,
+            center - v2 * half_length])
+
+        triangles = Vector3iVector(np.array([
+            [0, 1, 2], 
+            [2, 1, 0],
+            [0, 2, 3],
+            [3, 2, 0]]))
+        vertices = Vector3dVector(vertices)
+
+        return TriangleMesh(vertices, triangles)
     
     @staticmethod
     def get_distances(points, model):

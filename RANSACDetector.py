@@ -93,7 +93,7 @@ class RANSACDetector(ABC):
             
         return inliers, error 
     
-    def run_ransac(self, points, debug=False, filter_model=True):
+    def fit(self, points, debug=False, filter_model=True):
         
         points = np.asarray(points)
         num_points = len(points)
@@ -173,6 +173,7 @@ class RANSACDetector(ABC):
         t_ = time.time()
         inliers_final, error_final = self.get_inliers_and_error(points, model_best)
         times['get_inliers_and_error_final'] = time.time() - t_
+        fitness_final = len(inliers_final)/num_points
         
         if filter_model:
             # ... and then find the final model using the final inliers
@@ -185,7 +186,7 @@ class RANSACDetector(ABC):
             for t_ in times:
                 print (f'{t_} : {times[t_]:.5f}s')
             print(f'{num_points} points and {len(inliers_final)} inliers')
-            print(f'fitness: {int(100*len(inliers_final)/num_points)}%')
+            print(f'fitness: {int(100*fitness_final)}%')
             print(f'rmse: {np.sqrt(error_final / len(inliers_final))}')
         
-        return model_best, inliers_final
+        return model_best, inliers_final, fitness_final

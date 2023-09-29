@@ -10,6 +10,7 @@ import random
 import copy
 import numpy as np
 import open3d as o3d
+from open3d.geometry import TriangleMesh
 
 from .PrimitiveBase import PrimitiveBase
     
@@ -17,6 +18,12 @@ class Sphere(PrimitiveBase):
     
     _fit_n_min = 4
     _model_args_n = 4
+    
+    @staticmethod
+    def get_mesh(model, points):
+        mesh = TriangleMesh.create_sphere(radius=model[3])
+        mesh.translate(model[:3])
+        return mesh
     
     # if simplest case, the result is direct
     @staticmethod
