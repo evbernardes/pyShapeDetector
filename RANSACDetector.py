@@ -26,10 +26,14 @@ class RANSACDetector(ABC):
                 ransac_n=None, 
                 num_iterations=100, 
                 probability=0.99999,
-                max_point_distance=None):
+                max_point_distance=None,
+                max_normal_angle_degrees=10):
         
         # if not isinstance(shape, PrimitiveBase):
             # raise ValueError('shape must define a Primitive')
+        
+        if max_normal_angle_degrees < 0:
+            raise ValueError('max_normal_angle_degrees must be positive')
         
         if probability <= 0 or probability > 1:
             raise ValueError('Probability must be > 0 and <= 1.0')
@@ -46,9 +50,14 @@ class RANSACDetector(ABC):
         self.num_iterations = num_iterations
         self.probability = probability
         self.max_point_distance = max_point_distance
+        self.max_normal_angle_degrees = max_normal_angle_degrees
+        self.max_normal_angle_radians = max_normal_angle_degrees * np.pi / 180
     
     def get_distances(self, points, model):
         return self.shape.get_distances(points, model)
+    
+    def get_normal_angles(self, points, normals, model):
+        return self.shape.get_normal_angles(points, normals, model)
     
     def get_model(self, points, inliers):
         return self.shape.get_model(points, inliers)
@@ -85,21 +94,33 @@ class RANSACDetector(ABC):
             
         return list(samples)
    
-    def get_inliers_and_error(self, points, model):
-
-        distances = self.get_distances(np.asarray(points), model)
+    def get_inliers_and_error(self, points, model, normals=None):
+        points_ = np.asarray(points)
+        distances = self.get_distances(points_, model)
         error = distances.dot(distances)
-        inliers = np.where(distances < self.distance_threshold)[0]
+        inliers = distances < self.distance_threshold
+        
+        if normals is not None:
+            normals_ = np.asarray(normals)
+            normal_angles = self.get_normal_angles(points_, normals_, model)
+            inliers *= (normal_angles < self.max_normal_angle_radians)
             
+        inliers = np.where(inliers)[0]
         return inliers, error 
     
-    def fit(self, points, debug=False, filter_model=True):
+    def fit(self, points, debug=False, filter_model=True, normals=None):
         
         points = np.asarray(points)
         num_points = len(points)
         
         if num_points < self.ransac_n:
-            raise ValueError('There must be at least \'ransac_n\' points.')
+            raise ValueError(f'Pointcloud must have at least {self.ransac_n} '
+                             f'points, {num_points} given.')
+            
+        if normals is not None:
+            if len(normals) != num_points:
+                raise ValueError('Numbers of points and normals must be equal')
+            normals = np.asarray(normals)
         
         fitness_best = 0
         best_rmse = 0
@@ -137,7 +158,7 @@ class RANSACDetector(ABC):
                 continue
             
             t_ = time.time()
-            inliers, error = self.get_inliers_and_error(points, model)
+            inliers, error = self.get_inliers_and_error(points, model, normals)
             times['get_inliers_and_error'] += time.time() - t_
             inlier_num = len(inliers)
             
@@ -171,7 +192,8 @@ class RANSACDetector(ABC):
         
         # Find the final inliers using model_best...
         t_ = time.time()
-        inliers_final, error_final = self.get_inliers_and_error(points, model_best)
+        inliers_final, error_final = self.get_inliers_and_error(
+            points, model_best, normals)
         times['get_inliers_and_error_final'] = time.time() - t_
         fitness_final = len(inliers_final)/num_points
         

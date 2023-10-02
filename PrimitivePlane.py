@@ -19,6 +19,7 @@ class Plane(PrimitiveBase):
     
     _fit_n_min = 3
     _model_args_n = 4
+    _name = 'plane'
     
     @staticmethod
     def get_mesh(model, pcd):
@@ -66,6 +67,11 @@ class Plane(PrimitiveBase):
     def get_distances(points, model):
         points = np.asarray(points)
         return np.abs(points.dot(model[:3]) + model[3])
+    
+    @staticmethod
+    def get_normal_angles(points, normals, model):
+        angles = np.arccos(np.dot(normals, model[:3]))
+        return np.abs(angles)
     
     @staticmethod
     def get_model(points, samples):
