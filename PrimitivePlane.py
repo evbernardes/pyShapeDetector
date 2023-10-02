@@ -70,7 +70,11 @@ class Plane(PrimitiveBase):
     
     @staticmethod
     def get_normal_angles(points, normals, model):
-        angles = np.arccos(np.dot(normals, model[:3]))
+        angles = np.arccos(
+            np.clip(
+                np.dot(normals, model[:3]), -1, 1
+                )
+            )
         return np.abs(angles)
     
     @staticmethod
