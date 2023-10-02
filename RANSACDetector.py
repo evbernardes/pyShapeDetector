@@ -26,7 +26,9 @@ class RANSACDetector(ABC):
                 ransac_n=None, 
                 num_iterations=100, 
                 probability=0.99999,
-                max_point_distance=None):
+                max_point_distance=None,
+                model_max=None,
+                model_min=None):
         
         # if not isinstance(shape, PrimitiveBase):
             # raise ValueError('shape must define a Primitive')
@@ -39,6 +41,16 @@ class RANSACDetector(ABC):
         elif ransac_n < shape._fit_n_min:
             raise ValueError(f'ransac_n should be set to higher than or equal '
                              f'to {self._fit_n_min}.')
+            
+        if not(model_max is None or len(model_max) == shape._model_args_n):
+            raise ValueError(f'for {self._type}s, model_max is either None or a'
+                             f' list of size {shape._model_args_n}, got '
+                             f'{model_max}')
+            
+        if not(model_min is None or len(model_min) == shape._model_args_n):
+            raise ValueError(f'for {self._type}s, model_min is either None or a'
+                             f' list of size {shape._model_args_n}, got '
+                             f'{model_min}')
         
         self.shape = shape
         self.distance_threshold = distance_threshold
@@ -46,12 +58,30 @@ class RANSACDetector(ABC):
         self.num_iterations = num_iterations
         self.probability = probability
         self.max_point_distance = max_point_distance
+        self.model_max = model_max
+        self.model_min = model_min
     
     def get_distances(self, points, model):
         return self.shape.get_distances(points, model)
     
     def get_model(self, points, inliers):
-        return self.shape.get_model(points, inliers)
+        model = self.shape.get_model(points, inliers)
+    
+        model_array = np.array(model)
+        
+        if self.model_max is not None:
+            model_max = np.array(self.model_max)
+            idx_max = np.where(model_max != None)[0]
+            if np.any(model_max[idx_max] < model_array[idx_max]):
+                return [0] * self.shape._model_args_n
+            
+        if self.model_min is not None:
+            model_min = np.array(self.model_min)
+            idx_min = np.where(model_min != None)[0]
+            if np.any(model_min[idx_min] > model_array[idx_min]):
+                return [0] * self.shape._model_args_n
+        
+        return model
         
     def get_probabilities(self, distances):
         
