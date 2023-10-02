@@ -27,7 +27,7 @@ class Plane(PrimitiveBase):
         # center, size = args
         center = np.mean(pcd.points, axis=0)
         bb = pcd.get_axis_aligned_bounding_box()
-        half_length = np.linalg.norm(bb.max_bound - bb.min_bound) / 2
+        half_length = max(bb.max_bound - bb.min_bound) / 2
         
         normal = model[:3]
         if list(normal) == [0, 0, 1]: 
