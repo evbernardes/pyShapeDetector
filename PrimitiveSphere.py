@@ -37,8 +37,10 @@ class Sphere(PrimitiveBase):
     def get_normal_angles_cos(points, normals, model):
         dist_vec = points - model[:3]
         dist_vec /= np.linalg.norm(dist_vec)
-        # angles = np.arccos()
-        return np.abs(np.dot(dist_vec, model[:3]))
+        
+        angles_cos = np.clip(
+            np.dot(dist_vec, model[:3]), -1, 1)
+        return angles_cos
 
     # for more points, find the plane such that the summed squared distance 
     # from the plane to all points is minimized.    
