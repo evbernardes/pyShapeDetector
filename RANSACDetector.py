@@ -52,12 +52,13 @@ class RANSACDetector(ABC):
         self.max_point_distance = max_point_distance
         self.max_normal_angle_degrees = max_normal_angle_degrees
         self.max_normal_angle_radians = max_normal_angle_degrees * np.pi / 180
+        self.min_normal_angle_cos = np.cos(self.max_normal_angle_radians)
     
     def get_distances(self, points, model):
         return self.shape.get_distances(points, model)
     
-    def get_normal_angles(self, points, normals, model):
-        return self.shape.get_normal_angles(points, normals, model)
+    def get_normal_angles_cos(self, points, normals, model):
+        return self.shape.get_normal_angles_cos(points, normals, model)
     
     def get_model(self, points, inliers):
         return self.shape.get_model(points, inliers)
@@ -102,8 +103,9 @@ class RANSACDetector(ABC):
         
         if normals is not None:
             normals_ = np.asarray(normals)
-            normal_angles = self.get_normal_angles(points_, normals_, model)
-            inliers *= (normal_angles < self.max_normal_angle_radians)
+            normal_angles_cos = self.get_normal_angles_cos(
+                points_, normals_, model)
+            inliers *= (normal_angles_cos > self.min_normal_angle_cos)
             
         inliers = np.where(inliers)[0]
         return inliers, error 

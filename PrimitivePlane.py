@@ -69,13 +69,10 @@ class Plane(PrimitiveBase):
         return np.abs(points.dot(model[:3]) + model[3])
     
     @staticmethod
-    def get_normal_angles(points, normals, model):
-        angles = np.arccos(
-            np.clip(
-                np.dot(normals, model[:3]), -1, 1
-                )
-            )
-        return np.abs(angles)
+    def get_normal_angles_cos(points, normals, model):
+        angles_cos = np.clip(
+            np.dot(normals, model[:3]), -1, 1)
+        return np.abs(angles_cos)
     
     @staticmethod
     def get_model(points, samples):

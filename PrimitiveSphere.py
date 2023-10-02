@@ -34,11 +34,11 @@ class Sphere(PrimitiveBase):
         return np.abs(distances)
     
     @staticmethod
-    def get_normal_angles(points, normals, model):
+    def get_normal_angles_cos(points, normals, model):
         dist_vec = points - model[:3]
         dist_vec /= np.linalg.norm(dist_vec)
-        angles = np.arccos(np.dot(dist_vec, model[:3]))
-        return np.abs(angles)
+        # angles = np.arccos()
+        return np.abs(np.dot(dist_vec, model[:3]))
 
     # for more points, find the plane such that the summed squared distance 
     # from the plane to all points is minimized.    

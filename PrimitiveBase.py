@@ -25,7 +25,7 @@ class PrimitiveBase(ABC):
     
     @staticmethod
     @abstractmethod
-    def get_normal_angles(points, normals, model):
+    def get_normal_angles_cos(points, normals, model):
         pass
     
     @staticmethod
