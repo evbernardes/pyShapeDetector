@@ -21,16 +21,13 @@ from .PrimitiveBase import PrimitiveBase
 class RANSACDetector(ABC):
     
     def __init__(self, 
-                shape,
+                primitive,
                 distance_threshold=0.1, 
                 ransac_n=None, 
                 num_iterations=100, 
                 probability=0.99999,
                 max_point_distance=None,
                 max_normal_angle_degrees=10):
-        
-        # if not isinstance(shape, PrimitiveBase):
-            # raise ValueError('shape must define a Primitive')
         
         if max_normal_angle_degrees < 0:
             raise ValueError('max_normal_angle_degrees must be positive')
@@ -39,12 +36,12 @@ class RANSACDetector(ABC):
             raise ValueError('Probability must be > 0 and <= 1.0')
             
         if ransac_n is None:
-            ransac_n = shape._fit_n_min
-        elif ransac_n < shape._fit_n_min:
+            ransac_n = primitive._fit_n_min
+        elif ransac_n < primitive._fit_n_min:
             raise ValueError(f'ransac_n should be set to higher than or equal '
                              f'to {self._fit_n_min}.')
         
-        self.shape = shape
+        self.primitive = primitive
         self.distance_threshold = distance_threshold
         self.ransac_n = ransac_n
         self.num_iterations = num_iterations
@@ -54,14 +51,14 @@ class RANSACDetector(ABC):
         self.max_normal_angle_radians = max_normal_angle_degrees * np.pi / 180
         self.min_normal_angle_cos = np.cos(self.max_normal_angle_radians)
     
-    def get_distances(self, points, model):
-        return self.shape.get_distances(points, model)
+    def get_distances(self, shape, points):
+        return shape.get_distances(points)
     
     def get_normal_angles_cos(self, points, normals, model):
-        return self.shape.get_normal_angles_cos(points, normals, model)
+        return self.primitive.get_normal_angles_cos(points, normals, model)
     
     def get_model(self, points, inliers):
-        return self.shape.get_model(points, inliers)
+        return self.primitive.get_model(points, inliers)
         
     def get_probabilities(self, distances):
         
@@ -95,23 +92,23 @@ class RANSACDetector(ABC):
             
         return list(samples)
    
-    def get_inliers_and_error(self, points, model, normals=None):
+    def get_inliers_and_error(self, shape, points, normals=None):
         points_ = np.asarray(points)
-        distances = self.get_distances(points_, model)
+        distances = shape.get_distances(points_)
         error = distances.dot(distances)
         inliers = distances < self.distance_threshold
         
         if normals is not None:
             normals_ = np.asarray(normals)
-            normal_angles_cos = self.get_normal_angles_cos(
-                points_, normals_, model)
+            normal_angles_cos = shape.get_normal_angles_cos(
+                points_, normals_)
             inliers *= (normal_angles_cos > self.min_normal_angle_cos)
             
         inliers = np.where(inliers)[0]
         return inliers, error 
     
     def fit(self, points, debug=False, filter_model=True, normals=None):
-        
+        primitive = self.primitive
         points = np.asarray(points)
         num_points = len(points)
         
@@ -127,7 +124,7 @@ class RANSACDetector(ABC):
         fitness_best = 0
         best_rmse = 0
         
-        model_best = np.zeros(self.shape._model_args_n)
+        shape_best = None
 
         break_iteration = 18446744073709551615
         iteration_count = 0
@@ -152,15 +149,16 @@ class RANSACDetector(ABC):
             # samples = 
             samples = self.get_samples(points, num_points)
             t_ = time.time()
-            model = self.get_model(points, samples)
+            # model = self.get_model(points, samples)
+            shape = primitive.create_from_points(points[samples])
             times['get_model'] += time.time() - t_
             
-            # if model is all zeros
-            if not np.any(model):
+            # if shape is None
+            if not shape:
                 continue
             
             t_ = time.time()
-            inliers, error = self.get_inliers_and_error(points, model, normals)
+            inliers, error = self.get_inliers_and_error(shape, points, normals)
             times['get_inliers_and_error'] += time.time() - t_
             inlier_num = len(inliers)
             
@@ -176,7 +174,7 @@ class RANSACDetector(ABC):
                 (fitness == fitness_best and rmse < best_rmse)):
                 
                 fitness_best, best_rmse = fitness, rmse
-                model_best = model
+                shape_best = shape
                 
                 if (fitness_best < 1.0):
                     num = np.log(1 - self.probability)
@@ -190,19 +188,20 @@ class RANSACDetector(ABC):
             iteration_count += 1
             
             if debug:
-                print(f'Iteration {itr+1}/{self.num_iterations} : {time.time() - start_itr:.5f}s')
+                print(f'Iteration {itr+1}/{self.num_iterations} : '
+                      f'{time.time() - start_itr:.5f}s')
         
         # Find the final inliers using model_best...
         t_ = time.time()
         inliers_final, error_final = self.get_inliers_and_error(
-            points, model_best, normals)
+            shape, points, normals)
         times['get_inliers_and_error_final'] = time.time() - t_
         fitness_final = len(inliers_final)/num_points
         
         if filter_model:
             # ... and then find the final model using the final inliers
             t_ = time.time()
-            model_best = self.get_model(points, inliers_final)
+            shape_best = primitive.create_from_points(points[inliers_final])
             times['get_model_final'] = time.time() - t_
         
         if debug:
@@ -213,4 +212,4 @@ class RANSACDetector(ABC):
             print(f'fitness: {int(100*fitness_final)}%')
             print(f'rmse: {np.sqrt(error_final / len(inliers_final))}')
         
-        return model_best, inliers_final, fitness_final
+        return shape_best, inliers_final, fitness_final

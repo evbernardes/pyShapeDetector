@@ -19,10 +19,18 @@ class Plane(PrimitiveBase):
     
     _fit_n_min = 3
     _model_args_n = 4
-    _name = 'plane'
+    _name = 'plane' 
     
-    @staticmethod
-    def get_mesh(model, pcd):
+    def get_distances(self, points):
+        points = np.asarray(points)
+        return np.abs(points.dot(self.model[:3]) + self.model[3])
+    
+    def get_normal_angles_cos(self, points, normals):
+        angles_cos = np.clip(
+            np.dot(normals, self.model[:3]), -1, 1)
+        return np.abs(angles_cos)
+    
+    def get_mesh(self, points):
         
         # center = np.mean(np.asarray(points), axis=0)
         # center, size = args
@@ -56,31 +64,21 @@ class Plane(PrimitiveBase):
         # return TriangleMesh(vertices, triangles)
         
         pcd_flat = PointCloud()
-        model[:3] /= np.linalg.norm(model[:3])
-        distances = Plane.get_distances(pcd.points, model)
+        # model[:3] /= np.linalg.norm(model[:3])
+        distances = self.get_distances(points)
         pcd_flat.points = Vector3dVector(
-            pcd.points - distances[..., np.newaxis] * model[:3])
+            points - distances[..., np.newaxis] * self.model[:3])
         return pcd_flat.compute_convex_hull(joggle_inputs=True)[0]
+    
+    @staticmethod
+    def create_from_points(points):
+        # points_ = np.asarray(points)[samples]
         
-    
-    @staticmethod
-    def get_distances(points, model):
-        points = np.asarray(points)
-        return np.abs(points.dot(model[:3]) + model[3])
-    
-    @staticmethod
-    def get_normal_angles_cos(points, normals, model):
-        angles_cos = np.clip(
-            np.dot(normals, model[:3]), -1, 1)
-        return np.abs(angles_cos)
-    
-    @staticmethod
-    def get_model(points, samples):
-        points_ = np.asarray(points)[samples]
+        num_points = len(points)
         
         # if simplest case, the result is direct
-        if len(samples) == 3:
-            p0, p1, p2 = points_
+        if num_points == 3:
+            p0, p1, p2 = points
             
             e0 = p1 - p0
             e1 = p2 - p0
@@ -91,8 +89,8 @@ class Plane(PrimitiveBase):
         # from the plane to all points is minimized.
         # Reference: https://www.ilikebigbits.com/2015_03_04_plane_from_points.html
         else:
-            centroid = sum(points_) / len(samples)
-            x, y, z = np.asarray(points_ - centroid).T
+            centroid = sum(points) / num_points
+            x, y, z = np.asarray(points - centroid).T
             xx = x.dot(x)
             yy = y.dot(y)
             zz = z.dot(z)
@@ -119,10 +117,10 @@ class Plane(PrimitiveBase):
         
         norm = np.linalg.norm(abc)
         if norm == 0.0:
-            return np.array([0, 0, 0, 0])
+            return None
         
         abc = abc / norm
-        return np.array([abc[0], abc[1], abc[2], -abc.dot(centroid)]) 
+        return Plane([abc[0], abc[1], abc[2], -abc.dot(centroid)]) 
         
 
             
