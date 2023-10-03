@@ -35,7 +35,7 @@ class RANSACDetector(ABC):
             raise ValueError('max_normal_angle_degrees must be positive')
         
         if probability <= 0 or probability > 1:
-            raise ValueError('Probability must be > 0 and <= 1.0')
+            raise ValueError('Probability must be > 0 and <= 1.0') 
             
         if ransac_n is None:
             ransac_n = primitive._fit_n_min
