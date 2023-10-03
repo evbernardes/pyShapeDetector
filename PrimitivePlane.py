@@ -26,6 +26,8 @@ class Plane(PrimitiveBase):
         return np.abs(points.dot(self.model[:3]) + self.model[3])
     
     def get_normal_angles_cos(self, points, normals):
+        points = np.asarray(points)
+        normals = np.asarray(normals)
         angles_cos = np.clip(
             np.dot(normals, self.model[:3]), -1, 1)
         return np.abs(angles_cos)

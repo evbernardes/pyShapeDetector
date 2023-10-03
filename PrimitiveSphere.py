@@ -27,6 +27,8 @@ class Sphere(PrimitiveBase):
         return np.abs(distances)
     
     def get_normal_angles_cos(self, points, normals):
+        points = np.asarray(points)
+        normals = np.asarray(normals)
         dist_vec = points - self.model[:3]
         dist_vec /= np.linalg.norm(dist_vec)
         
