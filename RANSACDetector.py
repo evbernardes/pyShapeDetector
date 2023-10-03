@@ -29,7 +29,8 @@ class RANSACDetector(ABC):
                 max_point_distance=None,
                 model_max=None,
                 model_min=None,
-                max_normal_angle_degrees=10):
+                max_normal_angle_degrees=10,
+                inliers_min=None):
         
         if max_normal_angle_degrees < 0:
             raise ValueError('max_normal_angle_degrees must be positive')
@@ -65,6 +66,7 @@ class RANSACDetector(ABC):
         self.max_normal_angle_degrees = max_normal_angle_degrees
         self.max_normal_angle_radians = max_normal_angle_degrees * np.pi / 180
         self.min_normal_angle_cos = np.cos(self.max_normal_angle_radians)
+        self.inliers_min = inliers_min
     
     def get_distances(self, shape, points):
         return shape.get_distances(points)
@@ -142,6 +144,8 @@ class RANSACDetector(ABC):
         primitive = self.primitive
         points = np.asarray(points)
         num_points = len(points)
+        inliers_min = self.inliers_min
+        
         
         if num_points < self.ransac_n:
             raise ValueError(f'Pointcloud must have at least {self.ransac_n} '
@@ -151,10 +155,14 @@ class RANSACDetector(ABC):
             if len(normals) != num_points:
                 raise ValueError('Numbers of points and normals must be equal')
             normals = np.asarray(normals)
+            
+        if inliers_min and num_points < inliers_min:
+            if debug:
+                print('Remaining points less than inliers_min, stopping')
+            return None, None, 0
         
         fitness_best = 0
         best_rmse = 0
-        
         shape_best = None
 
         break_iteration = 18446744073709551615
@@ -192,10 +200,8 @@ class RANSACDetector(ABC):
             times['get_inliers_and_error'] += time.time() - t_
             inlier_num = len(inliers)
             
-            
-            if inlier_num == 0:
-                fitness = 0
-                rmse = 0
+            if inlier_num == 0 or (inliers_min and inlier_num < inliers_min):
+                continue
             else:
                 fitness = inlier_num / len(points)
                 rmse = np.sqrt(error / inlier_num)
