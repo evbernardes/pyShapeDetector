@@ -40,8 +40,9 @@ class RANSACDetector(ABC):
         if ransac_n is None:
             ransac_n = primitive._fit_n_min
         elif ransac_n < primitive._fit_n_min:
-            raise ValueError(f'ransac_n should be set to higher than or equal '
-                             f'to {self._fit_n_min}.')
+            raise ValueError(f'for {primitive._name}s, ransac_n should be set '
+                             'to higher than or equal '
+                             f'to {primitive._fit_n_min}.')
             
         if not(model_max is None or len(model_max) == primitive._model_args_n):
             raise ValueError(f'for {self._type}s, model_max is either None or a'
