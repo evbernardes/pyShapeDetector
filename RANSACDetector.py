@@ -60,8 +60,8 @@ class RANSACDetector(ABC):
         self.num_iterations = num_iterations
         self.probability = probability
         self.max_point_distance = max_point_distance
-        self.model_max = model_max
-        self.model_min = model_min
+        self.model_max = None if model_max is None else np.array(model_max)
+        self.model_min = None if model_min is None else np.array(model_min)
         self.max_normal_angle_degrees = max_normal_angle_degrees
         self.max_normal_angle_radians = max_normal_angle_degrees * np.pi / 180
         self.min_normal_angle_cos = np.cos(self.max_normal_angle_radians)
@@ -72,20 +72,21 @@ class RANSACDetector(ABC):
     def get_normal_angles_cos(self, points, normals, model):
         return self.primitive.get_normal_angles_cos(points, normals, model)
     
-    def get_model(self, points, inliers):
-        shape = self.primitive.get_model(points, inliers)
+    def get_model(self, points, samples):
+        shape = self.primitive.create_from_points(points[samples])
+        if shape is None:
+            return None
+        
         model_array = np.array(shape.model)
         
         if self.model_max is not None:
-            model_max = np.array(self.model_max)
-            idx_max = np.where(model_max != None)[0]
-            if np.any(model_max[idx_max] < model_array[idx_max]):
+            idx_max = np.where(self.model_max != None)[0]
+            if np.any(self.model_max[idx_max] < model_array[idx_max]):
                 return None
             
         if self.model_min is not None:
-            model_min = np.array(self.model_min)
-            idx_min = np.where(model_min != None)[0]
-            if np.any(model_min[idx_min] > model_array[idx_min]):
+            idx_min = np.where(self.model_min != None)[0]
+            if np.any(self.model_min[idx_min] > model_array[idx_min]):
                 return None
         
         return shape
@@ -179,8 +180,8 @@ class RANSACDetector(ABC):
             # samples = 
             samples = self.get_samples(points, num_points)
             t_ = time.time()
-            # model = self.get_model(points, samples)
-            shape = primitive.create_from_points(points[samples])
+            shape = self.get_model(points, samples)
+            # shape = primitive.create_from_points(points[samples])
             times['get_model'] += time.time() - t_
             
             if shape is None:
@@ -221,17 +222,18 @@ class RANSACDetector(ABC):
                       f'{time.time() - start_itr:.5f}s')
         
         # Find the final inliers using model_best...
-        t_ = time.time()
-        inliers_final, error_final = self.get_inliers_and_error(
-            shape, points, normals)
-        times['get_inliers_and_error_final'] = time.time() - t_
-        fitness_final = len(inliers_final)/num_points
-        
-        if filter_model:
-            # ... and then find the final model using the final inliers
+        if shape_best is not None:
             t_ = time.time()
-            shape_best = primitive.create_from_points(points[inliers_final])
-            times['get_model_final'] = time.time() - t_
+            inliers_final, error_final = self.get_inliers_and_error(
+                shape_best, points, normals)
+            times['get_inliers_and_error_final'] = time.time() - t_
+            fitness_final = len(inliers_final)/num_points
+        
+            if filter_model:
+                # ... and then find the final model using the final inliers
+                t_ = time.time()
+                shape_best = primitive.create_from_points(points[inliers_final])
+                times['get_model_final'] = time.time() - t_
         
         if debug:
             print('times:')
