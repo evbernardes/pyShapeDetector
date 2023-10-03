@@ -30,11 +30,11 @@ class Sphere(PrimitiveBase):
         points = np.asarray(points)
         normals = np.asarray(normals)
         dist_vec = points - self.model[:3]
-        dist_vec /= np.linalg.norm(dist_vec)
+        dist_vec /= np.linalg.norm(dist_vec, axis=1)[..., np.newaxis]
         
         angles_cos = np.clip(
-            np.dot(dist_vec, self.model[:3]), -1, 1)
-        return angles_cos
+            np.sum(normals * dist_vec, axis=1), -1, 1)
+        return np.abs(angles_cos)
 
     def get_mesh(self, points):
         mesh = TriangleMesh.create_sphere(radius=self.model[3])
