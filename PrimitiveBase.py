@@ -18,13 +18,20 @@ class PrimitiveBase(ABC):
             raise ValueError(f'{self._name.capitalize()} primitives need take '
                              f'{self._model_args_n} elements, got {model}')
         self.model = model
-
-    @abstractmethod
+    
     def get_normal_angles_cos(self, points, normals):
-        pass
+        normals = np.asarray(normals)
+        normals_from_points = self.get_normals(points)
+        angles_cos = np.clip(
+            np.sum(normals * normals_from_points, axis=1), -1, 1)
+        return np.abs(angles_cos)
     
     @staticmethod
     def get_distances(self, points):
+        pass
+    
+    @staticmethod
+    def get_normals(self, points):
         pass
     
     @staticmethod
