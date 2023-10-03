@@ -16,7 +16,7 @@ class PrimitiveBase(ABC):
     def __init__(self, model):
         if len(model) < self._model_args_n:
             raise ValueError(f'{self._name.capitalize()} primitives need take '
-                             f'{self._model_args_n} elements')
+                             f'{self._model_args_n} elements, got {model}')
         self.model = model
 
     @abstractmethod

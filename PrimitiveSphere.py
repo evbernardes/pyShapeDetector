@@ -93,7 +93,7 @@ class Sphere(PrimitiveBase):
         radiuses = np.linalg.norm(points - center, axis=1)
         radius = sum(radiuses) / num_points
         
-        return np.hstack([center, radius]) 
+        return Sphere([center[0], center[1], center[2], radius]) 
         
 
             
