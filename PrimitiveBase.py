@@ -13,20 +13,29 @@ import open3d as o3d
     
 class PrimitiveBase(ABC):
     
-    @staticmethod
+    def __init__(self, model):
+        if len(model) < self._model_args_n:
+            raise ValueError(f'{self._name.capitalize()} primitives need take '
+                             f'{self._model_args_n} elements')
+        self.model = model
+
     @abstractmethod
-    def get_mesh(model, pcd):
+    def get_normal_angles_cos(self, points, normals):
+        pass
+    
+    @staticmethod
+    def get_distances(self, points):
+        pass
+    
+    @staticmethod
+    def get_mesh(self, pcd):
         pass
     
     @staticmethod
     @abstractmethod
-    def get_distances(points, model):
+    def create_from_points(points):
         pass
-    
-    @staticmethod
-    @abstractmethod
-    def get_model(points, samples):
-        pass
+
         
 
             

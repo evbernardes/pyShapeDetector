@@ -18,29 +18,36 @@ class Sphere(PrimitiveBase):
     
     _fit_n_min = 4
     _model_args_n = 4
+    _name = 'sphere'
     
-    @staticmethod
-    def get_mesh(model, points):
-        mesh = TriangleMesh.create_sphere(radius=model[3])
-        mesh.translate(model[:3])
-        return mesh
-    
-    # if simplest case, the result is direct
-    @staticmethod
-    def get_distances(points, model):
+    def get_distances(self, points):
         points = np.asarray(points)
+        model = self.model
         distances = np.linalg.norm(points - model[:3], axis=1) - model[3]
         return np.abs(distances)
+    
+    def get_normal_angles_cos(self, points, normals):
+        dist_vec = points - self.model[:3]
+        dist_vec /= np.linalg.norm(dist_vec)
+        
+        angles_cos = np.clip(
+            np.dot(dist_vec, self.model[:3]), -1, 1)
+        return angles_cos
 
-    # for more points, find the plane such that the summed squared distance 
-    # from the plane to all points is minimized.    
+    def get_mesh(self, points):
+        mesh = TriangleMesh.create_sphere(radius=self.model[3])
+        mesh.translate(self.model[:3])
+        return mesh
+   
     @staticmethod
-    def get_model(points, samples):
-        points_ = np.asarray(points)[samples]
+    def create_from_points(points):
+        # points_ = np.asarray(points)[samples]
+        
+        num_points = len(points)
         
         # if simplest case, the result is direct
-        if len(samples) == 4:
-            p0, p1, p2, p3 = points_
+        if num_points == 4:
+            p0, p1, p2, p3 = points
             
             r1 = p0 - p1
             r2 = p0 - p2
@@ -52,18 +59,20 @@ class Sphere(PrimitiveBase):
             
             det = r1.dot(c23)
             if det == 0:
-                return np.array([0, 0, 0, 0])
+                return None
             
             center = 0.5 * (
                 (n0 - p1.dot(p1)) * c23 + \
                 (n0 - p2.dot(p2)) * c31 + \
                 (n0 - p3.dot(p3)) * c12) / det
-        
+                
+        # for more points, find the plane such that the summed squared distance 
+        # from the plane to all points is minimized. 
         else:
-            b = sum(points_.T * points_.T)
+            b = sum(points.T * points.T)
             b = b[0] - b[1:]
             
-            A = points_[0] - points_[1:]
+            A = points[0] - points[1:]
             
             # try:
             #     A_ = np.linalg.pinv(A)
@@ -76,18 +85,13 @@ class Sphere(PrimitiveBase):
             A = AT @ A
             det = np.linalg.det(A)
             if det == 0:
-                return np.array([0, 0, 0, 0])
+                return None
             
             A_ = np.linalg.inv(A) @ AT
             center = 0.5 * A_ @ b
             
-        radiuses = np.linalg.norm(points_ - center, axis=1)
-        radius = sum(radiuses) / len(samples)
-        # radius = np.linalg.norm(radiuses)
-        
-        # print(f'center = {center}')
-        # print(f'radius = {radius}')
-        # print(f'points_ = {points_}')
+        radiuses = np.linalg.norm(points - center, axis=1)
+        radius = sum(radiuses) / num_points
         
         return np.hstack([center, radius]) 
         
