@@ -126,21 +126,18 @@ class RANSAC_Base(ABC):
         if self.max_point_distance is None:
             return random.sample(range(num_points), self.ransac_n)
 
-        samples = set()
-        
         sample = random.randrange(num_points)
-        samples.add(sample)
+        samples = set([sample])
 
         while len(samples) < self.ransac_n:
-            
-            while sample in samples:
-                print('oops')
-                sample = random.randrange(num_points)
+
+            sample = random.randrange(num_points)
+            if sample in samples:
+                continue
             
             point = points[sample]
-            
+
             distances = np.linalg.norm(points[list(samples)] - point, axis=1)
-            
             if min(distances) > self.max_point_distance:
                 continue
 
