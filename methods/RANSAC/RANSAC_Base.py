@@ -143,22 +143,16 @@ class RANSAC_Base(ABC):
             samples.add(sample)
 
         return list(samples)
-
-    def get_inliers_and_error(self, shape, points, normals=None):
-        points_ = np.asarray(points)
-        distances = shape.get_distances(points_)
-        error = distances.dot(distances)
+    
+    def get_inliers(self, distances, angles):
 
         is_inlier = distances < self.threshold_distance
-
-        if normals is not None:
-            normals_ = np.asarray(normals)
-            angles = shape.get_angles(
-                points_, normals_)
+        if angles is not None:
             is_inlier *= (angles < self.threshold_angle)
-
-        inliers = np.where(is_inlier)[0]
-        return inliers, error
+        return np.where(is_inlier)[0]
+    
+    def get_error(self, distances, angles=None):
+        return distances.dot(distances)
 
     def fit(self, points, normals=None, debug=False, filter_model=True):
         primitive = self.primitive
@@ -203,16 +197,18 @@ class RANSAC_Base(ABC):
                 continue
 
             samples = self.get_samples(points, num_points)
+            
             t_ = time.time()
             shape = self.get_model(points, samples)
-            # shape = primitive.create_from_points(points[samples])
             times['get_model'] += time.time() - t_
 
             if shape is None:
                 continue
 
             t_ = time.time()
-            inliers, error = self.get_inliers_and_error(shape, points, normals)
+            distances, angles = shape.get_distances_and_angles(points, normals)
+            inliers = self.get_inliers(distances, angles)
+            error = self.get_error(distances)
             times['get_inliers_and_error'] += time.time() - t_
             inlier_num = len(inliers)
 
@@ -246,8 +242,10 @@ class RANSAC_Base(ABC):
         # Find the final inliers using model_best...
         if shape_best is not None:
             t_ = time.time()
-            inliers_final, error_final = self.get_inliers_and_error(
-                shape_best, points, normals)
+            distances, angles = shape_best.get_distances_and_angles(
+                points, normals)
+            inliers_final = self.get_inliers(distances, angles)
+            error_final = self.get_error(distances)
             times['get_inliers_and_error_final'] = time.time() - t_
             fitness_final = len(inliers_final)/num_points
 

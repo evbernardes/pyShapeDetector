@@ -20,6 +20,8 @@ class PrimitiveBase(ABC):
         self.model = model
     
     def get_angles_cos(self, points, normals):
+        if normals is None:
+            return None
         normals = np.asarray(normals)
         normals_from_points = self.get_normals(points)
         angles_cos = np.clip(
@@ -29,6 +31,10 @@ class PrimitiveBase(ABC):
     def get_angles(self, points, normals):
         return np.arccos(
             self.get_angles_cos(points, normals))
+    
+    def get_distances_and_angles(self, points, normals):
+        return self.get_distances(points), \
+            self.get_angles(points, normals)
     
     @staticmethod
     def get_distances(self, points):
