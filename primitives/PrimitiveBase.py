@@ -28,7 +28,7 @@ class PrimitiveBase(ABC):
     
     def get_angles(self, points, normals):
         return np.arccos(
-            self.get_normal_angles_cos(points, normals))
+            self.get_angles_cos(points, normals))
     
     @staticmethod
     def get_distances(self, points):
