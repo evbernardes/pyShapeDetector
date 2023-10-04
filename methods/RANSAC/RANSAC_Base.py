@@ -161,7 +161,7 @@ class RANSAC_Base(ABC):
         inliers = np.where(is_inlier)[0]
         return inliers, error 
     
-    def fit(self, points, debug=False, filter_model=True, normals=None):
+    def fit(self, points, normals=None, debug=False, filter_model=True):
         primitive = self.primitive
         points = np.asarray(points)
         num_points = len(points)
