@@ -26,13 +26,11 @@ class Sphere(PrimitiveBase):
         distances = np.linalg.norm(points - model[:3], axis=1) - model[3]
         return np.abs(distances)
     
-    def get_normal_angles_cos(self, points, normals):
+    def get_normals(self, points):
+        points = np.asarray(points)
         dist_vec = points - self.model[:3]
-        dist_vec /= np.linalg.norm(dist_vec)
-        
-        angles_cos = np.clip(
-            np.dot(dist_vec, self.model[:3]), -1, 1)
-        return angles_cos
+        normals = dist_vec / np.linalg.norm(dist_vec, axis=1)[..., np.newaxis]
+        return normals
 
     def get_mesh(self, points):
         mesh = TriangleMesh.create_sphere(radius=self.model[3])
@@ -93,7 +91,7 @@ class Sphere(PrimitiveBase):
         radiuses = np.linalg.norm(points - center, axis=1)
         radius = sum(radiuses) / num_points
         
-        return np.hstack([center, radius]) 
+        return Sphere([center[0], center[1], center[2], radius]) 
         
 
             

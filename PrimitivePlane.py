@@ -25,10 +25,9 @@ class Plane(PrimitiveBase):
         points = np.asarray(points)
         return np.abs(points.dot(self.model[:3]) + self.model[3])
     
-    def get_normal_angles_cos(self, points, normals):
-        angles_cos = np.clip(
-            np.dot(normals, self.model[:3]), -1, 1)
-        return np.abs(angles_cos)
+    def get_normals(self, points):
+        normal = self.model[:3]
+        return np.tile(normal, (len(points), 1))
     
     def get_mesh(self, points):
         
@@ -69,6 +68,37 @@ class Plane(PrimitiveBase):
         pcd_flat.points = Vector3dVector(
             points - distances[..., np.newaxis] * self.model[:3])
         return pcd_flat.compute_convex_hull(joggle_inputs=True)[0]
+    
+    def get_square_mesh(self, pcd):
+        
+        center = np.mean(np.asarray(pcd.points), axis=0)
+        bb = pcd.get_axis_aligned_bounding_box()
+        half_length = max(bb.max_bound - bb.min_bound) / 2
+        
+        normal = self.model[:3]
+        if list(normal) == [0, 0, 1]: 
+            v1 = np.cross([0, 1, 0], normal)
+        else:
+            v1 = np.cross([0, 0, 1], normal)
+            
+        v2 = np.cross(v1, normal)
+        v1 /= np.linalg.norm(v1)
+        v2 /= np.linalg.norm(v2)
+
+        vertices = np.vstack([
+            center + v1 * half_length,
+            center + v2 * half_length,
+            center - v1 * half_length,
+            center - v2 * half_length])
+
+        triangles = Vector3iVector(np.array([
+            [0, 1, 2], 
+            [2, 1, 0],
+            [0, 2, 3],
+            [3, 2, 0]]))
+        vertices = Vector3dVector(vertices)
+
+        return TriangleMesh(vertices, triangles)
     
     @staticmethod
     def create_from_points(points):
