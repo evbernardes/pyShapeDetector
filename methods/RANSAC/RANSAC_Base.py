@@ -220,8 +220,7 @@ class RANSAC_Base(ABC):
                 continue
 
             t_ = time.time()
-            distances = shape.get_distances(points)
-            angles = shape.get_angles(points, normals)
+            distances, angles = shape.get_distances_and_angles(points, normals)
             inliers = self.get_inliers(distances, angles)
             inliers, error = self.get_inliers_and_error(shape, points, normals)
             times['get_inliers_and_error'] += time.time() - t_
@@ -257,6 +256,9 @@ class RANSAC_Base(ABC):
         # Find the final inliers using model_best...
         if shape_best is not None:
             t_ = time.time()
+            distances, angles = shape_best.get_distances_and_angles(
+                points, normals)
+            inliers_final = self.get_inliers(distances, angles)
             inliers_final, error_final = self.get_inliers_and_error(
                 shape_best, points, normals)
             times['get_inliers_and_error_final'] = time.time() - t_
