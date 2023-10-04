@@ -149,15 +149,16 @@ class RANSAC_Base(ABC):
         points_ = np.asarray(points)
         distances = shape.get_distances(points_)
         error = distances.dot(distances)
-        inliers = distances < self.threshold_distance
+        
+        is_inlier = distances < self.threshold_distance
         
         if normals is not None:
             normals_ = np.asarray(normals)
             normal_angles_cos = shape.get_angles_cos(
                 points_, normals_)
-            inliers *= (normal_angles_cos > self.threshold_cos)
+            is_inlier *= (normal_angles_cos > self.threshold_cos)
             
-        inliers = np.where(inliers)[0]
+        inliers = np.where(is_inlier)[0]
         return inliers, error 
     
     def fit(self, points, debug=False, filter_model=True, normals=None):
@@ -199,13 +200,9 @@ class RANSAC_Base(ABC):
             
             start_itr = time.time()
             
-            # if debug:
-            #     print(f'Starting iteration {itr+1}/{self.num_iterations}...')
-            
             if(iteration_count > break_iteration):
                 continue
             
-            # samples = 
             samples = self.get_samples(points, num_points)
             t_ = time.time()
             shape = self.get_model(points, samples)
