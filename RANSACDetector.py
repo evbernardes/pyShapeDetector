@@ -18,19 +18,21 @@ random.seed(951)
 
 from .PrimitiveBase import PrimitiveBase
 
+DEG = 0.017453292519943295
+
 class RANSACDetector(ABC):
     
     def __init__(self, 
                 primitive,
-                distance_threshold=0.1, 
+                threshold_distance=0.1,
+                threshold_angles=10,
                 ransac_n=None, 
                 num_iterations=100, 
                 probability=0.99999,
-                max_point_distance=None,
-                max_normal_angle_degrees=10):
+                max_point_distance=None):
         
-        if max_normal_angle_degrees < 0:
-            raise ValueError('max_normal_angle_degrees must be positive')
+        if threshold_angles < 0:
+            raise ValueError('threshold_angles must be positive')
         
         if probability <= 0 or probability > 1:
             raise ValueError('Probability must be > 0 and <= 1.0')
@@ -42,14 +44,14 @@ class RANSACDetector(ABC):
                              f'to {self._fit_n_min}.')
         
         self.primitive = primitive
-        self.distance_threshold = distance_threshold
+        self.threshold_distance = threshold_distance
+        self.threshold_angles = threshold_angles * DEG
+        self.threshold_cos = np.cos(self.threshold_angles)
         self.ransac_n = ransac_n
         self.num_iterations = num_iterations
         self.probability = probability
         self.max_point_distance = max_point_distance
-        self.max_normal_angle_degrees = max_normal_angle_degrees
-        self.max_normal_angle_radians = max_normal_angle_degrees * np.pi / 180
-        self.min_normal_angle_cos = np.cos(self.max_normal_angle_radians)
+        # self.threshold_angles = threshold_angles
     
     def get_distances(self, shape, points):
         return shape.get_distances(points)
@@ -63,9 +65,9 @@ class RANSACDetector(ABC):
     def get_probabilities(self, distances):
         
         probabilities = np.zeros(len(distances))
-        mask = distances < self.distance_threshold
+        mask = distances < self.threshold_distance
         
-        probabilities[mask] = 1 - distances[mask] / self.distance_threshold
+        probabilities[mask] = 1 - distances[mask] / self.threshold_distance
         
         return probabilities
     
@@ -96,13 +98,13 @@ class RANSACDetector(ABC):
         points_ = np.asarray(points)
         distances = shape.get_distances(points_)
         error = distances.dot(distances)
-        inliers = distances < self.distance_threshold
+        inliers = distances < self.threshold_distance
         
         if normals is not None:
             normals_ = np.asarray(normals)
             normal_angles_cos = shape.get_normal_angles_cos(
                 points_, normals_)
-            inliers *= (normal_angles_cos > self.min_normal_angle_cos)
+            inliers *= (normal_angles_cos > self.threshold_cos)
             
         inliers = np.where(inliers)[0]
         return inliers, error 
