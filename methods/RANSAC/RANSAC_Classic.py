@@ -29,6 +29,6 @@ class RANSAC_Classic(RANSAC_Base):
         
     def weight_angle(self, angles):
         weight = np.zeros(len(angles))
-        weight[angles > self.threshold_angular] = 1
+        weight[angles > self.threshold_angle] = 1
         return weight
     

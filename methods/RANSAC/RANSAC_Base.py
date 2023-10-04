@@ -127,16 +127,20 @@ class RANSAC_Base(ABC):
             return random.sample(range(num_points), self.ransac_n)
 
         samples = set()
-        samples.add(random.randint(0, num_points))
+        
+        sample = random.randrange(num_points)
+        samples.add(sample)
 
         while len(samples) < self.ransac_n:
-            sample = random.randint(0, num_points-1)
+            
+            while sample in samples:
+                print('oops')
+                sample = random.randrange(num_points)
+            
             point = points[sample]
-
-            if sample in samples:
-                continue
-
+            
             distances = np.linalg.norm(points[list(samples)] - point, axis=1)
+            
             if min(distances) > self.max_point_distance:
                 continue
 
@@ -184,9 +188,7 @@ class RANSAC_Base(ABC):
 
         times = {
             'get_inliers_and_error': 0,
-            'get_inliers_and_error_final': 0,
             'get_model': 0,
-            'get_model_final': 0,
         }
 
         for itr in range(self.num_iterations):
@@ -209,19 +211,17 @@ class RANSAC_Base(ABC):
             distances, angles = shape.get_distances_and_angles(points, normals)
             inliers = self.get_inliers(distances, angles)
             error = self.get_error(distances)
+            weight = self.get_total_weight(distances, angles)
             times['get_inliers_and_error'] += time.time() - t_
             inlier_num = len(inliers)
 
             if inlier_num == 0 or (inliers_min and inlier_num < inliers_min):
                 continue
-            else:
-                fitness = inlier_num / len(points)
-                rmse = np.sqrt(error / inlier_num)
 
-            if (fitness > fitness_best or
-                    (fitness == fitness_best and rmse < rmse_best)):
+            if weight > weight_best:
 
-                fitness_best, rmse_best = fitness, rmse
+                fitness_best = inlier_num / len(points)
+                rmse_best = np.sqrt(error / inlier_num)
                 shape_best = shape
 
                 if (fitness_best < 1.0):
@@ -241,20 +241,16 @@ class RANSAC_Base(ABC):
 
         # Find the final inliers using model_best...
         if shape_best is not None:
-            t_ = time.time()
             distances, angles = shape_best.get_distances_and_angles(
                 points, normals)
             inliers_final = self.get_inliers(distances, angles)
             error_final = self.get_error(distances)
-            times['get_inliers_and_error_final'] = time.time() - t_
             fitness_final = len(inliers_final)/num_points
 
             if filter_model:
                 # ... and then find the final model using the final inliers
-                t_ = time.time()
                 shape_best = primitive.create_from_points(
                     points[inliers_final])
-                times['get_model_final'] = time.time() - t_
 
         if debug:
             print('times:')
