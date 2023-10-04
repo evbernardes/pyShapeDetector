@@ -143,6 +143,15 @@ class RANSAC_Base(ABC):
             samples.add(sample)
 
         return list(samples)
+    
+    def get_inliers(self, distances, angles):
+
+        is_inlier = distances < self.threshold_distance
+
+        if angles is not None:
+            is_inlier *= (angles < self.threshold_angle)
+
+        return np.where(is_inlier)[0]
 
     def get_inliers_and_error(self, shape, points, normals=None):
         points_ = np.asarray(points)
@@ -202,15 +211,18 @@ class RANSAC_Base(ABC):
                 continue
 
             samples = self.get_samples(points, num_points)
+            
             t_ = time.time()
             shape = self.get_model(points, samples)
-            # shape = primitive.create_from_points(points[samples])
             times['get_model'] += time.time() - t_
 
             if shape is None:
                 continue
 
             t_ = time.time()
+            distances = shape.get_distances(points)
+            angles = shape.get_angles(points, normals)
+            inliers = self.get_inliers(distances, angles)
             inliers, error = self.get_inliers_and_error(shape, points, normals)
             times['get_inliers_and_error'] += time.time() - t_
             inlier_num = len(inliers)

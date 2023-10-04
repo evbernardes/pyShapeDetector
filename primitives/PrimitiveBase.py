@@ -20,6 +20,8 @@ class PrimitiveBase(ABC):
         self.model = model
     
     def get_angles_cos(self, points, normals):
+        if normals is None:
+            return None
         normals = np.asarray(normals)
         normals_from_points = self.get_normals(points)
         angles_cos = np.clip(
