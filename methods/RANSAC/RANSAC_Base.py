@@ -79,8 +79,8 @@ class RANSAC_Base(ABC):
     def get_distances(self, shape, points):
         return shape.get_distances(points)
     
-    def get_normal_angles_cos(self, points, normals, model):
-        return self.primitive.get_normal_angles_cos(points, normals, model)
+    def get_angles_cos(self, points, normals, model):
+        return self.primitive.get_angles_cos(points, normals, model)
     
     def get_model(self, points, samples):
         shape = self.primitive.create_from_points(points[samples])
@@ -141,7 +141,7 @@ class RANSAC_Base(ABC):
         
         if normals is not None:
             normals_ = np.asarray(normals)
-            normal_angles_cos = shape.get_normal_angles_cos(
+            normal_angles_cos = shape.get_angles_cos(
                 points_, normals_)
             inliers *= (normal_angles_cos > self.threshold_cos)
             
