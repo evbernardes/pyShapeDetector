@@ -181,7 +181,8 @@ class RANSAC_Base(ABC):
             return None, None, 0
 
         fitness_best = 0
-        best_rmse = 0
+        rmse_best = 0
+        weight_best = 0
         shape_best = None
 
         break_iteration = 18446744073709551615
@@ -222,9 +223,9 @@ class RANSAC_Base(ABC):
                 rmse = np.sqrt(error / inlier_num)
 
             if (fitness > fitness_best or
-                    (fitness == fitness_best and rmse < best_rmse)):
+                    (fitness == fitness_best and rmse < rmse_best)):
 
-                fitness_best, best_rmse = fitness, rmse
+                fitness_best, rmse_best = fitness, rmse
                 shape_best = shape
 
                 if (fitness_best < 1.0):
