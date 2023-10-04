@@ -76,11 +76,10 @@ class RANSAC_Base(ABC):
     def weight_angle(self, angles):
         pass
     
-    def get_distances(self, shape, points):
-        return shape.get_distances(points)
-    
-    def get_angles_cos(self, points, normals, model):
-        return self.primitive.get_angles_cos(points, normals, model)
+    def get_total_weight(self, distances, angles):
+        weight_distance = sum(self.weight_distance(distances))
+        weight_angle = sum(self.weight_angle(angles))
+        return weight_distance * weight_angle
     
     def get_model(self, points, samples):
         shape = self.primitive.create_from_points(points[samples])
