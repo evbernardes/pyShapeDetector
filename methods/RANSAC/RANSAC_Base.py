@@ -18,12 +18,12 @@ random.seed(951)
 
 DEG = 0.017453292519943295
 
-class RANSACDetector(ABC):
+class RANSAC_Base(ABC):
     
     def __init__(self, 
                 primitive,
                 threshold_distance=0.1,
-                threshold_angles=10,
+                threshold_angle=10,
                 ransac_n=None, 
                 num_iterations=100, 
                 probability=0.99999,
@@ -33,8 +33,8 @@ class RANSACDetector(ABC):
                 max_normal_angle_degrees=10,
                 inliers_min=None):
         
-        if threshold_angles < 0:
-            raise ValueError('threshold_angles must be positive')
+        if threshold_angle < 0:
+            raise ValueError('threshold_angle must be positive')
         
         if probability <= 0 or probability > 1:
             raise ValueError('Probability must be > 0 and <= 1.0')
@@ -58,8 +58,8 @@ class RANSACDetector(ABC):
         
         self.primitive = primitive
         self.threshold_distance = threshold_distance
-        self.threshold_angles = threshold_angles * DEG
-        self.threshold_cos = np.cos(self.threshold_angles)
+        self.threshold_angle = threshold_angle * DEG
+        self.threshold_cos = np.cos(self.threshold_angle)
         self.ransac_n = ransac_n
         self.num_iterations = num_iterations
         self.probability = probability
@@ -67,6 +67,14 @@ class RANSACDetector(ABC):
         self.model_max = None if model_max is None else np.array(model_max)
         self.model_min = None if model_min is None else np.array(model_min)
         self.inliers_min = inliers_min
+        
+    @abstractmethod
+    def weight_distance(self, distances):
+        pass
+    
+    @abstractmethod    
+    def weight_angle(self, angles):
+        pass
     
     def get_distances(self, shape, points):
         return shape.get_distances(points)
