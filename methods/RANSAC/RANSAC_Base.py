@@ -147,27 +147,12 @@ class RANSAC_Base(ABC):
     def get_inliers(self, distances, angles):
 
         is_inlier = distances < self.threshold_distance
-
         if angles is not None:
             is_inlier *= (angles < self.threshold_angle)
-
         return np.where(is_inlier)[0]
-
-    def get_inliers_and_error(self, shape, points, normals=None):
-        points_ = np.asarray(points)
-        distances = shape.get_distances(points_)
-        error = distances.dot(distances)
-
-        is_inlier = distances < self.threshold_distance
-
-        if normals is not None:
-            normals_ = np.asarray(normals)
-            angles = shape.get_angles(
-                points_, normals_)
-            is_inlier *= (angles < self.threshold_angle)
-
-        inliers = np.where(is_inlier)[0]
-        return inliers, error
+    
+    def get_error(self, distances, angles=None):
+        return distances.dot(distances)
 
     def fit(self, points, normals=None, debug=False, filter_model=True):
         primitive = self.primitive
@@ -222,7 +207,7 @@ class RANSAC_Base(ABC):
             t_ = time.time()
             distances, angles = shape.get_distances_and_angles(points, normals)
             inliers = self.get_inliers(distances, angles)
-            inliers, error = self.get_inliers_and_error(shape, points, normals)
+            error = self.get_error(distances)
             times['get_inliers_and_error'] += time.time() - t_
             inlier_num = len(inliers)
 
@@ -259,8 +244,7 @@ class RANSAC_Base(ABC):
             distances, angles = shape_best.get_distances_and_angles(
                 points, normals)
             inliers_final = self.get_inliers(distances, angles)
-            inliers_final, error_final = self.get_inliers_and_error(
-                shape_best, points, normals)
+            error_final = self.get_error(distances)
             times['get_inliers_and_error_final'] = time.time() - t_
             fitness_final = len(inliers_final)/num_points
 
