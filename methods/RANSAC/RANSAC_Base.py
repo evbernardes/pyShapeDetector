@@ -100,12 +100,25 @@ class RANSAC_Base(ABC):
         
         return shape
         
-    def get_probabilities(self, distances):
+    def get_probabilities(self, distances, angles=None):
+        
+        if angles is not None and len(distances) != len(angles):
+            raise ValueError('distances and angles must have the same size, '
+                             f'got {distances.shape} and {angles.shape}.')
+            
         
         probabilities = np.zeros(len(distances))
-        mask = distances < self.threshold_distance
         
+        mask = distances < self.threshold_distance
+        # probabilities[mask] = 1 - distances[mask] / self.threshold_distance
+        
+        if angles is not None:
+            mask *= angles < self.threshold_angle
+            
         probabilities[mask] = 1 - distances[mask] / self.threshold_distance
+        
+        if angles is not None:
+            probabilities[mask] *= 1 - angles[mask] / self.threshold_angle
         
         return probabilities
     
