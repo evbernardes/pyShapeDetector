@@ -26,6 +26,10 @@ class PrimitiveBase(ABC):
             np.sum(normals * normals_from_points, axis=1), -1, 1)
         return np.abs(angles_cos)
     
+    def get_normal_angles(self, points, normals):
+        return np.arccos(
+            self.et_normal_angles_cos(points, normals))
+    
     @staticmethod
     def get_distances(self, points):
         pass

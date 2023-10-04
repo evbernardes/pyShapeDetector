@@ -16,8 +16,6 @@ import numpy as np
 
 random.seed(951)
 
-from .PrimitiveBase import PrimitiveBase
-
 DEG = 0.017453292519943295
 
 class RANSACDetector(ABC):

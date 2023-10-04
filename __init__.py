@@ -7,5 +7,5 @@ Created on Tue Sep 26 16:02:34 2023
 """
 
 from .RANSACDetector import RANSACDetector
-from .PrimitiveSphere import Sphere
-from .PrimitivePlane import Plane
+from .primitives.Sphere import Sphere
+from .primitives.Plane import Plane
