@@ -23,6 +23,7 @@ class RANSAC_Base(ABC):
 
     def __init__(self,
                  primitive,
+                 reduction_rate=1.0,
                  threshold_distance=0.1,
                  threshold_angle=10,
                  ransac_n=None,
@@ -58,6 +59,7 @@ class RANSAC_Base(ABC):
                              f'{model_min}')
 
         self.primitive = primitive
+        self.reduction_rate = reduction_rate
         self.threshold_distance = threshold_distance
         self.threshold_angle = threshold_angle * DEG
         self.ransac_n = ransac_n
