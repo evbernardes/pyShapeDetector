@@ -32,3 +32,8 @@ class RANSAC_Classic(RANSAC_Base):
         weight[angles > self.threshold_angular] = 1
         return weight
     
+    def compare_info(self, info, info_best):
+        return (info['fitness'] > info_best['fitness'] or 
+                (info['fitness'] == info_best['fitness'] and 
+                 info['rmse'] < info_best['rmse']))
+    
