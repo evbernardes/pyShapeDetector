@@ -1,1 +1,1 @@
-# RANSAC_ShapeDetector
+# pyShapeDetector
