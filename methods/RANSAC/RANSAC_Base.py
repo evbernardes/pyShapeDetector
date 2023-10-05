@@ -241,8 +241,10 @@ class RANSAC_Base(ABC):
             distances, angles = shape_best.get_distances_and_angles(
                 points, normals)
             inliers_final = self.get_inliers(distances, angles)
-            error_final = self.get_error(distances)
-            fitness_final = len(inliers_final)/num_points
+            num_inliers = len(inliers_final)
+            rmse_final = np.sqrt(self.get_error(distances) / num_inliers)
+            times['get_inliers_and_error_final'] = time.time() - t_
+            fitness_final = num_inliers / num_points
 
             if filter_model:
                 # ... and then find the final model using the final inliers
@@ -253,11 +255,16 @@ class RANSAC_Base(ABC):
             print('times:')
             for t_ in times:
                 print(f'{t_} : {times[t_]:.5f}s')
-            print(f'{num_points} points and {len(inliers_final)} inliers')
+            print(f'{num_points} points and {num_inliers} inliers')
             print(f'fitness: {int(100*fitness_final)}%')
-            print(f'rmse: {np.sqrt(error_final / len(inliers_final))}')
+            print(f'rmse: {rmse_final}')
 
         if shape_best is None:
             return None, None, 0
+        
+        info = {
+            'num_inliers': num_inliers,
+            'fitness': fitness_final,
+            'rmse': rmse_final}
 
-        return shape_best, inliers_final, fitness_final
+        return shape_best, inliers_final, info
