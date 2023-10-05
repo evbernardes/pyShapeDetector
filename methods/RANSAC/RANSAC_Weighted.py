@@ -18,9 +18,9 @@ random.seed(951)
 
 from .RANSAC_Base import RANSAC_Base
 
-class RANSAC_Classic(RANSAC_Base):
+class RANSAC_Weighted(RANSAC_Base):
     
-    _type = "RANSAC Classic"
+    _type = "RANSAC Weighted"
         
     def weight_distance(self, distances):
         weight = np.zeros(len(distances))
@@ -33,7 +33,5 @@ class RANSAC_Classic(RANSAC_Base):
         return weight
     
     def compare_info(self, info, info_best):
-        return (info['fitness'] > info_best['fitness'] or 
-                (info['fitness'] == info_best['fitness'] and 
-                 info['rmse'] < info_best['rmse']))
+        return info['weight'] > info_best['weight']
     
