@@ -18,10 +18,10 @@ from open3d.visualization import draw_geometries
 from pyShapeDetector.primitives import Sphere, Plane
 from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, BDSAC
 methods = [RANSAC_Classic, 
-           RANSAC_Weighted,
-           MSAC,
-           BDSAC]
-
+            RANSAC_Weighted,
+            MSAC,
+            BDSAC]
+# MSAC(Plane)
 #%% Parameters and input
 method = methods[3]
 filedir = Path('./data')

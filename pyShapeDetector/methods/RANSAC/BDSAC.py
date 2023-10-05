@@ -22,12 +22,8 @@ class BDSAC(RANSAC_WeightedBase):
     
     _type = "BDSAC"
         
-    def weight_distance(self, distances):
-        threshold = self.reduction_rate * self.threshold_distance
+    def weight_distances(self, distances, distance_threshold):
+        threshold = self.reduction_rate * distance_threshold
         return np.exp( - (distances / threshold) ** 2)
-        
-    def weight_angle(self, angles):
-        threshold = self.reduction_rate * self.threshold_angle
-        return np.exp( - (angles / threshold) ** 2)
     
     

@@ -22,8 +22,8 @@ class MSAC(RANSAC_WeightedBase):
     
     _type = "MSAC"
         
-    def weight_distance(self, distances):
-        threshold = self.reduction_rate * self.threshold_distance
+    def weight_distances(self, distances, distance_threshold):
+        threshold = self.reduction_rate * distance_threshold
         
         weight = np.zeros(len(distances))
         idx = distances > threshold
@@ -31,13 +31,7 @@ class MSAC(RANSAC_WeightedBase):
         
         return weight
         
-    def weight_angle(self, angles):
-        threshold = self.reduction_rate * self.threshold_angle
+    
         
-        weight = np.zeros(len(angles))
-        idx = angles > threshold
-        weight[idx] = 1 - (angles[idx] / threshold) ** 2
-        
-        return weight
     
     

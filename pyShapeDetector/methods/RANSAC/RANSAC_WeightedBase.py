@@ -21,16 +21,25 @@ from .RANSAC_Base import RANSAC_Base
 class RANSAC_WeightedBase(RANSAC_Base):
     
     @abstractmethod
-    def weight_distance(self, distances):
+    def weight_distances(self, distances, threshold_distances):
         pass
 
-    @abstractmethod
-    def weight_angle(self, angles):
-        pass
+    def weight_angles(self, angles, threshold_angles):
+        return self.weight_distances(angles, threshold_angles)
     
     def get_total_weight(self, distances, angles):
-        weight_distance = sum(self.weight_distance(distances))
-        weight_angle = sum(self.weight_angle(angles))
+        if distances is None:
+            weight_distance = 1
+        else:
+            weight_distance = sum(
+                self.weight_distances(distances, self.threshold_distance))
+            
+        if angles is None:
+            weight_angle = 1
+        else:
+            weight_angle = sum(
+                self.weight_angles(angles, self.threshold_angle))
+            
         return weight_distance * weight_angle
     
     def compare_info(self, info, info_best):

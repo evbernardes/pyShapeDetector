@@ -21,14 +21,9 @@ from .RANSAC_WeightedBase import RANSAC_WeightedBase
 class RANSAC_Weighted(RANSAC_WeightedBase):
     
     _type = "RANSAC Weighted"
-        
-    def weight_distance(self, distances):
+    
+    def weight_distances(self, distances, distance_threshold):
         weight = np.zeros(len(distances))
-        weight[distances > self.threshold_distance] = 1
-        return weight
-        
-    def weight_angle(self, angles):
-        weight = np.zeros(len(angles))
-        weight[angles > self.threshold_angle] = 1
+        weight[distances > distance_threshold] = 1
         return weight
     
