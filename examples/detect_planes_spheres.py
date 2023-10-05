@@ -15,7 +15,7 @@ from open3d.visualization import draw_geometries
 
 # from helpers import color_blue, color_gray, color_red, color_yellow
 from pyShapeDetector.primitives import Sphere, Plane
-from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted
+from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC
 methods = [RANSAC_Classic, 
            RANSAC_Weighted]
 
@@ -27,8 +27,9 @@ pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd'))
 # draw(pcd_full)
 
 # Detection of clusters
-labels = np.array(pcd_full.cluster_dbscan(eps=0.9, min_points=50))#, print_progress=True))
+labels = pcd_full.cluster_dbscan(eps=0.9, min_points=50)#, print_progress=True))
 
+labels = np.array(labels)
 max_label = labels.max()
 pcd_segmented = copy.copy(pcd_full)
 print(f"\nPoint cloud has {len(set(labels))} clusters!\n")
