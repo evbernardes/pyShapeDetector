@@ -16,9 +16,9 @@ import numpy as np
 
 random.seed(951)
 
-from .RANSAC_Weighted import RANSAC_Weighted
+from .RANSAC_WeightedBase import RANSAC_WeightedBase
 
-class MSAC(RANSAC_Weighted):
+class MSAC(RANSAC_WeightedBase):
     
     _type = "MSAC"
         

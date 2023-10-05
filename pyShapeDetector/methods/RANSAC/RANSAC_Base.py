@@ -69,23 +69,21 @@ class RANSAC_Base(ABC):
         self.model_max = None if model_max is None else np.array(model_max)
         self.model_min = None if model_min is None else np.array(model_min)
         self.inliers_min = inliers_min
-
-    @abstractmethod
-    def weight_distance(self, distances):
-        pass
-
-    @abstractmethod
-    def weight_angle(self, angles):
-        pass
     
     @abstractmethod
     def compare_info(self, info, info_best):
         pass
-
-    def get_total_weight(self, distances, angles):
-        weight_distance = sum(self.weight_distance(distances))
-        weight_angle = sum(self.weight_angle(angles))
-        return weight_distance * weight_angle
+    
+    def get_info(self, 
+                 num_points=None, num_inliers=None, 
+                 distances=None, angles=None):
+        if num_points is None or num_inliers is None or distances is None:
+            info = {'num_inliers': 0, 'fitness': 0, 'rmse': None}
+        else: 
+            info = {'num_inliers': num_inliers,
+                    'fitness': num_inliers / num_points,
+                    'rmse': self.get_rmse(distances)}
+        return info
 
     def get_model(self, points, samples):
         shape = self.primitive.create_from_points(points[samples])
@@ -184,10 +182,7 @@ class RANSAC_Base(ABC):
                 print('Remaining points less than inliers_min, stopping')
             return None, None, 0
 
-        info_best = {'num_inliers': 0,
-                     'fitness': 0,
-                     'weight': 0,
-                     'rmse': None}
+        info_best = self.get_info(None)
         
         shape_best = None
         break_iteration = 18446744073709551615
@@ -217,17 +212,14 @@ class RANSAC_Base(ABC):
             t_ = time.time()
             distances, angles = shape.get_distances_and_angles(points, normals)
             inliers = self.get_inliers(distances, angles)
-            inlier_num = len(inliers)
+            num_inliers = len(inliers)
             
             times['get_inliers_and_error'] += time.time() - t_
 
-            if inlier_num == 0 or (inliers_min and inlier_num < inliers_min):
+            if num_inliers == 0 or (inliers_min and num_inliers < inliers_min):
                 continue
             
-            info = {'num_inliers': inlier_num,
-                    'fitness': inlier_num / num_points,
-                    'weight': self.get_total_weight(distances, angles),
-                    'rmse': self.get_rmse(distances)}
+            info = self.get_info(num_points, num_inliers, distances, angles)
 
             if self.compare_info(info, info_best):
                 
@@ -251,8 +243,7 @@ class RANSAC_Base(ABC):
 
         # Find the final inliers using model_best...
         if shape_best is None:
-            return None, None, {'num_inliers': 0, 'fitness': 0, 
-                                'weight': 0, 'rmse': None}
+            return None, None, self.get_info(None)
         
         t_ = time.time()
         distances, angles = shape_best.get_distances_and_angles(
@@ -260,10 +251,7 @@ class RANSAC_Base(ABC):
         inliers_final = self.get_inliers(distances, angles)
         num_inliers = len(inliers_final)
         
-        info_final = {'num_inliers': inlier_num,
-                      'fitness': inlier_num / num_points,
-                      'weight': self.get_total_weight(distances, angles),
-                      'rmse': self.get_rmse(distances)}
+        info_final = self.get_info(num_points, num_inliers, distances, angles)
         
         times['get_inliers_and_error_final'] = time.time() - t_
 

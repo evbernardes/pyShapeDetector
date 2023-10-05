@@ -16,9 +16,9 @@ import numpy as np
 
 random.seed(951)
 
-from .RANSAC_Weighted import RANSAC_Weighted
+from .RANSAC_WeightedBase import RANSAC_WeightedBase
 
-class BDSAC(RANSAC_Weighted):
+class BDSAC(RANSAC_WeightedBase):
     
     _type = "BDSAC"
         

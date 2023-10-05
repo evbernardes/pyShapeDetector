@@ -23,7 +23,7 @@ methods = [RANSAC_Classic,
            BDSAC]
 
 #%% Parameters and input
-method = methods[2]
+method = methods[3]
 filedir = Path('./data')
 filename = '2spheres_3planes'
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))

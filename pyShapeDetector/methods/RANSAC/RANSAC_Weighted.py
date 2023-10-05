@@ -16,9 +16,9 @@ import numpy as np
 
 random.seed(951)
 
-from .RANSAC_Base import RANSAC_Base
+from .RANSAC_WeightedBase import RANSAC_WeightedBase
 
-class RANSAC_Weighted(RANSAC_Base):
+class RANSAC_Weighted(RANSAC_WeightedBase):
     
     _type = "RANSAC Weighted"
         
@@ -31,7 +31,4 @@ class RANSAC_Weighted(RANSAC_Base):
         weight = np.zeros(len(angles))
         weight[angles > self.threshold_angle] = 1
         return weight
-    
-    def compare_info(self, info, info_best):
-        return info['weight'] > info_best['weight']
     

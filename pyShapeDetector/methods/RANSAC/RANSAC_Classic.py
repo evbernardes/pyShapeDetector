@@ -21,16 +21,6 @@ from .RANSAC_Base import RANSAC_Base
 class RANSAC_Classic(RANSAC_Base):
     
     _type = "RANSAC Classic"
-        
-    def weight_distance(self, distances):
-        weight = np.zeros(len(distances))
-        weight[distances > self.threshold_distance] = 1
-        return weight
-        
-    def weight_angle(self, angles):
-        weight = np.zeros(len(angles))
-        weight[angles > self.threshold_angle] = 1
-        return weight
     
     def compare_info(self, info, info_best):
         return (info['fitness'] > info_best['fitness'] or 
