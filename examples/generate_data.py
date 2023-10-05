@@ -6,27 +6,14 @@ Created on Wed Oct  4 11:52:20 2023
 @author: ebernardes
 """
 
-import numpy as np
-import random
-import matplotlib.pyplot as plt
 from pathlib import Path
-import pye57
 import open3d as o3d
-from open3d.utility import Vector3dVector, Vector3iVector, Vector4iVector
-# from open3d.utility import Vector3iVector as 3iVector
-from open3d.geometry import PointCloud, TriangleMesh
-import multiprocessing
-from multiprocessing import Process, Manager
-import copy
+from open3d.geometry import PointCloud
+from open3d.visualization import draw_geometries
 
-from RANSAC_ShapeDetector import RANSACDetector# as Detector
-from RANSAC_ShapeDetector import Sphere, Plane, PrimitiveBase
-
-from helpers import color_blue, color_gray, color_red, color_yellow
-from helpers import draw, normalise, create_square_plane
+from helpers import color_gray
 from helpers import get_random_spheres, get_random_planes
             
-
 #%% Parameters and input
 filedir = Path('./data')
 
@@ -58,18 +45,14 @@ for pcd in pcd_planes+pcd_spheres:
 pcd_full.paint_uniform_color(color_gray)
 pcd_full.estimate_normals()
 # pcd_full.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=1000, max_nn=30))
-draw(pcd_full)
+draw_geometries([pcd_full])
 
 #%%
 val = input(f'Save as {filename}? (y)es, (N)o, (o)ther name. ').lower()
 if val == 'y':
     o3d.io.write_point_cloud(str(filename), pcd_full)
 elif val == 'o':
-    filename = filedir / input(f'Enter filename:\n') / '.pcd'
+    filename = filedir / input('Enter filename:\n') / '.pcd'
 else:
     pass
-
-
-
-
 

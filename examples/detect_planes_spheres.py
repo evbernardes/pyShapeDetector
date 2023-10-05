@@ -11,8 +11,9 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import open3d as o3d
+from open3d.visualization import draw_geometries
 
-from helpers import color_blue, color_gray, color_red, color_yellow
+# from helpers import color_blue, color_gray, color_red, color_yellow
 from pyShapeDetector.primitives import Sphere, Plane
 from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted
 methods = [RANSAC_Classic, 
@@ -61,7 +62,7 @@ plane_detector = method(Plane,
 
 detectors = [sphere_detector, plane_detector]
 
-shapes = []
+shapes_detected = []
 meshes_detected = []
 pcds = []
 # pcd_rest = copy.copy(pcd_full)
@@ -108,60 +109,32 @@ for idx in range(len(pcds_segmented)):
         meshes_detected.append(mesh)
         
         window_name = f'{shape._name}:{shape.model}, {len(inliers)} inliers'
-        # o3d.visualization.draw_geometries([mesh, pcd_primitive], 
-                                          # window_name=window_name)
         
-        shapes.append({
+        shapes_detected.append({
             'shape': shape,
             'pcd_primitive': pcd_primitive,
             'mesh': mesh})
-            # planes_detected.append([plane_shape, pcd_primitive])
-            # o3d.visualization.draw_geometries([pcd_rest]+meshes_detected,
-            #                                   lookat=[0, 0, 1],
-            #                                   up=[0, 0, 1],
-            #                                   front=[1, 0, 0],
-            #                                   zoom=1)
-            # else:
-            #     break
         iteration += 1
             
     pcds.append(pcd_)
 
 
 #%%
-# o3d.visualization.draw_geometries(pcds_segmented,
-#                                   lookat=[0, 0, 1],
-#                                   up=[0, 0, 1],
-#                                   front=[1, 0, 0],
-#                                   zoom=1)
+# draw_geometries(pcds_segmented,
+#                 lookat=[0, 0, 1],
+#                 up=[0, 0, 1],
+#                 front=[1, 0, 0],
+#                 zoom=1)
 
-o3d.visualization.draw_geometries([pcd_full]+meshes_detected,
-                                  lookat=[0, 0, 1],
-                                  up=[0, 0, 1],
-                                  front=[1, 0, 0],
-                                  zoom=1)
+draw_geometries([pcd_full]+meshes_detected,
+                lookat=[0, 0, 1],
+                up=[0, 0, 1],
+                front=[1, 0, 0],
+                zoom=1)
     
-o3d.visualization.draw_geometries(meshes_detected+pcds,
-                                  lookat=[0, 0, 1],
-                                  up=[0, 0, 1],
-                                  front=[1, 0, 0],
-                                  zoom=1)
-# 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+draw_geometries(meshes_detected+pcds,
+                lookat=[0, 0, 1],
+                up=[0, 0, 1],
+                front=[1, 0, 0],
+                zoom=1)
 
