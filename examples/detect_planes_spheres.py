@@ -7,6 +7,7 @@ Created on Wed Sep 20 15:30:28 2023
 """
 
 import copy
+import time
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,12 +16,14 @@ from open3d.visualization import draw_geometries
 
 # from helpers import color_blue, color_gray, color_red, color_yellow
 from pyShapeDetector.primitives import Sphere, Plane
-from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC
+from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, BDSAC
 methods = [RANSAC_Classic, 
-           RANSAC_Weighted]
+           RANSAC_Weighted,
+           MSAC,
+           BDSAC]
 
 #%% Parameters and input
-method = methods[0]
+method = methods[2]
 filedir = Path('./data')
 filename = '2spheres_3planes'
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
@@ -44,19 +47,20 @@ for label in set(labels):
     pcds_segmented.append(pcd_full.select_by_index(idx))
 
 #%%
-inliers_min = 200
+inliers_min = 300
 
 sphere_detector = method(Sphere, 
                          threshold_distance=0.1, 
                          ransac_n=4, 
-                         num_iterations=500, probability=0.9, 
+                         num_iterations=50, probability=0.9, 
                          model_max=[None, None, None, 10],
+                         threshold_angle=5,
                          inliers_min=inliers_min)
 
 plane_detector = method(Plane, 
                         threshold_distance=0.1,
                         ransac_n=3, 
-                        num_iterations=500, probability=0.9, 
+                        num_iterations=50, probability=0.9, 
                         threshold_angle=1,
                         max_point_distance=1,
                         inliers_min=inliers_min)
@@ -66,6 +70,8 @@ detectors = [sphere_detector, plane_detector]
 shapes_detected = []
 meshes_detected = []
 pcds = []
+print(f'Testing with {method._type}\n')
+start = time.time()
 # pcd_rest = copy.copy(pcd_full)
 for idx in range(len(pcds_segmented)):
     print(f'Testing cluster {idx+1}...')
@@ -73,6 +79,7 @@ for idx in range(len(pcds_segmented)):
     
     iteration = 0
     while(len(pcd_.points) > 500 and iteration < 20):
+        print(f'iteration {iteration}')
         # pcd_.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
         normals = pcd_.normals
         
@@ -82,7 +89,7 @@ for idx in range(len(pcds_segmented)):
         output_info = []
         for detector in detectors:
             shape, inliers, info = detector.fit(
-                pcd_.points, debug=False, filter_model=False, normals=normals)
+                pcd_.points, debug=True, filter_model=False, normals=normals)
             
             output_shapes.append(shape)
             output_inliers.append(inliers)
@@ -90,10 +97,12 @@ for idx in range(len(pcds_segmented)):
             output_fitness.append(info['fitness'])
             
         if np.all(np.array(output_shapes) == None):
+            print('No shapes found anymore, breaking...')
             break
         
         max_fitness = max(output_fitness)
         if max_fitness < 0.1:
+            print('Fitness to small, breaking...')
             break
         
         idx = np.where(np.array(output_fitness) == max_fitness)[0][0]
@@ -119,7 +128,7 @@ for idx in range(len(pcds_segmented)):
             
     pcds.append(pcd_)
 
-
+print(f'{method._type} finished after {time.time() - start:.5f}s')
 #%%
 # draw_geometries(pcds_segmented,
 #                 lookat=[0, 0, 1],
