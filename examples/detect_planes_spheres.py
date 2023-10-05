@@ -16,11 +16,12 @@ from open3d.visualization import draw_geometries
 
 # from helpers import color_blue, color_gray, color_red, color_yellow
 from pyShapeDetector.primitives import Sphere, Plane
-from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, BDSAC
+from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, BDSAC, LDSAC
 methods = [RANSAC_Classic, 
             RANSAC_Weighted,
             MSAC,
-            BDSAC]
+            BDSAC,
+            LDSAC]
 # MSAC(Plane)
 #%% Parameters and input
 method = methods[3]

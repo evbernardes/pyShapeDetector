@@ -55,7 +55,14 @@ class LDSAC(RANSAC_WeightedBase):
         self.threshold_ratios = threshold_ratios
         
     def weight_distances(self, distances, distance_threshold):
-        threshold = self.reduction_rate * threshold_distance
-        return np.exp( - (distances / threshold) ** 2)
+        d1 = distance_threshold * self.threshold_ratios[0]
+        d2 = distance_threshold * self.threshold_ratios[1]
+        
+        weight = np.zeros(len(distances))
+        weight[np.abs(distances) < d1] = 1
+        idx = d1 < np.abs(distances) < d2
+        weight[idx] = (d2 - distances(idx)) / (d2 - d1)
+        
+        return weight
     
     

@@ -6,4 +6,4 @@ Created on Tue Sep 26 16:02:34 2023
 @author: ebernardes
 """
 
-from .RANSAC import RANSAC_Classic, RANSAC_Weighted, MSAC, BDSAC
+from .RANSAC import RANSAC_Classic, RANSAC_Weighted, MSAC, BDSAC, LDSAC
