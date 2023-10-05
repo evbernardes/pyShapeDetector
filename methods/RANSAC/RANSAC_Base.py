@@ -249,7 +249,8 @@ class RANSAC_Base(ABC):
 
         # Find the final inliers using model_best...
         if shape_best is None:
-            return None, None, {'num_inliers': 0, 'fitness': 0, 'rmse': None}
+            return None, None, {'num_inliers': 0, 'fitness': 0, 
+                                'weight': 0, 'rmse': None}
         
         t_ = time.time()
         distances, angles = shape_best.get_distances_and_angles(
