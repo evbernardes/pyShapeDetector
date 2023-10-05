@@ -266,7 +266,7 @@ class RANSAC_Base(ABC):
             print(f'rmse: {rmse_final}')
 
         if shape_best is None:
-            return None, None, 0
+            return None, None, {'num_inliers': 0, 'fitness': 0, 'rmse': None}
         
         info = {
             'num_inliers': num_inliers,
