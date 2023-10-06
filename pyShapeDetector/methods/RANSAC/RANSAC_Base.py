@@ -104,20 +104,19 @@ class RANSAC_Base(ABC):
 
     def get_model(self, points, samples):
         shape = self.primitive.fit(points[samples])
-        if shape is None:
-            return None
-
-        model_array = np.array(shape.model)
-
-        if self.model_max is not None:
-            idx_max = np.where(self.model_max != None)[0]
-            if np.any(self.model_max[idx_max] < model_array[idx_max]):
-                return None
-
-        if self.model_min is not None:
-            idx_min = np.where(self.model_min != None)[0]
-            if np.any(self.model_min[idx_min] > model_array[idx_min]):
-                return None
+        
+        if shape is not None:
+            model_array = np.array(shape.model)
+    
+            if self.model_max is not None:
+                idx_max = np.where(self.model_max != None)[0]
+                if np.any(self.model_max[idx_max] < model_array[idx_max]):
+                    return None
+    
+            if self.model_min is not None:
+                idx_min = np.where(self.model_min != None)[0]
+                if np.any(self.model_min[idx_min] > model_array[idx_min]):
+                    return None
 
         return shape
 
@@ -208,9 +207,7 @@ class RANSAC_Base(ABC):
         iteration_count = 0
 
         times = {'get_inliers_and_error': 0,
-                 'get_inliers_and_error_final': 0,
-                 'get_model': 0,
-                 'get_model_final': 0}
+                 'get_model': 0}
         
         for itr in range(self.num_iterations):
 
@@ -251,30 +248,23 @@ class RANSAC_Base(ABC):
             if debug:
                 print(f'Iteration {itr+1}/{self.num_iterations} : '
                       f'{time.time() - start_itr:.5f}s')
-
-
-        # Find the final inliers using model_best...
+        
         if shape_best is None:
             return None, None, self.get_info(None)
         
-        t_ = time.time()
+        # Find the final inliers using model_best ...
         distances, angles = shape_best.get_distances_and_angles(
             points, normals)
         inliers_final = self.get_inliers(distances, angles)
         num_inliers = len(inliers_final)
-        
         info_final = self.get_info(num_points, num_inliers, distances, angles)
-        
-        times['get_inliers_and_error_final'] = time.time() - t_
 
+        # ... and then find the final model using the final inliers
         if filter_model:
-            # ... and then find the final model using the final inliers
-            t_ = time.time()
             shape_best = primitive.fit(points[inliers_final])
             if shape_best is None:
                 raise ValueError('None value found for shape at the last '
                                  'filtering step, this should not happen')
-            times['get_model_final'] = time.time() - t_
             
         if debug:
             print('times:')
