@@ -106,8 +106,12 @@ class Plane(PrimitiveBase):
         
         num_points = len(points)
         
+        if num_points < 3:
+            raise ValueError('A minimun of 3 points are needed to fit a '
+                             'plane')
+        
         # if simplest case, the result is direct
-        if num_points == 3:
+        elif num_points == 3:
             p0, p1, p2 = points
             
             e0 = p1 - p0

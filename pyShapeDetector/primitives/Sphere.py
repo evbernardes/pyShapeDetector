@@ -43,8 +43,12 @@ class Sphere(PrimitiveBase):
         
         num_points = len(points)
         
+        if num_points < 4:
+            raise ValueError('A minimun of 4 points are needed to fit a '
+                             'sphere')
+        
         # if simplest case, the result is direct
-        if num_points == 4:
+        elif num_points == 4:
             p0, p1, p2, p3 = points
             
             r1 = p0 - p1
