@@ -140,15 +140,22 @@ class RANSAC_Base(ABC):
 
         return probabilities
 
-    def get_samples(self, points, num_points):
+    def get_samples(self, points, num_points, tries_max=5000):
 
         if self.max_point_distance is None:
             return random.sample(range(num_points), self.ransac_n)
 
-        sample = random.randrange(num_points)
-        samples = set([sample])
+        samples = set([random.randrange(num_points)])
         
+        tries = 0
         while len(samples) < self.ransac_n:
+            
+            # if the algorithm cannot find another sample in the minimal
+            # neighborhood, stop
+            if tries > tries_max:
+                return None
+                # samples = set([random.randrange(num_points)])
+                # tries = 0
             
             sample = random.randrange(num_points)
             if sample in samples:
@@ -159,9 +166,11 @@ class RANSAC_Base(ABC):
 
             distances = np.linalg.norm(points[list(samples)] - point, axis=1)
             if min(distances) > self.max_point_distance:
+                tries += 1
                 continue
 
             samples.add(sample)
+            tries = 0
 
         return list(samples)
     
@@ -202,7 +211,7 @@ class RANSAC_Base(ABC):
                  'get_inliers_and_error_final': 0,
                  'get_model': 0,
                  'get_model_final': 0}
-
+        
         for itr in range(self.num_iterations):
 
             if (iteration_count > info_best['break_iteration']):
@@ -211,6 +220,8 @@ class RANSAC_Base(ABC):
             start_itr = time.time()
 
             samples = self.get_samples(points, num_points)
+            if samples is None:
+                continue
             
             t_ = time.time()
             shape = self.get_model(points, samples)
@@ -240,6 +251,7 @@ class RANSAC_Base(ABC):
             if debug:
                 print(f'Iteration {itr+1}/{self.num_iterations} : '
                       f'{time.time() - start_itr:.5f}s')
+
 
         # Find the final inliers using model_best...
         if shape_best is None:
