@@ -13,7 +13,7 @@ import open3d as o3d
 from open3d.geometry import TriangleMesh, PointCloud
 from open3d.utility import Vector3iVector, Vector3dVector
 
-from .PrimitiveBase import PrimitiveBase
+from .primitivebase import PrimitiveBase
     
 class Plane(PrimitiveBase):
     

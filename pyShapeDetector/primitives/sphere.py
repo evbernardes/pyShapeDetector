@@ -12,7 +12,7 @@ import numpy as np
 import open3d as o3d
 from open3d.geometry import TriangleMesh
 
-from .PrimitiveBase import PrimitiveBase
+from .primitivebase import PrimitiveBase
     
 class Sphere(PrimitiveBase):
     
