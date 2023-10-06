@@ -24,7 +24,7 @@ methods = [RANSAC_Classic,
             LDSAC]
 # MSAC(Plane)
 #%% Parameters and input
-method = methods[1]
+method = methods[0]
 filedir = Path('./data')
 filename = '2spheres_3planes'
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
@@ -54,7 +54,7 @@ sphere_detector = method(Sphere,
                          threshold_distance=0.1, 
                          threshold_angle=2,
                          ransac_n=4, 
-                         num_iterations=50, probability=0.99, 
+                         num_iterations=50, probability=0.9, 
                          model_max=[None, None, None, 10],
                          inliers_min=inliers_min)
 
@@ -62,7 +62,7 @@ plane_detector = method(Plane,
                         threshold_distance=0.1,
                         threshold_angle=50,
                         ransac_n=3, 
-                        num_iterations=50, probability=0.99, 
+                        num_iterations=50, probability=0.9, 
                         max_point_distance=0.5,
                         inliers_min=inliers_min)
 
@@ -87,15 +87,15 @@ for idx in range(len(pcds_segmented)):
         output_shapes = []
         output_fitness = []
         output_inliers = []
-        output_info = []
+        output_metrics = []
+        
         for detector in detectors:
-            shape, inliers, info = detector.fit(
-                pcd_.points, debug=True, filter_model=False, normals=normals)
-            
+            shape, inliers, metrics = detector.fit(
+                pcd_.points, debug=False, filter_model=False, normals=normals)
             output_shapes.append(shape)
             output_inliers.append(inliers)
-            output_info.append(info)
-            output_fitness.append(info['fitness'])
+            output_metrics.append(metrics)
+            output_fitness.append(metrics['fitness'])
             
         if np.all(np.array(output_shapes) == None):
             print('No shapes found anymore, breaking...')

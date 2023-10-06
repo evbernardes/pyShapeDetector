@@ -22,8 +22,8 @@ class RANSAC_Classic(RANSAC_Base):
     
     _type = "RANSAC Classic"
     
-    def compare_info(self, info, info_best):
-        return (info['fitness'] > info_best['fitness'] or 
-                (info['fitness'] == info_best['fitness'] and 
-                 info['rmse'] < info_best['rmse']))
+    def compare_metrics(self, metrics, metrics_best):
+        return (metrics['fitness'] > metrics_best['fitness'] or 
+                (metrics['fitness'] == metrics_best['fitness'] and 
+                 metrics['rmse_distances'] < metrics_best['rmse_distances']))
     

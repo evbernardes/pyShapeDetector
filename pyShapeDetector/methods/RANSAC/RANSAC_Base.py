@@ -71,24 +71,24 @@ class RANSAC_Base(ABC):
         self.inliers_min = inliers_min
     
     @abstractmethod
-    def compare_info(self, info, info_best):
+    def compare_metrics(self, metrics, metrics_best):
         pass
     
-    def termination_criterion(self, info):
-        if info['fitness'] > 1.0:
+    def termination_criterion(self, metrics):
+        if metrics['fitness'] > 1.0:
             return 0
         
-        den = np.log(1 - info['fitness'] ** self.ransac_n)
+        den = np.log(1 - metrics['fitness'] ** self.ransac_n)
         if den:
             return min(self.num_iterations, np.log(1 - self.probability) / den)
         else:
             return self.num_iterations
     
-    def get_info(self, 
+    def get_metrics(self, 
                  num_points=None, num_inliers=None, 
                  distances=None, angles=None):
         if num_points is None or num_inliers is None or distances is None:
-            info = {'num_inliers': 0, 'fitness': 0, 
+            metrics = {'num_inliers': 0, 'fitness': 0, 
                     'rmse_distances': 0, 'rmse_angles': 0}
             
         else:
@@ -97,13 +97,13 @@ class RANSAC_Base(ABC):
                 rmse_angles = np.sqrt(angles.dot(angles)) / len(angles)
             else:
                 rmse_angles = None
-            info = {'num_inliers': num_inliers,
+            metrics = {'num_inliers': num_inliers,
                     'fitness': num_inliers / num_points,
                     'rmse_distances': rmse_distances,
                     'rmse_angles': rmse_angles}
             
-        info['break_iteration'] = self.termination_criterion(info)
-        return info
+        metrics['break_iteration'] = self.termination_criterion(metrics)
+        return metrics
 
     def get_model(self, points, samples):
         shape = self.primitive.fit(points[samples])
@@ -201,10 +201,10 @@ class RANSAC_Base(ABC):
         if inliers_min and num_points < inliers_min:
             if debug:
                 print('Remaining points less than inliers_min, stopping')
-            return None, None, self.get_info(None)
+            return None, None, self.get_metrics(None)
 
-        # info dict stores information used to decide which model is best
-        info_best = self.get_info(None)
+        # metrics dict stores metricsrmation used to decide which model is best
+        metrics_best = self.get_metrics(None)
         
         shape_best = None
         iteration_count = 0
@@ -214,7 +214,7 @@ class RANSAC_Base(ABC):
         
         for itr in range(self.num_iterations):
 
-            if (iteration_count > info_best['break_iteration']):
+            if (iteration_count > metrics_best['break_iteration']):
                 continue
 
             start_itr = time.time()
@@ -240,10 +240,11 @@ class RANSAC_Base(ABC):
             if num_inliers == 0 or (inliers_min and num_inliers < inliers_min):
                 continue
             
-            info = self.get_info(num_points, num_inliers, distances, angles)
+            metrics = self.get_metrics(num_points, num_inliers, 
+                                       distances, angles)
 
-            if self.compare_info(info, info_best):
-                info_best = info
+            if self.compare_metrics(metrics, metrics_best):
+                metrics_best = metrics
                 shape_best = shape
 
             iteration_count += 1
@@ -253,14 +254,15 @@ class RANSAC_Base(ABC):
                       f'{time.time() - start_itr:.5f}s')
         
         if shape_best is None:
-            return None, None, self.get_info(None)
+            return None, None, self.get_metrics(None)
         
         # Find the final inliers using model_best ...
         distances, angles = shape_best.get_distances_and_angles(
             points, normals)
         inliers_final = self.get_inliers(distances, angles)
         num_inliers = len(inliers_final)
-        info_final = self.get_info(num_points, num_inliers, distances, angles)
+        metrics_final = self.get_metrics(num_points, num_inliers, 
+                                         distances, angles)
 
         # ... and then find the final model using the final inliers
         if filter_model:
@@ -275,8 +277,8 @@ class RANSAC_Base(ABC):
             for t_ in times:
                 print(f'{t_} : {times[t_]:.5f}s')
             print(f'{num_points} points and {num_inliers} inliers, '
-                  '{int(100*info_final["fitness"])}% fitness')
-            print(f'RMSE for distances: {info_final["rmse_distances"]}')
-            print(f'RMSE for angles: {info_final["rmse_angles"]}\n')
+                  '{int(100*metrics_final["fitness"])}% fitness')
+            print(f'RMSE for distances: {metrics_final["rmse_distances"]}')
+            print(f'RMSE for angles: {metrics_final["rmse_angles"]}\n')
 
-        return shape_best, inliers_final, info_final
+        return shape_best, inliers_final, metrics_final

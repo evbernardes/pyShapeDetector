@@ -42,15 +42,15 @@ class RANSAC_WeightedBase(RANSAC_Base):
             
         return weight_distance * weight_angle
     
-    def compare_info(self, info, info_best):
-        return info['weight'] > info_best['weight']
+    def compare_metrics(self, metrics, metrics_best):
+        return metrics['weight'] > metrics_best['weight']
     
-    def get_info(self, 
+    def get_metrics(self, 
                  num_points=None, num_inliers=None, 
                  distances=None, angles=None):
-        info = super().get_info(num_points, num_inliers, distances, angles)
+        metrics = super().get_metrics(num_points, num_inliers, distances, angles)
         if num_points is None or num_inliers is None or distances is None:
-            info['weight'] = 0
+            metrics['weight'] = 0
         else:
-            info['weight'] = self.get_total_weight(distances, angles)
-        return info
+            metrics['weight'] = self.get_total_weight(distances, angles)
+        return metrics
