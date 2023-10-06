@@ -132,13 +132,14 @@ class RANSAC_Base(ABC):
 
         sample = random.randrange(num_points)
         samples = set([sample])
-
+        
         while len(samples) < self.ransac_n:
-
+            
             sample = random.randrange(num_points)
             if sample in samples:
                 continue
             
+            # tries = 0
             point = points[sample]
 
             distances = np.linalg.norm(points[list(samples)] - point, axis=1)

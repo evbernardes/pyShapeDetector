@@ -29,6 +29,9 @@ class PrimitiveBase(ABC):
         return np.abs(angles_cos)
     
     def get_angles(self, points, normals):
+        if normals is None:
+            return None
+        
         return np.arccos(
             self.get_angles_cos(points, normals))
     

@@ -24,7 +24,7 @@ methods = [RANSAC_Classic,
             LDSAC]
 # MSAC(Plane)
 #%% Parameters and input
-method = methods[3]
+method = methods[1]
 filedir = Path('./data')
 filename = '2spheres_3planes'
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
@@ -52,18 +52,18 @@ inliers_min = 300
 
 sphere_detector = method(Sphere, 
                          threshold_distance=0.1, 
+                         threshold_angle=2,
                          ransac_n=4, 
-                         num_iterations=50, probability=0.9, 
+                         num_iterations=50, probability=0.99, 
                          model_max=[None, None, None, 10],
-                         threshold_angle=5,
                          inliers_min=inliers_min)
 
 plane_detector = method(Plane, 
                         threshold_distance=0.1,
+                        threshold_angle=50,
                         ransac_n=3, 
-                        num_iterations=50, probability=0.9, 
-                        threshold_angle=1,
-                        max_point_distance=1,
+                        num_iterations=50, probability=0.99, 
+                        max_point_distance=0.5,
                         inliers_min=inliers_min)
 
 detectors = [sphere_detector, plane_detector]
@@ -80,8 +80,8 @@ for idx in range(len(pcds_segmented)):
     
     iteration = 0
     while(len(pcd_.points) > 500 and iteration < 20):
-        print(f'iteration {iteration}')
-        # pcd_.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+        print(f'\niteration {iteration}')
+        # pcd_.estimate_normals()
         normals = pcd_.normals
         
         output_shapes = []
