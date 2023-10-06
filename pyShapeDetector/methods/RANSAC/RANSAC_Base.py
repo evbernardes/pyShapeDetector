@@ -175,8 +175,11 @@ class RANSAC_Base(ABC):
 
         return list(samples)
     
-    def get_inliers(self, distances, angles):
-
+    def get_inliers_from_points(self, shape, points, normals=None):
+        distances, angles = shape.get_residuals(points, normals)
+        return self.get_inliers_from_residuals(distances, angles)
+    
+    def get_inliers_from_residuals(self, distances, angles):
         is_inlier = distances < self.threshold_distance
         if angles is not None:
             is_inlier *= (angles < self.threshold_angle)
@@ -230,8 +233,8 @@ class RANSAC_Base(ABC):
                 continue
 
             t_ = time.time()
-            distances, angles = shape.get_distances_and_angles(points, normals)
-            inliers = self.get_inliers(distances, angles)
+            distances, angles = shape.get_residuals(points, normals)
+            inliers = self.get_inliers_from_residuals(distances, angles)
             num_inliers = len(inliers)
             
             times['get_inliers_and_error'] += time.time() - t_
@@ -256,9 +259,8 @@ class RANSAC_Base(ABC):
             return None, None, self.get_metrics(None)
         
         # Find the final inliers using model_best ...
-        distances, angles = shape_best.get_distances_and_angles(
-            points, normals)
-        inliers_final = self.get_inliers(distances, angles)
+        distances, angles = shape_best.get_residuals(points, normals)
+        inliers_final = self.get_inliers_from_residuals(distances, angles)
         num_inliers = len(inliers_final)
         metrics_final = self.get_metrics(num_points, num_inliers, 
                                          distances, angles)
