@@ -185,7 +185,7 @@ class RANSAC_Base(ABC):
             is_inlier *= (angles < self.threshold_angle)
         return np.where(is_inlier)[0]
 
-    def fit(self, points, normals=None, debug=False, filter_model=True):
+    def fit(self, points, normals=None, debug=False):#, filter_model=True):
         primitive = self.primitive
         points = np.asarray(points)
         num_points = len(points)
@@ -266,11 +266,11 @@ class RANSAC_Base(ABC):
                                          distances, angles)
 
         # ... and then find the final model using the final inliers
-        if filter_model:
-            shape_best = primitive.fit(points[inliers_final])
-            if shape_best is None:
-                raise ValueError('None value found for shape at the last '
-                                 'filtering step, this should not happen')
+        # if filter_model:
+        shape_best = primitive.fit(points[inliers_final])
+        if shape_best is None:
+            raise ValueError('None value found for shape at the last '
+                             'filtering step, this should not happen')
             
         if debug:
             print('\nFinished!')

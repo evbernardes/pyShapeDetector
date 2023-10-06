@@ -91,7 +91,7 @@ for idx in range(len(pcds_segmented)):
         
         for detector in detectors:
             shape, inliers, metrics = detector.fit(
-                pcd_.points, debug=False, filter_model=False, normals=normals)
+                pcd_.points, debug=False, normals=normals)
             output_shapes.append(shape)
             output_inliers.append(inliers)
             output_metrics.append(metrics)
