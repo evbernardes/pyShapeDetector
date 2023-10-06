@@ -102,7 +102,7 @@ class RANSAC_Base(ABC):
         info['break_iteration'] = self.termination_criterion(info)
         return info
 
-    def get_model(self, points, samples):
+    def get_model(self, points, normals, samples):
         shape = self.primitive.fit(points[samples])
         
         if shape is not None:
@@ -111,14 +111,21 @@ class RANSAC_Base(ABC):
             if self.model_max is not None:
                 idx_max = np.where(self.model_max != None)[0]
                 if np.any(self.model_max[idx_max] < model_array[idx_max]):
-                    return None
+                    shape = None
     
             if self.model_min is not None:
                 idx_min = np.where(self.model_min != None)[0]
                 if np.any(self.model_min[idx_min] > model_array[idx_min]):
-                    return None
+                    shape = None
+            
+        if shape is None:
+            return None, None, self.get_info(None)
+            
+        distances, angles = shape.get_distances_and_angles(points, normals)
+        inliers = self.get_inliers(distances, angles)
+        info = self.get_info(len(points), len(inliers), distances, angles)
 
-        return shape
+        return shape, inliers, info
 
     def get_probabilities(self, distances, angles=None):
 
@@ -184,7 +191,6 @@ class RANSAC_Base(ABC):
         primitive = self.primitive
         points = np.asarray(points)
         num_points = len(points)
-        inliers_min = self.inliers_min
 
         if num_points < self.ransac_n:
             raise ValueError(f'Pointcloud must have at least {self.ransac_n} '
@@ -195,14 +201,13 @@ class RANSAC_Base(ABC):
                 raise ValueError('Numbers of points and normals must be equal')
             normals = np.asarray(normals)
 
-        if inliers_min and num_points < inliers_min:
+        if self.inliers_min and num_points < self.inliers_min:
             if debug:
                 print('Remaining points less than inliers_min, stopping')
             return None, None, self.get_info(None)
 
         # info dict stores information used to decide which model is best
         info_best = self.get_info(None)
-        
         shape_best = None
         iteration_count = 0
 
@@ -221,24 +226,16 @@ class RANSAC_Base(ABC):
                 continue
             
             t_ = time.time()
-            shape = self.get_model(points, samples)
+            shape, inliers, info = self.get_model(points, normals, samples)
             times['get_model'] += time.time() - t_
 
             if shape is None:
                 continue
 
-            t_ = time.time()
-            distances, angles = shape.get_distances_and_angles(points, normals)
-            inliers = self.get_inliers(distances, angles)
-            num_inliers = len(inliers)
-            
-            times['get_inliers_and_error'] += time.time() - t_
-
-            if num_inliers == 0 or (inliers_min and num_inliers < inliers_min):
+            if info['num_inliers'] == 0 or \
+                (self.inliers_min and info['num_inliers'] < self.inliers_min):
                 continue
             
-            info = self.get_info(num_points, num_inliers, distances, angles)
-
             if self.compare_info(info, info_best):
                 info_best = info
                 shape_best = shape
