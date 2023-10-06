@@ -85,7 +85,6 @@ for idx in range(len(pcds_segmented)):
         normals = pcd_.normals
         
         output_shapes = []
-        output_fitness = []
         output_inliers = []
         output_metrics = []
         
@@ -95,7 +94,8 @@ for idx in range(len(pcds_segmented)):
             output_shapes.append(shape)
             output_inliers.append(inliers)
             output_metrics.append(metrics)
-            output_fitness.append(metrics['fitness'])
+            
+        output_fitness = [metrics['fitness'] for metrics in output_metrics]
             
         if np.all(np.array(output_shapes) == None):
             print('No shapes found anymore, breaking...')
