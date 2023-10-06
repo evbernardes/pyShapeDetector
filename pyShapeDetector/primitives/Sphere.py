@@ -38,7 +38,7 @@ class Sphere(PrimitiveBase):
         return mesh
    
     @staticmethod
-    def create_from_points(points):
+    def fit(points):
         # points_ = np.asarray(points)[samples]
         
         num_points = len(points)

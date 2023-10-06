@@ -53,7 +53,7 @@ class PrimitiveBase(ABC):
     
     @staticmethod
     @abstractmethod
-    def create_from_points(points):
+    def fit(points):
         pass
 
         

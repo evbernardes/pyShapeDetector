@@ -86,7 +86,7 @@ class RANSAC_Base(ABC):
         return info
 
     def get_model(self, points, samples):
-        shape = self.primitive.create_from_points(points[samples])
+        shape = self.primitive.fit(points[samples])
         if shape is None:
             return None
 
@@ -259,7 +259,7 @@ class RANSAC_Base(ABC):
         if filter_model:
             # ... and then find the final model using the final inliers
             t_ = time.time()
-            shape_best = primitive.create_from_points(points[inliers_final])
+            shape_best = primitive.fit(points[inliers_final])
             if shape_best is None:
                 raise ValueError('None value found for shape at the last '
                                  'filtering step, this should not happen')
