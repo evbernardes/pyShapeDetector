@@ -270,12 +270,13 @@ class RANSAC_Base(ABC):
                                  'filtering step, this should not happen')
             
         if debug:
-            print('times:')
+            print('\nFinished!')
+            print('Execution time:')
             for t_ in times:
                 print(f'{t_} : {times[t_]:.5f}s')
-            print(f'{num_points} points and {num_inliers} inliers')
-            print(f'fitness: {int(100*info_final["fitness"])}%')
-            print(f'rmse_distances: {info_final["rmse_distances"]}')
-            print(f'rmse_angles: {info_final["rmse_angles"]}')
+            print(f'{num_points} points and {num_inliers} inliers, '
+                  '{int(100*info_final["fitness"])}% fitness')
+            print(f'RMSE for distances: {info_final["rmse_distances"]}')
+            print(f'RMSE for angles: {info_final["rmse_angles"]}\n')
 
         return shape_best, inliers_final, info_final
