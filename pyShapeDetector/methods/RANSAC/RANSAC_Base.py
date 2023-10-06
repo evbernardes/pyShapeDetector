@@ -130,8 +130,6 @@ class RANSAC_Base(ABC):
         probabilities = np.zeros(len(distances))
 
         mask = distances < self.threshold_distance
-        # probabilities[mask] = 1 - distances[mask] / self.threshold_distance
-
         if angles is not None:
             mask *= angles < self.threshold_angle
 
