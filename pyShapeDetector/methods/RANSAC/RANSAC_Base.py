@@ -74,12 +74,6 @@ class RANSAC_Base(ABC):
     def compare_info(self, info, info_best):
         pass
     
-    def get_error(self, distances, angles=None):
-        return distances.dot(distances)
-    
-    def get_rmse(self, distances, angles=None):
-        return np.sqrt(self.get_error(distances, angles)) / len(distances)
-    
     def termination_criterion(self, info):
         if info['fitness'] > 1.0:
             return 0
@@ -94,11 +88,20 @@ class RANSAC_Base(ABC):
                  num_points=None, num_inliers=None, 
                  distances=None, angles=None):
         if num_points is None or num_inliers is None or distances is None:
-            info = {'num_inliers': 0, 'fitness': 0, 'rmse': None}
-        else: 
+            info = {'num_inliers': 0, 'fitness': 0, 
+                    'rmse_distances': 0, 'rmse_angles': 0}
+            
+        else:
+            rmse_distances = np.sqrt(distances.dot(distances)) / len(distances)
+            if angles is not None:
+                rmse_angles = np.sqrt(angles.dot(angles)) / len(angles)
+            else:
+                rmse_angles = None
             info = {'num_inliers': num_inliers,
                     'fitness': num_inliers / num_points,
-                    'rmse': self.get_rmse(distances)}
+                    'rmse_distances': rmse_distances,
+                    'rmse_angles': rmse_angles}
+            
         info['break_iteration'] = self.termination_criterion(info)
         return info
 
@@ -272,6 +275,7 @@ class RANSAC_Base(ABC):
                 print(f'{t_} : {times[t_]:.5f}s')
             print(f'{num_points} points and {num_inliers} inliers')
             print(f'fitness: {int(100*info_final["fitness"])}%')
-            print(f'rmse: {info_final["rmse"]}')
+            print(f'rmse_distances: {info_final["rmse_distances"]}')
+            print(f'rmse_angles: {info_final["rmse_angles"]}')
 
         return shape_best, inliers_final, info_final
