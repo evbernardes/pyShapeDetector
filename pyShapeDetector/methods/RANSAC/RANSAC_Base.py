@@ -74,6 +74,22 @@ class RANSAC_Base(ABC):
     def compare_info(self, info, info_best):
         pass
     
+    def get_error(self, distances, angles=None):
+        return distances.dot(distances)
+    
+    def get_rmse(self, distances, angles=None):
+        return np.sqrt(self.get_error(distances, angles)) / len(distances)
+    
+    def termination_criterion(self, info):
+        if info['fitness'] > 1.0:
+            return 0
+        
+        den = np.log(1 - info['fitness'] ** self.ransac_n)
+        if den:
+            return min(self.num_iterations, np.log(1 - self.probability) / den)
+        else:
+            return self.num_iterations
+    
     def get_info(self, 
                  num_points=None, num_inliers=None, 
                  distances=None, angles=None):
@@ -83,6 +99,7 @@ class RANSAC_Base(ABC):
             info = {'num_inliers': num_inliers,
                     'fitness': num_inliers / num_points,
                     'rmse': self.get_rmse(distances)}
+        info['break_iteration'] = self.termination_criterion(info)
         return info
 
     def get_model(self, points, samples):
@@ -156,12 +173,6 @@ class RANSAC_Base(ABC):
         if angles is not None:
             is_inlier *= (angles < self.threshold_angle)
         return np.where(is_inlier)[0]
-    
-    def get_error(self, distances, angles=None):
-        return distances.dot(distances)
-    
-    def get_rmse(self, distances, angles=None):
-        return np.sqrt(self.get_error(distances, angles)) / len(distances)
 
     def fit(self, points, normals=None, debug=False, filter_model=True):
         primitive = self.primitive
@@ -181,12 +192,12 @@ class RANSAC_Base(ABC):
         if inliers_min and num_points < inliers_min:
             if debug:
                 print('Remaining points less than inliers_min, stopping')
-            return None, None, 0
+            return None, None, self.get_info(None)
 
+        # info dict stores information used to decide which model is best
         info_best = self.get_info(None)
         
         shape_best = None
-        break_iteration = 18446744073709551615
         iteration_count = 0
 
         times = {'get_inliers_and_error': 0,
@@ -196,7 +207,7 @@ class RANSAC_Base(ABC):
 
         for itr in range(self.num_iterations):
 
-            if (iteration_count > break_iteration):
+            if (iteration_count > info_best['break_iteration']):
                 continue
 
             start_itr = time.time()
@@ -223,18 +234,8 @@ class RANSAC_Base(ABC):
             info = self.get_info(num_points, num_inliers, distances, angles)
 
             if self.compare_info(info, info_best):
-                
                 info_best = info
                 shape_best = shape
-
-                if (info['fitness'] < 1.0):
-                    num = np.log(1 - self.probability)
-                    den = np.log(1 - info['fitness'] ** self.ransac_n)
-
-                    break_iteration = min(self.num_iterations, num / den) \
-                        if den else self.num_iterations
-                else:
-                    break_iteration = 0
 
             iteration_count += 1
 
