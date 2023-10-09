@@ -61,7 +61,7 @@ plane_detector = method(Plane, num_iterations=50,
                         max_point_distance=0.5,
                         inliers_min=inliers_min)
 
-cylinder_detector = method(Cylinder, num_iterations=50,
+cylinder_detector = method(Cylinder, num_iterations=5,
                            threshold_angle=40,
                            max_point_distance=0.5,
                            inliers_min=inliers_min)
@@ -133,6 +133,10 @@ for idx in range(len(pcds_segmented)):
     pcds.append(pcd_)
 
 print(f'{method._type} finished after {time.time() - start:.5f}s')
+print('Time spend with each detector:')
+for d in detectors:
+    name = d.primitive.name
+    print(f'- {name}: {times[name]:.3f}s')
 #%%
 # draw_geometries(pcds_segmented,
 #                 lookat=[0, 0, 1],
