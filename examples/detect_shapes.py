@@ -58,12 +58,12 @@ sphere_detector = method(Sphere, num_iterations=50,
 
 plane_detector = method(Plane, num_iterations=50,
                         threshold_angle=50,
-                        max_point_distance=0.5,
+                        # max_point_distance=0.5,
                         inliers_min=inliers_min)
 
 cylinder_detector = method(Cylinder, num_iterations=15,
                            threshold_angle=30,
-                           max_point_distance=0.5,
+                           # max_point_distance=0.5,
                            inliers_min=inliers_min)
 
 detectors = [sphere_detector, plane_detector, cylinder_detector]
