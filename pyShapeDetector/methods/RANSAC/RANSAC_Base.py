@@ -78,7 +78,7 @@ class RANSAC_Base(ABC):
             return 0
         
         den = np.log(1 - metrics['fitness'] ** self.ransac_n)
-        if den:
+        if den != 0:
             return min(self.num_iterations, np.log(1 - self.probability) / den)
         else:
             return self.num_iterations
