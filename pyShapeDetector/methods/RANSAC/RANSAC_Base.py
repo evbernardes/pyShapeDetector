@@ -221,16 +221,16 @@ class RANSAC_Base(ABC):
 
             if (iteration_count > metrics_best['break_iteration']):
                 
-                if debug:
-                    print('Breaking iteration.')
+                # if debug:
+                    # print('Breaking iteration.')
                 continue
 
             start_itr = time.time()
 
             samples = self.get_samples(points, num_points)
             if samples is None:
-                if debug:
-                    print('Sampling not possible.')
+                # if debug:
+                    # print('Sampling not possible.')
                 continue
             
             t_ = time.time()
@@ -238,8 +238,8 @@ class RANSAC_Base(ABC):
             times['get_model'] += time.time() - t_
 
             if shape is None:
-                if debug:
-                    print('Model not found.')
+                # if debug:
+                    # print('Model not found.')
                 continue
             # elif debug:
                 # print(f'Fitted model = {shape.model}')
@@ -253,8 +253,8 @@ class RANSAC_Base(ABC):
 
             if num_inliers == 0 or (inliers_min and num_inliers < inliers_min):
                 
-                if debug:
-                    print('No inliers.')
+                # if debug:
+                    # print('No inliers.')
                 continue
             
             metrics = self.get_metrics(num_points, num_inliers, 
@@ -293,7 +293,7 @@ class RANSAC_Base(ABC):
             for t_ in times:
                 print(f'{t_} : {times[t_]:.5f}s')
             print(f'{num_points} points and {num_inliers} inliers, '
-                  '{int(100*metrics_final["fitness"])}% fitness')
+                  f'{int(100*metrics_final["fitness"])}% fitness')
             print(f'RMSE for distances: {metrics_final["rmse_distances"]}')
             print(f'RMSE for angles: {metrics_final["rmse_angles"]}\n')
 
