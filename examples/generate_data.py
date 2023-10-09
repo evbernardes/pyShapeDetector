@@ -20,11 +20,11 @@ filedir = Path('./data')
 num_points = 2000
 translate_lim = [-15, 15]
 
-num_planes = 1
+num_planes = 0
 size_lim = [5, 10]
-num_spheres = 1
+num_spheres = 0
 radius_lim = [1, 3]
-num_cylinders = 3
+num_cylinders = 1
 height_lim = [5, 8]
 
 # noise = 0.1

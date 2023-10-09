@@ -9,3 +9,4 @@ Created on Tue Sep 26 16:02:34 2023
 from .primitivebase import PrimitiveBase
 from .plane import Plane
 from .sphere import Sphere
+from .cylinder import Cylinder

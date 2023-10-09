@@ -214,15 +214,23 @@ class RANSAC_Base(ABC):
         times = {'get_inliers_and_error': 0,
                  'get_model': 0}
         
+        if debug:
+            print('Starting iteration...')
+        
         for itr in range(self.num_iterations):
 
             if (iteration_count > metrics_best['break_iteration']):
+                
+                if debug:
+                    print('Breaking iteration.')
                 continue
 
             start_itr = time.time()
 
             samples = self.get_samples(points, num_points)
             if samples is None:
+                if debug:
+                    print('Sampling not possible.')
                 continue
             
             t_ = time.time()
@@ -230,7 +238,11 @@ class RANSAC_Base(ABC):
             times['get_model'] += time.time() - t_
 
             if shape is None:
+                if debug:
+                    print('Model not found.')
                 continue
+            # elif debug:
+                # print(f'Fitted model = {shape.model}')
 
             t_ = time.time()
             distances, angles = shape.get_residuals(points, normals)
@@ -240,6 +252,9 @@ class RANSAC_Base(ABC):
             times['get_inliers_and_error'] += time.time() - t_
 
             if num_inliers == 0 or (inliers_min and num_inliers < inliers_min):
+                
+                if debug:
+                    print('No inliers.')
                 continue
             
             metrics = self.get_metrics(num_points, num_inliers, 
