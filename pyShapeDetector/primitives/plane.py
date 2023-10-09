@@ -19,15 +19,18 @@ class Plane(PrimitiveBase):
     
     _fit_n_min = 3
     _model_args_n = 4
-    name = 'plane' 
+    name = 'plane'
+    
+    @property
+    def normal(self):
+        return np.array(self.model[:3])
     
     def get_distances(self, points):
         points = np.asarray(points)
-        return np.abs(points.dot(self.model[:3]) + self.model[3])
+        return np.abs(points.dot(self.normal) + self.model[3])
     
     def get_normals(self, points):
-        normal = self.model[:3]
-        return np.tile(normal, (len(points), 1))
+        return np.tile(self.normal, (len(points), 1))
     
     def get_mesh(self, points):
         
@@ -66,7 +69,7 @@ class Plane(PrimitiveBase):
         # model[:3] /= np.linalg.norm(model[:3])
         distances = self.get_distances(points)
         pcd_flat.points = Vector3dVector(
-            points - distances[..., np.newaxis] * self.model[:3])
+            points - distances[..., np.newaxis] * self.normal)
         return pcd_flat.compute_convex_hull(joggle_inputs=True)[0]
     
     def get_square_mesh(self, pcd):
@@ -75,13 +78,12 @@ class Plane(PrimitiveBase):
         bb = pcd.get_axis_aligned_bounding_box()
         half_length = max(bb.max_bound - bb.min_bound) / 2
         
-        normal = self.model[:3]
-        if list(normal) == [0, 0, 1]: 
-            v1 = np.cross([0, 1, 0], normal)
+        if list(self.normal) == [0, 0, 1]: 
+            v1 = np.cross([0, 1, 0], self.normal)
         else:
-            v1 = np.cross([0, 0, 1], normal)
+            v1 = np.cross([0, 0, 1], self.normal)
             
-        v2 = np.cross(v1, normal)
+        v2 = np.cross(v1, self.normal)
         v1 /= np.linalg.norm(v1)
         v2 /= np.linalg.norm(v2)
 
