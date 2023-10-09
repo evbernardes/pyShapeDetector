@@ -92,6 +92,33 @@ def get_random_planes(num_planes, translate_lim, size_lim, num_points=1000, nois
         models.append(model)
     return pcds, models
 
+def get_random_cylinders(num_cylinders, translate_lim, radius_lim, height_lim, num_points=1000, noise=0):
+    pcds = []
+    models = []
+    for idx in range(num_cylinders):
+        
+        height = random.uniform(*height_lim)
+        radius = random.uniform(*radius_lim)
+        mesh = TriangleMesh.create_cylinder(radius=radius, height=height)
+        
+        
+        axis = normalise(np.random.random(3))
+        halfway_axis = normalise(axis + np.array([0, 0, 1]))[..., np.newaxis]
+        rot = 2 * halfway_axis * halfway_axis.T - np.eye(3)
+        
+        
+        translation = translate_lim[0] + \
+            (translate_lim[1]-translate_lim[0]) * np.random.random(3)
+            
+        mesh.rotate(rot)
+        mesh.translate(translation)
+        
+        model = list(translation) + list(axis) + [radius]
+            
+        pcds.append(mesh.sample_points_uniformly(num_points))
+        models.append(model)
+    return pcds, models
+
 def center_pointcloud(source):
     points = source.points - np.mean(source.points, axis=0)
     source.points = o3d.utility.Vector3dVector(points)
