@@ -101,14 +101,14 @@ def get_random_cylinders(num_cylinders, translate_lim, radius_lim, height_lim, n
         radius = random.uniform(*radius_lim)
         mesh = TriangleMesh.create_cylinder(radius=radius, height=height)
         
-        # remove top and bottom planes
-        bbox = mesh.get_axis_aligned_bounding_box()
-        x, y, z = bbox.min_bound
-        bbox_min = [x, y, z+0.001]
-        x, y, z = bbox.max_bound
-        bbox_max = [x, y, z-0.001]
-        bbox = o3d.geometry.AxisAlignedBoundingBox(bbox_min, bbox_max)
-        mesh = mesh.crop(bbox)
+        # # remove top and bottom planes
+        # bbox = mesh.get_axis_aligned_bounding_box()
+        # x, y, z = bbox.min_bound
+        # bbox_min = [x, y, z+0.001]
+        # x, y, z = bbox.max_bound
+        # bbox_max = [x, y, z-0.001]
+        # bbox = o3d.geometry.AxisAlignedBoundingBox(bbox_min, bbox_max)
+        # mesh = mesh.crop(bbox)
         
         axis = normalise(np.random.random(3))
         halfway_axis = normalise(axis + np.array([0, 0, 1]))[..., np.newaxis]

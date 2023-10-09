@@ -215,7 +215,7 @@ class RANSAC_Base(ABC):
                  'get_model': 0}
         
         if debug:
-            print('Starting iteration...')
+            print(f'Starting loop, fitting {primitive.name}...')
         
         for itr in range(self.num_iterations):
 
@@ -288,7 +288,7 @@ class RANSAC_Base(ABC):
                              'filtering step, this should not happen')
             
         if debug:
-            print('\nFinished!')
+            print(f'\nFinished fitting {primitive.name}!')
             print('Execution time:')
             for t_ in times:
                 print(f'{t_} : {times[t_]:.5f}s')

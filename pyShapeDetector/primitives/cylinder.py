@@ -79,6 +79,15 @@ class Cylinder(PrimitiveBase):
         
         mesh = TriangleMesh.create_cylinder(radius=radius, height=height)
         
+        # # remove top and bottom planes
+        # bbox = mesh.get_axis_aligned_bounding_box()
+        # x, y, z = bbox.min_bound
+        # bbox_min = [x, y, z+0.00001]
+        # x, y, z = bbox.max_bound
+        # bbox_max = [x, y, z-0.00001]
+        # bbox = o3d.geometry.AxisAlignedBoundingBox(bbox_min, bbox_max)
+        # mesh = mesh.crop(bbox)
+        
         halfway_axis = (np.array([0, 0, 1]) + axis)[..., np.newaxis]
         halfway_axis /= np.linalg.norm(halfway_axis)
         rot = 2 * halfway_axis * halfway_axis.T - np.eye(3)

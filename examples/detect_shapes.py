@@ -25,7 +25,7 @@ methods = [RANSAC_Classic,
            LDSAC]
 
 #%% Parameters and input
-method = methods[3]
+method = methods[0]
 filedir = Path('./data')
 filename = '3planes_3spheres_3cylinders'
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
@@ -61,8 +61,8 @@ plane_detector = method(Plane, num_iterations=50,
                         max_point_distance=0.5,
                         inliers_min=inliers_min)
 
-cylinder_detector = method(Cylinder, num_iterations=5,
-                           threshold_angle=40,
+cylinder_detector = method(Cylinder, num_iterations=15,
+                           threshold_angle=30,
                            max_point_distance=0.5,
                            inliers_min=inliers_min)
 
