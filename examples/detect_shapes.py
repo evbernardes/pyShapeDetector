@@ -53,7 +53,7 @@ inliers_min = 200
 
 sphere_detector = method(Sphere, num_iterations=50,
                          threshold_angle=2,
-                         model_max=[None, None, None, 10],
+                         model_max=Sphere.max_radius(10),
                          inliers_min=inliers_min)
 
 plane_detector = method(Plane, num_iterations=50,

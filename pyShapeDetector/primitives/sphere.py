@@ -28,6 +28,14 @@ class Sphere(PrimitiveBase):
     def center(self):
         return np.array(self.model[:3])
     
+    @staticmethod
+    def max_radius(max_radius):
+        return [None, None, None, max_radius]
+    
+    @staticmethod
+    def min_radius(min_radius):
+        return [None, None, None, min_radius]
+    
     def get_distances(self, points):
         points = np.asarray(points)
         model = self.model
