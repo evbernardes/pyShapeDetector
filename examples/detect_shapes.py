@@ -67,6 +67,7 @@ cylinder_detector = method(Cylinder, num_iterations=50,
                            inliers_min=inliers_min)
 
 detectors = [sphere_detector, plane_detector, cylinder_detector]
+times = {d.primitive._name: 0 for d in detectors}
 
 shapes_detected = []
 meshes_detected = []
@@ -89,8 +90,10 @@ for idx in range(len(pcds_segmented)):
         output_metrics = []
         
         for detector in detectors:
+            start = time.time()
             shape, inliers, metrics = detector.fit(
-                pcd_.points, debug=False, normals=normals)
+                pcd_.points, debug=True, normals=normals)
+            times[detector.primitive._name] += time.time() - start
             output_shapes.append(shape)
             output_inliers.append(inliers)
             output_metrics.append(metrics)
