@@ -20,6 +20,14 @@ class Sphere(PrimitiveBase):
     _model_args_n = 4
     _name = 'sphere'
     
+    @property
+    def radius(self):
+        return self.model[-1]
+    
+    @property
+    def center(self):
+        return np.array(self.model[:3])
+    
     def get_distances(self, points):
         points = np.asarray(points)
         model = self.model
