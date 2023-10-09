@@ -16,6 +16,7 @@ from open3d.visualization import draw_geometries
 
 # from helpers import color_blue, color_gray, color_red, color_yellow
 from pyShapeDetector.primitives import Sphere, Plane, Cylinder
+
 from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, BDSAC, LDSAC
 methods = [RANSAC_Classic, 
            RANSAC_Weighted,
@@ -24,14 +25,14 @@ methods = [RANSAC_Classic,
            LDSAC]
 
 #%% Parameters and input
-method = methods[0]
+method = methods[3]
 filedir = Path('./data')
-filename = '2cylinders'
+filename = '3planes_3spheres_3cylinders'
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
 # draw(pcd_full)
 
 # Detection of clusters
-labels = pcd_full.cluster_dbscan(eps=0.9, min_points=50)#, print_progress=True))
+labels = pcd_full.cluster_dbscan(eps=1.0, min_points=20)#, print_progress=True))
 
 labels = np.array(labels)
 max_label = labels.max()
@@ -48,16 +49,24 @@ for label in set(labels):
     pcds_segmented.append(pcd_full.select_by_index(idx))
 
 #%%
-inliers_min = 300
+inliers_min = 200
 
-cylinder_detector = method(Cylinder, 
-                           threshold_distance=0.2,
-                           threshold_angle=15,
-                           ransac_n=7, 
-                           num_iterations=50, probability=0.9,
+sphere_detector = method(Sphere, num_iterations=50,
+                         threshold_angle=2,
+                         model_max=[None, None, None, 10],
+                         inliers_min=inliers_min)
+
+plane_detector = method(Plane, num_iterations=50,
+                        threshold_angle=50,
+                        max_point_distance=0.5,
+                        inliers_min=inliers_min)
+
+cylinder_detector = method(Cylinder, num_iterations=50,
+                           threshold_angle=40,
+                           max_point_distance=0.5,
                            inliers_min=inliers_min)
 
-detectors = [cylinder_detector]
+detectors = [sphere_detector, plane_detector, cylinder_detector]
 
 shapes_detected = []
 meshes_detected = []
@@ -93,9 +102,9 @@ for idx in range(len(pcds_segmented)):
             break
         
         max_fitness = max(output_fitness)
-        # if max_fitness < 0.1:
-        #     print('Fitness to small, breaking...')
-        #     break
+        if max_fitness < 0.1:
+            print('Fitness to small, breaking...')
+            break
         
         idx = np.where(np.array(output_fitness) == max_fitness)[0][0]
         shape = output_shapes[idx]
