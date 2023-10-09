@@ -19,7 +19,7 @@ class Plane(PrimitiveBase):
     
     _fit_n_min = 3
     _model_args_n = 4
-    _name = 'plane' 
+    name = 'plane' 
     
     def get_distances(self, points):
         points = np.asarray(points)

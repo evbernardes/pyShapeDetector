@@ -67,7 +67,7 @@ cylinder_detector = method(Cylinder, num_iterations=50,
                            inliers_min=inliers_min)
 
 detectors = [sphere_detector, plane_detector, cylinder_detector]
-times = {d.primitive._name: 0 for d in detectors}
+times = {d.primitive.name: 0 for d in detectors}
 
 shapes_detected = []
 meshes_detected = []
@@ -93,7 +93,7 @@ for idx in range(len(pcds_segmented)):
             start = time.time()
             shape, inliers, metrics = detector.fit(
                 pcd_.points, debug=True, normals=normals)
-            times[detector.primitive._name] += time.time() - start
+            times[detector.primitive.name] += time.time() - start
             output_shapes.append(shape)
             output_inliers.append(inliers)
             output_metrics.append(metrics)
@@ -112,7 +112,7 @@ for idx in range(len(pcds_segmented)):
         idx = np.where(np.array(output_fitness) == max_fitness)[0][0]
         shape = output_shapes[idx]
         inliers = output_inliers[idx]
-        print(f'- {shape._name} found!')
+        print(f'- {shape.name} found!')
 
         pcd_primitive = pcd_.select_by_index(inliers)
         pcd_ = pcd_.select_by_index(inliers, invert=True)
@@ -122,7 +122,7 @@ for idx in range(len(pcds_segmented)):
         mesh.paint_uniform_color(np.random.random(3))
         meshes_detected.append(mesh)
         
-        window_name = f'{shape._name}:{shape.model}, {len(inliers)} inliers'
+        window_name = f'{shape.name}:{shape.model}, {len(inliers)} inliers'
         
         shapes_detected.append({
             'shape': shape,

@@ -18,7 +18,7 @@ class Sphere(PrimitiveBase):
     
     _fit_n_min = 4
     _model_args_n = 4
-    _name = 'sphere'
+    name = 'sphere'
     
     @property
     def radius(self):

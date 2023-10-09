@@ -19,7 +19,7 @@ class Template(PrimitiveBase):
     
     _fit_n_min = 0
     _model_args_n = 0
-    _name = 'template' 
+    name = 'template' 
     
     def get_distances(self, points):
         points = np.asarray(points)

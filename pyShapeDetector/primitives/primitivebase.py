@@ -13,9 +13,24 @@ import open3d as o3d
     
 class PrimitiveBase(ABC):
     
+    @property
+    @abstractmethod
+    def _fit_n_min(self):
+        pass
+
+    @property
+    @abstractmethod
+    def _model_args_n(self):
+        pass
+    
+    @property
+    @abstractmethod
+    def name(self):
+        pass
+
     def __init__(self, model):
         if len(model) < self._model_args_n:
-            raise ValueError(f'{self._name.capitalize()} primitives need take '
+            raise ValueError(f'{self.name.capitalize()} primitives take '
                              f'{self._model_args_n} elements, got {model}')
         self.model = model
     

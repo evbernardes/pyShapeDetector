@@ -21,7 +21,7 @@ class Cylinder(PrimitiveBase):
     
     _fit_n_min = 6
     _model_args_n = 7
-    _name = 'cylinder' 
+    name = 'cylinder' 
     
     @property
     def point(self):
