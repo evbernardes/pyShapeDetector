@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import open3d as o3d
 from open3d.visualization import draw_geometries
+from open3d.utility import Vector3dVector
 
 # from helpers import color_blue, color_gray, color_red, color_yellow
 from pyShapeDetector.primitives import Sphere, Plane, Cylinder
@@ -25,11 +26,18 @@ methods = [RANSAC_Classic,
            LDSAC]
 
 #%% Parameters and input
-method = methods[0]
+method = methods[3]
 filedir = Path('./data')
 filename = '3planes_3spheres_3cylinders'
+noise_max = 0.5
+
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
-# draw(pcd_full)
+# draw_geometries([pcd_full])
+
+noise = noise_max * np.random.random(np.shape(pcd_full.points))
+pcd_full.points = Vector3dVector(pcd_full.points + noise)
+draw_geometries([pcd_full])
+# pcd_noisy = copy.copy(pcd_full)
 
 # Detection of clusters
 labels = pcd_full.cluster_dbscan(eps=1.0, min_points=20)#, print_progress=True))
@@ -40,7 +48,7 @@ pcd_segmented = copy.copy(pcd_full)
 print(f"\nPoint cloud has {len(set(labels))} clusters!\n")
 colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
 colors[labels < 0] = 0
-pcd_segmented.colors = o3d.utility.Vector3dVector(colors[:, :3])
+pcd_segmented.colors = Vector3dVector(colors[:, :3])
 # o3d.visualization.draw_geometries([pcd_segmented])
 
 pcds_segmented = []
@@ -50,18 +58,19 @@ for label in set(labels):
 
 #%%
 inliers_min = 200
+num_iterations = 100
 
-sphere_detector = method(Sphere, num_iterations=50,
+sphere_detector = method(Sphere, num_iterations=num_iterations,
                          threshold_angle=2,
                          model_max=Sphere.max_radius(10),
                          inliers_min=inliers_min)
 
-plane_detector = method(Plane, num_iterations=50,
+plane_detector = method(Plane, num_iterations=num_iterations,
                         threshold_angle=50,
                         # max_point_distance=0.5,
                         inliers_min=inliers_min)
 
-cylinder_detector = method(Cylinder, num_iterations=50,
+cylinder_detector = method(Cylinder, num_iterations=num_iterations,
                            threshold_angle=30,
                            # max_point_distance=0.5,
                            inliers_min=inliers_min)
