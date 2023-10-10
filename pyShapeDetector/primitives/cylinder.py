@@ -61,56 +61,90 @@ class Cylinder(PrimitiveBase):
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
     
+    @property
+    def rotation_from_axis(self):
+        axis = self.axis
+        if axis.dot([0, 0, 1]) == 0:
+            axis = -axis
+        halfway_axis = (np.array([0, 0, 1]) + axis)[..., np.newaxis]
+        halfway_axis /= np.linalg.norm(halfway_axis)
+        return 2 * halfway_axis * halfway_axis.T - np.eye(3)
+    
     def get_mesh(self, points):
         
         points = np.asarray(points)
-        point_in_line = np.array(self.model[:3])
-        axis = np.array(self.model[3:6])
-        center = point_in_line + axis / 2
-        axis /= np.linalg.norm(axis)
-        radius = self.model[-1]
         
-        if axis.dot([0, 0, 1]) == 0:
-            axis = -axis
-        
-        diff = points - point_in_line
-        projection = np.dot(diff, axis)
-        height = max(projection) - min(projection)
-        
-        mesh = TriangleMesh.create_cylinder(radius=radius, height=height)
-        
-        # # remove top and bottom planes
-        # bbox = mesh.get_axis_aligned_bounding_box()
-        # x, y, z = bbox.min_bound
-        # bbox_min = [x, y, z+0.00001]
-        # x, y, z = bbox.max_bound
-        # bbox_max = [x, y, z-0.00001]
-        # bbox = o3d.geometry.AxisAlignedBoundingBox(bbox_min, bbox_max)
-        # mesh = mesh.crop(bbox)
-        
-        halfway_axis = (np.array([0, 0, 1]) + axis)[..., np.newaxis]
-        halfway_axis /= np.linalg.norm(halfway_axis)
-        rot = 2 * halfway_axis * halfway_axis.T - np.eye(3)
-        
-        mesh.rotate(rot)
-        mesh.translate(center)
+        mesh = TriangleMesh.create_cylinder(radius=self.radius, 
+                                            height=np.linalg.norm(self.vector))
+
+        mesh.rotate(self.rotation_from_axis)
+        mesh.translate(self.center)
         
         return mesh
     
     @staticmethod
-    def fit(points):
-        # points_ = np.asarray(points)[samples]
+    def fit(points, normals=None):
+        points = np.asarray(points)
         
         num_points = len(points)
         
         if num_points < 6:
             raise ValueError('A minimun of 6 points are needed to fit a '
                              'cylinder')
+            
+        if normals is not None:
+            # use http://dx.doi.org/10.1016/j.cag.2014.09.027
+            normals = np.asarray(normals)
+            if len(normals) != num_points:
+                raise ValueError('Different number of points and normals')
         
-        solution = skcylinder.best_fit(points)
+            eigval, eigvec = PrimitiveBase.get_normal_eig(normals)
+   
+            idx = eigval == min(eigval)
+            if sum(idx) != 1:
+                return None
+            
+            axis = eigvec.T[idx][0]
+            ax, ay = eigvec.T[~idx]
+            
+            px_ = points.dot(ax)
+            py_ = points.dot(ay)
+            pz_ = points.dot(axis)
+            
+            proj = np.array([px_, py_]).T
+            b = sum(proj.T * proj.T)
+            b = b[0] - b[1:]
+            A = proj[0] - proj[1:]
+            
+            AT = A.T
+            A = AT @ A
+            det = np.linalg.det(A)
+            if det == 0:
+                return None
+            
+            A_ = np.linalg.inv(A) @ AT
+            X = 0.5 * A_ @ b
+            
+            idx = np.where(pz_ == min(pz_))[0][0]
+            p0 = points[idx]
+            
+            point = X[0] * ax + X[1] * ay + p0.dot(axis) * axis
+
+            
+            radiuses = np.linalg.norm(proj - X, axis=1)
+            radius = [sum(radiuses) / num_points]
+            
+            point = list(point)
+            vector = list(axis * (max(pz_) - min(pz_)))
+            
+            # print(f'v: {vector}, p: {point}, r:{radius}')
         
-        point = list(solution.point)
-        vector = list(solution.vector)
-        radius = [solution.radius]
+        else:
+            # if no normals, use scikit spatial, slower
+            solution = skcylinder.best_fit(points)
+            
+            point = list(solution.point)
+            vector = list(solution.vector)
+            radius = [solution.radius]
         
         return Cylinder(point+vector+radius) 

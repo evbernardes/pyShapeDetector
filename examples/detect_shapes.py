@@ -61,7 +61,7 @@ plane_detector = method(Plane, num_iterations=50,
                         # max_point_distance=0.5,
                         inliers_min=inliers_min)
 
-cylinder_detector = method(Cylinder, num_iterations=15,
+cylinder_detector = method(Cylinder, num_iterations=50,
                            threshold_angle=30,
                            # max_point_distance=0.5,
                            inliers_min=inliers_min)

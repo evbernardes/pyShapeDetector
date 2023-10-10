@@ -29,7 +29,8 @@ method = methods[0]
 filedir = Path('./data')
 filename = '1cylinders'
 pcd = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
-normals = pcd.estimate_normals()
+pcd.estimate_normals()
+normals = pcd.normals
 
 #%%
 inliers_min = 200
@@ -39,13 +40,35 @@ detector = method(Cylinder, num_iterations=15,
                   # max_point_distance=0.5,
                   inliers_min=inliers_min)
 
-shape, inliers, metrics = detector.fit(pcd.points, debug=False, normals=normals)
+        
+
+
+shape, inliers, metrics = detector.fit(pcd.points, debug=True, normals=normals)
 pcd_shape = pcd.select_by_index(inliers)
 pcd_rest = pcd.select_by_index(inliers, invert=True)
 mesh = shape.get_mesh(pcd_shape.points)
 mesh.paint_uniform_color([1, 0, 0])
 
 draw_geometries([pcd]+[mesh])
-    
 draw_geometries([pcd_rest]+[mesh])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

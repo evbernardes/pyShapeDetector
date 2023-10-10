@@ -103,7 +103,7 @@ class Plane(PrimitiveBase):
         return TriangleMesh(vertices, triangles)
     
     @staticmethod
-    def fit(points):
+    def fit(points, normals=None):
         # points_ = np.asarray(points)[samples]
         
         num_points = len(points)

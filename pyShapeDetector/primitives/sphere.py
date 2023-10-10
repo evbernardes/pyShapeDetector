@@ -54,7 +54,7 @@ class Sphere(PrimitiveBase):
         return mesh
    
     @staticmethod
-    def fit(points):
+    def fit(points, normals=None):
         # points_ = np.asarray(points)[samples]
         
         num_points = len(points)

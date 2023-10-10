@@ -104,8 +104,9 @@ class RANSAC_Base(ABC):
         metrics['break_iteration'] = self.termination_criterion(metrics)
         return metrics
 
-    def get_model(self, points, samples):
-        shape = self.primitive.fit(points[samples])
+    def get_model(self, points, normals, samples):
+        n = None if normals is None else normals[samples]
+        shape = self.primitive.fit(points[samples], n)
         
         if shape is not None:
             model_array = np.array(shape.model)
@@ -234,7 +235,8 @@ class RANSAC_Base(ABC):
                 continue
             
             t_ = time.time()
-            shape = self.get_model(points, samples)
+            shape = self.get_model(points, normals, samples)
+            # print(shape)
             times['get_model'] += time.time() - t_
 
             if shape is None:
@@ -253,8 +255,8 @@ class RANSAC_Base(ABC):
 
             if num_inliers == 0 or (inliers_min and num_inliers < inliers_min):
                 
-                # if debug:
-                    # print('No inliers.')
+                if debug:
+                    print('No inliers.')
                 continue
             
             metrics = self.get_metrics(num_points, num_inliers, 
@@ -282,7 +284,8 @@ class RANSAC_Base(ABC):
 
         # ... and then find the final model using the final inliers
         # if filter_model:
-        shape_best = primitive.fit(points[inliers_final])
+        n = None if normals is None else normals[inliers_final]
+        shape_best = primitive.fit(points[inliers_final], n)
         if shape_best is None:
             raise ValueError('None value found for shape at the last '
                              'filtering step, this should not happen')
