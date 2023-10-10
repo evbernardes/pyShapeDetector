@@ -255,8 +255,8 @@ class RANSAC_Base(ABC):
 
             if num_inliers == 0 or (inliers_min and num_inliers < inliers_min):
                 
-                if debug:
-                    print('No inliers.')
+                # if debug:
+                    # print('No inliers.')
                 continue
             
             metrics = self.get_metrics(num_points, num_inliers, 
