@@ -11,6 +11,7 @@ import random
 import open3d as o3d
 from open3d.geometry import TriangleMesh
 from open3d.utility import Vector3dVector, Vector3iVector
+from open3d.visualization import draw_geometries
 import yaml
 from pathlib import Path
 from scipy.spatial.transform import Rotation
@@ -32,7 +33,31 @@ def draw(objs):
         if isinstance(objs[i], o3d.cuda.pybind.t.geometry.PointCloud):
             objs[i] = objs[i].to_legacy()
             
-    o3d.visualization.draw_geometries(objs)
+    draw_geometries(objs)
+    
+def draw_two_colomns(objs_left, objs_right, dist=5,
+                     lookat=[0, 0, 1], up=[0, 0, 1], front=[1, 0, 0], zoom=1):
+    
+    if type(objs_left) != list:
+        objs_left = [objs_left]
+    objs_left = copy.deepcopy(objs_left)
+    if type(objs_right) != list:
+        objs_right = [objs_right]
+    objs_right = copy.deepcopy(objs_right)
+    
+    translate = 0.5 * dist * np.cross(front, up)
+    for i in range(len(objs_left)):
+        objs_left[i].translate(-translate)
+    for i in range(len(objs_right)):
+        objs_right[i].translate(translate)
+        
+    draw_geometries(objs_right+objs_left,
+                    lookat=lookat,
+                    up=up,
+                    front=front,
+                    zoom=zoom
+                    )
+    
     
 def create_square_plane(normal, center, size=1.0):
     " Creates a square plane"

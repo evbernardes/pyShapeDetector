@@ -16,6 +16,7 @@ from open3d.visualization import draw_geometries
 from open3d.utility import Vector3dVector
 
 # from helpers import color_blue, color_gray, color_red, color_yellow
+from helpers import draw_two_colomns
 from pyShapeDetector.primitives import Sphere, Plane, Cylinder
 
 from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, BDSAC, LDSAC
@@ -59,19 +60,22 @@ for label in set(labels):
 #%%
 inliers_min = 500
 num_iterations = 100
+threshold_distance = 0.1 + noise_max
 
 sphere_detector = method(Sphere, num_iterations=num_iterations,
                          threshold_angle=2,
+                         threshold_distance=threshold_distance,
                          model_max=Sphere.maxmin_radius(10),
                          inliers_min=inliers_min)
 
 plane_detector = method(Plane, num_iterations=num_iterations,
                         threshold_angle=50,
-                        # max_point_distance=0.5,
+                        threshold_distance=threshold_distance,
                         inliers_min=inliers_min)
 
 cylinder_detector = method(Cylinder, num_iterations=num_iterations,
                            threshold_angle=30,
+                           threshold_distance=threshold_distance,
                            model_max=Cylinder.maxmin_radius(10),
                            # max_point_distance=0.5,
                            inliers_min=inliers_min)
@@ -139,8 +143,9 @@ for idx in range(len(pcds_segmented)):
             'pcd_primitive': pcd_primitive,
             'mesh': mesh})
         iteration += 1
-            
-    pcds.append(pcd_)
+    
+    if len(pcd_.points) != 0:
+        pcds.append(pcd_)
 
 print(f'{method._type} finished after {time.time() - start:.5f}s')
 print('Time spend with each detector:')
@@ -154,15 +159,26 @@ for d in detectors:
 #                 front=[1, 0, 0],
 #                 zoom=1)
 
-draw_geometries([pcd_full]+meshes_detected,
-                lookat=[0, 0, 1],
-                up=[0, 0, 1],
-                front=[1, 0, 0],
-                zoom=1)
+lookat=[0, 0, 1]
+up=[0, 0, 1]
+front=[1, 0, 0]
+zoom=1
+
+bbox = pcd_full.get_axis_aligned_bounding_box()
+delta = bbox.max_bound - bbox.min_bound
+
+draw_two_colomns([pcd_full], meshes_detected, 2*delta[1],
+                 lookat, up, front, zoom)
+
+# draw_geometries([pcd_full]+meshes_detected,
+#                 lookat=[0, 0, 1],
+#                 up=[0, 0, 1],
+#                 front=[1, 0, 0],
+#                 zoom=1)
     
-draw_geometries(meshes_detected+pcds,
-                lookat=[0, 0, 1],
-                up=[0, 0, 1],
-                front=[1, 0, 0],
-                zoom=1)
+# draw_geometries(meshes_detected+pcds,
+#                 lookat=[0, 0, 1],
+#                 up=[0, 0, 1],
+#                 front=[1, 0, 0],
+#                 zoom=1)
 
