@@ -45,8 +45,8 @@ class Cylinder(PrimitiveBase):
         return self.point + self.vector / 2
     
     @staticmethod
-    def maxmin_radius(value):
-        return PrimitiveBase.create_maxmin_list(
+    def limit_radius(value):
+        return PrimitiveBase.create_limits(
             Cylinder._model_args_n, 6, value)
     
     def _closest_to_line(self, points):

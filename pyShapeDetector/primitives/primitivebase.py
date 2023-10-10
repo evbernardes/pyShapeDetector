@@ -55,7 +55,7 @@ class PrimitiveBase(ABC):
             self.get_angles(points, normals)
             
     @staticmethod
-    def create_maxmin_list(args_n, idx, value):
+    def create_limits(args_n, idx, value):
         values = [None] * args_n
         values[idx] = value
         return values

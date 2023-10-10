@@ -37,8 +37,7 @@ pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd'))
 
 noise = noise_max * np.random.random(np.shape(pcd_full.points))
 pcd_full.points = Vector3dVector(pcd_full.points + noise)
-draw_geometries([pcd_full])
-# pcd_noisy = copy.copy(pcd_full)
+# draw_geometries([pcd_full])
 
 # Detection of clusters
 labels = pcd_full.cluster_dbscan(eps=1.0, min_points=20)#, print_progress=True))
@@ -50,7 +49,7 @@ print(f"\nPoint cloud has {len(set(labels))} clusters!\n")
 colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
 colors[labels < 0] = 0
 pcd_segmented.colors = Vector3dVector(colors[:, :3])
-# o3d.visualization.draw_geometries([pcd_segmented])
+o3d.visualization.draw_geometries([pcd_segmented])
 
 pcds_segmented = []
 for label in set(labels):
@@ -65,11 +64,11 @@ threshold_distance = 0.2 + noise_max
 sphere_detector = method(Sphere, num_iterations=num_iterations,
                          threshold_angle=30,
                          threshold_distance=threshold_distance,
-                         model_max=Sphere.maxmin_radius(15),
+                         model_max=Sphere.limit_radius(10),
                          inliers_min=inliers_min)
 
 plane_detector = method(Plane, num_iterations=num_iterations,
-                        threshold_angle=50,
+                        threshold_angle=20,
                         threshold_distance=threshold_distance,
                         # max_point_distance=0.5,
                         inliers_min=inliers_min)
@@ -77,7 +76,7 @@ plane_detector = method(Plane, num_iterations=num_iterations,
 cylinder_detector = method(Cylinder, num_iterations=num_iterations,
                            threshold_angle=20,
                            threshold_distance=threshold_distance,
-                           model_max=Cylinder.maxmin_radius(15),
+                           model_max=Cylinder.limit_radius(15),
                            # max_point_distance=0.5,
                            inliers_min=inliers_min)
 
