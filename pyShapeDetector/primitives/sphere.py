@@ -29,12 +29,8 @@ class Sphere(PrimitiveBase):
         return np.array(self.model[:3])
     
     @staticmethod
-    def max_radius(max_radius):
-        return [None, None, None, max_radius]
-    
-    @staticmethod
-    def min_radius(min_radius):
-        return [None, None, None, min_radius]
+    def maxmin_radius(value):
+        return PrimitiveBase.create_maxmin_list(Sphere._model_args_n, 3, value)
     
     def get_distances(self, points):
         points = np.asarray(points)

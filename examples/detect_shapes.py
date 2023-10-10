@@ -57,12 +57,12 @@ for label in set(labels):
     pcds_segmented.append(pcd_full.select_by_index(idx))
 
 #%%
-inliers_min = 200
+inliers_min = 500
 num_iterations = 100
 
 sphere_detector = method(Sphere, num_iterations=num_iterations,
                          threshold_angle=2,
-                         model_max=Sphere.max_radius(10),
+                         model_max=Sphere.maxmin_radius(10),
                          inliers_min=inliers_min)
 
 plane_detector = method(Plane, num_iterations=num_iterations,
@@ -72,6 +72,7 @@ plane_detector = method(Plane, num_iterations=num_iterations,
 
 cylinder_detector = method(Cylinder, num_iterations=num_iterations,
                            threshold_angle=30,
+                           model_max=Cylinder.maxmin_radius(10),
                            # max_point_distance=0.5,
                            inliers_min=inliers_min)
 
@@ -101,7 +102,7 @@ for idx in range(len(pcds_segmented)):
         for detector in detectors:
             start = time.time()
             shape, inliers, metrics = detector.fit(
-                pcd_.points, debug=True, normals=normals)
+                pcd_.points, debug=False, normals=normals)
             times[detector.primitive.name] += time.time() - start
             output_shapes.append(shape)
             output_inliers.append(inliers)

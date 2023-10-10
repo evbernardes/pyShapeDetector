@@ -53,6 +53,12 @@ class PrimitiveBase(ABC):
     def get_residuals(self, points, normals):
         return self.get_distances(points), \
             self.get_angles(points, normals)
+            
+    @staticmethod
+    def create_maxmin_list(args_n, idx, value):
+        values = [None] * args_n
+        values[idx] = value
+        return values
     
     @staticmethod
     def get_normal_eig(normals):
