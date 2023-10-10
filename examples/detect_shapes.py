@@ -30,7 +30,7 @@ methods = [RANSAC_Classic,
 method = methods[3]
 filedir = Path('./data')
 filename = '3planes_3spheres_3cylinders'
-noise_max = 0.5
+noise_max = 1
 
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
 # draw_geometries([pcd_full])
@@ -58,14 +58,14 @@ for label in set(labels):
     pcds_segmented.append(pcd_full.select_by_index(idx))
 
 #%%
-inliers_min = 500
+inliers_min = 1000
 num_iterations = 100
 threshold_distance = 0.1 + noise_max
 
 sphere_detector = method(Sphere, num_iterations=num_iterations,
-                         threshold_angle=2,
+                         threshold_angle=15,
                          threshold_distance=threshold_distance,
-                         model_max=Sphere.maxmin_radius(10),
+                         model_max=Sphere.maxmin_radius(15),
                          inliers_min=inliers_min)
 
 plane_detector = method(Plane, num_iterations=num_iterations,
@@ -74,9 +74,9 @@ plane_detector = method(Plane, num_iterations=num_iterations,
                         inliers_min=inliers_min)
 
 cylinder_detector = method(Cylinder, num_iterations=num_iterations,
-                           threshold_angle=30,
+                           threshold_angle=20,
                            threshold_distance=threshold_distance,
-                           model_max=Cylinder.maxmin_radius(10),
+                           model_max=Cylinder.maxmin_radius(15),
                            # max_point_distance=0.5,
                            inliers_min=inliers_min)
 
@@ -123,7 +123,12 @@ for idx in range(len(pcds_segmented)):
             print('Fitness to small, breaking...')
             break
         
-        idx = np.where(np.array(output_fitness) == max_fitness)[0][0]
+        try:
+            output_weight = [metrics['weight'] for metrics in output_metrics]
+            idx = np.where(np.array(output_weight) == max(output_weight))[0][0]
+        except KeyError:
+            idx = np.where(np.array(output_fitness) == max_fitness)[0][0]
+            
         shape = output_shapes[idx]
         inliers = output_inliers[idx]
         print(f'- {shape.name} found!')
@@ -167,7 +172,7 @@ zoom=1
 bbox = pcd_full.get_axis_aligned_bounding_box()
 delta = bbox.max_bound - bbox.min_bound
 
-draw_two_colomns([pcd_full], meshes_detected, 2*delta[1],
+draw_two_colomns([pcd_full], meshes_detected+pcds, delta[1],
                  lookat, up, front, zoom)
 
 # draw_geometries([pcd_full]+meshes_detected,
