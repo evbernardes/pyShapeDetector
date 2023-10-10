@@ -99,22 +99,20 @@ class Cylinder(PrimitiveBase):
                 raise ValueError('Different number of points and normals')
         
             eigval, eigvec = PrimitiveBase.get_normal_eig(normals)
-   
             idx = eigval == min(eigval)
-            if sum(idx) != 1:
+            if sum(idx) != 1:  # no well defined minimum eigenvalue
                 return None
             
             axis = eigvec.T[idx][0]
             ax, ay = eigvec.T[~idx]
             
-            px_ = points.dot(ax)
-            py_ = points.dot(ay)
-            pz_ = points.dot(axis)
+            projections = points.dot(eigvec)
+            projection_plane = projections.T[~idx].T
+            projection_axis = projections.T[idx].T
             
-            proj = np.array([px_, py_]).T
-            b = sum(proj.T * proj.T)
+            b = sum(projection_plane.T * projection_plane.T)
             b = b[0] - b[1:]
-            A = proj[0] - proj[1:]
+            A = projection_plane[0] - projection_plane[1:]
             
             AT = A.T
             A = AT @ A
@@ -125,17 +123,15 @@ class Cylinder(PrimitiveBase):
             A_ = np.linalg.inv(A) @ AT
             X = 0.5 * A_ @ b
             
-            idx = np.where(pz_ == min(pz_))[0][0]
-            p0 = points[idx]
+            # find point in base of cylinder
+            idx = np.where(projection_axis == min(projection_axis))[0][0]
+            point = X[0] * ax + X[1] * ay + points[idx].dot(axis) * axis
             
-            point = X[0] * ax + X[1] * ay + p0.dot(axis) * axis
-
-            
-            radiuses = np.linalg.norm(proj - X, axis=1)
+            radiuses = np.linalg.norm(projection_plane - X, axis=1)
             radius = [sum(radiuses) / num_points]
             
             point = list(point)
-            vector = list(axis * (max(pz_) - min(pz_)))
+            vector = list(axis * (max(projection_axis) - min(projection_axis)))
             
             # print(f'v: {vector}, p: {point}, r:{radius}')
         
