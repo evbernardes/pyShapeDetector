@@ -34,42 +34,13 @@ class Plane(PrimitiveBase):
     
     def get_mesh(self, points):
         
-        # center = np.mean(np.asarray(points), axis=0)
-        # center, size = args
-        # center = np.mean(pcd.points, axis=0)
-        # bb = pcd.get_axis_aligned_bounding_box()
-        # half_length = max(bb.max_bound - bb.min_bound) / 2
-        
-        # normal = model[:3]
-        # if list(normal) == [0, 0, 1]: 
-        #     v1 = np.cross([0, 1, 0], normal)
-        # else:
-        #     v1 = np.cross([0, 0, 1], normal)
-            
-        # v2 = np.cross(v1, normal)
-        # v1 /= np.linalg.norm(v1)
-        # v2 /= np.linalg.norm(v2)
-
-        # vertices = np.vstack([
-        #     center + v1 * half_length,
-        #     center + v2 * half_length,
-        #     center - v1 * half_length,
-        #     center - v2 * half_length])
-
-        # triangles = Vector3iVector(np.array([
-        #     [0, 1, 2], 
-        #     [2, 1, 0],
-        #     [0, 2, 3],
-        #     [3, 2, 0]]))
-        # vertices = Vector3dVector(vertices)
-
-        # return TriangleMesh(vertices, triangles)
-        
         pcd_flat = PointCloud()
-        # model[:3] /= np.linalg.norm(model[:3])
-        distances = self.get_distances(points)
+        points = np.asarray(points)
+        
+        # needs signed distance
+        distances = points.dot(self.normal) + self.model[3]
         pcd_flat.points = Vector3dVector(
-            points - distances[..., np.newaxis] * self.normal)
+            points - (distances * self.normal[..., np.newaxis]).T)
         return pcd_flat.compute_convex_hull(joggle_inputs=True)[0]
     
     def get_square_mesh(self, pcd):
