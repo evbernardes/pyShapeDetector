@@ -5,14 +5,9 @@ Created on Fri Oct  6 15:57:08 2023
 
 @author: ebernardes
 """
-from abc import ABC, abstractmethod
-import random
-import copy
+import warnings
 import numpy as np
-import open3d as o3d
-from open3d.geometry import TriangleMesh, PointCloud
-from open3d.utility import Vector3iVector, Vector3dVector
-
+from open3d.geometry import TriangleMesh
 from skspatial.objects.cylinder import Cylinder as skcylinder
 
 from .primitivebase import PrimitiveBase
@@ -98,7 +93,7 @@ class Cylinder(PrimitiveBase):
                              'cylinder')
             
         if normals is not None:
-            # use http://dx.doi.org/10.1016/j.cag.2014.09.027
+            # Reference: http://dx.doi.org/10.1016/j.cag.2014.09.027
             normals = np.asarray(normals)
             if len(normals) != num_points:
                 raise ValueError('Different number of points and normals')
@@ -116,32 +111,22 @@ class Cylinder(PrimitiveBase):
             projection_axis = projections.T[idx].T
             
             b = sum(projection_plane.T * projection_plane.T)
-            b = b[0] - b[1:]
-            A = projection_plane[0] - projection_plane[1:]
+            a = np.c_[2 * projection_plane, np.ones(num_points)]
+            X = np.linalg.lstsq(a, b)[0]
             
-            AT = A.T
-            A = AT @ A
-            det = np.linalg.det(A)
-            if det == 0:
-                return None
-            
-            A_ = np.linalg.inv(A) @ AT
-            X = 0.5 * A_ @ b
+            radius = [np.sqrt(X[2] + X[:2].dot(X[:2]))]
             
             # find point in base of cylinder
             idx = np.where(projection_axis == min(projection_axis))[0][0]
-            point = X[0] * ax + X[1] * ay + points[idx].dot(axis) * axis
-            
-            radiuses = np.linalg.norm(projection_plane - X, axis=1)
-            radius = [sum(radiuses) / num_points]
+            point = X[0] * ax + X[1] * ay + points[idx].dot(axis) * axis            
             
             point = list(point)
             vector = list(axis * (max(projection_axis) - min(projection_axis)))
-            
-            # print(f'v: {vector}, p: {point}, r:{radius}')
         
         else:
             # if no normals, use scikit spatial, slower
+            warnings.warn('Cylinder fitting works much quicker if normals '
+                          'are given.')
             solution = skcylinder.best_fit(points)
             
             point = list(solution.point)
