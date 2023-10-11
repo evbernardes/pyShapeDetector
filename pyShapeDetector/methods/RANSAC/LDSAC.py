@@ -60,8 +60,8 @@ class LDSAC(RANSAC_WeightedBase):
         
         weight = np.zeros(len(distances))
         weight[np.abs(distances) < d1] = 1
-        idx = d1 < np.abs(distances) < d2
-        weight[idx] = (d2 - distances(idx)) / (d2 - d1)
+        idx = (np.abs(distances) > d1) * (np.abs(distances) < d2)
+        weight[idx] = (d2 - distances[idx]) / (d2 - d1)
         
         return weight
     
