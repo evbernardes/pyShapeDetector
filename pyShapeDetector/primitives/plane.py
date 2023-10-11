@@ -5,11 +5,7 @@ Created on Mon Sep 25 15:42:59 2023
 
 @author: ebernardes
 """
-from abc import ABC, abstractmethod
-import random
-import copy
 import numpy as np
-import open3d as o3d
 from open3d.geometry import TriangleMesh, PointCloud
 from open3d.utility import Vector3iVector, Vector3dVector
 
@@ -75,8 +71,7 @@ class Plane(PrimitiveBase):
     
     @staticmethod
     def fit(points, normals=None):
-        # points_ = np.asarray(points)[samples]
-        
+        points = np.asarray(points)        
         num_points = len(points)
         
         if num_points < 3:

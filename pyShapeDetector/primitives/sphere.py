@@ -5,12 +5,7 @@ Created on Mon Sep 25 15:42:59 2023
 
 @author: ebernardes
 """
-from abc import ABC, abstractmethod
-import random
-import copy
 import numpy as np
-
-import open3d as o3d
 from open3d.geometry import TriangleMesh
 
 from .primitivebase import PrimitiveBase
