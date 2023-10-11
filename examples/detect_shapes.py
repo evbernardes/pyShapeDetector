@@ -31,7 +31,7 @@ method = methods[3]
 filedir = Path('./data')
 filename = '3planes_3spheres_3cylinders'
 # filename = '1cylinders'
-noise_max = 0
+noise_max = 1.
 
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
 # draw_geometries([pcd_full])
