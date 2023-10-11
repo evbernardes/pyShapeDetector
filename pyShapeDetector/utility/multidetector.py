@@ -39,9 +39,9 @@ class MultiDetector():
             pcds = [pcds]
             
         self.pcds = pcds
-        self.npcds = len(pcds)
+        self.n_pcds = len(pcds)
         self.detectors = detectors
-        self.ndetectors = len(detectors)
+        self.n_detectors = len(detectors)
         self._shapes_detected = None
         self._meshes_detected = None
         self._pcds_inliers = None
@@ -112,7 +112,7 @@ class MultiDetector():
             print('\n-------------------------------------------')
             print('\nStarting... ')
             
-        for idx in range(self.npcds):
+        for idx in range(self.n_pcds):
             if debug:
                 print(f'Testing cluster {idx+1}...')
                 
