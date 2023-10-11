@@ -36,7 +36,7 @@ def draw(objs):
     draw_geometries(objs)
     
 def draw_two_colomns(objs_left, objs_right, dist=5,
-                     lookat=[0, 0, 1], up=[0, 0, 1], front=[1, 0, 0], zoom=1):
+                     lookat=None, up=None, front=None, zoom=None):
     
     if type(objs_left) != list:
         objs_left = [objs_left]
@@ -51,12 +51,15 @@ def draw_two_colomns(objs_left, objs_right, dist=5,
     for i in range(len(objs_right)):
         objs_right[i].translate(translate)
         
-    draw_geometries(objs_right+objs_left,
-                    lookat=lookat,
-                    up=up,
-                    front=front,
-                    zoom=zoom
-                    )
+    if zoom is None:
+        draw_geometries(objs_right+objs_left)
+    else:
+        draw_geometries(objs_right+objs_left,
+                        lookat=lookat,
+                        up=up,
+                        front=front,
+                        zoom=zoom
+                        )
     
     
 def create_square_plane(normal, center, size=1.0):

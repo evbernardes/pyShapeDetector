@@ -29,8 +29,9 @@ methods = [RANSAC_Classic,
 #%% Parameters and input
 method = methods[3]
 filedir = Path('./data')
-filename = '3planes_3spheres_3cylinders'
-noise_max = 1.2
+# filename = '3planes_3spheres_3cylinders'
+filename = '1cylinders'
+noise_max = 0
 
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
 # draw_geometries([pcd_full])
@@ -64,7 +65,7 @@ threshold_distance = 0.2 + noise_max
 sphere_detector = method(Sphere, num_iterations=num_iterations,
                          threshold_angle=30,
                          threshold_distance=threshold_distance,
-                         model_max=Sphere.limit_radius(10),
+                         model_max=Sphere.limit_radius(5),
                          inliers_min=inliers_min)
 
 plane_detector = method(Plane, num_iterations=num_iterations,
@@ -96,7 +97,6 @@ for idx in range(len(pcds_segmented)):
     iteration = 0
     while(len(pcd_.points) > 500 and iteration < 20):
         print(f'\niteration {iteration}')
-        # pcd_.estimate_normals()
         normals = pcd_.normals
         
         output_shapes = []
@@ -167,12 +167,13 @@ for d in detectors:
 lookat=[0, 0, 1]
 up=[0, 0, 1]
 front=[1, 0, 0]
-zoom=1
+zoom=0.5
+zoom = None
 
 bbox = pcd_full.get_axis_aligned_bounding_box()
 delta = bbox.max_bound - bbox.min_bound
 
-draw_two_colomns([pcd_full]+meshes_detected, meshes_detected, delta[1],
+draw_two_colomns([pcd_full]+meshes_detected, meshes_detected+pcds, 1.3*delta[1],
                  lookat, up, front, zoom)
 
 # draw_geometries([pcd_full]+meshes_detected,
