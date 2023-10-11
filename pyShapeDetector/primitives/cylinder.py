@@ -104,24 +104,24 @@ class Cylinder(PrimitiveBase):
                 return None
             
             axis = eigvec.T[idx][0]
-            ax, ay = eigvec.T[~idx]
+    
+            pcross = np.cross(points, axis)
+            proj = points.dot(axis)
+            b = sum(pcross.T * pcross.T)
+            a = np.c_[-2 * np.cross(axis, pcross), np.ones(num_points)]
+            X = np.linalg.lstsq(a, b, rcond=None)[0]
             
-            projections = points.dot(eigvec)
-            projection_plane = projections.T[~idx].T
-            projection_axis = projections.T[idx].T
+            center = X[:3]
+            ccross = np.cross(center, axis)
+            radius = np.sqrt(X[3] + ccross.dot(ccross))
             
-            b = sum(projection_plane.T * projection_plane.T)
-            a = np.c_[2 * projection_plane, np.ones(num_points)]
-            X = np.linalg.lstsq(a, b)[0]
-            
-            radius = [np.sqrt(X[2] + X[:2].dot(X[:2]))]
-            
-            # find point in base of cylinder
-            idx = np.where(projection_axis == min(projection_axis))[0][0]
-            point = X[0] * ax + X[1] * ay + points[idx].dot(axis) * axis            
+            # # find point in base of cylinder
+            idx = np.where(proj == min(proj))[0][0]
+            point = center #+ points[idx].dot(axis) * axis            
             
             point = list(point)
-            vector = list(axis * (max(projection_axis) - min(projection_axis)))
+            # 
+            vector = list(axis * (max(proj) - min(proj)))
         
         else:
             # if no normals, use scikit spatial, slower
@@ -131,6 +131,6 @@ class Cylinder(PrimitiveBase):
             
             point = list(solution.point)
             vector = list(solution.vector)
-            radius = [solution.radius]
+            radius = solution.radius
         
-        return Cylinder(point+vector+radius) 
+        return Cylinder(point+vector+[radius]) 
