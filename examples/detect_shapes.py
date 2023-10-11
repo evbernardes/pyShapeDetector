@@ -18,20 +18,25 @@ from open3d.utility import Vector3dVector
 # from helpers import color_blue, color_gray, color_red, color_yellow
 from helpers import draw_two_colomns
 from pyShapeDetector.primitives import Sphere, Plane, Cylinder
-
-from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, BDSAC, LDSAC
+from pyShapeDetector.utility import MultiDetector
+from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, \
+    BDSAC, LDSAC
+    
 methods = [RANSAC_Classic, 
            RANSAC_Weighted,
            MSAC,
-           BDSAC,
+           BDSAC, 
            LDSAC]
 
 #%% Parameters and input
-method = methods[3]
+method = methods[4] # select which method, 3 means "BDSAC"
 filedir = Path('./data')
 filename = '3planes_3spheres_3cylinders'
 # filename = '1cylinders'
 noise_max = 1.
+inliers_min = 1000
+num_iterations = 100
+threshold_distance = 0.2 + noise_max
 
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
 # draw_geometries([pcd_full])
@@ -40,7 +45,7 @@ noise = noise_max * np.random.random(np.shape(pcd_full.points))
 pcd_full.points = Vector3dVector(pcd_full.points + noise)
 # draw_geometries([pcd_full])
 
-# Detection of clusters
+#%% Separate full pointcloud into clusters
 labels = pcd_full.cluster_dbscan(eps=1.0, min_points=20)#, print_progress=True))
 
 labels = np.array(labels)
@@ -57,10 +62,7 @@ for label in set(labels):
     idx = np.where(labels == label)[0]
     pcds_segmented.append(pcd_full.select_by_index(idx))
 
-#%%
-inliers_min = 1000
-num_iterations = 100
-threshold_distance = 0.2 + noise_max
+#%% Create detectors for each shape
 
 sphere_detector = method(Sphere, num_iterations=num_iterations,
                          threshold_angle=30,
@@ -82,87 +84,15 @@ cylinder_detector = method(Cylinder, num_iterations=num_iterations,
                            inliers_min=inliers_min)
 
 detectors = [sphere_detector, plane_detector, cylinder_detector]
-times = {d.primitive.name: 0 for d in detectors}
 
-shapes_detected = []
-meshes_detected = []
-pcds = []
-print(f'Testing with {method._type}\n')
-start = time.time()
-# pcd_rest = copy.copy(pcd_full)
-for idx in range(len(pcds_segmented)):
-    print(f'Testing cluster {idx+1}...')
-    pcd_ = copy.copy(pcds_segmented[idx])
-    
-    iteration = 0
-    while(len(pcd_.points) > 500 and iteration < 20):
-        print(f'\niteration {iteration}')
-        normals = pcd_.normals
-        
-        output_shapes = []
-        output_inliers = []
-        output_metrics = []
-        
-        for detector in detectors:
-            start = time.time()
-            shape, inliers, metrics = detector.fit(
-                pcd_.points, debug=False, normals=normals)
-            times[detector.primitive.name] += time.time() - start
-            output_shapes.append(shape)
-            output_inliers.append(inliers)
-            output_metrics.append(metrics)
-            
-        output_fitness = [metrics['fitness'] for metrics in output_metrics]
-            
-        if np.all(np.array(output_shapes) == None):
-            print('No shapes found anymore, breaking...')
-            break
-        
-        max_fitness = max(output_fitness)
-        if max_fitness < 0.1:
-            print('Fitness to small, breaking...')
-            break
-        
-        try:
-            output_weight = [metrics['weight'] for metrics in output_metrics]
-            idx = np.where(np.array(output_weight) == max(output_weight))[0][0]
-        except KeyError:
-            idx = np.where(np.array(output_fitness) == max_fitness)[0][0]
-            
-        shape = output_shapes[idx]
-        inliers = output_inliers[idx]
-        print(f'- {shape.name} found!')
+#%% Assemble detectors and detect shapes
+print(f'Using {method._type} method')
+shape_detector = MultiDetector(detectors, pcds_segmented, points_min=500, num_iterations=20)
+shape_detector.run(debug=True)
 
-        pcd_primitive = pcd_.select_by_index(inliers)
-        pcd_ = pcd_.select_by_index(inliers, invert=True)
-            
-        mesh = shape.get_mesh(pcd_primitive.points)
-        # mesh = shape.get_square_mesh(pcd_primitive)
-        mesh.paint_uniform_color(np.random.random(3))
-        meshes_detected.append(mesh)
-        
-        window_name = f'{shape.name}:{shape.model}, {len(inliers)} inliers'
-        
-        shapes_detected.append({
-            'shape': shape,
-            'pcd_primitive': pcd_primitive,
-            'mesh': mesh})
-        iteration += 1
-    
-    if len(pcd_.points) != 0:
-        pcds.append(pcd_)
-
-print(f'{method._type} finished after {time.time() - start:.5f}s')
-print('Time spend with each detector:')
-for d in detectors:
-    name = d.primitive.name
-    print(f'- {name}: {times[name]:.3f}s')
-#%%
-# draw_geometries(pcds_segmented,
-#                 lookat=[0, 0, 1],
-#                 up=[0, 0, 1],
-#                 front=[1, 0, 0],
-#                 zoom=1)
+#%% Plot detected meshes
+meshes = shape_detector.meshes_detected
+pcds_rest = shape_detector.pcds_rest
 
 lookat=[0, 0, 1]
 up=[0, 0, 1]
@@ -173,18 +103,6 @@ zoom=1
 bbox = pcd_full.get_axis_aligned_bounding_box()
 delta = bbox.max_bound - bbox.min_bound
 
-draw_two_colomns([pcd_full]+meshes_detected, meshes_detected+pcds, 1.3*delta[1],
+draw_two_colomns([pcd_full]+meshes, meshes+pcds_rest, 1.3*delta[1],
                  lookat, up, front, zoom)
-
-# draw_geometries([pcd_full]+meshes_detected,
-#                 lookat=[0, 0, 1],
-#                 up=[0, 0, 1],
-#                 front=[1, 0, 0],
-#                 zoom=1)
-    
-# draw_geometries(meshes_detected+pcds,
-#                 lookat=[0, 0, 1],
-#                 up=[0, 0, 1],
-#                 front=[1, 0, 0],
-#                 zoom=1)
 
