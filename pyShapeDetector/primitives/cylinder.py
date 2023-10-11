@@ -63,12 +63,7 @@ class Cylinder(PrimitiveBase):
     
     @property
     def rotation_from_axis(self):
-        axis = self.axis
-        if axis.dot([0, 0, 1]) == 0:
-            axis = -axis
-        halfway_axis = (np.array([0, 0, 1]) + axis)[..., np.newaxis]
-        halfway_axis /= np.linalg.norm(halfway_axis)
-        return 2 * halfway_axis * halfway_axis.T - np.eye(3)
+        return self.get_rotation_from_axis(self.axis)
     
     def get_mesh(self, points):
         

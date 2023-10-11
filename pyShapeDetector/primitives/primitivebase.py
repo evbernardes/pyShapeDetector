@@ -33,6 +33,14 @@ class PrimitiveBase(ABC):
             raise ValueError(f'{self.name.capitalize()} primitives take '
                              f'{self._model_args_n} elements, got {model}')
         self.model = model
+        
+    @staticmethod
+    def get_rotation_from_axis(axis):
+        if axis.dot([0, 0, 1]) == 0:
+            axis = -axis
+        halfway_axis = (np.array([0, 0, 1]) + axis)[..., np.newaxis]
+        halfway_axis /= np.linalg.norm(halfway_axis)
+        return 2 * halfway_axis * halfway_axis.T - np.eye(3)
     
     def get_angles_cos(self, points, normals):
         if normals is None:
