@@ -6,7 +6,7 @@ Created on Mon Sep 25 15:42:59 2023
 @author: ebernardes
 """
 import numpy as np
-from scipy.spatial import ConvexHull
+from scipy.spatial import ConvexHull, Delaunay
 from open3d.geometry import TriangleMesh, PointCloud
 from open3d.utility import Vector3iVector, Vector3dVector
 
@@ -39,15 +39,20 @@ class Plane(PrimitiveBase):
         
         rot = self.get_rotation_from_axis(self.normal)
         projection = (rot @ points.T).T[:, :2]
-        chull = ConvexHull(projection)       
         
-        pcd_flat = PointCloud(
-            Vector3dVector(points[chull.vertices]))
+        chull = ConvexHull(projection)
+        borders = projection[chull.vertices]
         
-        pcd_flat.normals = Vector3dVector(
-            np.repeat(self.normal, chull.nsimplex).reshape(chull.nsimplex, 3))
+        triangles = Delaunay(borders).simplices
         
-        return None
+        # needed to make plane visible from both sides
+        triangles = np.vstack([triangles, triangles[:, ::-1]]) 
+        
+        mesh = TriangleMesh()
+        mesh.vertices = Vector3dVector(points[chull.vertices])
+        mesh.triangles = Vector3iVector(triangles)
+        
+        return mesh
     
     def get_square_mesh(self, pcd):
         
