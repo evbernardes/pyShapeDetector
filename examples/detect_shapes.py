@@ -167,8 +167,8 @@ for d in detectors:
 lookat=[0, 0, 1]
 up=[0, 0, 1]
 front=[1, 0, 0]
-zoom=0.5
-zoom = None
+zoom=1
+# zoom = None
 
 bbox = pcd_full.get_axis_aligned_bounding_box()
 delta = bbox.max_bound - bbox.min_bound

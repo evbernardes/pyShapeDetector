@@ -112,16 +112,17 @@ class Cylinder(PrimitiveBase):
             
             b = sum(projection_plane.T * projection_plane.T)
             a = np.c_[2 * projection_plane, np.ones(num_points)]
-            X = np.linalg.lstsq(a, b)[0]
+            X = np.linalg.lstsq(a, b, rcond=None)[0]
             
-            radius = [np.sqrt(X[2] + X[:2].dot(X[:2]))]
+            radius = np.sqrt(X[2] + X[:2].dot(X[:2]))
             
             # find point in base of cylinder
             idx = np.where(projection_axis == min(projection_axis))[0][0]
             point = X[0] * ax + X[1] * ay + points[idx].dot(axis) * axis            
             
             point = list(point)
-            vector = list(axis * (max(projection_axis) - min(projection_axis)))
+            height = max(projection_axis) - min(projection_axis)
+            vector = list(axis * height)
         
         else:
             # if no normals, use scikit spatial, slower
@@ -131,6 +132,6 @@ class Cylinder(PrimitiveBase):
             
             point = list(solution.point)
             vector = list(solution.vector)
-            radius = [solution.radius]
+            radius = solution.radius
         
-        return Cylinder(point+vector+radius) 
+        return Cylinder(point+vector+[radius]) 
