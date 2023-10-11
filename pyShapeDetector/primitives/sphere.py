@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 import random
 import copy
 import numpy as np
+
 import open3d as o3d
 from open3d.geometry import TriangleMesh
 
@@ -80,33 +81,23 @@ class Sphere(PrimitiveBase):
                 (n0 - p2.dot(p2)) * c31 + \
                 (n0 - p3.dot(p3)) * c12) / det
                 
+            radiuses = np.linalg.norm(points - center, axis=1)
+            radius = sum(radiuses) / num_points
+            
         # for more points, find the plane such that the summed squared distance 
         # from the plane to all points is minimized. 
         else:
+            
             b = sum(points.T * points.T)
-            b = b[0] - b[1:]
+            a = np.c_[2 * points, np.ones(num_points)]
+            X = np.linalg.lstsq(a, b)[0]
             
-            A = points[0] - points[1:]
-            
-            # try:
-            #     A_ = np.linalg.pinv(A)
-            #     center = 0.5 * A_ @ b
-                
-            # except np.linalg.LinAlgError:
-            #     return np.array([0, 0, 0, 0])
-            
-            AT = A.T
-            A = AT @ A
-            det = np.linalg.det(A)
-            if det == 0:
-                return None
-            
-            A_ = np.linalg.inv(A) @ AT
-            center = 0.5 * A_ @ b
-            
-        radiuses = np.linalg.norm(points - center, axis=1)
-        radius = sum(radiuses) / num_points
+            center = X[:3]
+            radius = np.sqrt(X[3] + center.dot(center))
         
+        if radius < 0:
+            return None
+
         return Sphere([center[0], center[1], center[2], radius]) 
         
 
