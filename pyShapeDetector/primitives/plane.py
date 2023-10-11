@@ -31,16 +31,21 @@ class Plane(PrimitiveBase):
     
     def get_mesh(self, points):
         
-        # pcd_flat = PointCloud()
         points = np.asarray(points)
-        # vertices = ConvexHull(points).vertices
-        # points = points[vertices]
-        
+
         # needs signed distance
         distances = points.dot(self.normal) + self.model[3]
         points -= (distances * self.normal[..., np.newaxis]).T
-        chull = ConvexHull(points)
-        # points = points[vertices]
+        
+        rot = self.get_rotation_from_axis(self.normal)
+        projection = (rot @ points.T).T[:, :2]
+        chull = ConvexHull(projection)       
+        
+        pcd_flat = PointCloud(
+            Vector3dVector(points[chull.vertices]))
+        
+        pcd_flat.normals = Vector3dVector(
+            np.repeat(self.normal, chull.nsimplex).reshape(chull.nsimplex, 3))
         
         return None
     
