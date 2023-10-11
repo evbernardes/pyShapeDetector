@@ -6,6 +6,7 @@ Created on Mon Sep 25 15:42:59 2023
 @author: ebernardes
 """
 import numpy as np
+from scipy.spatial import ConvexHull
 from open3d.geometry import TriangleMesh, PointCloud
 from open3d.utility import Vector3iVector, Vector3dVector
 
@@ -30,14 +31,18 @@ class Plane(PrimitiveBase):
     
     def get_mesh(self, points):
         
-        pcd_flat = PointCloud()
+        # pcd_flat = PointCloud()
         points = np.asarray(points)
+        # vertices = ConvexHull(points).vertices
+        # points = points[vertices]
         
         # needs signed distance
         distances = points.dot(self.normal) + self.model[3]
-        pcd_flat.points = Vector3dVector(
-            points - (distances * self.normal[..., np.newaxis]).T)
-        return pcd_flat.compute_convex_hull(joggle_inputs=True)[0]
+        points -= (distances * self.normal[..., np.newaxis]).T
+        chull = ConvexHull(points)
+        # points = points[vertices]
+        
+        return None
     
     def get_square_mesh(self, pcd):
         
