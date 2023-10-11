@@ -6,9 +6,6 @@ __pycache__/
 # C extensions
 *.so
 
-# Examples folder, only to be changed when explicitly asked
-examples/
-
 # Distribution / packaging
 .Python
 build/
