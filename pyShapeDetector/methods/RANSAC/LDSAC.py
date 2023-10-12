@@ -24,7 +24,6 @@ class LDSAC(RANSAC_WeightedBase):
     
     def __init__(self,
                  primitive,
-                 threshold_ratios=[0.2, 0.7],
                  reduction_rate=1.0,
                  threshold_distance=0.1,
                  threshold_angle=10,
@@ -35,7 +34,8 @@ class LDSAC(RANSAC_WeightedBase):
                  model_max=None,
                  model_min=None,
                  max_normal_angle_degrees=10,
-                 inliers_min=None):
+                 inliers_min=None,
+                 threshold_ratios=[0.2, 0.7]):
         
         if len(threshold_ratios) != 2 or \
             not (0 <= threshold_ratios[0] <= 1) or \
@@ -47,7 +47,7 @@ class LDSAC(RANSAC_WeightedBase):
         if threshold_ratios[1] < threshold_ratios[0]:
             threshold_ratios = threshold_ratios[::-1]
         
-        self = super().__init__(primitive, threshold_ratios, reduction_rate,
+        RANSAC_WeightedBase.__init__(self, primitive, reduction_rate,
             threshold_distance, threshold_angle, ransac_n, num_iterations,
             probability, max_point_distance, model_max, model_min, 
             max_normal_angle_degrees, inliers_min)
@@ -60,8 +60,8 @@ class LDSAC(RANSAC_WeightedBase):
         
         weight = np.zeros(len(distances))
         weight[np.abs(distances) < d1] = 1
-        idx = d1 < np.abs(distances) < d2
-        weight[idx] = (d2 - distances(idx)) / (d2 - d1)
+        idx = (np.abs(distances) > d1) * (np.abs(distances) < d2)
+        weight[idx] = (d2 - distances[idx]) / (d2 - d1)
         
         return weight
     

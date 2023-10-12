@@ -27,9 +27,12 @@ class Cylinder(PrimitiveBase):
         return np.array(self.model[3:6])
     
     @property
+    def height(self):
+        return np.linalg.norm(self.vector)
+    
+    @property
     def axis(self):
-        v = self.vector
-        return v / np.linalg.norm(v)
+        return self.axis / self.height
     
     @property
     def radius(self):
@@ -63,12 +66,7 @@ class Cylinder(PrimitiveBase):
     
     @property
     def rotation_from_axis(self):
-        axis = self.axis
-        if axis.dot([0, 0, 1]) == 0:
-            axis = -axis
-        halfway_axis = (np.array([0, 0, 1]) + axis)[..., np.newaxis]
-        halfway_axis /= np.linalg.norm(halfway_axis)
-        return 2 * halfway_axis * halfway_axis.T - np.eye(3)
+        return self.get_rotation_from_axis(self.axis)
     
     def get_mesh(self, points):
         
@@ -122,6 +120,7 @@ class Cylinder(PrimitiveBase):
             point = list(point)
             # 
             vector = list(axis * (max(proj) - min(proj)))
+
         
         else:
             # if no normals, use scikit spatial, slower

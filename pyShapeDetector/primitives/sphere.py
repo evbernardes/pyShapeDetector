@@ -85,7 +85,7 @@ class Sphere(PrimitiveBase):
             
             b = sum(points.T * points.T)
             a = np.c_[2 * points, np.ones(num_points)]
-            X = np.linalg.lstsq(a, b)[0]
+            X = np.linalg.lstsq(a, b, rcond=None)[0]
             
             center = X[:3]
             radius = np.sqrt(X[3] + center.dot(center))
