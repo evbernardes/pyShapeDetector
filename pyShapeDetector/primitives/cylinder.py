@@ -54,8 +54,11 @@ class Cylinder(PrimitiveBase):
 
     def get_distances(self, points):
         points = np.asarray(points)      
-        points_closest = self._closest_to_line(points)
-        distances = np.linalg.norm(points_closest - points, axis=1)
+        # points_closest = self._closest_to_line(points)
+        # distances = np.linalg.norm(points_closest - points, axis=1)        
+        distances = np.linalg.norm(
+            np.cross(self.axis, points - self.point), axis=1)
+        
         return np.abs(distances - self.radius)
     
     def get_normals(self, points):
