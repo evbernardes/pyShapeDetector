@@ -6,16 +6,23 @@ Created on Mon Sep 25 15:42:59 2023
 @author: ebernardes
 """
 from abc import ABC, abstractmethod
-import random
-import copy
 import numpy as np
-import open3d as o3d
     
 class PrimitiveBase(ABC):
     """
     Base class used to represent a geometrical primitive.
     
-    ...
+    To define a primitive, inherit from this class and define at least the 
+    following properties:
+        `_fit_n_min`
+        `_model_args_n`
+        `name`
+    And the following methods:
+        `get_distances`
+        `get_normals`
+        
+    The method `get_mesh` can also 
+    
     
     Attributes
     ----------
@@ -317,7 +324,9 @@ class PrimitiveBase(ABC):
         TriangleMesh
             Mesh corresponding to the shape.
         """
-        pass
+        raise NotImplementedError('The mesh generating function for '
+                                  f'primitives of type {self.name} has not '
+                                  'been implemented.')
         
 
             
