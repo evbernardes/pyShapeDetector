@@ -34,9 +34,10 @@ filedir = Path('./data')
 
 filename = '3planes_3spheres_3cylinders'
 # filename = '1cylinders'
+# filename = '1spheres'
 # filename = 'big'
 
-noise_max = 0.
+noise_max = 1
 inliers_min = 1000
 num_iterations = 100
 threshold_distance = 0.2 + noise_max
@@ -47,8 +48,6 @@ pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd'))
 noise = noise_max * np.random.random(np.shape(pcd_full.points))
 pcd_full.points = Vector3dVector(pcd_full.points + noise)
 # draw_geometries([pcd_full])
-
-#%%
 
 #%% Separate full pointcloud into clusters
 labels = pcd_full.cluster_dbscan(eps=1.0, min_points=20)#, print_progress=True))
