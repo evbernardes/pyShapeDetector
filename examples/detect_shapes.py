@@ -32,9 +32,9 @@ methods = [RANSAC_Classic,
 method = methods[4] # select which method, 3 means "BDSAC"
 filedir = Path('./data')
 
-# filename = '3planes_3spheres_3cylinders'
+filename = '3planes_3spheres_3cylinders'
 # filename = '1cylinders'
-filename = 'big'
+# filename = 'big'
 
 noise_max = 0.
 inliers_min = 1000
@@ -47,11 +47,6 @@ pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd'))
 noise = noise_max * np.random.random(np.shape(pcd_full.points))
 pcd_full.points = Vector3dVector(pcd_full.points + noise)
 # draw_geometries([pcd_full])
-
-#%%
-start = time.time()
-Cylinder.fit(pcd_full.points, pcd_full.normals)
-print(f'{time.time() - start:.3f}s')
 
 #%%
 

@@ -17,7 +17,7 @@ from helpers import get_random_spheres, get_random_planes, get_random_cylinders
 #%% Parameters and input
 filedir = Path('./data')
 
-num_points = 2000000
+num_points = 2000
 translate_lim = [-15, 15]
 
 num_planes = 0
