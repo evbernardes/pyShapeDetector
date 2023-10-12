@@ -27,9 +27,12 @@ class Cylinder(PrimitiveBase):
         return np.array(self.model[3:6])
     
     @property
+    def height(self):
+        return np.linalg.norm(self.vector)
+    
+    @property
     def axis(self):
-        v = self.vector
-        return v / np.linalg.norm(v)
+        return self.axis / self.height
     
     @property
     def radius(self):
