@@ -112,7 +112,7 @@ class Cylinder(PrimitiveBase):
             center = X[:3]
             radius = np.sqrt(X[3] + center.dot(axis_neg_squared_skew @ center))
             
-            # # find point in base of cylinder
+            # find point in base of cylinder
             proj = points.dot(axis)
             idx = np.where(proj == min(proj))[0][0]
             point = center + points[idx].dot(axis) * axis            
