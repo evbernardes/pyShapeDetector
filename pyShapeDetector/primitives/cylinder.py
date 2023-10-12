@@ -32,7 +32,7 @@ class Cylinder(PrimitiveBase):
     
     @property
     def axis(self):
-        return self.axis / self.height
+        return self.vector / self.height
     
     @property
     def radius(self):
