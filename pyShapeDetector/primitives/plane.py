@@ -97,9 +97,9 @@ class Plane(PrimitiveBase):
         elif num_points == 3:
             p0, p1, p2 = points
             
-            e0 = p1 - p0
-            e1 = p2 - p0
-            abc = np.cross(e0, e1)
+            e1 = p1 - p0
+            e2 = p2 - p0
+            abc = np.cross(e1, e2)
             centroid = p0
         
         # for more points, find the plane such that the summed squared distance 

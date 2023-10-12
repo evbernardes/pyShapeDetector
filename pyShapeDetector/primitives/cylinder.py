@@ -51,19 +51,21 @@ class Cylinder(PrimitiveBase):
         points = np.asarray(points)
         projection = (points - self.point).dot(self.axis)
         return self.point + projection[..., np.newaxis] * self.axis
+    
+    def _get_orthogonal_component(self, points):
+        points = np.asarray(points)
+        delta = points - self.point
+        return -np.cross(self.axis, np.cross(self.axis, delta))
 
     def get_distances(self, points):
-        points = np.asarray(points)      
-        # points_closest = self._closest_to_line(points)
-        # distances = np.linalg.norm(points_closest - points, axis=1)        
+        points = np.asarray(points)             
         distances = np.linalg.norm(
             np.cross(self.axis, points - self.point), axis=1)
         
         return np.abs(distances - self.radius)
     
     def get_normals(self, points):
-        points = np.asarray(points)     
-        normals = points - self._closest_to_line(points)
+        normals = self._get_orthogonal_component(points)
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
     
