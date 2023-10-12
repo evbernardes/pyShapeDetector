@@ -102,25 +102,23 @@ class Cylinder(PrimitiveBase):
                 return None
             
             axis = eigvec.T[idx][0]
+            axis_neg_squared_skew = np.eye(3) - axis[np.newaxis].T * axis
     
-            pcross = np.cross(points, axis)
-            proj = points.dot(axis)
-            b = sum(pcross.T * pcross.T)
-            a = np.c_[-2 * np.cross(axis, pcross), np.ones(num_points)]
+            points_skew = (axis_neg_squared_skew @ points.T).T
+            b = sum(points_skew.T * points.T)
+            a = np.c_[2 * points_skew, np.ones(num_points)]
             X = np.linalg.lstsq(a, b, rcond=None)[0]
             
             center = X[:3]
-            ccross = np.cross(center, axis)
-            radius = np.sqrt(X[3] + ccross.dot(ccross))
+            radius = np.sqrt(X[3] + center.dot(axis_neg_squared_skew @ center))
             
             # # find point in base of cylinder
+            proj = points.dot(axis)
             idx = np.where(proj == min(proj))[0][0]
-            point = center #+ points[idx].dot(axis) * axis            
+            point = center + points[idx].dot(axis) * axis            
             
             point = list(point)
-            # 
             vector = list(axis * (max(proj) - min(proj)))
-
         
         else:
             # if no normals, use scikit spatial, slower
