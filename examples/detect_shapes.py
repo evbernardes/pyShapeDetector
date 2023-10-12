@@ -31,8 +31,8 @@ methods = [RANSAC_Classic,
 #%% Parameters and input
 method = methods[4] # select which method, 3 means "BDSAC"
 filedir = Path('./data')
-# filename = '3planes_3spheres_3cylinders'
-filename = '1cylinders'
+filename = '3planes_3spheres_3cylinders'
+# filename = '1cylinders'
 noise_max = 0.
 inliers_min = 1000
 num_iterations = 100
