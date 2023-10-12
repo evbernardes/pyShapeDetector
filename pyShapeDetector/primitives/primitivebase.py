@@ -12,30 +12,173 @@ import numpy as np
 import open3d as o3d
     
 class PrimitiveBase(ABC):
+    """
+    Base class used to represent a geometrical primitive.
+    
+    ...
+    
+    Attributes
+    ----------
+    _fit_n_min : int
+        Minimum number of points necessary to fit a model.
+    _model_args_n : str
+        Number of parameters in the model.
+    name : str
+        Name of primitive.
+    
+    Methods
+    -------
+    get_distances(points)
+        Gives the minimum distance between each point to the model. 
+        
+    get_normals(points)
+        Gives, for each input point, the normal vector of the point closest 
+        to the primitive. 
+        
+    fit(points, normals=None):
+        Gives shape that fits the input points. If the number of points is
+        higher than the `_fit_n_min`, the fitted shape will return some kind of
+        estimation. 
+    
+    get_angles_cos(self, points, normals):
+        Gives the absolute value of cosines of the angles between the input 
+        normal vectors and the calculated normal vectors from the input points.
+    
+    get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
+        Rotation matrix that transforms `axis_origin` in `axis`.
+        
+    get_angles_cos(points, normals):
+        Gives the absolute value of cosines of the angles between the input 
+        normal vectors and the calculated normal vectors from the input points.
+        
+    get_angles(points, normals):
+        Gives the angles between the input normal vectors and the 
+        calculated normal vectors from the input points.
+        
+    get_residuals(points, normals):
+        Convenience function returning both distances and angles.
+        
+    create_limits(args_n, idx, value):
+        Create a list of length `args_n` that stores `value` at index `idx`
+        and `None` elsewhere.
+    """
     
     @property
     @abstractmethod
     def _fit_n_min(self):
+        """ Minimum number of points necessary to fit a model. """
         pass
 
     @property
     @abstractmethod
     def _model_args_n(self):
+        """ Number of parameters in the model. """
         pass
     
     @property
     @abstractmethod
     def name(self):
+        """ Name of primitive. """
+        pass
+    
+    @abstractmethod
+    def get_distances(self, points):
+        """ Gives the minimum distance between each point to the model. 
+        
+        Actual implementation depends on the type of primitive.
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        
+        Returns
+        -------
+        distances
+            Nx1 array distances.
+        """
+        pass
+    
+    @abstractmethod
+    def get_normals(self, points):
+        """ Gives, for each input point, the normal vector of the point closest 
+        to the primitive. 
+        
+        Actual implementation depends on the type of primitive.
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        
+        Returns
+        -------
+        normals
+            Nx3 array containing normal vectors.
+        """
+        pass
+    
+    @staticmethod
+    @abstractmethod
+    def fit(points, normals=None):
+        """ Gives shape that fits the input points. If the number of points is
+        higher than the `_fit_n_min`, the fitted shape will return some kind of
+        estimation. 
+        
+        Moreover, some primitives do not need the normal vectors to fit, while
+        others (like cylinders) might benefit from it.
+        
+        Actual implementation depends on the type of primitive, m
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        normals : 3 x N array
+            N normal vectors
+        
+        Returns
+        -------
+        PrimitiveBase
+            Fitted shape.
+        """
         pass
 
     def __init__(self, model):
-        if len(model) < self._model_args_n:
+        """
+        Parameters
+        ----------
+        model : list or tuple
+            Parameters defining the shape model
+                        
+        Raises
+        ------
+        ValueError
+            If number of parameters is incompatible with the model of the 
+            primitive.
+        """
+        
+        if len(model) != self._model_args_n:
             raise ValueError(f'{self.name.capitalize()} primitives take '
                              f'{self._model_args_n} elements, got {model}')
         self.model = model
         
     @staticmethod
     def get_rotation_from_axis(axis, axis_origin=[0, 0, 1]):
+        """ Rotation matrix that transforms `axis_origin` in `axis`.
+        
+        Parameters
+        ----------
+        axis : 3 x 1 array
+            Goal axis (default is None)
+        axis_origin : 3 x 1 array, optional
+            Initial axis (default is the z-axis)
+        
+        Returns
+        -------
+        rotation
+            3x3 array representing a rotation matrix
+        """
         axis_origin = np.array(axis_origin)
         if axis.dot(axis_origin) == 0:
             axis = -axis
@@ -44,6 +187,31 @@ class PrimitiveBase(ABC):
         return 2 * halfway_axis * halfway_axis.T - np.eye(3)
     
     def get_angles_cos(self, points, normals):
+        """ Gives the absolute value of cosines of the angles between the input 
+        normal vectors and the calculated normal vectors from the input points.
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        normals : 3 x N array
+            N normal vectors
+            
+        Raises
+        ------
+        ValueError
+            If number of points and normals are not equal
+        
+        Returns
+        -------
+        angles_cos or None
+            Nx1 array with the absolute value of the cosines of the angles, or
+            `None` if `normals` is `None`.
+            
+        """
+        if len(normals) != len(points):
+            raise ValueError('Number of points and normals should be equal.')
+        
         if normals is None:
             return None
         normals = np.asarray(normals)
@@ -53,6 +221,27 @@ class PrimitiveBase(ABC):
         return np.abs(angles_cos)
     
     def get_angles(self, points, normals):
+        """ Gives the angles between the input normal vectors and the 
+        calculated normal vectors from the input points.
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        normals : 3 x N array
+            N normal vectors
+            
+        Raises
+        ------
+        ValueError
+            If number of points and normals are not equal
+        
+        Returns
+        -------
+        angles or None
+            Nx1 array with the angles, or `None` if `normals` is `None`.
+            
+        """
         if normals is None:
             return None
         
@@ -60,32 +249,63 @@ class PrimitiveBase(ABC):
             self.get_angles_cos(points, normals))
     
     def get_residuals(self, points, normals):
+        """ Convenience function returning both distances and angles.
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        normals : 3 x N array
+            N normal vectors
+            
+        Raises
+        ------
+        ValueError
+            If number of points and normals are not equal
+        
+        Returns
+        -------
+        tuple
+            Tuple containing distances and angles.
+            
+        """
         return self.get_distances(points), \
             self.get_angles(points, normals)
-            
+
     @staticmethod
     def create_limits(args_n, idx, value):
+        """ Create a list of length `args_n` that stores `value` at index `idx`
+        and `None` elsewhere.
+        
+        This is used to create max or min checks when testing the fitted 
+        primitives.
+
+        Parameters
+        ----------
+        args_n : int
+            Length of list
+        idx : int
+            Index to store value
+        value : float
+            Value limit value.
+            
+        Raises
+        ------
+        IndexError
+            If `idx` is greater or equal to `args_n`
+        
+        Returns
+        -------
+        list
+            List containing limit.
+        """
         values = [None] * args_n
         values[idx] = value
         return values
     
     @staticmethod
-    def get_distances(self, points):
-        pass
-    
-    @staticmethod
-    def get_normals(self, points):
-        pass
-    
-    @staticmethod
     def get_mesh(self, pcd):
         pass
-    
-    @staticmethod
-    @abstractmethod
-    def fit(points, normals=None):
-        pass
-
         
 
             
