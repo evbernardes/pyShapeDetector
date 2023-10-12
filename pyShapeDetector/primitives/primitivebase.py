@@ -304,7 +304,19 @@ class PrimitiveBase(ABC):
         return values
     
     @staticmethod
-    def get_mesh(self, pcd):
+    def get_mesh(self, points=None):
+        """ Creates mesh of the shape. Points are not always necessary.
+
+        Parameters
+        ----------
+        points, optional : 3 x N array
+            Points corresponding to the fitted shape.
+        
+        Returns
+        -------
+        TriangleMesh
+            Mesh corresponding to the shape.
+        """
         pass
         
 
