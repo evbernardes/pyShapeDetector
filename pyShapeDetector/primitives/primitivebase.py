@@ -70,13 +70,6 @@ class PrimitiveBase(ABC):
         return values
     
     @staticmethod
-    def get_normal_eig(normals):
-        C = np.zeros([3, 3])
-        for n in np.asarray(normals):
-            C += n[..., np.newaxis] * n
-        return np.linalg.eig(C)
-    
-    @staticmethod
     def get_distances(self, points):
         pass
     

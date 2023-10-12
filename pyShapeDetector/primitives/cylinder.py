@@ -91,19 +91,22 @@ class Cylinder(PrimitiveBase):
                              'cylinder')
             
         if normals is not None:
-            # Reference: http://dx.doi.org/10.1016/j.cag.2014.09.027
+            # Reference for axis estimation with normals: 
+            # http://dx.doi.org/10.1016/j.cag.2014.09.027
             normals = np.asarray(normals)
             if len(normals) != num_points:
                 raise ValueError('Different number of points and normals')
         
-            eigval, eigvec = PrimitiveBase.get_normal_eig(normals)
+            eigval, eigvec = np.linalg.eig(normals.T @ normals)
             idx = eigval == min(eigval)
             if sum(idx) != 1:  # no well defined minimum eigenvalue
                 return None
             
             axis = eigvec.T[idx][0]
+            
+            # Reference for the rest:
+            # Was revealed to me in a dream
             axis_neg_squared_skew = np.eye(3) - axis[np.newaxis].T * axis
-    
             points_skew = (axis_neg_squared_skew @ points.T).T
             b = sum(points_skew.T * points.T)
             a = np.c_[2 * points_skew, np.ones(num_points)]
