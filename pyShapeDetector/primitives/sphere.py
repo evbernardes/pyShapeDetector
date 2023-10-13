@@ -78,7 +78,10 @@ class Sphere(PrimitiveBase):
     
     @property
     def equation(self):
-        delta = [f'{p} - {a}' for p, a in zip(('x','y','z'), self.center)]
+        def sig(x):
+            return "-" if x < 0 else '+'
+        delta = [f'{p} {sig(-a)} {abs(a)}' for p, a in zip(('x','y','z'), 
+                                                           self.center)]
         equation = " + ".join([f'({p})**2' for p in delta])
         return equation + f" = {self.radius ** 2}"
     

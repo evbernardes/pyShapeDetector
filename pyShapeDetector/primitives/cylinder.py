@@ -92,7 +92,17 @@ class Cylinder(PrimitiveBase):
     
     _fit_n_min = 6
     _model_args_n = 7
-    name = 'cylinder' 
+    name = 'cylinder'
+    
+    @property
+    def equation(self):
+        def sig(x):
+            return "-" if x < 0 else '+'
+        delta = [f'{p} {sig(-a)} {abs(a)}' for p, a in zip(('x','y','z'), 
+                                                           self.center)]
+        A = " + ".join([f'({p})**2' for p in delta])
+        B = " + ".join([ f'{e} * ({p})' for e, p in zip (self.axis, delta)])
+        return A + " + [" + B + "]**2" + f" = {self.radius ** 2}"
     
     @property
     def point(self):
