@@ -32,6 +32,8 @@ class PrimitiveBase(ABC):
         Number of parameters in the model.
     name : str
         Name of primitive.
+    equation : str
+        Equation that defines the primitive.
     
     Methods
     -------
@@ -69,11 +71,16 @@ class PrimitiveBase(ABC):
         Create a list of length `args_n` that stores `value` at index `idx`
         and `None` elsewhere.
     """
+    @property
+    def equation(self):
+        """ Equation that defines the primitive."""
+        raise NotImplementedError(f'Equation not implemented for {self.name} '
+                                  'primitives.')
     
     @property
     @abstractmethod
     def _fit_n_min(self):
-        """ Minimum number of points necessary to fit a model. """
+        """ Minimum number of points necessary to fit a model."""
         pass
 
     @property
