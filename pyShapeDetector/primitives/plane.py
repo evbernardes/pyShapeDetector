@@ -79,11 +79,11 @@ class Plane(PrimitiveBase):
         n = self.normal
         d = self.model[-1]
         equation = ''
-        equation += f'{n[0]}x '
+        equation += f'{n[0]} * x '
         equation += '-' if n[1] < 0 else '+'
-        equation += f' {abs(n[1])}y '
+        equation += f' {abs(n[1])} * y '
         equation += '-' if n[2] < 0 else '+'
-        equation += f' {abs(n[2])}z '
+        equation += f' {abs(n[2])} * z '
         equation += '-' if d < 0 else '+'
         equation += f' {abs(d)} = 0'
         
