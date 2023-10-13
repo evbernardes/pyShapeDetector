@@ -16,19 +16,106 @@ from open3d.utility import Vector3iVector, Vector3dVector
 from .PrimitiveBase import PrimitiveBase
     
 class Template(PrimitiveBase):
+    """
+    Template primitive.
+    
+    Use this as a base to implement your own primitives.
+    
+    Attributes
+    ----------
+    _fit_n_min : int
+        Minimum number of points necessary to fit a model.
+    _model_args_n : str
+        Number of parameters in the model.
+    name : str
+        Name of primitive.
+    equation : str
+        Equation that defines the primitive.
+    
+    Methods
+    -------
+    get_distances(points)
+        Gives the minimum distance between each point to the model. 
+        
+    get_normals(points)
+        Gives, for each input point, the normal vector of the point closest 
+        to the primitive. 
+        
+    fit(points, normals=None):
+        Gives shape that fits the input points. If the number of points is
+        higher than the `_fit_n_min`, the fitted shape will return some kind of
+        estimation. 
+    
+    get_angles_cos(points, normals):
+        Gives the absolute value of cosines of the angles between the input 
+        normal vectors and the calculated normal vectors from the input points.
+    
+    get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
+        Rotation matrix that transforms `axis_origin` in `axis`.
+        
+    get_angles_cos(points, normals):
+        Gives the absolute value of cosines of the angles between the input 
+        normal vectors and the calculated normal vectors from the input points.
+        
+    get_angles(points, normals):
+        Gives the angles between the input normal vectors and the 
+        calculated normal vectors from the input points.
+        
+    get_residuals(points, normals):
+        Convenience function returning both distances and angles.
+        
+    create_limits(args_n, idx, value):
+        Create a list of length `args_n` that stores `value` at index `idx`
+        and `None` elsewhere.
+        
+    get_mesh(points=None):
+        Creates mesh of the shape.    
+    """
     
     _fit_n_min = 0
     _model_args_n = 0
     name = 'template' 
     
     def get_distances(self, points):
+        """ Gives the minimum distance between each point to the model.
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        
+        Returns
+        -------
+        distances
+            Nx1 array distances.
+        """
         points = np.asarray(points)
         return np.sum(points, axis=1)
     
     def get_normals(self, points):
+        """ Gives, for each input point, the normal vector of the point closest 
+        to the primitive.
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        
+        Returns
+        -------
+        normals
+            Nx3 array containing normal vectors.
+        """
         return points
     
-    def get_mesh(self, points):
+    def get_mesh(self, points=None):
+        """ Creates mesh of the shape.      
+        
+        Returns
+        -------
+        TriangleMesh
+            Mesh corresponding to the shape.
+        """
         return TriangleMesh()
     
     @staticmethod

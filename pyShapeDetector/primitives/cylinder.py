@@ -13,6 +13,82 @@ from skspatial.objects.cylinder import Cylinder as skcylinder
 from .primitivebase import PrimitiveBase
     
 class Cylinder(PrimitiveBase):
+    """
+    Cylinder primitive.
+    
+    Attributes
+    ----------
+    _fit_n_min : int
+        Minimum number of points necessary to fit a model.
+    _model_args_n : str
+        Number of parameters in the model.
+    name : str
+        Name of primitive.
+    point : 3 x 1 array
+        Point at the base of the cylinder.
+    vector : 3 x 1 array
+        Vector from base point to top point.
+    height: float
+        Height of cylinder.
+    axis : 3 x 1 float
+        Unit vector defining axis of cylinder.
+    radius : float
+        Radius of the cylinder.
+    center : 3 x 1 array
+        Center point of the cylinder.
+    rotation_from_axis : 3 x 3 array
+        Rotation matrix that aligns z-axis with cylinder axis.
+        
+    Methods
+    ------- 
+    
+    get_distances(points)
+        Gives the minimum distance between each point to the cylinder. 
+        
+    get_normals(points)
+        Gives, for each input point, the normal vector of the point closest 
+        to the cylinder. 
+        
+    fit(points, normals=None):
+        Gives cylinder that fits the input points. 
+    
+    get_angles_cos(points, normals):
+        Gives the absolute value of cosines of the angles between the input 
+        normal vectors and the calculated normal vectors from the input points.
+    
+    get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
+        Rotation matrix that transforms `axis_origin` in `axis`.
+        
+    get_angles_cos(points, normals):
+        Gives the absolute value of cosines of the angles between the input 
+        normal vectors and the calculated normal vectors from the input points.
+        
+    get_angles(points, normals):
+        Gives the angles between the input normal vectors and the 
+        calculated normal vectors from the input points.
+        
+    get_residuals(points, normals):
+        Convenience function returning both distances and angles.
+        
+    get_orthogonal_component(points):
+        Removes the axis-aligned components of points.
+        
+    closest_to_line(points):
+        Returns points in cylinder axis that are the closest to the input
+        points.
+        
+    create_limits(args_n, idx, value):
+        Create a list of length `args_n` that stores `value` at index `idx`
+        and `None` elsewhere.
+        
+    limit_radius(value):
+        Create a list of length `7` that stores `value` at last index and 
+        `None` elsewhere.
+    
+    get_mesh(): TriangleMesh
+        Returns mesh defined by the cylinder model. 
+    
+    """
     
     _fit_n_min = 6
     _model_args_n = 7
@@ -20,44 +96,105 @@ class Cylinder(PrimitiveBase):
     
     @property
     def point(self):
+        """ Point at the base of the cylinder. """
         return np.array(self.model[:3])
     
     @property
     def vector(self):
+        """ Vector from base point to top point. """
         return np.array(self.model[3:6])
     
     @property
     def height(self):
+        """ Height of cylinder. """
         return np.linalg.norm(self.vector)
     
     @property
     def axis(self):
+        """ Unit vector defining axis of cylinder. """
         return self.vector / self.height
     
     @property
     def radius(self):
+        """ Radius of the cylinder. """
         return self.model[-1]
     
     @property
     def center(self):
+        """ Center point of the cylinder."""
         return self.point + self.vector / 2
+    
+    @property
+    def rotation_from_axis(self):
+        """ Rotation matrix that aligns z-axis with cylinder axis."""
+        return self.get_rotation_from_axis(self.axis)
     
     @staticmethod
     def limit_radius(value):
+        """ Create a list of length `7` that stores `value` at last index and 
+        `None` elsewhere.
+        
+        Parameters
+        ----------
+        value : float
+            Radius limit value
+        
+        Returns
+        -------
+        list
+            List containing limit.
+        """
         return PrimitiveBase.create_limits(
             Cylinder._model_args_n, 6, value)
     
-    def _closest_to_line(self, points):
+    def closest_to_line(self, points):
+        """ Returns points in cylinder axis that are the closest to the input
+        points.
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        
+        Returns
+        -------
+        points_closest: 3 x N array
+            N points in cylinder line
+        """
         points = np.asarray(points)
         projection = (points - self.point).dot(self.axis)
         return self.point + projection[..., np.newaxis] * self.axis
     
-    def _get_orthogonal_component(self, points):
+    def get_orthogonal_component(self, points):
+        """ Removes the axis-aligned components of points.
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        
+        Returns
+        -------
+        points_orthogonal: 3 x N array
+            N points
+        """
         points = np.asarray(points)
         delta = points - self.point
         return -np.cross(self.axis, np.cross(self.axis, delta))
 
     def get_distances(self, points):
+        """ Gives the minimum distance between each point to the cylinder. 
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        
+        Returns
+        -------
+        distances
+            Nx1 array distances.
+        """
         points = np.asarray(points)             
         distances = np.linalg.norm(
             np.cross(self.axis, points - self.point), axis=1)
@@ -65,15 +202,31 @@ class Cylinder(PrimitiveBase):
         return np.abs(distances - self.radius)
     
     def get_normals(self, points):
-        normals = self._get_orthogonal_component(points)
+        """ Gives, for each input point, the normal vector of the point closest 
+        to the cylinder.
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        
+        Returns
+        -------
+        normals
+            Nx3 array containing normal vectors.
+        """
+        normals = self.get_orthogonal_component(points)
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
     
-    @property
-    def rotation_from_axis(self):
-        return self.get_rotation_from_axis(self.axis)
-    
     def get_mesh(self, points):
+        """ Returns mesh defined by the cylinder model.      
+        
+        Returns
+        -------
+        TriangleMesh
+            Mesh corresponding to the plane.
+        """
         
         points = np.asarray(points)
         
@@ -87,6 +240,29 @@ class Cylinder(PrimitiveBase):
     
     @staticmethod
     def fit(points, normals=None):
+        """ Gives cylinder that fits the input points. 
+        
+        If normals are given: first calculate cylinder axis using normals as
+        explained in [1] and then use least squares to calculate center point
+        and radius.
+        
+        If normals are not given, uses Scikit Spatial, which is slower and not
+        recommended.
+        
+        References
+        ----------
+        [1]: http://dx.doi.org/10.1016/j.cag.2014.09.027
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points
+        
+        Returns
+        -------
+        Plane
+            Fitted sphere.
+        """
         points = np.asarray(points)
         
         num_points = len(points)
