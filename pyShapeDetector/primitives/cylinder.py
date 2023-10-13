@@ -24,7 +24,7 @@ class Cylinder(PrimitiveBase):
         Number of parameters in the model.
     name : str
         Name of primitive.
-    point : 3 x 1 array
+    base : 3 x 1 array
         Point at the base of the cylinder.
     vector : 3 x 1 array
         Vector from base point to top point.
@@ -105,7 +105,7 @@ class Cylinder(PrimitiveBase):
         return A + " + [" + B + "]**2" + f" = {self.radius ** 2}"
     
     @property
-    def point(self):
+    def base(self):
         """ Point at the base of the cylinder. """
         return np.array(self.model[:3])
     
@@ -132,7 +132,7 @@ class Cylinder(PrimitiveBase):
     @property
     def center(self):
         """ Center point of the cylinder."""
-        return self.point + self.vector / 2
+        return self.base + self.vector / 2
     
     @property
     def rotation_from_axis(self):
@@ -172,8 +172,8 @@ class Cylinder(PrimitiveBase):
             N points in cylinder line
         """
         points = np.asarray(points)
-        projection = (points - self.point).dot(self.axis)
-        return self.point + projection[..., np.newaxis] * self.axis
+        projection = (points - self.base).dot(self.axis)
+        return self.base + projection[..., np.newaxis] * self.axis
     
     def get_orthogonal_component(self, points):
         """ Removes the axis-aligned components of points.
@@ -189,7 +189,7 @@ class Cylinder(PrimitiveBase):
             N points
         """
         points = np.asarray(points)
-        delta = points - self.point
+        delta = points - self.base
         return -np.cross(self.axis, np.cross(self.axis, delta))
 
     def get_distances(self, points):
@@ -207,7 +207,7 @@ class Cylinder(PrimitiveBase):
         """
         points = np.asarray(points)             
         distances = np.linalg.norm(
-            np.cross(self.axis, points - self.point), axis=1)
+            np.cross(self.axis, points - self.base), axis=1)
         
         return np.abs(distances - self.radius)
     
