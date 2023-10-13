@@ -21,7 +21,8 @@ class PrimitiveBase(ABC):
         `get_distances`
         `get_normals`
         
-    The method `get_mesh` can also 
+    The method `get_mesh` can also optionally be implemented to return a 
+    TriangleMesh instance.
     
     Attributes
     ----------
