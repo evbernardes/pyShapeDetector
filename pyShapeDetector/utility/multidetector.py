@@ -74,7 +74,8 @@ class MultiDetector():
             
         return self._meshes_detected
         
-    def run(self, debug=0, compare_metric='fitness', fitness_min=0.1):
+    def run(self, debug=0, compare_metric='fitness', fitness_min=0.1, 
+            normals_reestimate=False):
         
         self._shapes_detected = None
         self._meshes_detected = None
@@ -108,7 +109,9 @@ class MultiDetector():
                 
                 if debug:
                     print(f'\niteration {iteration}')
-                    
+                
+                if normals_reestimate:
+                    pcd_.estimate_normals()
                 normals = pcd_.normals
                 
                 output_shapes = []
