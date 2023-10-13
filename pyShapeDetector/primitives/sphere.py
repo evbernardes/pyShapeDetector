@@ -11,21 +11,67 @@ from open3d.geometry import TriangleMesh
 from .primitivebase import PrimitiveBase
     
 class Sphere(PrimitiveBase):
+    """
+    Sphere primitive.
+    
+    Attributes
+    ----------
+    _fit_n_min : int
+        Minimum number of points necessary to fit a model.
+    _model_args_n : str
+        Number of parameters in the model.
+    name : str
+        Name of primitive.
+    equation : str
+        Equation that defines the primitive.
+    radius : float
+        Radius of the sphere.
+    center : 3 x 1 array
+        Center point of the sphere.
+    
+    Methods
+    -------
+    
+    limit_radius(value):
+        Create a list of length `4` that stores `value` at last index and 
+        `None` elsewhere.
+    """
     
     _fit_n_min = 4
     _model_args_n = 4
     name = 'sphere'
     
     @property
+    def equation(self):
+        delta = [f'{p} - {a}' for p, a in zip(('x','y','z'), self.center)]
+        equation = " + ".join([f'({p})**2' for p in delta])
+        return equation + f" = {self.radius ** 2}"
+    
+    @property
     def radius(self):
+        """ Radius of the sphere."""
         return self.model[-1]
     
     @property
     def center(self):
+        """ Center point of the sphere."""
         return np.array(self.model[:3])
     
     @staticmethod
     def limit_radius(value):
+        """ Create a list of length `4` that stores `value` at last index and 
+        `None` elsewhere.
+        
+        Parameters
+        ----------
+        value : float
+            Radius limit value
+        
+        Returns
+        -------
+        list
+            List containing limit.
+        """
         return PrimitiveBase.create_limits(Sphere._model_args_n, 3, value)
     
     def get_distances(self, points):
