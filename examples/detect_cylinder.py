@@ -40,8 +40,6 @@ detector = method(Cylinder, num_iterations=15,
                   # max_point_distance=0.5,
                   inliers_min=inliers_min)
 
-        
-
 
 shape, inliers, metrics = detector.fit(pcd.points, debug=True, normals=normals)
 pcd_shape = pcd.select_by_index(inliers)

@@ -8,23 +8,7 @@ Created on Wed Sep 20 15:30:28 2023
 
 import copy
 import time
-from pathlib import Path
 import numpy as np
-import matplotlib.pyplot as plt
-import open3d as o3d
-from open3d.visualization import draw_geometries
-from open3d.utility import Vector3dVector
-
-# from helpers import color_blue, color_gray, color_red, color_yellow
-from helpers import draw_two_colomns
-from pyShapeDetector.primitives import Sphere, Plane, Cylinder
-
-from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, BDSAC, LDSAC
-methods = [RANSAC_Classic, 
-           RANSAC_Weighted,
-           MSAC,
-           BDSAC, 
-           LDSAC]
 
 #%% Parameters and input
 
