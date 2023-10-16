@@ -10,13 +10,47 @@ from abc import ABC, abstractmethod
 import time
 import random
 import numpy as np
-# import open3d as o3d
-# import multiprocessing
-# from multiprocessing import Process, Manager
 
 random.seed(951)
 
 class RANSAC_Base(ABC):
+    """
+    Base class used to define RANSAC-based methods.
+    
+    To define a primitive, inherit from this class and define at least the 
+    following method:
+        `compare_metrics`
+    
+    Methods
+    -------
+    compare_metrics(metrics, metrics_best):
+        Gives the absolute value of cosines of the angles between the input 
+        normal vectors and the calculated normal vectors from the input points.
+
+    termination_criterion(metrics):
+        Gives number of max needed iterations, depending on current metrics.
+        
+    get_metrics(num_points=None, num_inliers=None, distances=None, 
+    angles=None):
+        Gives a dictionary with metrics that can be used to compared fits.
+        
+    get_model(points, normals, samples):
+        Fits shape, then test if its model parameters respect input
+        max and min values. If it does, return shape, otherwise, return None.
+        
+    get_samples(points, num_samples, tries_max=5000):
+        Sample points and return indices of sampled points.
+
+    get_inliers_from_residuals(distances, angles):
+        Return indices of inliers: points whose distance to shape and
+        angle with normal vector are below the given thresholds.
+        
+    fit(points, normals=None, debug=False):#, filter_model=True):
+        Main loop implementing RANSAC algorithm.
+               
+    get_residuals(points, normals):
+        Convenience function returning both distances and angles.
+    """
 
     def __init__(self,
                  primitive,
@@ -68,9 +102,38 @@ class RANSAC_Base(ABC):
     
     @abstractmethod
     def compare_metrics(self, metrics, metrics_best):
+        """ Gives the absolute value of cosines of the angles between the input 
+        normal vectors and the calculated normal vectors from the input points.
+
+        Actual implementation depends on exact type of RANSAC-based method.
+        
+        Parameters
+        ----------
+        metrics : dict
+            Metrics analyzing current fit
+        metrics_best : dict
+            Metrics analyzing current best fit
+        
+        Returns
+        -------
+        bool
+            True if `metrics` is considered better than `metrics_best`
+        """
         pass
     
     def termination_criterion(self, metrics):
+        """ Gives number of max needed iterations, depending on current metrics.
+        
+        Parameters
+        ----------
+        metrics : dict
+            Metrics analyzing current fit
+        
+        Returns
+        -------
+        int
+            Number of max needed iterations
+        """
         if metrics['fitness'] > 1.0:
             return 0
         
@@ -83,6 +146,24 @@ class RANSAC_Base(ABC):
     def get_metrics(self, 
                  num_points=None, num_inliers=None, 
                  distances=None, angles=None):
+        """ Gives a dictionary with metrics that can be used to compared fits.
+        
+        Parameters
+        ----------
+        num_points : int or None
+            Total number of points
+        num_inliers : dict
+            Number of inliers
+        distances : array
+            Distances of each point to shape
+        angles : array or None
+            Angles between each input and theoretical normal vector
+        
+        Returns
+        -------
+        dict
+            Metrics analyzing current fit
+        """
         if num_points is None or num_inliers is None or distances is None:
             metrics = {'num_inliers': 0, 'fitness': 0, 
                     'rmse_distances': 0, 'rmse_angles': 0}
@@ -102,6 +183,24 @@ class RANSAC_Base(ABC):
         return metrics
 
     def get_model(self, points, normals, samples):
+        """ Fits shape, then test if its model parameters respect input
+        max and min values. If it does, return shape, otherwise, return None.
+        
+        Parameters
+        ----------
+        points : array
+            All input points
+        normals : array or None
+            All input normal vectors 
+        samples : array
+            Indices of supposed inliers
+        
+        Returns
+        -------
+        shape or None
+            Fitted shape, if it respects limits
+        """
+
         n = None if normals is None else normals[samples]
         shape = self.primitive.fit(points[samples], n)
         
@@ -120,31 +219,51 @@ class RANSAC_Base(ABC):
 
         return shape
 
-    def get_probabilities(self, distances, angles=None):
+    # def get_probabilities(self, distances, angles=None):
 
-        if angles is not None and len(distances) != len(angles):
-            raise ValueError('distances and angles must have the same size, '
-                             f'got {distances.shape} and {angles.shape}.')
+    #     if angles is not None and len(distances) != len(angles):
+    #         raise ValueError('distances and angles must have the same size, '
+    #                          f'got {distances.shape} and {angles.shape}.')
 
-        probabilities = np.zeros(len(distances))
+    #     probabilities = np.zeros(len(distances))
 
-        mask = distances < self.threshold_distance
-        if angles is not None:
-            mask *= angles < self.threshold_angle
+    #     mask = distances < self.threshold_distance
+    #     if angles is not None:
+    #         mask *= angles < self.threshold_angle
 
-        probabilities[mask] = 1 - distances[mask] / self.threshold_distance
+    #     probabilities[mask] = 1 - distances[mask] / self.threshold_distance
 
-        if angles is not None:
-            probabilities[mask] *= 1 - angles[mask] / self.threshold_angle
+    #     if angles is not None:
+    #         probabilities[mask] *= 1 - angles[mask] / self.threshold_angle
 
-        return probabilities
+    #     return probabilities
 
-    def get_samples(self, points, num_points, tries_max=5000):
+    def get_samples(self, points, num_samples, tries_max=5000):
+        """ Sample points and return indices of sampled points.
 
+        If the method's `max_point_distance` attribute is set, then only
+        iteratively take samples only accepting at each time one that is 
+        close to the others.
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            All input points
+        num_samples : int
+            Number of samples
+        tries_max, optional : int
+            Number of tries before giving up, if `max_point_distance` 
+            attribute is set
+        
+        Returns
+        -------
+        list
+            Indices of samples
+        """
         if self.max_point_distance is None:
-            return random.sample(range(num_points), self.ransac_n)
+            return random.sample(range(num_samples), self.ransac_n)
 
-        samples = set([random.randrange(num_points)])
+        samples = set([random.randrange(num_samples)])
         
         tries = 0
         while len(samples) < self.ransac_n:
@@ -156,7 +275,7 @@ class RANSAC_Base(ABC):
                 # samples = set([random.randrange(num_points)])
                 # tries = 0
             
-            sample = random.randrange(num_points)
+            sample = random.randrange(num_samples)
             if sample in samples:
                 continue
             
@@ -173,17 +292,69 @@ class RANSAC_Base(ABC):
 
         return list(samples)
     
-    def get_inliers_from_points(self, shape, points, normals=None):
-        distances, angles = shape.get_residuals(points, normals)
-        return self.get_inliers_from_residuals(distances, angles)
-    
     def get_inliers_from_residuals(self, distances, angles):
+        """ Return indices of inliers: points whose distance to shape and
+        angle with normal vector are below the given thresholds.
+        
+        Parameters
+        ----------
+        distances : array
+            Distances of each point to shape
+        angles : array or None
+            Angles between each input and theoretical normal vector
+        
+        Returns
+        -------
+        list
+            Indices of inliers
+        """
         is_inlier = distances < self.threshold_distance
         if angles is not None:
             is_inlier *= (angles < self.threshold_angle)
         return np.where(is_inlier)[0]
+    
+    def get_inliers_from_points(self, shape, points, normals=None):
+        """ Return indices of inliers: points whose distance to shape and
+        angle with normal vector are below the given thresholds.
+        
+        Parameters
+        ----------
+        shape : primitive
+            Fitted shape
+        points : array
+            All input points
+        normals, optional : array
+            All input normal vectors 
+        
+        Returns
+        -------
+        list
+            Indices of inliers
+        """
+        distances, angles = shape.get_residuals(points, normals)
+        return self.get_inliers_from_residuals(distances, angles)
 
     def fit(self, points, normals=None, debug=False):#, filter_model=True):
+        """ Main loop implementing RANSAC algorithm.
+        
+        Parameters
+        ----------
+        points : array
+            All input points
+        normals, optional : array
+            All input normal vectors 
+        debug, optional : bool
+            Gives info if true
+        
+        Returns
+        -------
+        primitive
+            Best fitted primitive
+        list
+            List of inliers indices of fitted shape
+        dict
+            Metrics of best fitted shape
+        """
         primitive = self.primitive
         points = np.asarray(points)
         num_points = len(points)
