@@ -28,6 +28,8 @@ methods = [RANSAC_Classic,
            BDSAC, 
            LDSAC]
 
+DEG = 0.017453292519943295
+
 #%% Parameters and input
 method = methods[4] # select which method, 3 means "BDSAC"
 filedir = Path('./data')
@@ -69,19 +71,19 @@ for label in set(labels):
 #%% Create detectors for each shape
 
 sphere_detector = method(Sphere, num_iterations=num_iterations,
-                         threshold_angle=30,
+                         threshold_angle=30 * DEG,
                          threshold_distance=threshold_distance,
                          model_max=Sphere.limit_radius(5),
                          inliers_min=inliers_min)
 
 plane_detector = method(Plane, num_iterations=num_iterations,
-                        threshold_angle=20,
+                        threshold_angle=20 * DEG,
                         threshold_distance=threshold_distance,
                         # max_point_distance=0.5,
                         inliers_min=inliers_min)
 
 cylinder_detector = method(Cylinder, num_iterations=num_iterations,
-                           threshold_angle=20,
+                           threshold_angle=20 * DEG,
                            threshold_distance=threshold_distance,
                            model_max=Cylinder.limit_radius(15),
                            # max_point_distance=0.5,

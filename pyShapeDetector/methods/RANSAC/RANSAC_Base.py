@@ -16,16 +16,13 @@ import numpy as np
 
 random.seed(951)
 
-DEG = 0.017453292519943295
-
-
 class RANSAC_Base(ABC):
 
     def __init__(self,
                  primitive,
                  reduction_rate=1.0,
                  threshold_distance=0.1,
-                 threshold_angle=10,
+                 threshold_angle=0.174,  # ~ 10 degrees
                  ransac_n=None,
                  num_iterations=100,
                  probability=0.99999,
@@ -60,7 +57,7 @@ class RANSAC_Base(ABC):
         self.primitive = primitive
         self.reduction_rate = reduction_rate
         self.threshold_distance = threshold_distance
-        self.threshold_angle = threshold_angle * DEG
+        self.threshold_angle = threshold_angle
         self.ransac_n = ransac_n
         self.num_iterations = num_iterations
         self.probability = probability
