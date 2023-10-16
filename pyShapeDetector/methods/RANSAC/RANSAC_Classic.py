@@ -10,19 +10,67 @@ from abc import ABC, abstractmethod
 import time
 import random
 import numpy as np
-# import open3d as o3d
-# import multiprocessing
-# from multiprocessing import Process, Manager
 
 random.seed(951)
 
 from .RANSAC_Base import RANSAC_Base
 
 class RANSAC_Classic(RANSAC_Base):
+    """
+    Implementation of RANSAC Classic method.
+    
+    Methods
+    -------
+    compare_metrics(metrics, metrics_best):
+        Gives the absolute value of cosines of the angles between the input 
+        normal vectors and the calculated normal vectors from the input points.
+
+    termination_criterion(metrics):
+        Gives number of max needed iterations, depending on current metrics.
+        
+    get_metrics(num_points=None, num_inliers=None, distances=None, 
+    angles=None):
+        Gives a dictionary with metrics that can be used to compared fits.
+        
+    get_model(points, normals, samples):
+        Fits shape, then test if its model parameters respect input
+        max and min values. If it does, return shape, otherwise, return None.
+        
+    get_samples(points, num_samples, tries_max=5000):
+        Sample points and return indices of sampled points.
+
+    get_inliers_from_residuals(distances, angles):
+        Return indices of inliers: points whose distance to shape and
+        angle with normal vector are below the given thresholds.
+        
+    fit(points, normals=None, debug=False):#, filter_model=True):
+        Main loop implementing RANSAC algorithm.
+               
+    get_residuals(points, normals):
+        Convenience function returning both distances and angles.
+    """
     
     _type = "RANSAC Classic"
     
     def compare_metrics(self, metrics, metrics_best):
+        """ Compare metrics to decide if new fit is better than current
+        best fit.
+
+        For RANSAC Classic, choose the shape with best fitness, meaning
+        the higher number of inliers.
+        
+        Parameters
+        ----------
+        metrics : dict
+            Metrics analyzing current fit
+        metrics_best : dict
+            Metrics analyzing current best fit
+        
+        Returns
+        -------
+        bool
+            True if `metrics` is considered better than `metrics_best`
+        """
         return (metrics['fitness'] > metrics_best['fitness'] or 
                 (metrics['fitness'] == metrics_best['fitness'] and 
                  metrics['rmse_distances'] < metrics_best['rmse_distances']))

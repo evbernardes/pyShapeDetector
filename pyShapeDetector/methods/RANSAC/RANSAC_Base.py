@@ -102,8 +102,8 @@ class RANSAC_Base(ABC):
     
     @abstractmethod
     def compare_metrics(self, metrics, metrics_best):
-        """ Gives the absolute value of cosines of the angles between the input 
-        normal vectors and the calculated normal vectors from the input points.
+        """ Compare metrics to decide if new fit is better than current
+        best fit.
 
         Actual implementation depends on exact type of RANSAC-based method.
         
