@@ -94,7 +94,7 @@ class Plane(PrimitiveBase):
         """ Normal vector defining point. """
         return np.array(self.model[:3])
     
-    def get_distances(self, points):
+    def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the model. 
         
         Actual implementation depends on the type of primitive.
@@ -110,7 +110,7 @@ class Plane(PrimitiveBase):
             Nx1 array distances.
         """
         points = np.asarray(points)
-        return np.abs(points.dot(self.normal) + self.model[3])
+        return points.dot(self.normal) + self.model[3]
     
     def get_normals(self, points):
         """ Gives, for each input point, the normal vector of the point closest 
@@ -147,8 +147,7 @@ class Plane(PrimitiveBase):
         
         points = np.asarray(points)
 
-        # needs signed distance
-        distances = points.dot(self.normal) + self.model[3]
+        distances = self.get_signed_distances(points)
         points -= (distances * self.normal[..., np.newaxis]).T
         
         rot = self.get_rotation_from_axis(self.normal)

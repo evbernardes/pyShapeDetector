@@ -99,7 +99,7 @@ class PrimitiveBase(ABC):
         pass
     
     @abstractmethod
-    def get_distances(self, points):
+    def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the model. 
         
         Actual implementation depends on the type of primitive.
@@ -264,6 +264,22 @@ class PrimitiveBase(ABC):
         
         return np.arccos(
             self.get_angles_cos(points, normals))
+    
+    def get_distances(self, points):
+        """ Gives the absolute value of the minimum distance between each point 
+        to the model. 
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        
+        Returns
+        -------
+        distances
+            Nx1 array distances.
+        """
+        return abs(self.get_signed_distances(points))
     
     def get_residuals(self, points, normals):
         """ Convenience function returning both distances and angles.

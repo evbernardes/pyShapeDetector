@@ -192,7 +192,7 @@ class Cylinder(PrimitiveBase):
         delta = points - self.base
         return -np.cross(self.axis, np.cross(self.axis, delta))
 
-    def get_distances(self, points):
+    def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the cylinder. 
         
         Parameters
@@ -209,7 +209,7 @@ class Cylinder(PrimitiveBase):
         distances = np.linalg.norm(
             np.cross(self.axis, points - self.base), axis=1)
         
-        return np.abs(distances - self.radius)
+        return distances - self.radius
     
     def get_normals(self, points):
         """ Gives, for each input point, the normal vector of the point closest 

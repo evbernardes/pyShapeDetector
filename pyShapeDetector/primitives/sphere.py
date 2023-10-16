@@ -112,7 +112,7 @@ class Sphere(PrimitiveBase):
         """
         return PrimitiveBase.create_limits(Sphere._model_args_n, 3, value)
     
-    def get_distances(self, points):
+    def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the sphere.
         
         Parameters
@@ -127,8 +127,7 @@ class Sphere(PrimitiveBase):
         """
         points = np.asarray(points)
         model = self.model
-        distances = np.linalg.norm(points - model[:3], axis=1) - model[3]
-        return np.abs(distances)
+        return np.linalg.norm(points - model[:3], axis=1) - model[3]
     
     def get_normals(self, points):
         """ Gives, for each input point, the normal vector of the point closest 

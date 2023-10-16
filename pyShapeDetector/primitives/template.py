@@ -76,7 +76,7 @@ class Template(PrimitiveBase):
     _model_args_n = 0
     name = 'template' 
     
-    def get_distances(self, points):
+    def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the model.
         
         Parameters
@@ -89,8 +89,7 @@ class Template(PrimitiveBase):
         distances
             Nx1 array distances.
         """
-        points = np.asarray(points)
-        return np.sum(points, axis=1)
+        return np.zeros(len(points))
     
     def get_normals(self, points):
         """ Gives, for each input point, the normal vector of the point closest 
