@@ -27,6 +27,11 @@ class RANSAC_WeightedBase(RANSAC_Base):
     The method `weight_angles` can also be implemented. Otherwise, considers
     equal to `weight_distances`.
     
+    Attributes
+    ----------
+    _type : str
+        Name of method.
+    
     Methods
     -------
     compare_metrics(metrics, metrics_best):

@@ -19,6 +19,11 @@ class MSAC(RANSAC_WeightedBase):
     """
     MSAC weighted RANSAC.
     
+    Attributes
+    ----------
+    _type : str
+        Name of method.
+    
     Methods
     -------
     compare_metrics(metrics, metrics_best):

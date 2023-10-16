@@ -21,6 +21,11 @@ class RANSAC_Weighted(RANSAC_WeightedBase):
     
     Weight function defined as a step function.
     
+    Attributes
+    ----------
+    _type : str
+        Name of method.
+    
     Methods
     -------
     compare_metrics(metrics, metrics_best):

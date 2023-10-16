@@ -19,6 +19,11 @@ class RANSAC_Classic(RANSAC_Base):
     """
     Implementation of RANSAC Classic method.
     
+    Attributes
+    ----------
+    _type : str
+        Name of method.
+    
     Methods
     -------
     compare_metrics(metrics, metrics_best):

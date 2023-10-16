@@ -19,6 +19,11 @@ class LDSAC(RANSAC_WeightedBase):
     """
     LDSAC weighted RANSAC.
     
+    Attributes
+    ----------
+    _type : str
+        Name of method.
+    
     Methods
     -------
     compare_metrics(metrics, metrics_best):

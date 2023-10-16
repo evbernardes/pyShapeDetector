@@ -18,8 +18,15 @@ class RANSAC_Base(ABC):
     Base class used to define RANSAC-based methods.
     
     To define a primitive, inherit from this class and define at least the 
-    following method:
+    following attribute:
+        `_type`
+    And the following method:
         `compare_metrics`
+
+    Attributes
+    ----------
+    _type : str
+        Name of method.
     
     Methods
     -------
@@ -99,6 +106,12 @@ class RANSAC_Base(ABC):
         self.model_max = None if model_max is None else np.array(model_max)
         self.model_min = None if model_min is None else np.array(model_min)
         self.inliers_min = inliers_min
+
+    @property
+    @abstractmethod
+    def _type(self):
+        """ Name of method."""
+        pass
     
     @abstractmethod
     def compare_metrics(self, metrics, metrics_best):
