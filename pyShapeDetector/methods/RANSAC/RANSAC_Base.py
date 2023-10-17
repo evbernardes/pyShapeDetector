@@ -229,7 +229,7 @@ class RANSAC_Base(ABC):
                 idx_min = np.where(self.model_min != None)[0]
                 if np.any(self.model_min[idx_min] > model_array[idx_min]):
                     return None
-
+                
         return shape
 
     # def get_probabilities(self, distances, angles=None):
@@ -463,12 +463,14 @@ class RANSAC_Base(ABC):
         # if filter_model:
         n = None if normals is None else normals[inliers_final]
         shape_best = primitive.fit(points[inliers_final], n)
+        
         if shape_best is None:
             raise ValueError('None value found for shape at the last '
                              'filtering step, this should not happen')
             
         if debug:
             print(f'\nFinished fitting {primitive.name}!')
+            print(f'model: {shape_best.model}')
             print('Execution time:')
             for t_ in times:
                 print(f'{t_} : {times[t_]:.5f}s')
