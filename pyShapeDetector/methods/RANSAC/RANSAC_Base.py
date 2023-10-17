@@ -278,7 +278,6 @@ class RANSAC_Base(ABC):
 
         samples = set([random.randrange(num_samples)])
         
-        tries = 0
         while len(samples) < self.ransac_n:
             
             # if the algorithm cannot find another sample in the minimal
