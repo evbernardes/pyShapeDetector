@@ -251,7 +251,7 @@ class RANSAC_Base(ABC):
 
     #     return probabilities
 
-    def get_samples(self, points, num_samples, tries_max=5000):
+    def get_samples(self, points, num_samples):
         """ Sample points and return indices of sampled points.
 
         If the method's `max_point_distance` attribute is set, then only
@@ -264,9 +264,6 @@ class RANSAC_Base(ABC):
             All input points
         num_samples : int
             Number of samples
-        tries_max, optional : int
-            Number of tries before giving up, if `max_point_distance` 
-            attribute is set
         
         Returns
         -------
@@ -281,27 +278,27 @@ class RANSAC_Base(ABC):
         tries = 0
         while len(samples) < self.ransac_n:
             
-            # if the algorithm cannot find another sample in the minimal
-            # neighborhood, stop
-            if tries > tries_max:
+            # Array of shape (num_samples, num_points, 3), where diff[i, :, :]
+            # is the different between each point to the ith sample
+            diff = points[None] - points[list(samples)][:, None]
+            
+            # Find all of the distances, then get the minimum for each sample,
+            # giving dist.shape == (n_points, )
+            dist = np.min(np.linalg.norm(diff, axis=2), axis=0)
+            
+            # Find all of the possible points and then remove those already
+            # sampled
+            possible_samples = dist < self.max_point_distance
+            possible_samples[list(samples)] = False
+            
+            # Continue only if enough existing samples
+            N_possible = sum(possible_samples)
+            if N_possible < self.ransac_n - len(samples):
                 return None
-                # samples = set([random.randrange(num_points)])
-                # tries = 0
             
-            sample = random.randrange(num_samples)
-            if sample in samples:
-                continue
-            
-            # tries = 0
-            point = points[sample]
-
-            distances = np.linalg.norm(points[list(samples)] - point, axis=1)
-            if min(distances) > self.max_point_distance:
-                tries += 1
-                continue
-
-            samples.add(sample)
-            tries = 0
+            idx_possible = np.where(possible_samples)[0]
+            idx_sample = random.randrange(N_possible)
+            samples.add(idx_possible[idx_sample])
 
         return list(samples)
     
