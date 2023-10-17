@@ -61,7 +61,7 @@ print(f"\nPoint cloud has {len(set(labels))} clusters!\n")
 colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
 colors[labels < 0] = 0
 pcd_segmented.colors = Vector3dVector(colors[:, :3])
-o3d.visualization.draw_geometries([pcd_segmented])
+# o3d.visualization.draw_geometries([pcd_segmented])
 
 pcds_segmented = []
 for label in set(labels):
@@ -73,6 +73,7 @@ for label in set(labels):
 sphere_detector = method(Sphere, num_iterations=num_iterations,
                          threshold_angle=30 * DEG,
                          threshold_distance=threshold_distance,
+                         max_point_distance=1,
                          model_max=Sphere.limit_radius(5),
                          inliers_min=inliers_min)
 
