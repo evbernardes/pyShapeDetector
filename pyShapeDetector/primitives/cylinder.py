@@ -127,7 +127,7 @@ class Cylinder(PrimitiveBase):
     @property
     def radius(self):
         """ Radius of the cylinder. """
-        return self.model[-1]
+        return self.model[6]
     
     @property
     def center(self):
