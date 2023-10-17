@@ -275,7 +275,6 @@ class RANSAC_Base(ABC):
 
         samples = set([random.randrange(num_samples)])
         
-        tries = 0
         while len(samples) < self.ransac_n:
             
             # Array of shape (num_samples, num_points, 3), where diff[i, :, :]
