@@ -73,7 +73,6 @@ for label in set(labels):
 sphere_detector = method(Sphere, num_iterations=num_iterations,
                          threshold_angle=30 * DEG,
                          threshold_distance=threshold_distance,
-                         max_point_distance=1,
                          model_max=Sphere.limit_radius(5),
                          inliers_min=inliers_min)
 
@@ -94,10 +93,9 @@ detectors = [sphere_detector, plane_detector, cylinder_detector]
 
 #%% Assemble detectors and detect shapes
 print(f'Using {method._type} method')
-start = time.time()
 shape_detector = MultiDetector(detectors, pcds_segmented, points_min=500, num_iterations=20)
-shape_detector.run(debug=False)
-print(f'time: {time.time() - start:=.2f}')
+shape_detector.run(debug=True)
+
 #%% Plot detected meshes
 meshes = shape_detector.meshes_detected
 pcds_rest = shape_detector.pcds_rest
