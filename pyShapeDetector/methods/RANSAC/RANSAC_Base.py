@@ -467,7 +467,7 @@ class RANSAC_Base(ABC):
 
         # ... and then find the final model using the final inliers
         # if filter_model:
-        n = None if normals is None else normals[inliers_final]
+        # n = None if normals is None else normals[inliers_final]
         # shape_best = primitive.fit(points[inliers_final], n)
         shape = self.get_model(points, normals, inliers_final)
         if shape:
