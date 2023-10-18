@@ -84,13 +84,27 @@ class RANSAC_Base(ABC):
         elif ransac_n < primitive._fit_n_min:
             raise ValueError(f'for {primitive._name}s, ransac_n should be at '
                              f'least {primitive._fit_n_min}.')
-
-        if not (model_max is None or len(model_max) == primitive._model_args_n):
+        
+        if model_max is None:
+            self.idx_model_max = []
+            self.model_max = None
+        elif len(model_max) == primitive._model_args_n:
+            model_max = np.array(model_max)
+            self.idx_model_max = np.where(model_max != None)[0]
+            self.model_max = model_max[self.idx_model_max]
+        else:
             raise ValueError(f'for {self._type}s, model_max is either None or a'
                              f' list of size {primitive._model_args_n}, got '
                              f'{model_max}')
-
-        if not (model_min is None or len(model_min) == primitive._model_args_n):
+        
+        if model_min is None:
+            self.idx_model_min = []
+            self.model_min = None
+        elif len(model_min) == primitive._model_args_n:
+            model_min = np.array(model_min)
+            self.idx_model_min = np.where(model_min != None)[0]
+            self.model_min = model_min[self.idx_model_min]
+        else:
             raise ValueError(f'for {self._type}s, model_min is either None or a'
                              f' list of size {primitive._model_args_n}, got '
                              f'{model_min}')
@@ -103,8 +117,6 @@ class RANSAC_Base(ABC):
         self.num_iterations = num_iterations
         self.probability = probability
         self.max_point_distance = max_point_distance
-        self.model_max = None if model_max is None else np.array(model_max)
-        self.model_min = None if model_min is None else np.array(model_min)
         self.inliers_min = inliers_min
 
     @property
@@ -216,19 +228,15 @@ class RANSAC_Base(ABC):
 
         n = None if normals is None else normals[samples]
         shape = self.primitive.fit(points[samples], n)
+
+        model = np.array(shape.model)
+        if self.model_max is not None and np.any(
+                self.model_max < model[self.idx_model_max]):
+            return None
         
-        if shape is not None:
-            model_array = np.array(shape.model)
-    
-            if self.model_max is not None:
-                idx_max = np.where(self.model_max != None)[0]
-                if np.any(self.model_max[idx_max] < model_array[idx_max]):
-                    return None
-    
-            if self.model_min is not None:
-                idx_min = np.where(self.model_min != None)[0]
-                if np.any(self.model_min[idx_min] > model_array[idx_min]):
-                    return None
+        if self.model_min is not None and np.any(
+                self.model_min > model[self.idx_model_min]):
+            return None
                 
         return shape
 

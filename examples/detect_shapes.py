@@ -42,7 +42,7 @@ filename = '3planes_3spheres_3cylinders'
 noise_max = 1
 inliers_min = 1000
 num_iterations = 100
-threshold_distance = 0.2 + noise_max
+threshold_distance = 0.3 + noise_max
 
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
 # draw_geometries([pcd_full])
