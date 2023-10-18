@@ -89,9 +89,8 @@ class RANSAC_Base(ABC):
             self.idx_model_max = []
             self.model_max = None
         elif len(model_max) == primitive._model_args_n:
-            model_max = np.array(model_max)
+            self.model_max = np.array(model_max)
             self.idx_model_max = np.where(model_max != None)[0]
-            self.model_max = model_max[self.idx_model_max]
         else:
             raise ValueError(f'for {self._type}s, model_max is either None or a'
                              f' list of size {primitive._model_args_n}, got '
@@ -101,9 +100,8 @@ class RANSAC_Base(ABC):
             self.idx_model_min = []
             self.model_min = None
         elif len(model_min) == primitive._model_args_n:
-            model_min = np.array(model_min)
+            self.model_min = np.array(model_min)
             self.idx_model_min = np.where(model_min != None)[0]
-            self.model_min = model_min[self.idx_model_min]
         else:
             raise ValueError(f'for {self._type}s, model_min is either None or a'
                              f' list of size {primitive._model_args_n}, got '
@@ -231,11 +229,11 @@ class RANSAC_Base(ABC):
 
         model = np.array(shape.model)
         if self.model_max is not None and np.any(
-                self.model_max < model[self.idx_model_max]):
+                self.model_max[self.idx_model_min] < model[self.idx_model_max]):
             return None
         
         if self.model_min is not None and np.any(
-                self.model_min > model[self.idx_model_min]):
+                self.model_min[self.idx_model_min] > model[self.idx_model_min]):
             return None
                 
         return shape
