@@ -53,6 +53,9 @@ class Template(PrimitiveBase):
     get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
         Rotation matrix that transforms `axis_origin` in `axis`.
         
+    flatten_points(points):
+        Stick each point in input to the closest point in shape's surface.
+        
     get_angles_cos(points, normals):
         Gives the absolute value of cosines of the angles between the input 
         normal vectors and the calculated normal vectors from the input points.

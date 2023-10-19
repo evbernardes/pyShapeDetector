@@ -56,6 +56,9 @@ class PrimitiveBase(ABC):
     get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
         Rotation matrix that transforms `axis_origin` in `axis`.
         
+    flatten_points(points):
+        Stick each point in input to the closest point in shape's surface.
+        
     get_angles_cos(points, normals):
         Gives the absolute value of cosines of the angles between the input 
         normal vectors and the calculated normal vectors from the input points.
@@ -202,6 +205,24 @@ class PrimitiveBase(ABC):
         halfway_axis = (axis_origin + axis)[..., np.newaxis]
         halfway_axis /= np.linalg.norm(halfway_axis)
         return 2 * halfway_axis * halfway_axis.T - np.eye(3)
+    
+    def flatten_points(self, points):
+        """ Stick each point in input to the closest point in shape's surface.
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points
+        
+        Returns
+        -------
+        points_flattened : 3 x N array
+            N points on the surface
+            
+        """
+        points = np.asarray(points)
+        distances = self.get_signed_distances(points)
+        return points - (distances * self.normal[..., np.newaxis]).T
     
     def get_angles_cos(self, points, normals):
         """ Gives the absolute value of cosines of the angles between the input 

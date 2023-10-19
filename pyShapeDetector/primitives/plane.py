@@ -49,6 +49,9 @@ class Plane(PrimitiveBase):
     get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
         Rotation matrix that transforms `axis_origin` in `axis`.
         
+    flatten_points(points):
+        Stick each point in input to the closest point in shape's surface.
+        
     get_angles_cos(points, normals):
         Gives the absolute value of cosines of the angles between the input 
         normal vectors and the calculated normal vectors from the input points.
@@ -144,11 +147,8 @@ class Plane(PrimitiveBase):
         TriangleMesh
             Mesh corresponding to the plane.
         """
-        
         points = np.asarray(points)
-
-        distances = self.get_signed_distances(points)
-        points_flat = points - (distances * self.normal[..., np.newaxis]).T
+        points_flat = self.flatten_points(points)
         
         rot = self.get_rotation_from_axis(self.normal)
         projection = (rot @ points_flat.T).T[:, :2]
