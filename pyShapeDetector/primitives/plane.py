@@ -148,10 +148,10 @@ class Plane(PrimitiveBase):
         points = np.asarray(points)
 
         distances = self.get_signed_distances(points)
-        points -= (distances * self.normal[..., np.newaxis]).T
+        points_flat = points - (distances * self.normal[..., np.newaxis]).T
         
         rot = self.get_rotation_from_axis(self.normal)
-        projection = (rot @ points.T).T[:, :2]
+        projection = (rot @ points_flat.T).T[:, :2]
         
         chull = ConvexHull(projection)
         borders = projection[chull.vertices]
