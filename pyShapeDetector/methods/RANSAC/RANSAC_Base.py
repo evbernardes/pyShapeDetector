@@ -232,6 +232,8 @@ class RANSAC_Base(ABC):
 
         n = None if normals is None else normals[samples]
         shape = self.primitive.fit(points[samples], n)
+        if shape is None:
+            return None
 
         model = np.array(shape.model)
         if self.model_max is not None and np.any(
