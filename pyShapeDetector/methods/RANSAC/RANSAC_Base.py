@@ -71,7 +71,8 @@ class RANSAC_Base(ABC):
                  model_max=None,
                  model_min=None,
                  max_normal_angle_degrees=10,
-                 inliers_min=None):
+                 inliers_min=None,
+                 fitness_min=None):
 
         if threshold_angle < 0:
             raise ValueError('threshold_angle must be positive')
@@ -95,6 +96,10 @@ class RANSAC_Base(ABC):
             raise ValueError(f'for {self._type}s, model_max is either None or a'
                              f' list of size {primitive._model_args_n}, got '
                              f'{model_max}')
+            
+        if fitness_min and (fitness_min < 0 or fitness_min > 1):
+            raise ValueError('fitness_min must be number between 0 and 1, '
+                             f'got {fitness_min}')
         
         if model_min is None:
             self.idx_model_min = []
@@ -116,6 +121,7 @@ class RANSAC_Base(ABC):
         self.probability = probability
         self.max_point_distance = max_point_distance
         self.inliers_min = inliers_min
+        self.fitness_min = fitness_min
 
     @property
     @abstractmethod
@@ -374,6 +380,7 @@ class RANSAC_Base(ABC):
         points = np.asarray(points)
         num_points = len(points)
         inliers_min = self.inliers_min
+        fitness_min = self.fitness_min
 
         if num_points < self.ransac_n:
             raise ValueError(f'Pointcloud must have at least {self.ransac_n} '
@@ -437,7 +444,11 @@ class RANSAC_Base(ABC):
             times['get_inliers_and_error'] += time.time() - t_
 
             if num_inliers == 0 or (inliers_min and num_inliers < inliers_min):
-                
+                # if debug:
+                    # print('No inliers.')
+                continue
+            
+            if fitness_min and num_inliers/num_points < fitness_min:
                 # if debug:
                     # print('No inliers.')
                 continue
