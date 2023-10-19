@@ -85,8 +85,12 @@ class Cylinder(PrimitiveBase):
         and `None` elsewhere.
         
     limit_radius(value):
-        Create a list of length `7` that stores `value` at last index and 
-        `None` elsewhere.
+        Creates a list of length `8` that stores `value` at second-to-last 
+        index and `None` elsewhere.
+
+    limit_height(value):
+        Creates a list of length `8` that stores `value` at last 
+        index and `None` elsewhere.
     
     get_mesh(): TriangleMesh
         Returns mesh defined by the cylinder model. 
@@ -94,7 +98,7 @@ class Cylinder(PrimitiveBase):
     """
     
     _fit_n_min = 6
-    _model_args_n = 7
+    _model_args_n = 8
     name = 'cylinder'
     
     @property
@@ -115,17 +119,17 @@ class Cylinder(PrimitiveBase):
     @property
     def vector(self):
         """ Vector from base point to top point. """
-        return np.array(self.model[3:6])
+        return self.axis * self.height
     
     @property
     def height(self):
         """ Height of cylinder. """
-        return np.linalg.norm(self.vector)
+        return self.model[7]
     
     @property
     def axis(self):
         """ Unit vector defining axis of cylinder. """
-        return self.vector / self.height
+        return np.array(self.model[3:6])
     
     @property
     def radius(self):
@@ -144,8 +148,8 @@ class Cylinder(PrimitiveBase):
     
     @staticmethod
     def limit_radius(value):
-        """ Create a list of length `7` that stores `value` at last index and 
-        `None` elsewhere.
+        """ Creates a list of length `8` that stores `value` at second-to-last 
+        index and `None` elsewhere.
         
         Parameters
         ----------
@@ -159,6 +163,24 @@ class Cylinder(PrimitiveBase):
         """
         return PrimitiveBase.create_limits(
             Cylinder._model_args_n, 6, value)
+    
+    @staticmethod
+    def limit_height(value):
+        """ Creates a list of length `8` that stores `value` at last 
+        index and `None` elsewhere.
+        
+        Parameters
+        ----------
+        value : float
+            Radius limit value
+        
+        Returns
+        -------
+        list
+            List containing limit.
+        """
+        return PrimitiveBase.create_limits(
+            Cylinder._model_args_n, 7, value)
     
     def closest_to_line(self, points):
         """ Returns points in cylinder axis that are the closest to the input
@@ -243,8 +265,8 @@ class Cylinder(PrimitiveBase):
         
         points = np.asarray(points)
         
-        mesh = TriangleMesh.create_cylinder(radius=self.radius, 
-                                            height=np.linalg.norm(self.vector))
+        mesh = TriangleMesh.create_cylinder(
+            radius=self.radius, height=self.height)
 
         mesh.rotate(self.rotation_from_axis)
         mesh.translate(self.center)
@@ -315,7 +337,8 @@ class Cylinder(PrimitiveBase):
             point = center + points[idx].dot(axis) * axis            
             
             point = list(point)
-            vector = list(axis * (max(proj) - min(proj)))
+            height = max(proj) - min(proj)
+            axis = list(axis)
         
         else:
             # if no normals, use scikit spatial, slower
@@ -324,7 +347,8 @@ class Cylinder(PrimitiveBase):
             solution = skcylinder.best_fit(points)
             
             point = list(solution.point)
-            vector = list(solution.vector)
+            height = np.linalg.norm(solution.vector)
+            axis = list(solution.vector / height)
             radius = solution.radius
         
-        return Cylinder(point+vector+[radius]) 
+        return Cylinder(point+axis+[radius, height]) 
