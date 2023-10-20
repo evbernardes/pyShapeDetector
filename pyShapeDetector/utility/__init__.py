@@ -7,3 +7,4 @@ Created on Tue Sep 26 16:02:34 2023
 """
 
 from .multidetector import MultiDetector
+from .primitivelimits import PrimitiveLimits

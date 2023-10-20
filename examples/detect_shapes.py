@@ -68,11 +68,10 @@ for label in set(labels):
     pcds_segmented.append(pcd_full.select_by_index(idx))
 
 #%% Create detectors for each shape
-
 sphere_detector = method(Sphere, num_iterations=num_iterations,
                          threshold_angle=30 * DEG,
                          threshold_distance=threshold_distance,
-                         model_max=Sphere.limit_radius(5),
+                         limits=('radius', 'max', 10),
                          inliers_min=inliers_min)
 
 plane_detector = method(Plane, num_iterations=num_iterations,
@@ -84,7 +83,7 @@ plane_detector = method(Plane, num_iterations=num_iterations,
 cylinder_detector = method(Cylinder, num_iterations=num_iterations,
                            threshold_angle=20 * DEG,
                            threshold_distance=threshold_distance,
-                           model_max=Cylinder.limit_radius(15),
+                           limits=('radius', 'max', 10),
                            # max_point_distance=1.0,
                            inliers_min=inliers_min)
 

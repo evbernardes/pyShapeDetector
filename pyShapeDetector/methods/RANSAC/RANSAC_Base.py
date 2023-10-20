@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 import time
 import random
 import numpy as np
+from pyShapeDetector.utility import PrimitiveLimits
 
 random.seed(951)
 
@@ -68,8 +69,7 @@ class RANSAC_Base(ABC):
                  num_iterations=100,
                  probability=0.99999,
                  max_point_distance=None,
-                 model_max=None,
-                 model_min=None,
+                 limits=None,
                  max_normal_angle_degrees=10,
                  inliers_min=None,
                  fitness_min=None):
@@ -80,56 +80,60 @@ class RANSAC_Base(ABC):
             raise ValueError("Repeated primitives in input is not allowed.")
             
         if ransac_n is None:
-            ransac_n = [primitive._fit_n_min for primitive in primitives]  
-        elif type(ransac_n) is not list:
-            ransac_n = [ransac_n] * len(primitives)
-        elif len(ransac_n) != len(primitives):
-            raise ValueError(f"Got {len(ransac_n)} ransac_n's and "
-                             f"{len(primitives)} primitives.")
-            
-        for n, primitive in zip(ransac_n, primitives):
-            if n < primitive._fit_n_min:
-                raise ValueError(f'for {primitive._name}s, ransac_n should be '
-                                 f'at least {primitive._fit_n_min}, got {n}.')
+            ransac_n = max([p._fit_n_min for p in primitives])
+        else:
+            for primitive in primitives:
+                if ransac_n < primitive._fit_n_min:
+                    raise ValueError(f'for {primitive._name}s, ransac_n should be '
+                                     f'at least {primitive._fit_n_min}, got '
+                                     f'{ransac_n}.')
 
         if threshold_angle < 0:
             raise ValueError('threshold_angle must be positive')
 
         if probability <= 0 or probability > 1:
             raise ValueError('Probability must be > 0 and <= 1.0')
-    
-        
-        if model_max is None:
-            self.idx_model_max = []
-            self.model_max = None
-        elif len(model_max) == primitive._model_args_n:
-            self.model_max = np.array(model_max)
-            self.idx_model_max = np.where(self.model_max != None)[0]
-        else:
-            raise ValueError(f'for {self._type}s, model_max is either None or a'
-                             f' list of size {primitive._model_args_n}, got '
-                             f'{model_max}')
             
         if fitness_min and (fitness_min < 0 or fitness_min > 1):
             raise ValueError('fitness_min must be number between 0 and 1, '
                              f'got {fitness_min}')
         
-        if model_min is None:
-            self.idx_model_min = []
-            self.model_min = None
-        elif len(model_min) == primitive._model_args_n:
-            self.model_min = np.array(model_min)
-            self.idx_model_min = np.where(self.model_min != None)[0]
+        if limits is None:
+            self.limits = None
+        
+        # If only one primitive, accept limits as direct input to create
+        # PrimitiveLimits instance
+        elif len(primitives) == 1:
+            if not isinstance(limits, PrimitiveLimits):
+                self.limits = [PrimitiveLimits(limits)]
+            else:
+                self.limits = [limits]
+                
+        # If more than one primitive, only take instances of PrimitiveLimits
         else:
-            raise ValueError(f'for {self._type}s, model_min is either None or a'
-                             f' list of size {primitive._model_args_n}, got '
-                             f'{model_min}')
+            if isinstance(limits, list) and all(isinstance(l, PrimitiveLimits) for l in limits):
+                self.limits = limits
+            elif isinstance(limits, PrimitiveLimits):
+                self.limits = [limits] * len(primitives)
+            else:
+                raise ValueError('For multiple primitives, limits must be '
+                                 'explicitly defined as PrimitiveLimits '
+                                 'objects.')
+        # else:
+            # raise ValueError('incompatible limits input')
 
-        self.primitive = primitives[0]
+        if self.limits and len(self.limits) != len(primitives):
+            raise ValueError('different number of limits and primitives')
+
+        if self.limits is not None:
+            for limit, p in zip(self.limits, primitives):
+                limit.check_compatibility(p)
+
+        self.primitives = primitives
+        self.ransac_n = ransac_n
         self.reduction_rate = reduction_rate
         self.threshold_distance = threshold_distance
         self.threshold_angle = threshold_angle
-        self.ransac_n = ransac_n[0]
         self.num_iterations = num_iterations
         self.probability = probability
         self.max_point_distance = max_point_distance
@@ -224,7 +228,7 @@ class RANSAC_Base(ABC):
         metrics['break_iteration'] = self.termination_criterion(metrics)
         return metrics
 
-    def get_model(self, points, normals, samples):
+    def get_model(self, idx, points, normals, samples):
         """ Fits shape, then test if its model parameters respect input
         max and min values. If it does, return shape, otherwise, return None.
         
@@ -242,19 +246,12 @@ class RANSAC_Base(ABC):
         shape or None
             Fitted shape, if it respects limits
         """
-
-        n = None if normals is None else normals[samples]
-        shape = self.primitive.fit(points[samples], n)
-        if shape is None:
-            return None
-
-        model = np.array(shape.model)
-        if self.model_max is not None and np.any(
-                self.model_max[self.idx_model_max] < model[self.idx_model_max]):
-            return None
+        primitive = self.primitives[idx]
         
-        if self.model_min is not None and np.any(
-                self.model_min[self.idx_model_min] > model[self.idx_model_min]):
+        n = None if normals is None else normals[samples]
+        shape = primitive.fit(points[samples], n)
+        if shape is None or \
+            (self.limits and not self.limits[idx].check(shape)):
             return None
                 
         return shape
@@ -296,13 +293,14 @@ class RANSAC_Base(ABC):
             Indices of samples
         """
         num_points = len(points)
+        num_samples = self.ransac_n
         if self.max_point_distance is None:
-            samples = random.sample(range(num_points), self.ransac_n)
+            samples = random.sample(range(num_points), num_samples)
 
         else:
             samples = set([random.randrange(num_points)])
             
-            while len(samples) < self.ransac_n:
+            while len(samples) < num_samples:
                 
                 # Array of shape (ransac_n, num_points, 3), where diff[i, :, :]
                 # is the different between each point to the ith sample
@@ -319,16 +317,16 @@ class RANSAC_Base(ABC):
                 
                 # Continue only if enough existing samples
                 N_possible = sum(possible_samples)
-                if N_possible < self.ransac_n - len(samples):
+                if N_possible < num_samples - len(samples):
                     return None
                 
                 idx_possible = np.where(possible_samples)[0]
                 idx_sample = random.randrange(N_possible)
                 samples.add(idx_possible[idx_sample])
                 
-        if len(samples) != self.ransac_n:
+        if len(samples) != num_samples:
             raise RuntimeError(f'Got {len(samples)} but expected '
-                               f'{self.ransac_n}, this should not happen')
+                               f'{num_samples}, this should not happen')
 
         return list(samples)
     
@@ -395,15 +393,16 @@ class RANSAC_Base(ABC):
         dict
             Metrics of best fitted shape
         """
-        primitive = self.primitive
+        # primitive = self.primitive
         points = np.asarray(points)
         num_points = len(points)
         inliers_min = self.inliers_min
         fitness_min = self.fitness_min
 
         if num_points < self.ransac_n:
-            raise ValueError(f'Pointcloud must have at least {self.ransac_n} '
-                             f'points, {num_points} given.')
+            raise ValueError(f'Pointcloud must have at least '
+                             f'{self.ransac_n} points, {num_points} '
+                             'given.')
 
         if normals is not None:
             if len(normals) != num_points:
@@ -425,7 +424,7 @@ class RANSAC_Base(ABC):
                  'get_model': 0}
         
         if debug:
-            print(f'Starting loop, fitting {primitive.name}...')
+            print(f'Starting loop, fitting {[p.name for p in self.primitives]}')
         
         for itr in range(self.num_iterations):
 
@@ -444,11 +443,11 @@ class RANSAC_Base(ABC):
                 continue
             
             t_ = time.time()
-            shape = self.get_model(points, normals, samples)
+            shapes = [self.get_model(i, points, normals, samples) for i in range(len(self.primitives))]
             # print(shape)
             times['get_model'] += time.time() - t_
 
-            if shape is None:
+            if all([s is None for s in shapes]):
                 # if debug:
                     # print('Model not found.')
                 continue
@@ -456,28 +455,37 @@ class RANSAC_Base(ABC):
                 # print(f'Fitted model = {shape.model}')
 
             t_ = time.time()
-            distances, angles = shape.get_residuals(points, normals)
-            inliers = self.get_inliers_from_residuals(distances, angles)
-            num_inliers = len(inliers)
+            metrics = self.get_metrics(None)
+            idx_best_shape = 0
+            for i in range(len(shapes)):
+                if shapes[i] is None:
+                    continue
+                distances, angles = shapes[i].get_residuals(points, normals)
+                inliers = self.get_inliers_from_residuals(distances, angles)
+                num_inliers = len(inliers)
             
-            times['get_inliers_and_error'] += time.time() - t_
+                times['get_inliers_and_error'] += time.time() - t_
 
-            if num_inliers == 0 or (inliers_min and num_inliers < inliers_min):
-                # if debug:
-                    # print('No inliers.')
-                continue
-            
-            if fitness_min and num_inliers/num_points < fitness_min:
-                # if debug:
-                    # print('No inliers.')
-                continue
-            
-            metrics = self.get_metrics(num_points, num_inliers, 
-                                       distances, angles)
+                if num_inliers == 0 or (inliers_min and num_inliers < inliers_min):
+                    # if debug:
+                        # print('No inliers.')
+                    continue
+                
+                if fitness_min and num_inliers/num_points < fitness_min:
+                    # if debug:
+                        # print('No inliers.')
+                    continue
+                
+                metrics_this = self.get_metrics(num_points, num_inliers, 
+                                                distances, angles)
+                
+                if self.compare_metrics(metrics_this, metrics):
+                    metrics = metrics_this
+                    idx_best_shape = i
 
             if self.compare_metrics(metrics, metrics_best):
                 metrics_best = metrics
-                shape_best = shape
+                shape_best = shapes[idx_best_shape]
 
             iteration_count += 1
 
@@ -499,7 +507,8 @@ class RANSAC_Base(ABC):
         # if filter_model:
         # n = None if normals is None else normals[inliers_final]
         # shape_best = primitive.fit(points[inliers_final], n)
-        shape = self.get_model(points, normals, inliers_final)
+        primitive_best = self.primitives[idx_best_shape]
+        shape = self.get_model(idx_best_shape, points, normals, inliers_final)
         if shape:
             shape_best = shape
         
@@ -508,7 +517,7 @@ class RANSAC_Base(ABC):
                              'filtering step, this should not happen')
             
         if debug:
-            print(f'\nFinished fitting {primitive.name}!')
+            print(f'\nFinished fitting {primitive_best.name}!')
             print(f'model: {shape_best.model}')
             print('Execution time:')
             for t_ in times:

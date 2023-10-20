@@ -62,14 +62,6 @@ class Sphere(PrimitiveBase):
         
     get_residuals(points, normals):
         Convenience function returning both distances and angles.
-        
-    create_limits(args_n, idx, value):
-        Create a list of length `args_n` that stores `value` at index `idx`
-        and `None` elsewhere.
-        
-    limit_radius(value):
-        Create a list of length `4` that stores `value` at last index and 
-        `None` elsewhere.
     
     get_mesh(): TriangleMesh
         Returns mesh defined by the sphere model. 
@@ -97,23 +89,6 @@ class Sphere(PrimitiveBase):
     def center(self):
         """ Center point of the sphere."""
         return np.array(self.model[:3])
-    
-    @staticmethod
-    def limit_radius(value):
-        """ Create a list of length `4` that stores `value` at last index and 
-        `None` elsewhere.
-        
-        Parameters
-        ----------
-        value : float
-            Radius limit value
-        
-        Returns
-        -------
-        list
-            List containing limit.
-        """
-        return PrimitiveBase.create_limits(Sphere._model_args_n, 3, value)
     
     def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the sphere.
