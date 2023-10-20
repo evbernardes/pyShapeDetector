@@ -19,12 +19,18 @@ from open3d.utility import Vector3dVector
 from helpers import draw_two_colomns, paint_meshes_by_type
 from pyShapeDetector.primitives import Sphere, Plane, Cylinder
 from pyShapeDetector.utility import MultiDetector
-from pyShapeDetector.methods import list_methods_RANSAC as methods
+from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, \
+    BDSAC, LDSAC
 
 DEG = 0.017453292519943295
 
 #%% Parameters and input
-method = methods[4] # select which method, 3 means "BDSAC"
+method = RANSAC_Classic
+method = RANSAC_Weighted
+# method = MSAC
+method = BDSAC
+# method = LDSAC
+
 filedir = Path('./data')
 
 filename = '3planes_3spheres_3cylinders'
