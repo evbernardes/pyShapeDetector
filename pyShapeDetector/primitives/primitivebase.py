@@ -70,10 +70,6 @@ class PrimitiveBase(ABC):
     get_residuals(points, normals):
         Convenience function returning both distances and angles.
         
-    create_limits(args_n, idx, value):
-        Create a list of length `args_n` that stores `value` at index `idx`
-        and `None` elsewhere.
-        
     get_mesh(points=None):
         Creates mesh of the shape. Points are not always necessary.
     """
@@ -330,37 +326,6 @@ class PrimitiveBase(ABC):
         """
         return self.get_distances(points), \
             self.get_angles(points, normals)
-
-    @staticmethod
-    def create_limits(args_n, idx, value):
-        """ Create a list of length `args_n` that stores `value` at index `idx`
-        and `None` elsewhere.
-        
-        This is used to create max or min checks when testing the fitted 
-        primitives.
-
-        Parameters
-        ----------
-        args_n : int
-            Length of list
-        idx : int
-            Index to store value
-        value : float
-            Value limit value.
-            
-        Raises
-        ------
-        IndexError
-            If `idx` is greater or equal to `args_n`
-        
-        Returns
-        -------
-        list
-            List containing limit.
-        """
-        values = [None] * args_n
-        values[idx] = value
-        return values
     
     @staticmethod
     def get_mesh(self, points=None):

@@ -79,18 +79,6 @@ class Cylinder(PrimitiveBase):
     closest_to_line(points):
         Returns points in cylinder axis that are the closest to the input
         points.
-        
-    create_limits(args_n, idx, value):
-        Create a list of length `args_n` that stores `value` at index `idx`
-        and `None` elsewhere.
-        
-    limit_radius(value):
-        Creates a list of length `8` that stores `value` at second-to-last 
-        index and `None` elsewhere.
-
-    limit_height(value):
-        Creates a list of length `8` that stores `value` at last 
-        index and `None` elsewhere.
     
     get_mesh(): TriangleMesh
         Returns mesh defined by the cylinder model. 
@@ -145,42 +133,6 @@ class Cylinder(PrimitiveBase):
     def rotation_from_axis(self):
         """ Rotation matrix that aligns z-axis with cylinder axis."""
         return self.get_rotation_from_axis(self.axis)
-    
-    @staticmethod
-    def limit_radius(value):
-        """ Creates a list of length `8` that stores `value` at second-to-last 
-        index and `None` elsewhere.
-        
-        Parameters
-        ----------
-        value : float
-            Radius limit value
-        
-        Returns
-        -------
-        list
-            List containing limit.
-        """
-        return PrimitiveBase.create_limits(
-            Cylinder._model_args_n, 6, value)
-    
-    @staticmethod
-    def limit_height(value):
-        """ Creates a list of length `8` that stores `value` at last 
-        index and `None` elsewhere.
-        
-        Parameters
-        ----------
-        value : float
-            Radius limit value
-        
-        Returns
-        -------
-        list
-            List containing limit.
-        """
-        return PrimitiveBase.create_limits(
-            Cylinder._model_args_n, 7, value)
     
     def closest_to_line(self, points):
         """ Returns points in cylinder axis that are the closest to the input

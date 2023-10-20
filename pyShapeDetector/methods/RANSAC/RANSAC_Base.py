@@ -95,7 +95,7 @@ class RANSAC_Base(ABC):
         else:
             self.limits = PrimitiveLimits(limits)
 
-        if self.limits:
+        if self.limits is not None:
             self.limits.check_compatibility(primitive)
 
         self.primitive = primitive

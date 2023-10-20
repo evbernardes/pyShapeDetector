@@ -14,17 +14,13 @@ class PrimitiveLimits:
                                  f"not have attribute {attribute}.")
                 
     def check(self, shape):
-                
             for arg in self.args:
-                
                 test_value = getattr(shape, arg['attribute'])
                 if arg['func'] is not None:
                     test_value = arg['func'](test_value)
-                
                 if (arg['limit_type']=='max' and test_value > arg['value']) or \
                     (arg['limit_type']=='min' and test_value < arg['value']):
                     return False
-                
             return True
         
     @property
@@ -55,7 +51,7 @@ class PrimitiveLimits:
         
         if type(args) == tuple or \
             (type(args) == list and type(args[0]) != list):
-            args = []
+            args = [args]
         
         for arg in args:
             if len(arg) == 4:
@@ -72,7 +68,13 @@ class PrimitiveLimits:
                                  "(func), attribute, limit_type, value.")
             
             if type(attribute) is not str:
-                raise ValueError("attritube must be a string.")
+                raise ValueError("attribute must be a string.")
+                
+            if type(limit_type) is not str:
+                raise ValueError("limit_type must be a string.")
+                
+            if limit_type not in ('max', 'min'):
+                raise ValueError("limit_type must be a 'max' or 'min'.")
                 
             possible_types = {'max', 'min'}
             if limit_type not in possible_types:
