@@ -35,6 +35,15 @@ def draw(objs):
             
     draw_geometries(objs)
     
+def paint_meshes_by_type(meshes, shapes):
+    shape_types = list({type(shape) for shape in shapes})
+
+    for i in range(len(shape_types)):
+        color = np.random.rand(3)
+        for mesh, shape in zip(meshes, shapes):
+            if type(shape) == shape_types[i]:
+                mesh.paint_uniform_color(color)
+    
 def draw_two_colomns(objs_left, objs_right, dist=5,
                      lookat=None, up=None, front=None, zoom=None):
     

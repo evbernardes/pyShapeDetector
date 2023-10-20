@@ -16,7 +16,7 @@ from open3d.visualization import draw_geometries
 from open3d.utility import Vector3dVector
 
 # from helpers import color_blue, color_gray, color_red, color_yellow
-from helpers import draw_two_colomns
+from helpers import draw_two_colomns, paint_meshes_by_type
 from pyShapeDetector.primitives import Sphere, Plane, Cylinder
 from pyShapeDetector.utility import MultiDetector
 from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, \
@@ -86,7 +86,7 @@ cylinder_detector = method(Cylinder, num_iterations=num_iterations,
                            threshold_angle=20 * DEG,
                            threshold_distance=threshold_distance,
                            model_max=Cylinder.limit_radius(15),
-                           # max_point_distance=0.5,
+                            # max_point_distance=0.5,
                            inliers_min=inliers_min)
 
 detectors = [sphere_detector, plane_detector, cylinder_detector]
@@ -98,6 +98,10 @@ shape_detector.run(debug=True)
 
 #%% Plot detected meshes
 meshes = shape_detector.meshes_detected
+shapes = shape_detector.shapes_detected
+paint_meshes_by_type(meshes, shapes)
+
+
 pcds_rest = shape_detector.pcds_rest
 
 lookat=[0, 0, 1]
