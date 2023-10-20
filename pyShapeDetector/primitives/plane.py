@@ -162,47 +162,10 @@ class Plane(PrimitiveBase):
         triangles = np.vstack([triangles, triangles[:, ::-1]]) 
         
         mesh = TriangleMesh()
-        mesh.vertices = Vector3dVector(points[chull.vertices])
+        mesh.vertices = Vector3dVector(points_flat[chull.vertices])
         mesh.triangles = Vector3iVector(triangles)
         
         return mesh
-    
-    # def get_mesh(self, points):
-    #     """ Flatten points and creates a simplified mesh of the plane defined
-    #     by the points at the borders.      
-
-    #     Parameters
-    #     ----------
-    #     points : 3 x N array
-    #         Points corresponding to the fitted shape.
-        
-    #     Returns
-    #     -------
-    #     TriangleMesh
-    #         Mesh corresponding to the plane.
-    #     """
-        
-    #     points = np.asarray(points)
-
-    #     distances = self.get_signed_distances(points)
-    #     points_flat = points - (distances * self.normal[..., np.newaxis]).T
-        
-    #     rot = self.get_rotation_from_axis(self.normal)
-    #     projection = (rot @ points_flat.T).T[:, :2]
-        
-    #     chull = ConvexHull(projection)
-    #     borders = projection[chull.vertices]
-        
-    #     triangles = Delaunay(borders).simplices
-        
-    #     # needed to make plane visible from both sides
-    #     triangles = np.vstack([triangles, triangles[:, ::-1]]) 
-        
-    #     mesh = TriangleMesh()
-    #     mesh.vertices = Vector3dVector(points[chull.vertices])
-    #     mesh.triangles = Vector3iVector(triangles)
-        
-    #     return mesh
     
     # def get_square_mesh(self, pcd):
         
