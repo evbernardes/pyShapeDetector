@@ -285,36 +285,37 @@ class RANSAC_Base(ABC):
         num_points = len(points)
         if self.max_point_distance is None:
             samples = random.sample(range(num_points), self.ransac_n)
-            print(f'returning {len(samples)} samples')
-            return samples
 
-        samples = set([random.randrange(num_points)])
-        
-        while len(samples) < self.ransac_n:
+        else:
+            samples = set([random.randrange(num_points)])
             
-            # Array of shape (ransac_n, num_points, 3), where diff[i, :, :]
-            # is the different between each point to the ith sample
-            diff = points[None] - points[list(samples)][:, None]
-            
-            # Find all of the distances, then get the minimum for each sample,
-            # giving dist.shape == (n_points, )
-            dist = np.min(np.linalg.norm(diff, axis=2), axis=0)
-            
-            # Find all of the possible points and then remove those already
-            # sampled
-            possible_samples = dist < self.max_point_distance
-            possible_samples[list(samples)] = False
-            
-            # Continue only if enough existing samples
-            N_possible = sum(possible_samples)
-            if N_possible < self.ransac_n - len(samples):
-                return None
-            
-            idx_possible = np.where(possible_samples)[0]
-            idx_sample = random.randrange(N_possible)
-            samples.add(idx_possible[idx_sample])
-            
-        print(f'returning {len(samples)} samples')
+            while len(samples) < self.ransac_n:
+                
+                # Array of shape (ransac_n, num_points, 3), where diff[i, :, :]
+                # is the different between each point to the ith sample
+                diff = points[None] - points[list(samples)][:, None]
+                
+                # Find all of the distances, then get the minimum for each sample,
+                # giving dist.shape == (n_points, )
+                dist = np.min(np.linalg.norm(diff, axis=2), axis=0)
+                
+                # Find all of the possible points and then remove those already
+                # sampled
+                possible_samples = dist < self.max_point_distance
+                possible_samples[list(samples)] = False
+                
+                # Continue only if enough existing samples
+                N_possible = sum(possible_samples)
+                if N_possible < self.ransac_n - len(samples):
+                    return None
+                
+                idx_possible = np.where(possible_samples)[0]
+                idx_sample = random.randrange(N_possible)
+                samples.add(idx_possible[idx_sample])
+                
+        if len(samples) != self.ransac_n:
+            raise RuntimeError(f'Got {len(samples)} but expected '
+                               f'{self.ransac_n}, this should not happen')
 
         return list(samples)
     
