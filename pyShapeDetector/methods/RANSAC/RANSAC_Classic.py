@@ -41,7 +41,7 @@ class RANSAC_Classic(RANSAC_Base):
         Fits shape, then test if its model parameters respect input
         max and min values. If it does, return shape, otherwise, return None.
         
-    get_samples(points, num_samples, tries_max=5000):
+    get_samples(points):
         Sample points and return indices of sampled points.
 
     get_inliers_from_residuals(distances, angles):

@@ -45,7 +45,7 @@ class RANSAC_Base(ABC):
         Fits shape, then test if its model parameters respect input
         max and min values. If it does, return shape, otherwise, return None.
         
-    get_samples(points, num_samples, tries_max=5000):
+    get_samples(points):
         Sample points and return indices of sampled points.
 
     get_inliers_from_residuals(distances, angles):
@@ -265,7 +265,7 @@ class RANSAC_Base(ABC):
 
     #     return probabilities
 
-    def get_samples(self, points, num_samples):
+    def get_samples(self, points):
         """ Sample points and return indices of sampled points.
 
         If the method's `max_point_distance` attribute is set, then only
@@ -276,22 +276,23 @@ class RANSAC_Base(ABC):
         ----------
         points : N x 3 array
             All input points
-        num_samples : int
-            Number of samples
         
         Returns
         -------
         list
             Indices of samples
         """
+        num_points = len(points)
         if self.max_point_distance is None:
-            return random.sample(range(num_samples), self.ransac_n)
+            samples = random.sample(range(num_points), self.ransac_n)
+            print(f'returning {len(samples)} samples')
+            return samples
 
-        samples = set([random.randrange(num_samples)])
+        samples = set([random.randrange(num_points)])
         
         while len(samples) < self.ransac_n:
             
-            # Array of shape (num_samples, num_points, 3), where diff[i, :, :]
+            # Array of shape (ransac_n, num_points, 3), where diff[i, :, :]
             # is the different between each point to the ith sample
             diff = points[None] - points[list(samples)][:, None]
             
@@ -312,6 +313,8 @@ class RANSAC_Base(ABC):
             idx_possible = np.where(possible_samples)[0]
             idx_sample = random.randrange(N_possible)
             samples.add(idx_possible[idx_sample])
+            
+        print(f'returning {len(samples)} samples')
 
         return list(samples)
     
@@ -420,7 +423,7 @@ class RANSAC_Base(ABC):
 
             start_itr = time.time()
 
-            samples = self.get_samples(points, num_points)
+            samples = self.get_samples(points)
             if samples is None:
                 # if debug:
                     # print('Sampling not possible.')
