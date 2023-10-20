@@ -39,7 +39,7 @@ def paint_meshes_by_type(meshes, shapes):
     shape_types = list({type(shape) for shape in shapes})
 
     for i in range(len(shape_types)):
-        color = np.random.rand(3)
+        color = plt.get_cmap("tab20")(i)[:3]
         for mesh, shape in zip(meshes, shapes):
             if type(shape) == shape_types[i]:
                 mesh.paint_uniform_color(color)
