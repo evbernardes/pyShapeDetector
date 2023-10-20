@@ -60,7 +60,7 @@ class RANSAC_Base(ABC):
     """
 
     def __init__(self,
-                 primitive,
+                 primitives,
                  reduction_rate=1.0,
                  threshold_distance=0.1,
                  threshold_angle=0.174,  # ~ 10 degrees
@@ -73,18 +73,31 @@ class RANSAC_Base(ABC):
                  max_normal_angle_degrees=10,
                  inliers_min=None,
                  fitness_min=None):
+        
+        if type(primitives) is not list:
+            primitives = [primitives]
+        elif len(primitives) != len(set(primitives)):
+            raise ValueError("Repeated primitives in input is not allowed.")
+            
+        if ransac_n is None:
+            ransac_n = [primitive._fit_n_min for primitive in primitives]  
+        elif type(ransac_n) is not list:
+            ransac_n = [ransac_n] * len(primitives)
+        elif len(ransac_n) != len(primitives):
+            raise ValueError(f"Got {len(ransac_n)} ransac_n's and "
+                             f"{len(primitives)} primitives.")
+            
+        for n, primitive in zip(ransac_n, primitives):
+            if n < primitive._fit_n_min:
+                raise ValueError(f'for {primitive._name}s, ransac_n should be '
+                                 f'at least {primitive._fit_n_min}, got {n}.')
 
         if threshold_angle < 0:
             raise ValueError('threshold_angle must be positive')
 
         if probability <= 0 or probability > 1:
             raise ValueError('Probability must be > 0 and <= 1.0')
-
-        if ransac_n is None:
-            ransac_n = primitive._fit_n_min
-        elif ransac_n < primitive._fit_n_min:
-            raise ValueError(f'for {primitive._name}s, ransac_n should be at '
-                             f'least {primitive._fit_n_min}.')
+    
         
         if model_max is None:
             self.idx_model_max = []
@@ -112,11 +125,11 @@ class RANSAC_Base(ABC):
                              f' list of size {primitive._model_args_n}, got '
                              f'{model_min}')
 
-        self.primitive = primitive
+        self.primitive = primitives[0]
         self.reduction_rate = reduction_rate
         self.threshold_distance = threshold_distance
         self.threshold_angle = threshold_angle
-        self.ransac_n = ransac_n
+        self.ransac_n = ransac_n[0]
         self.num_iterations = num_iterations
         self.probability = probability
         self.max_point_distance = max_point_distance
