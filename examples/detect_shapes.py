@@ -38,7 +38,7 @@ filename = '3planes_3spheres_3cylinders'
 # filename = '1spheres'
 # filename = 'big'
 
-noise_max = 1
+noise_max = 0
 inliers_min = 1000
 num_iterations = 100
 threshold_distance = 0.3 + noise_max
@@ -72,7 +72,7 @@ for label in set(labels):
 sphere_detector = method(Sphere, num_iterations=num_iterations,
                          threshold_angle=30 * DEG,
                          threshold_distance=threshold_distance,
-                         model_max=Sphere.limit_radius(5),
+                         limits=('radius', 'max', 0.1),
                          inliers_min=inliers_min)
 
 plane_detector = method(Plane, num_iterations=num_iterations,
@@ -84,7 +84,7 @@ plane_detector = method(Plane, num_iterations=num_iterations,
 cylinder_detector = method(Cylinder, num_iterations=num_iterations,
                            threshold_angle=20 * DEG,
                            threshold_distance=threshold_distance,
-                           model_max=Cylinder.limit_radius(15),
+                           # model_max=Cylinder.limit_radius(15),
                            # max_point_distance=1.0,
                            inliers_min=inliers_min)
 

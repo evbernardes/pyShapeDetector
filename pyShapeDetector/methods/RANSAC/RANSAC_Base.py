@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 import time
 import random
 import numpy as np
+from pyShapeDetector.utility import PrimitiveLimits
 
 random.seed(951)
 
@@ -68,12 +69,11 @@ class RANSAC_Base(ABC):
                  num_iterations=100,
                  probability=0.99999,
                  max_point_distance=None,
-                 model_max=None,
-                 model_min=None,
+                 limits=None,
                  max_normal_angle_degrees=10,
                  inliers_min=None,
                  fitness_min=None):
-
+        
         if threshold_angle < 0:
             raise ValueError('threshold_angle must be positive')
 
@@ -85,32 +85,18 @@ class RANSAC_Base(ABC):
         elif ransac_n < primitive._fit_n_min:
             raise ValueError(f'for {primitive._name}s, ransac_n should be at '
                              f'least {primitive._fit_n_min}.')
-        
-        if model_max is None:
-            self.idx_model_max = []
-            self.model_max = None
-        elif len(model_max) == primitive._model_args_n:
-            self.model_max = np.array(model_max)
-            self.idx_model_max = np.where(self.model_max != None)[0]
-        else:
-            raise ValueError(f'for {self._type}s, model_max is either None or a'
-                             f' list of size {primitive._model_args_n}, got '
-                             f'{model_max}')
             
         if fitness_min and (fitness_min < 0 or fitness_min > 1):
             raise ValueError('fitness_min must be number between 0 and 1, '
                              f'got {fitness_min}')
         
-        if model_min is None:
-            self.idx_model_min = []
-            self.model_min = None
-        elif len(model_min) == primitive._model_args_n:
-            self.model_min = np.array(model_min)
-            self.idx_model_min = np.where(self.model_min != None)[0]
+        if isinstance(limits, PrimitiveLimits) or limits is None:
+            self.limits = limits
         else:
-            raise ValueError(f'for {self._type}s, model_min is either None or a'
-                             f' list of size {primitive._model_args_n}, got '
-                             f'{model_min}')
+            self.limits = PrimitiveLimits(limits)
+
+        if self.limits:
+            self.limits.check_compatibility(primitive)
 
         self.primitive = primitive
         self.reduction_rate = reduction_rate
@@ -232,16 +218,8 @@ class RANSAC_Base(ABC):
 
         n = None if normals is None else normals[samples]
         shape = self.primitive.fit(points[samples], n)
-        if shape is None:
-            return None
-
-        model = np.array(shape.model)
-        if self.model_max is not None and np.any(
-                self.model_max[self.idx_model_max] < model[self.idx_model_max]):
-            return None
-        
-        if self.model_min is not None and np.any(
-                self.model_min[self.idx_model_min] > model[self.idx_model_min]):
+        if shape is None or \
+            (self.limits and not self.limits.check(shape)):
             return None
                 
         return shape

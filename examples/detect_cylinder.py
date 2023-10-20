@@ -16,7 +16,6 @@ from open3d.visualization import draw_geometries
 
 # from helpers import color_blue, color_gray, color_red, color_yellow
 from pyShapeDetector.primitives import Sphere, Plane, Cylinder
-
 from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, BDSAC, LDSAC
 methods = [RANSAC_Classic, 
            RANSAC_Weighted,
@@ -38,6 +37,7 @@ inliers_min = 200
 detector = method(Cylinder, num_iterations=15,
                   threshold_angle=30,
                   # max_point_distance=0.5,
+                  # limits=[('radius', 'max', 3)],
                   inliers_min=inliers_min)
 
 
