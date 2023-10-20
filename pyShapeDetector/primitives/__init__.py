@@ -10,3 +10,7 @@ from .primitivebase import PrimitiveBase
 from .plane import Plane
 from .sphere import Sphere
 from .cylinder import Cylinder
+
+list_primitives=[
+    Plane, Sphere, Cylinder,
+]

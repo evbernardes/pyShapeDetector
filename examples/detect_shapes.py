@@ -19,14 +19,7 @@ from open3d.utility import Vector3dVector
 from helpers import draw_two_colomns, paint_meshes_by_type
 from pyShapeDetector.primitives import Sphere, Plane, Cylinder
 from pyShapeDetector.utility import MultiDetector
-from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, \
-    BDSAC, LDSAC
-    
-methods = [RANSAC_Classic, 
-           RANSAC_Weighted,
-           MSAC,
-           BDSAC, 
-           LDSAC]
+from pyShapeDetector.methods import list_methods_RANSAC as methods
 
 DEG = 0.017453292519943295
 
