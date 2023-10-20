@@ -86,7 +86,7 @@ cylinder_detector = method(Cylinder, num_iterations=num_iterations,
                            threshold_angle=20 * DEG,
                            threshold_distance=threshold_distance,
                            model_max=Cylinder.limit_radius(15),
-                            # max_point_distance=0.5,
+                           # max_point_distance=1.0,
                            inliers_min=inliers_min)
 
 detectors = [sphere_detector, plane_detector, cylinder_detector]
