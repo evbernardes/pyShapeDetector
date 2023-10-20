@@ -14,7 +14,9 @@ import numpy as np
 
 class MultiDetector():
     
-    def __init__(self, detectors, pcds, points_min=500, num_iterations=20):
+    def __init__(self, detectors, pcds, points_min=500, num_iterations=20,
+                 debug=0, compare_metric='fitness', fitness_min=0.1, 
+                 normals_reestimate=False):
     
         if not isinstance(detectors, list):
             detectors = [detectors]
@@ -34,6 +36,15 @@ class MultiDetector():
         self.points_min = points_min
         self.num_iterations = num_iterations
         
+        # Start:
+        self._shapes_detected = None
+        self._meshes_detected = None
+        self._pcds_inliers = None
+        self._pcds_rest = None
+        self._finished = False
+        
+        self.run(debug, compare_metric, fitness_min, normals_reestimate)
+        
     @property
     def pcds_inliers(self):
         if not self._finished:
@@ -51,7 +62,7 @@ class MultiDetector():
         return self._pcds_rest
 
     @property
-    def shapes_detected(self):
+    def shapes(self):
         if not self._finished:
             raise RuntimeError('MultiDetector still did not fit, try to run, '
                                'see: MultiDetector.run')
@@ -59,7 +70,7 @@ class MultiDetector():
         return self._shapes_detected
     
     @property
-    def meshes_detected(self):
+    def meshes(self):
         if not self._finished:
             raise RuntimeError('MultiDetector still did not fit, try to run, '
                                'see: MultiDetector.run')
@@ -76,12 +87,6 @@ class MultiDetector():
         
     def run(self, debug=0, compare_metric='fitness', fitness_min=0.1, 
             normals_reestimate=False):
-        
-        self._shapes_detected = None
-        self._meshes_detected = None
-        self._pcds_inliers = None
-        self._pcds_rest = None
-        self._finished = False
         
         debug_detectors = debug > 1
         debug = debug > 0

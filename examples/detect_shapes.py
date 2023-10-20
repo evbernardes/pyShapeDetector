@@ -93,12 +93,13 @@ detectors = [sphere_detector, plane_detector, cylinder_detector]
 
 #%% Assemble detectors and detect shapes
 print(f'Using {method._type} method')
-shape_detector = MultiDetector(detectors, pcds_segmented, points_min=500, num_iterations=20)
-shape_detector.run(debug=True)
+shape_detector = MultiDetector(detectors, pcds_segmented, 
+                               points_min=500, num_iterations=20,
+                               debug=True)
 
 #%% Plot detected meshes
-meshes = shape_detector.meshes_detected
-shapes = shape_detector.shapes_detected
+meshes = shape_detector.meshes
+shapes = shape_detector.shapes
 paint_meshes_by_type(meshes, shapes)
 
 
