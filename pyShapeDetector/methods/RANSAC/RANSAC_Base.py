@@ -86,7 +86,7 @@ class RANSAC_Base(ABC):
         else:
             for primitive in primitives:
                 if ransac_n < primitive._fit_n_min:
-                    raise ValueError(f'for {primitive._name}s, ransac_n should be '
+                    raise ValueError(f'for {primitive.name}s, ransac_n should be '
                                      f'at least {primitive._fit_n_min}, got '
                                      f'{ransac_n}.')
 

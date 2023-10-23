@@ -38,7 +38,7 @@ filename = '3planes_3spheres_3cylinders'
 # filename = '1spheres'
 # filename = 'big'
 
-noise_max = 0
+noise_max = 1
 inliers_min = 1000
 num_iterations = 100
 threshold_distance = 0.3 + noise_max
@@ -81,7 +81,7 @@ detector = method([Sphere, Cylinder, Plane], num_iterations=num_iterations,
 
 shape_detector = MultiDetector(detector, pcds_segmented, 
                                 points_min=500, num_iterations=20,
-                                debug=True)             
+                                debug=True, compare_metric='weight')             
 
 #%% Plot detected meshes
 meshes = shape_detector.meshes
