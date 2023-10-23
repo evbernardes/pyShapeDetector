@@ -91,7 +91,14 @@ class MultiDetector():
         debug_detectors = debug > 1
         debug = debug > 0
         
-        times = {detector.primitive.name: 0 for detector in self.detectors}
+        times = {}
+        for detector in self.detectors:
+            for p in detector.primitives:
+                if p.name not in times:
+                    times[p.name] = 0
+            
+        
+        # times = {detector.primitive.name: 0 for detector in self.detectors}
         
         shapes_detected = []
         pcds_inliers = []
@@ -126,10 +133,10 @@ class MultiDetector():
                 compare = []
                 
                 for detector in self.detectors:
-                    start = time.time()
+                    # start = time.time()
                     shape, inliers, metrics = detector.fit(
                         pcd_.points, debug=debug_detectors, normals=normals)
-                    times[detector.primitive.name] += time.time() - start
+                    # times[detector.primitive.name] += time.time() - start
                     output_shapes.append(shape)
                     output_inliers.append(inliers)
                     output_metrics.append(metrics)
@@ -163,14 +170,14 @@ class MultiDetector():
             if len(pcd_.points) != 0:
                 pcds_rest.append(pcd_)
 
-        if debug:
-            print('\n-------------------------------------------')
-            print(f'Finished after {time.time() - start:.5f}s')
-            print('Time spend with each detector:')
+        # if debug:
+        #     print('\n-------------------------------------------')
+        #     print(f'Finished after {time.time() - start:.5f}s')
+        #     print('Time spend with each detector:')
             
-            for detector in self.detectors:
-                name = detector.primitive.name
-                print(f'- {name}: {times[name]:.3f}s')
+            # for detector in self.detectors:
+            #     name = detector.primitive.name
+            #     print(f'- {name}: {times[name]:.3f}s')
                 
         self._shapes_detected = shapes_detected
         self._pcds_inliers = pcds_inliers

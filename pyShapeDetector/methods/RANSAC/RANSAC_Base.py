@@ -79,6 +79,8 @@ class RANSAC_Base(ABC):
         elif len(primitives) != len(set(primitives)):
             raise ValueError("Repeated primitives in input is not allowed.")
             
+        num_primitives = len(primitives)
+            
         if ransac_n is None:
             ransac_n = max([p._fit_n_min for p in primitives])
         else:
@@ -99,7 +101,7 @@ class RANSAC_Base(ABC):
                              f'got {fitness_min}')
         
         if limits is None:
-            self.limits = None
+            self.limits = [PrimitiveLimits(None)] * len(primitives)
         
         # If only one primitive, accept limits as direct input to create
         # PrimitiveLimits instance
@@ -111,6 +113,11 @@ class RANSAC_Base(ABC):
                 
         # If more than one primitive, only take instances of PrimitiveLimits
         else:
+            if isinstance(limits, list):
+                for i in range(len(limits)):
+                    if limits[i] is None:
+                        limits[i] = PrimitiveLimits(None)
+            
             if isinstance(limits, list) and all(isinstance(l, PrimitiveLimits) for l in limits):
                 self.limits = limits
             elif isinstance(limits, PrimitiveLimits):
@@ -127,7 +134,8 @@ class RANSAC_Base(ABC):
 
         if self.limits is not None:
             for limit, p in zip(self.limits, primitives):
-                limit.check_compatibility(p)
+                if limit is not None:
+                    limit.check_compatibility(p)
 
         self.primitives = primitives
         self.ransac_n = ransac_n

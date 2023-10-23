@@ -18,7 +18,7 @@ from open3d.utility import Vector3dVector
 # from helpers import color_blue, color_gray, color_red, color_yellow
 from helpers import draw_two_colomns, paint_meshes_by_type
 from pyShapeDetector.primitives import Sphere, Plane, Cylinder
-from pyShapeDetector.utility import MultiDetector
+from pyShapeDetector.utility import MultiDetector, PrimitiveLimits
 from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, \
     BDSAC, LDSAC
 
@@ -38,7 +38,7 @@ filename = '3planes_3spheres_3cylinders'
 # filename = '1spheres'
 # filename = 'big'
 
-noise_max = 1
+noise_max = 0
 inliers_min = 1000
 num_iterations = 100
 threshold_distance = 0.3 + noise_max
@@ -67,39 +67,26 @@ for label in set(labels):
     idx = np.where(labels == label)[0]
     pcds_segmented.append(pcd_full.select_by_index(idx))
 
-#%% Create detectors for each shape
-sphere_detector = method(Sphere, num_iterations=num_iterations,
-                         threshold_angle=30 * DEG,
-                         threshold_distance=threshold_distance,
-                         limits=('radius', 'max', 10),
-                         inliers_min=inliers_min)
+limits = [
+    PrimitiveLimits(('radius', 'max', 5)),
+    PrimitiveLimits(('radius', 'max', 5)),
+    None]
+                    
+detector = method([Sphere, Cylinder, Plane], num_iterations=num_iterations,
+                  threshold_angle=20 * DEG,
+                  threshold_distance=threshold_distance,
+                  # max_point_distance=0.5,
+                  limits=limits,
+                  inliers_min=inliers_min)
 
-plane_detector = method(Plane, num_iterations=num_iterations,
-                        threshold_angle=20 * DEG,
-                        threshold_distance=threshold_distance,
-                        # max_point_distance=0.5,
-                        inliers_min=inliers_min)
-
-cylinder_detector = method(Cylinder, num_iterations=num_iterations,
-                           threshold_angle=20 * DEG,
-                           threshold_distance=threshold_distance,
-                           limits=('radius', 'max', 10),
-                           # max_point_distance=1.0,
-                           inliers_min=inliers_min)
-
-detectors = [sphere_detector, plane_detector, cylinder_detector]
-
-#%% Assemble detectors and detect shapes
-print(f'Using {method._type} method')
-shape_detector = MultiDetector(detectors, pcds_segmented, 
-                               points_min=500, num_iterations=20,
-                               debug=True)
+shape_detector = MultiDetector(detector, pcds_segmented, 
+                                points_min=500, num_iterations=20,
+                                debug=True)             
 
 #%% Plot detected meshes
 meshes = shape_detector.meshes
 shapes = shape_detector.shapes
 paint_meshes_by_type(meshes, shapes)
-
 
 pcds_rest = shape_detector.pcds_rest
 

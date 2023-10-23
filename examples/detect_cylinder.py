@@ -24,6 +24,8 @@ methods = [RANSAC_Classic,
            BDSAC,
            LDSAC]
 
+
+
 #%% Parameters and input
 method = methods[0]
 filedir = Path('./data')
