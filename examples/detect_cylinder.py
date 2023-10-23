@@ -43,7 +43,6 @@ detector = method([Cylinder, Sphere], num_iterations=15,
                    # limits=PrimitiveLimits(('radius', 'max', 3)),
                   inliers_min=inliers_min)
 
-
 shape, inliers, metrics = detector.fit(pcd.points, debug=True, normals=normals)
 pcd_shape = pcd.select_by_index(inliers)
 pcd_rest = pcd.select_by_index(inliers, invert=True)
