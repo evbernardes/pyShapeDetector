@@ -75,8 +75,7 @@ class LDSAC(RANSAC_WeightedBase):
                  num_iterations=100,
                  probability=0.99999,
                  max_point_distance=None,
-                 model_max=None,
-                 model_min=None,
+                 limits=None,
                  max_normal_angle_degrees=10,
                  inliers_min=None,
                  threshold_ratios=[0.2, 0.7]):
@@ -93,7 +92,7 @@ class LDSAC(RANSAC_WeightedBase):
         
         RANSAC_WeightedBase.__init__(self, primitive, reduction_rate,
             threshold_distance, threshold_angle, ransac_n, num_iterations,
-            probability, max_point_distance, model_max, model_min, 
+            probability, max_point_distance, limits, 
             max_normal_angle_degrees, inliers_min)
         
         self.threshold_ratios = threshold_ratios
