@@ -7,7 +7,8 @@ Created on Fri Oct  6 15:57:08 2023
 """
 import warnings
 import numpy as np
-from open3d.geometry import TriangleMesh
+from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
+from open3d.utility import Vector3iVector
 from skspatial.objects.cylinder import Cylinder as skcylinder
 
 from .primitivebase import PrimitiveBase
@@ -216,9 +217,18 @@ class Cylinder(PrimitiveBase):
         """
         
         points = np.asarray(points)
+        eps = 1e-10
         
         mesh = TriangleMesh.create_cylinder(
             radius=self.radius, height=self.height)
+        
+        bb = mesh.get_axis_aligned_bounding_box()
+        bb = AxisAlignedBoundingBox(bb.min_bound + [0, 0, eps],
+                                    bb.max_bound - [0, 0, eps])
+        mesh = mesh.crop(bb)
+        triangles = np.asarray(mesh.triangles)
+        mesh.triangles = Vector3iVector(
+            np.vstack([triangles, triangles[:, ::-1]]))
 
         mesh.rotate(self.rotation_from_axis)
         mesh.translate(self.center)
