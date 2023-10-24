@@ -126,7 +126,7 @@ class Sphere(PrimitiveBase):
         normals = dist_vec / np.linalg.norm(dist_vec, axis=1)[..., np.newaxis]
         return normals
 
-    def get_mesh(self, points):
+    def get_mesh(self, points=None):
         """ Returns mesh defined by the sphere model.      
         
         Returns
