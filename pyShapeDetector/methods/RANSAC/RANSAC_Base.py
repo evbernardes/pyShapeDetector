@@ -64,7 +64,7 @@ class RANSAC_Base(ABC):
                  primitives,
                  reduction_rate=1.0,
                  threshold_distance=0.1,
-                 threshold_angle=0.174,  # ~ 10 degrees
+                 threshold_angle=3.141592653589793,  # ~ 180 degrees
                  ransac_n=None,
                  num_iterations=100,
                  probability=0.99999,
@@ -175,6 +175,25 @@ class RANSAC_Base(ABC):
         """
         pass
     
+    # def get_probabilities(self, distances, angles=None):
+
+    #     if angles is not None and len(distances) != len(angles):
+    #         raise ValueError('distances and angles must have the same size, '
+    #                          f'got {distances.shape} and {angles.shape}.')
+
+    #     probabilities = np.zeros(len(distances))
+
+    #     mask = distances < self.threshold_distance
+    #     if angles is not None:
+    #         mask *= angles < self.threshold_angle
+
+    #     probabilities[mask] = 1 - distances[mask] / self.threshold_distance
+
+    #     if angles is not None:
+    #         probabilities[mask] *= 1 - angles[mask] / self.threshold_angle
+
+    #     return probabilities
+    
     def termination_criterion(self, metrics):
         """ Gives number of max needed iterations, depending on current metrics.
         
@@ -263,25 +282,6 @@ class RANSAC_Base(ABC):
             return None
                 
         return shape
-
-    # def get_probabilities(self, distances, angles=None):
-
-    #     if angles is not None and len(distances) != len(angles):
-    #         raise ValueError('distances and angles must have the same size, '
-    #                          f'got {distances.shape} and {angles.shape}.')
-
-    #     probabilities = np.zeros(len(distances))
-
-    #     mask = distances < self.threshold_distance
-    #     if angles is not None:
-    #         mask *= angles < self.threshold_angle
-
-    #     probabilities[mask] = 1 - distances[mask] / self.threshold_distance
-
-    #     if angles is not None:
-    #         probabilities[mask] *= 1 - angles[mask] / self.threshold_angle
-
-    #     return probabilities
 
     def get_samples(self, points):
         """ Sample points and return indices of sampled points.
@@ -413,9 +413,12 @@ class RANSAC_Base(ABC):
                              'given.')
 
         if normals is not None:
-            if len(normals) != num_points:
+            if len(normals) == 0:
+                normals = None
+            elif len(normals) != num_points:
                 raise ValueError('Numbers of points and normals must be equal')
-            normals = np.asarray(normals)
+            else:
+                normals = np.asarray(normals)
 
         if inliers_min and num_points < inliers_min:
             if debug:

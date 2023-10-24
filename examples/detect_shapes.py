@@ -25,11 +25,11 @@ from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, \
 DEG = 0.017453292519943295
 
 #%% Parameters and input
-method = RANSAC_Classic
-method = RANSAC_Weighted
+# method = RANSAC_Classic
+# method = RANSAC_Weighted
 # method = MSAC
-method = BDSAC
-# method = LDSAC
+# method = BDSAC
+method = LDSAC
 
 filedir = Path('./data')
 
@@ -40,8 +40,9 @@ filename = '3planes_3spheres_3cylinders'
 
 noise_max = 1
 inliers_min = 1000
-num_iterations = 100
-threshold_distance = 0.3 + noise_max
+num_iterations = 30
+threshold_distance = 2*noise_max
+threshold_angle=50 * DEG
 
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
 # draw_geometries([pcd_full])
@@ -69,19 +70,19 @@ for label in set(labels):
 
 limits = [
     PrimitiveLimits(('radius', 'max', 5)),
-    PrimitiveLimits(('radius', 'max', 5)),
+    PrimitiveLimits(('radius', 'max', 3)),
     None]
                     
 detector = method([Sphere, Cylinder, Plane], num_iterations=num_iterations,
-                  threshold_angle=20 * DEG,
+                  threshold_angle=threshold_angle,
                   threshold_distance=threshold_distance,
                   # max_point_distance=0.5,
                   limits=limits,
                   inliers_min=inliers_min)
 
-shape_detector = MultiDetector(detector, pcds_segmented, 
+shape_detector = MultiDetector(detector, pcds_segmented, debug=True,
                                 points_min=500, num_iterations=20,
-                                debug=True, compare_metric='weight')             
+                                compare_metric='fitness', metric_min=0.3)             
 
 #%% Plot detected meshes
 meshes = shape_detector.meshes
