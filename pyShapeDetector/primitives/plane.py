@@ -129,7 +129,7 @@ class Plane(PrimitiveBase):
         """
         return np.tile(self.normal, (len(points), 1))
     
-    def get_mesh(self, points):
+    def get_mesh(self, points=None):
         """ Flatten points and creates a simplified mesh of the plane defined
         by the points at the borders.      
 
@@ -143,6 +143,8 @@ class Plane(PrimitiveBase):
         TriangleMesh
             Mesh corresponding to the plane.
         """
+        if points is None:
+            return self.get_square_mesh()
         points = np.asarray(points)
         points_flat = self.flatten_points(points)
         
@@ -163,35 +165,35 @@ class Plane(PrimitiveBase):
         
         return mesh
     
-    # def get_square_mesh(self, pcd):
+    def get_square_mesh(self, half_length=10):
+        center = (0, 0, 0)
+        # center = np.mean(np.asarray(pcd.points), axis=0)
+        # bb = pcd.get_axis_aligned_bounding_box()
+        # half_length = max(bb.max_bound - bb.min_bound) / 2
         
-    #     center = np.mean(np.asarray(pcd.points), axis=0)
-    #     bb = pcd.get_axis_aligned_bounding_box()
-    #     half_length = max(bb.max_bound - bb.min_bound) / 2
-        
-    #     if list(self.normal) == [0, 0, 1]: 
-    #         v1 = np.cross([0, 1, 0], self.normal)
-    #     else:
-    #         v1 = np.cross([0, 0, 1], self.normal)
+        if list(self.normal) == [0, 0, 1]: 
+            v1 = np.cross([0, 1, 0], self.normal)
+        else:
+            v1 = np.cross([0, 0, 1], self.normal)
             
-    #     v2 = np.cross(v1, self.normal)
-    #     v1 /= np.linalg.norm(v1)
-    #     v2 /= np.linalg.norm(v2)
+        v2 = np.cross(v1, self.normal)
+        v1 /= np.linalg.norm(v1)
+        v2 /= np.linalg.norm(v2)
 
-    #     vertices = np.vstack([
-    #         center + v1 * half_length,
-    #         center + v2 * half_length,
-    #         center - v1 * half_length,
-    #         center - v2 * half_length])
+        vertices = np.vstack([
+            center + v1 * half_length,
+            center + v2 * half_length,
+            center - v1 * half_length,
+            center - v2 * half_length])
 
-    #     triangles = Vector3iVector(np.array([
-    #         [0, 1, 2], 
-    #         [2, 1, 0],
-    #         [0, 2, 3],
-    #         [3, 2, 0]]))
-    #     vertices = Vector3dVector(vertices)
+        triangles = Vector3iVector(np.array([
+            [0, 1, 2], 
+            [2, 1, 0],
+            [0, 2, 3],
+            [3, 2, 0]]))
+        vertices = Vector3dVector(vertices)
 
-    #     return TriangleMesh(vertices, triangles)
+        return TriangleMesh(vertices, triangles)
     
     @staticmethod
     def fit(points, normals=None):

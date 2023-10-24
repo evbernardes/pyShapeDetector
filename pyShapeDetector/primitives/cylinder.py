@@ -206,7 +206,7 @@ class Cylinder(PrimitiveBase):
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
     
-    def get_mesh(self, points):
+    def get_mesh(self, points=None):
         """ Returns mesh defined by the cylinder model.      
         
         Returns
