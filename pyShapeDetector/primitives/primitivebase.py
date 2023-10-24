@@ -216,9 +216,12 @@ class PrimitiveBase(ABC):
             N points on the surface
             
         """
-        points = np.asarray(points)
+        if len(points) == 0:
+            return points
+    
+        points = np.asarray(points)        
         distances = self.get_signed_distances(points)
-        points_flattened = points - (distances * self.normal[..., np.newaxis]).T
+        points_flattened = points - distances[..., np.newaxis] * self.get_normals(points)
         distances_flatened = self.get_distances(points_flattened)
         if sum(distances_flatened) > 1e-7:
             raise ValueError('Error of flattened distance adds up to'

@@ -57,6 +57,13 @@ class PrimitiveLimits:
         # func, attribute, limit_type, value = zip(self.args_list)
         return self.func, self.attribute, self.limit_type, self.value
     
+    def __add__(self, limits_other):
+        assert isinstance(limits_other, PrimitiveLimits)
+        
+        limits_sum = PrimitiveLimits(None)
+        limits_sum.args = self.args + limits_other.args
+        return limits_sum            
+    
     def __init__(self, args):
         
         self.args = []
@@ -72,6 +79,7 @@ class PrimitiveLimits:
                 args = [args]
             
             for arg in args:
+                
                 if len(arg) == 4:
                     func, attribute, limit_type, value = arg
                     if not callable(func):
