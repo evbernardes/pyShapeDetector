@@ -64,7 +64,7 @@ class RANSAC_Base(ABC):
                  primitives,
                  reduction_rate=1.0,
                  threshold_distance=0.1,
-                 threshold_angle=0.174,  # ~ 10 degrees
+                 threshold_angle=3.141592653589793,  # ~ 180 degrees
                  ransac_n=None,
                  num_iterations=100,
                  probability=0.99999,

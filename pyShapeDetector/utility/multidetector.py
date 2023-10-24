@@ -15,7 +15,7 @@ import numpy as np
 class MultiDetector():
     
     def __init__(self, detectors, pcds, points_min=500, num_iterations=20,
-                 debug=0, compare_metric='fitness', fitness_min=0.1, 
+                 debug=0, compare_metric='fitness', metric_min=0.1, 
                  normals_reestimate=False):
     
         if not isinstance(detectors, list):
@@ -43,7 +43,7 @@ class MultiDetector():
         self._pcds_rest = None
         self._finished = False
         
-        self.run(debug, compare_metric, fitness_min, normals_reestimate)
+        self.run(debug, compare_metric, metric_min, normals_reestimate)
         
     @property
     def pcds_inliers(self):
@@ -85,7 +85,7 @@ class MultiDetector():
             
         return self._meshes_detected
         
-    def run(self, debug=0, compare_metric='fitness', fitness_min=0.1, 
+    def run(self, debug=0, compare_metric='fitness', metric_min=0.1, 
             normals_reestimate=False):
         
         debug_detectors = debug > 1
@@ -109,18 +109,20 @@ class MultiDetector():
             print('\n-------------------------------------------')
             print('\nStarting... ')
             
+        
         for idx in range(self.n_pcds):
             if debug:
                 print(f'Testing cluster {idx+1}...')
                 
             pcd_ = copy.copy(self.pcds[idx])
-            
             iteration = 0
+            
             while(len(pcd_.points) > self.points_min and \
                   iteration < self.num_iterations):
                 
                 if debug:
-                    print(f'\niteration {iteration}')
+                    print(f'\niteration {iteration+1}/{self.num_iterations}, '
+                          f'cluster {idx+1}/{len(self.pcds)}')
                 
                 if normals_reestimate:
                     pcd_.estimate_normals()
@@ -129,7 +131,6 @@ class MultiDetector():
                 output_shapes = []
                 output_inliers = []
                 output_metrics = []
-                output_fitness = []
                 compare = []
                 
                 for detector in self.detectors:
@@ -140,25 +141,28 @@ class MultiDetector():
                     output_shapes.append(shape)
                     output_inliers.append(inliers)
                     output_metrics.append(metrics)
-                    output_fitness.append(metrics['fitness'])
                     compare.append(metrics[compare_metric])
                     
+                iteration += 1
+                
                 if np.all(np.array(output_shapes) == None):
                     if debug:
                         print('No shapes found anymore, breaking...')
                     break
                 
-                if max(output_fitness) < fitness_min:
+                if max(compare) < metric_min:
                     if debug:
-                        print('Fitness to small, breaking...')
-                    break
+                        print(f'{compare_metric} of {max(compare)} is too '
+                              'small, breaking...')
+                    continue
                 
                 idx = np.where(np.array(compare) == max(compare))[0][0]
                     
                 shape = output_shapes[idx]
                 inliers = output_inliers[idx]
                 if debug:
-                    print(f'-> {shape.name.capitalize()} found!')
+                    print(f'-> {shape.name.capitalize()} found, with '
+                          f'{compare_metric} = {max(compare)}')
 
                 pcd_inliers = pcd_.select_by_index(inliers)
                 pcd_ = pcd_.select_by_index(inliers, invert=True)
