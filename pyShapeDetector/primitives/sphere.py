@@ -155,7 +155,7 @@ class Sphere(PrimitiveBase):
             Fitted sphere.
         """
         # points_ = np.asarray(points)[samples]
-        
+        points = np.asarray(points)
         num_points = len(points)
         
         if num_points < 4:

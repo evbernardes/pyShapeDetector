@@ -73,6 +73,23 @@ class Plane(PrimitiveBase):
     _model_args_n = 4
     name = 'plane'
     
+    def __init__(self, model):
+        """
+        Parameters
+        ----------
+        model : list or tuple
+            Parameters defining the shape model
+                        
+        Raises
+        ------
+        ValueError
+            If number of parameters is incompatible with the model of the 
+            primitive.
+        """
+        model = np.array(model)
+        model[:3] /= np.linalg.norm(model[:3])
+        PrimitiveBase.__init__(self, model)
+    
     @property
     def equation(self):
         n = self.normal
@@ -166,7 +183,7 @@ class Plane(PrimitiveBase):
         return mesh
     
     def get_square_mesh(self, half_length=10):
-        center = (0, 0, 0)
+        center = self.model[-1] * self.normal
         # center = np.mean(np.asarray(pcd.points), axis=0)
         # bb = pcd.get_axis_aligned_bounding_box()
         # half_length = max(bb.max_bound - bb.min_bound) / 2

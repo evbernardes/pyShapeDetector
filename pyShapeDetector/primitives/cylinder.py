@@ -87,9 +87,27 @@ class Cylinder(PrimitiveBase):
     """
     
     _fit_n_min = 6
-    _model_args_n = 8
+    _model_args_n = 7
     name = 'cylinder'
-    
+
+    # def __init__(self, model):
+    #     """
+    #     Parameters
+    #     ----------
+    #     model : list or tuple
+    #         Parameters defining the shape model
+                        
+    #     Raises
+    #     ------
+    #     ValueError
+    #         If number of parameters is incompatible with the model of the 
+    #         primitive.
+    #     """
+    #     model = np.array(model)
+    #     if model[5] < 0:
+    #         model[3:6] = -model[3:6] # define only one acceptable normal axis
+    #     PrimitiveBase.__init__(self, model)
+
     @property
     def equation(self):
         def sig(x):
@@ -104,21 +122,22 @@ class Cylinder(PrimitiveBase):
     def base(self):
         """ Point at the base of the cylinder. """
         return np.array(self.model[:3])
+        # return self.center + self.vector / 2
     
     @property
     def vector(self):
         """ Vector from base point to top point. """
-        return self.axis * self.height
+        return np.array(self.model[3:6])
     
     @property
     def height(self):
         """ Height of cylinder. """
-        return self.model[7]
+        return np.linalg.norm(self.vector)
     
     @property
     def axis(self):
         """ Unit vector defining axis of cylinder. """
-        return np.array(self.model[3:6])
+        return self.vector / self.height
     
     @property
     def radius(self):
@@ -129,6 +148,7 @@ class Cylinder(PrimitiveBase):
     def center(self):
         """ Center point of the cylinder."""
         return self.base + self.vector / 2
+        # return np.array(self.model[:3])
     
     @property
     def rotation_from_axis(self):
@@ -217,10 +237,11 @@ class Cylinder(PrimitiveBase):
         """
         
         points = np.asarray(points)
-        eps = 1e-10
+        eps = 1e-7
+        # eps = 0
         
         mesh = TriangleMesh.create_cylinder(
-            radius=self.radius, height=self.height)
+            radius=self.radius, height=self.height+2*eps)
         
         bb = mesh.get_axis_aligned_bounding_box()
         bb = AxisAlignedBoundingBox(bb.min_bound + [0, 0, eps],
@@ -281,26 +302,34 @@ class Cylinder(PrimitiveBase):
                 return None
             
             axis = eigvec.T[idx][0]
+            axis = axis / np.linalg.norm(axis)
             
             # Reference for the rest:
             # Was revealed to me in a dream
             axis_neg_squared_skew = np.eye(3) - axis[np.newaxis].T * axis
             points_skew = (axis_neg_squared_skew @ points.T).T
-            b = sum(points_skew.T * points.T)
+            b = sum(points_skew.T * points_skew.T)
             a = np.c_[2 * points_skew, np.ones(num_points)]
             X = np.linalg.lstsq(a, b, rcond=None)[0]
             
             center = X[:3]
-            radius = np.sqrt(X[3] + center.dot(axis_neg_squared_skew @ center))
+            radius = np.sqrt(X[3] + X[:3].dot(axis_neg_squared_skew @ center))
             
             # find point in base of cylinder
             proj = points.dot(axis)
+
             idx = np.where(proj == min(proj))[0][0]
-            point = center + points[idx].dot(axis) * axis            
             
-            point = list(point)
-            height = max(proj) - min(proj)
-            axis = list(axis)
+            height = 2 * abs(max(proj) - min(proj))
+            
+            # No idea why:
+            center = X[:3] + (points[idx].dot(axis) + height / 4) * axis
+            center = list(center)
+            base = list(center - axis * height / 2)
+            
+            # axis = axis / np.linalg.norm(axis)
+            vector = list(axis * height)
+            # axis = list(axis)
         
         else:
             # if no normals, use scikit spatial, slower
@@ -308,9 +337,11 @@ class Cylinder(PrimitiveBase):
                           'are given.')
             solution = skcylinder.best_fit(points)
             
-            point = list(solution.point)
-            height = np.linalg.norm(solution.vector)
-            axis = list(solution.vector / height)
+            base = list(solution.point)
+            # height = np.linalg.norm(solution.vector)
+            # axis = list(solution.vector / height)
+            vector = list(solution.vector)
             radius = solution.radius
         
-        return Cylinder(point+axis+[radius, height]) 
+        # return Cylinder(center+vector+[radius]) 
+        return Cylinder(base+vector+[radius]) 

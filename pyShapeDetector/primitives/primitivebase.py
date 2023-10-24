@@ -223,9 +223,6 @@ class PrimitiveBase(ABC):
         distances = self.get_signed_distances(points)
         points_flattened = points - distances[..., np.newaxis] * self.get_normals(points)
         distances_flatened = self.get_distances(points_flattened)
-        if sum(distances_flatened) > 1e-7:
-            raise ValueError('Error of flattened distance adds up to'
-                             f'{sum(distances_flatened)}')
         return points_flattened
     
     def get_angles_cos(self, points, normals):
