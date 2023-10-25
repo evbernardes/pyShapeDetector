@@ -16,7 +16,8 @@ from open3d.utility import Vector3dVector
 from pyShapeDetector.primitives import Plane, Sphere, Cylinder
 primitives = [Plane, Sphere, Cylinder]
 
-rmse = lambda x:np.sqrt(sum(x * x)) / len(x)
+def rmse(x):
+    return np.sqrt(sum(x * x)) / len(x)
 
 def get_shape_and_pcd(primitive, num_points, canonical=False):
     model = np.random.rand(primitive._model_args_n)
