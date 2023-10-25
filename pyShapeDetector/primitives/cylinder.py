@@ -243,7 +243,7 @@ class Cylinder(PrimitiveBase):
         triangles = np.asarray(mesh.triangles)
         triangles = np.array([t for t in triangles if 0 not in t and 1 not in t])
         triangles = np.vstack([triangles, triangles[:, ::-1]])
-        mesh.triangles = Vector3iVector(triangles2)
+        mesh.triangles = Vector3iVector(triangles)
         
         mesh.rotate(self.rotation_from_axis)
         mesh.translate(self.center)
