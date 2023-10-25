@@ -16,6 +16,8 @@ from open3d.utility import Vector3dVector
 from pyShapeDetector.primitives import Plane, Sphere, Cylinder
 primitives = [Plane, Sphere, Cylinder]
 
+rmse = lambda x:np.sqrt(sum(x * x)) / len(x)
+
 def get_shape_and_pcd(primitive, num_points, canonical=False):
     model = np.random.rand(primitive._model_args_n)
     shape = primitive(model)
@@ -54,8 +56,7 @@ def test_distances():
         for i in range(10):
             shape, pcd = get_shape_and_pcd(primitive, 100, canonical=False)
             distances = shape.get_distances(pcd.points)
-            rmse = np.sqrt(sum(distances * distances)) / len(pcd.points)
-            assert_allclose(rmse, 0, atol=1e-3)
+            assert_allclose(rmse(distances), 0, atol=1e-3)
 
 
 def test_distances_flatten():
@@ -94,5 +95,4 @@ def test_normals_flatten_problematic():
             pcd_flattened.estimate_normals()
             normals = pcd_flattened.normals
             angles = shape.get_angles(points_flattened, normals)
-            rmse = np.sqrt(sum(angles * angles)) / len(angles)
-            assert_allclose(rmse, 0, atol=1e-1)
+            assert_allclose(rmse(angles), 0, atol=1e-1)
