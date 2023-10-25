@@ -53,8 +53,8 @@ def test_distances():
         for i in range(10):
             shape, pcd = get_shape_and_pcd(primitive, 100, canonical=False)
             distances = shape.get_distances(pcd.points)
-            rmse = np.sqrt(sum(distances * distances)) / len(pcd.points)
-            assert_allclose(rmse, 0, atol=1e-3)
+            # rmse = np.sqrt(sum(distances * distances)) / len(pcd.points)
+            assert_allclose(distances, 0, atol=1e-3)
 
         
 

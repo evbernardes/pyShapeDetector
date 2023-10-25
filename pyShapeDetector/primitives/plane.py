@@ -100,12 +100,6 @@ class Plane(PrimitiveBase):
         norm = np.linalg.norm(model[:3])
         model /= norm
         
-        # point = np.array([0, 0, -model[3] / model[2]])
-        # # sign = -np.sign(point.dot(model[:3]))
-        # if point.dot(model[:3]) == model[3]:
-        #     model[3] = -model[3]
-        #     # pass
-        
         PrimitiveBase.__init__(self, model)
     
     @property
