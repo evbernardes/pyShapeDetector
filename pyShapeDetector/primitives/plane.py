@@ -78,11 +78,10 @@ class Plane(PrimitiveBase):
     @property
     def canonical(self):
         """ Return canonical form for testing """
-        if self.model[-1] >= 0:
-            return self
         model = self.model
-        model[-1] = -model[-1]
-        return Plane(list(model))
+        if self.model[-1] >= 0:
+            model = -model
+        return Plane(list(-self.model))
     
     def __init__(self, model):
         """
@@ -98,7 +97,15 @@ class Plane(PrimitiveBase):
             primitive.
         """
         model = np.array(model)
-        model[:3] /= np.linalg.norm(model[:3])
+        norm = np.linalg.norm(model[:3])
+        model /= norm
+        
+        # point = np.array([0, 0, -model[3] / model[2]])
+        # # sign = -np.sign(point.dot(model[:3]))
+        # if point.dot(model[:3]) == model[3]:
+        #     model[3] = -model[3]
+        #     # pass
+        
         PrimitiveBase.__init__(self, model)
     
     @property
@@ -188,13 +195,14 @@ class Plane(PrimitiveBase):
         triangles = np.vstack([triangles, triangles[:, ::-1]]) 
         
         mesh = TriangleMesh()
-        mesh.vertices = Vector3dVector(points_flat[chull.vertices])
+        # mesh.vertices = Vector3dVector(points_flat[chull.vertices])
+        mesh.vertices = Vector3dVector(points[chull.vertices])
         mesh.triangles = Vector3iVector(triangles)
         
         return mesh
     
     def get_square_mesh(self, half_length=10):
-        center = self.model[-1] * self.normal
+        center = -self.model[-1] * self.normal
         # center = np.mean(np.asarray(pcd.points), axis=0)
         # bb = pcd.get_axis_aligned_bounding_box()
         # half_length = max(bb.max_bound - bb.min_bound) / 2

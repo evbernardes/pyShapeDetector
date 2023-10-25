@@ -227,8 +227,8 @@ class PrimitiveBase(ABC):
             return points
     
         points = np.asarray(points)        
-        distances = self.get_signed_distances(points)
-        points_flattened = points - distances[..., np.newaxis] * self.get_normals(points)
+        difference = self.get_signed_distances(points)[..., np.newaxis] * self.get_normals(points)
+        points_flattened = points - difference
         distances_flatened = self.get_distances(points_flattened)
         return points_flattened
     

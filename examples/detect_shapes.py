@@ -38,7 +38,7 @@ filename = '3planes_3spheres_3cylinders'
 # filename = '1spheres'
 # filename = 'big'
 
-noise_max = 0.5
+noise_max = 0.
 inliers_min = 1000
 num_iterations = 30
 threshold_distance = 2 + noise_max
