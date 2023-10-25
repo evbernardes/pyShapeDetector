@@ -43,6 +43,15 @@ class PrimitiveBase(ABC):
         
     Methods
     -------
+    get_surface_area(points=None):
+        Gives the surface area of model. 
+        
+    get_volume():
+        Gives the volume of model. 
+    
+    def get_signed_distances(points):
+        Gives the minimum distance between each point to the model. 
+    
     get_distances(points)
         Gives the minimum distance between each point to the model. 
         
@@ -106,6 +115,37 @@ class PrimitiveBase(ABC):
     @abstractmethod
     def name(self):
         """ Name of primitive. """
+        pass
+    
+    @abstractmethod
+    def get_surface_area(self, points=None):
+        """ Gives the surface area of model. 
+        
+        Actual implementation depends on the type of primitive.
+        
+        Parameters
+        ----------
+        points, optional : 3 x N array
+            N input points 
+        
+        Returns
+        -------
+        float
+            surface area.
+        """
+        pass
+    
+    @abstractmethod
+    def get_volume(self):
+        """ Gives the volume of model. 
+        
+        Actual implementation depends on the type of primitive.
+        
+        Returns
+        -------
+        float
+            volume.
+        """
         pass
     
     @abstractmethod

@@ -34,6 +34,15 @@ class Plane(PrimitiveBase):
     Methods
     ------- 
     
+    get_surface_area(points):
+        Gives the surface area of Plane. 
+        
+    get_volume():
+        Gives the volume of model. 
+    
+    def get_signed_distances(points):
+        Gives the minimum distance between each point to the model. 
+    
     get_distances(points)
         Gives the minimum distance between each point to the model. 
         
@@ -75,14 +84,6 @@ class Plane(PrimitiveBase):
     _model_args_n = 4
     name = 'plane'
     
-    @property
-    def canonical(self):
-        """ Return canonical form for testing. """
-        model = self.model
-        if self.model[-1] >= 0:
-            model = -model
-        return Plane(list(-self.model))
-    
     def __init__(self, model):
         """
         Parameters
@@ -103,6 +104,14 @@ class Plane(PrimitiveBase):
         PrimitiveBase.__init__(self, model)
     
     @property
+    def canonical(self):
+        """ Return canonical form for testing. """
+        model = self.model
+        if self.model[-1] >= 0:
+            model = -model
+        return Plane(list(-self.model))
+    
+    @property
     def equation(self):
         n = self.normal
         d = self.model[-1]
@@ -121,6 +130,31 @@ class Plane(PrimitiveBase):
     def normal(self):
         """ Normal vector defining point. """
         return np.array(self.model[:3])
+    
+    def get_surface_area(self, points):
+        """ Gives the surface area of plane, needs points. 
+        
+        Parameters
+        ----------
+        points, optional : 3 x N array
+            N input points 
+        
+        Returns
+        -------
+        float
+            surface area.
+        """
+        return self.get_mesh(points).get_surface_area()
+    
+    def get_volume(self):
+        """ Gives the volume of plane, which is zero. 
+        
+        Returns
+        -------
+        float
+            volume.
+        """
+        return 0
     
     def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the model. 

@@ -508,8 +508,8 @@ class RANSAC_Base(ABC):
             return None, None, self.get_metrics(None)
         
         # Find the final inliers using model_best ...
-        distances, angles = shape_best.get_residuals(points, normals)
-        inliers_final = self.get_inliers_from_residuals(distances, angles)
+        # distances, angles = shape_best.get_residuals(points, normals)
+        inliers_final = self.get_inliers_from_points(shape_best, points, normals)
         num_inliers = len(inliers_final)
         metrics_final = self.get_metrics(num_points, num_inliers, 
                                          distances, angles)

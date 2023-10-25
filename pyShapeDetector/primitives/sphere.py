@@ -34,6 +34,15 @@ class Sphere(PrimitiveBase):
     Methods
     -------
     
+    get_surface_area():
+        Gives the surface area of model. 
+        
+    get_volume():
+        Gives the volume of model. 
+    
+    def get_signed_distances(points):
+        Gives the minimum distance between each point to the model. 
+    
     get_distances(points)
         Gives the minimum distance between each point to the sphere. 
         
@@ -91,6 +100,31 @@ class Sphere(PrimitiveBase):
     def center(self):
         """ Center point of the sphere."""
         return np.array(self.model[:3])
+    
+    def get_surface_area(self, points=None):
+        """ Gives the surface area of cylinder, needs points. 
+        
+        Parameters
+        ----------
+        points, optional : 3 x N array
+            N input points 
+        
+        Returns
+        -------
+        float
+            surface area.
+        """
+        return 4 * np.pi * (self.radius ** 2)
+    
+    def get_volume(self):
+        """ Gives the volume of model. 
+        
+        Returns
+        -------
+        float
+            volume.
+        """
+        return (4/3) * np.pi * (self.radius ** 3)
     
     def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the sphere.
