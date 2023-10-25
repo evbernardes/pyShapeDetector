@@ -236,21 +236,15 @@ class Cylinder(PrimitiveBase):
             Mesh corresponding to the plane.
         """
         
-        points = np.asarray(points)
-        eps = 1e-7
-        # eps = 0
-        
         mesh = TriangleMesh.create_cylinder(
-            radius=self.radius, height=self.height+2*eps)
+            radius=self.radius, height=self.height)
         
-        bb = mesh.get_axis_aligned_bounding_box()
-        bb = AxisAlignedBoundingBox(bb.min_bound + [0, 0, eps],
-                                    bb.max_bound - [0, 0, eps])
-        mesh = mesh.crop(bb)
+        # first and second points are the central points defining top / base
         triangles = np.asarray(mesh.triangles)
-        mesh.triangles = Vector3iVector(
-            np.vstack([triangles, triangles[:, ::-1]]))
-
+        triangles = np.array([t for t in triangles if 0 not in t and 1 not in t])
+        triangles = np.vstack([triangles, triangles[:, ::-1]])
+        mesh.triangles = Vector3iVector(triangles2)
+        
         mesh.rotate(self.rotation_from_axis)
         mesh.translate(self.center)
         
@@ -297,15 +291,11 @@ class Cylinder(PrimitiveBase):
                 raise ValueError('Different number of points and normals')
         
             eigval, eigvec = np.linalg.eig(normals.T @ normals)
+            idx = eigval == min(eigval)
+            if sum(idx) != 1:  # no well defined minimum eigenvalue
+                return None
             
-            # idx = eigval == min(eigval)
-            # if sum(idx) != 1:  # no well defined minimum eigenvalue
-                # return None
-            
-            # axis = eigvec.T[idx][0]
-            # axis = axis / np.linalg.norm(axis)
-            idx = np.argsort(eigval)
-            axis, x, y = eigvec.T[idx]
+            axis = eigvec.T[idx][0]
             
             # Reference for the rest:
             # Was revealed to me in a dream
@@ -318,28 +308,17 @@ class Cylinder(PrimitiveBase):
             point = X[:3]
             radius = np.sqrt(X[3] + point.dot(axis_neg_squared_skew @ point))
             
-            
-            
             # find point in base of cylinder
             proj = points.dot(axis)
-            idx = np.where(proj == min(proj))[0][0]
-            # base = -np.cross(axis, np.cross(axis, point)) + points[idx].dot(axis) * axis
+            idx = np.where(proj == max(proj))[0][0]
+            base = point + points[idx].dot(axis) * axis            
             
-            height = 2 * abs(max(proj) - min(proj))
-            
-            # No idea why:
+            # point = list(point)
+            height = max(proj) - min(proj)
             vector = axis * height
-            center = point + (points[idx].dot(axis) + height / 4) * axis
-            # center = list(center)
-            base = list(center - axis * height / 2)
-            XY = x[..., None] * x + y[..., None] * y
-            # base =  center - vector / 2
-            base = list(base)
-            # base = list(X[:3])
             
-            # axis = axis / np.linalg.norm(axis)
+            base = list(base)
             vector = list(vector)
-            # axis = list(axis)
         
         else:
             # if no normals, use scikit spatial, slower
@@ -348,10 +327,7 @@ class Cylinder(PrimitiveBase):
             solution = skcylinder.best_fit(points)
             
             base = list(solution.point)
-            # height = np.linalg.norm(solution.vector)
-            # axis = list(solution.vector / height)
             vector = list(solution.vector)
             radius = solution.radius
         
-        # return Cylinder(center+vector+[radius]) 
         return Cylinder(base+vector+[radius]) 

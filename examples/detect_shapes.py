@@ -38,10 +38,10 @@ filename = '3planes_3spheres_3cylinders'
 # filename = '1spheres'
 # filename = 'big'
 
-noise_max = 1
+noise_max = 0
 inliers_min = 1000
 num_iterations = 30
-threshold_distance = 2*noise_max
+threshold_distance = 2 + noise_max
 threshold_angle=50 * DEG
 
 pcd_full = o3d.io.read_point_cloud(str((filedir / filename).with_suffix('.pcd')))
