@@ -24,6 +24,10 @@ class PrimitiveBase(ABC):
     The method `get_mesh` can also optionally be implemented to return a 
     TriangleMesh instance.
     
+    When multiple set of parameters can define the same surface, it might be
+    useful to implement the property `canonical` to return the canonical form 
+    (useful for testing).
+    
     Attributes
     ----------
     _fit_n_min : int
@@ -35,7 +39,7 @@ class PrimitiveBase(ABC):
     equation : str
         Equation that defines the primitive.
     canonical : PrimitiveBase
-        Return canonical form for testing
+        Return canonical form for testing.
         
     Methods
     -------
@@ -77,7 +81,7 @@ class PrimitiveBase(ABC):
     """
     @property
     def canonical(self):
-        """ Return canonical form for testing """
+        """ Return canonical form for testing."""
         return self
     
     @property

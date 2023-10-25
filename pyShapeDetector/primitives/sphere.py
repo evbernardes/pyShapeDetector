@@ -28,6 +28,8 @@ class Sphere(PrimitiveBase):
         Radius of the sphere.
     center : 3 x 1 array
         Center point of the sphere.
+    canonical : Sphere
+        Return canonical form for testing.    
     
     Methods
     -------

@@ -31,6 +31,8 @@ class Template(PrimitiveBase):
         Name of primitive.
     equation : str
         Equation that defines the primitive.
+    canonical : Template
+        Return canonical form for testing.
     
     Methods
     -------

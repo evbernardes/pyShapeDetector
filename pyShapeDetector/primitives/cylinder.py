@@ -39,8 +39,8 @@ class Cylinder(PrimitiveBase):
         Center point of the cylinder.
     rotation_from_axis : 3 x 3 array
         Rotation matrix that aligns z-axis with cylinder axis.
-    canonical : PrimitiveBase
-        Return canonical form for testing
+    canonical : Cylinder
+        Return canonical form for testing.
         
     Methods
     ------- 
@@ -94,6 +94,7 @@ class Cylinder(PrimitiveBase):
 
     @property
     def canonical(self):
+        """ Return canonical form for testing."""
         if self.vector[-1] >= 0:
             return self
         
