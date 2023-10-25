@@ -7,12 +7,11 @@ Created on Tue Oct 24 14:51:40 2023
 """
 
 import pytest
+import numpy as np
+from numpy.testing import assert_allclose
 
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
-
-import numpy as np
-from numpy.testing import assert_equal, assert_allclose
 
 from pyShapeDetector.primitives import Plane, Sphere, Cylinder
 primitives = [Plane, Sphere, Cylinder]
