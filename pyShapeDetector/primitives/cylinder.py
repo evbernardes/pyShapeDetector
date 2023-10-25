@@ -90,23 +90,23 @@ class Cylinder(PrimitiveBase):
     _model_args_n = 7
     name = 'cylinder'
 
-    # def __init__(self, model):
-    #     """
-    #     Parameters
-    #     ----------
-    #     model : list or tuple
-    #         Parameters defining the shape model
+    def __init__(self, model):
+        """
+        Parameters
+        ----------
+        model : list or tuple
+            Parameters defining the shape model
                         
-    #     Raises
-    #     ------
-    #     ValueError
-    #         If number of parameters is incompatible with the model of the 
-    #         primitive.
-    #     """
-    #     model = np.array(model)
-    #     if model[5] < 0:
-    #         model[3:6] = -model[3:6] # define only one acceptable normal axis
-    #     PrimitiveBase.__init__(self, model)
+        Raises
+        ------
+        ValueError
+            If number of parameters is incompatible with the model of the 
+            primitive.
+        """
+        model = np.array(model)
+        if model[5] < 0:
+            model[3:6] = -model[3:6] # define only one acceptable normal axis
+        PrimitiveBase.__init__(self, model)
 
     @property
     def equation(self):
@@ -297,12 +297,15 @@ class Cylinder(PrimitiveBase):
                 raise ValueError('Different number of points and normals')
         
             eigval, eigvec = np.linalg.eig(normals.T @ normals)
-            idx = eigval == min(eigval)
-            if sum(idx) != 1:  # no well defined minimum eigenvalue
-                return None
             
-            axis = eigvec.T[idx][0]
-            axis = axis / np.linalg.norm(axis)
+            # idx = eigval == min(eigval)
+            # if sum(idx) != 1:  # no well defined minimum eigenvalue
+                # return None
+            
+            # axis = eigvec.T[idx][0]
+            # axis = axis / np.linalg.norm(axis)
+            idx = np.argsort(eigval)
+            axis, x, y = eigvec.T[idx]
             
             # Reference for the rest:
             # Was revealed to me in a dream
@@ -312,23 +315,30 @@ class Cylinder(PrimitiveBase):
             a = np.c_[2 * points_skew, np.ones(num_points)]
             X = np.linalg.lstsq(a, b, rcond=None)[0]
             
-            center = X[:3]
-            radius = np.sqrt(X[3] + X[:3].dot(axis_neg_squared_skew @ center))
+            point = X[:3]
+            radius = np.sqrt(X[3] + point.dot(axis_neg_squared_skew @ point))
+            
+            
             
             # find point in base of cylinder
             proj = points.dot(axis)
-
             idx = np.where(proj == min(proj))[0][0]
+            # base = -np.cross(axis, np.cross(axis, point)) + points[idx].dot(axis) * axis
             
             height = 2 * abs(max(proj) - min(proj))
             
             # No idea why:
-            center = X[:3] + (points[idx].dot(axis) + height / 4) * axis
-            center = list(center)
+            vector = axis * height
+            center = point + (points[idx].dot(axis) + height / 4) * axis
+            # center = list(center)
             base = list(center - axis * height / 2)
+            XY = x[..., None] * x + y[..., None] * y
+            # base =  center - vector / 2
+            base = list(base)
+            # base = list(X[:3])
             
             # axis = axis / np.linalg.norm(axis)
-            vector = list(axis * height)
+            vector = list(vector)
             # axis = list(axis)
         
         else:
