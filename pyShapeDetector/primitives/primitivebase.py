@@ -7,6 +7,8 @@ Created on Mon Sep 25 15:42:59 2023
 """
 from abc import ABC, abstractmethod
 import numpy as np
+from open3d.geometry import PointCloud
+from open3d.utility import Vector3dVector
     
 class PrimitiveBase(ABC):
     """
@@ -70,6 +72,9 @@ class PrimitiveBase(ABC):
     
     get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
         Rotation matrix that transforms `axis_origin` in `axis`.
+        
+    flatten_pcd(pcd):
+        Return new pointcloud with flattened points.
         
     flatten_points(points):
         Stick each point in input to the closest point in shape's surface.
@@ -253,6 +258,25 @@ class PrimitiveBase(ABC):
         halfway_axis /= np.linalg.norm(halfway_axis)
         return 2 * halfway_axis * halfway_axis.T - np.eye(3)
     
+    def flatten_pcd(self, pcd):
+        """ Return new pointcloud with flattened points.
+        
+        Parameters
+        ----------
+        pcd : Open3D.geometry.PointCloud
+            Input pointcloud
+        
+        Returns
+        -------
+        Open3D.geometry.PointCloud
+            Pointcloud with points flattened
+            
+        """
+        pcd_flattened = PointCloud()
+        pcd_flattened.points = Vector3dVector(self.flatten_points(pcd.points))
+        pcd_flattened.colors = pcd.colors
+        return pcd_flattened
+    
     def flatten_points(self, points):
         """ Stick each point in input to the closest point in shape's surface.
         
@@ -273,7 +297,6 @@ class PrimitiveBase(ABC):
         points = np.asarray(points)        
         difference = self.get_signed_distances(points)[..., np.newaxis] * self.get_normals(points)
         points_flattened = points - difference
-        distances_flatened = self.get_distances(points_flattened)
         return points_flattened
     
     def get_angles_cos(self, points, normals):
