@@ -38,7 +38,7 @@ filename = '3planes_3spheres_3cylinders'
 # filename = '1spheres'
 # filename = 'big'
 
-noise_max = 0
+noise_max = 0.5
 inliers_min = 1000
 num_iterations = 30
 threshold_distance = 2 + noise_max
@@ -86,7 +86,7 @@ shape_detector = MultiDetector(detector, pcds_segmented, debug=True,
 
 #%% Plot detected meshes
 meshes = shape_detector.meshes
-shapes = shape_detector.shapes
+shapes = [shape.canonical for shape in shape_detector.shapes]
 paint_meshes_by_type(meshes, shapes)
 
 pcds_rest = shape_detector.pcds_rest

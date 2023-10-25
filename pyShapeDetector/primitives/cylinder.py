@@ -39,6 +39,8 @@ class Cylinder(PrimitiveBase):
         Center point of the cylinder.
     rotation_from_axis : 3 x 3 array
         Rotation matrix that aligns z-axis with cylinder axis.
+    canonical : PrimitiveBase
+        Return canonical form for testing
         
     Methods
     ------- 
@@ -90,23 +92,12 @@ class Cylinder(PrimitiveBase):
     _model_args_n = 7
     name = 'cylinder'
 
-    def __init__(self, model):
-        """
-        Parameters
-        ----------
-        model : list or tuple
-            Parameters defining the shape model
-                        
-        Raises
-        ------
-        ValueError
-            If number of parameters is incompatible with the model of the 
-            primitive.
-        """
-        model = np.array(model)
-        if model[5] < 0:
-            model[3:6] = -model[3:6] # define only one acceptable normal axis
-        PrimitiveBase.__init__(self, model)
+    @property
+    def canonical(self):
+        if self.vector[-1] >= 0:
+            return self
+        
+        return Cylinder(list(self.center) + list(-self.vector) + [self.radius])
 
     @property
     def equation(self):
@@ -121,8 +112,8 @@ class Cylinder(PrimitiveBase):
     @property
     def base(self):
         """ Point at the base of the cylinder. """
-        return np.array(self.model[:3])
-        # return self.center + self.vector / 2
+        # return np.array(self.model[:3])
+        return self.center + self.vector / 2
     
     @property
     def vector(self):
@@ -147,8 +138,8 @@ class Cylinder(PrimitiveBase):
     @property
     def center(self):
         """ Center point of the cylinder."""
-        return self.base + self.vector / 2
-        # return np.array(self.model[:3])
+        # return self.base + self.vector / 2
+        return np.array(self.model[:3])
     
     @property
     def rotation_from_axis(self):
@@ -311,13 +302,16 @@ class Cylinder(PrimitiveBase):
             # find point in base of cylinder
             proj = points.dot(axis)
             idx = np.where(proj == max(proj))[0][0]
-            base = point + points[idx].dot(axis) * axis            
+            
             
             # point = list(point)
             height = max(proj) - min(proj)
             vector = axis * height
+            center = -np.cross(axis, np.cross(axis, point)) + np.median(proj) * axis     
+            # base = center - vector / 2
             
-            base = list(base)
+            # base = list(base)
+            center = list(center)
             vector = list(vector)
         
         else:
@@ -326,8 +320,9 @@ class Cylinder(PrimitiveBase):
                           'are given.')
             solution = skcylinder.best_fit(points)
             
-            base = list(solution.point)
+            # base = list(solution.point)
+            center = list(solution.point + vector/2)
             vector = list(solution.vector)
             radius = solution.radius
         
-        return Cylinder(base+vector+[radius]) 
+        return Cylinder(center+vector+[radius]) 

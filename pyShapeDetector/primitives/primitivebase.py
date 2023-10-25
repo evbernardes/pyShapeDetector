@@ -34,7 +34,9 @@ class PrimitiveBase(ABC):
         Name of primitive.
     equation : str
         Equation that defines the primitive.
-    
+    canonical : PrimitiveBase
+        Return canonical form for testing
+        
     Methods
     -------
     get_distances(points)
@@ -73,6 +75,11 @@ class PrimitiveBase(ABC):
     get_mesh(points=None):
         Creates mesh of the shape. Points are not always necessary.
     """
+    @property
+    def canonical(self):
+        """ Return canonical form for testing """
+        return self
+    
     @property
     def equation(self):
         """ Equation that defines the primitive."""

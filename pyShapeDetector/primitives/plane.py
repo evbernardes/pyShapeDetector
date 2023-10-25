@@ -28,6 +28,8 @@ class Plane(PrimitiveBase):
         Equation that defines the primitive.
     normal : 3 x 1 array
         Normal vector defining plane.
+    canonical : PrimitiveBase
+        Return canonical form for testing
     
     Methods
     ------- 
@@ -72,6 +74,15 @@ class Plane(PrimitiveBase):
     _fit_n_min = 3
     _model_args_n = 4
     name = 'plane'
+    
+    @property
+    def canonical(self):
+        """ Return canonical form for testing """
+        if self.model[-1] >= 0:
+            return self
+        model = self.model
+        model[-1] = -model[-1]
+        return Plane(list(model))
     
     def __init__(self, model):
         """
