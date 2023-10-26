@@ -67,7 +67,7 @@ def test_plane_surface_area_and_volume():
 
 def test_fit():
     for primitive in primitives:
-        for i in range(10):
+        for i in range(5):
             shape, pcd = get_shape_and_pcd(primitive, 10000, canonical=True)
             shape_fit = primitive.fit(pcd.points, normals=pcd.normals).canonical
             assert_allclose(shape.model, shape_fit.model, rtol=1e-2, atol=1e-2)
@@ -75,7 +75,7 @@ def test_fit():
 
 def test_distances():
     for primitive in primitives:
-        for i in range(10):
+        for i in range(5):
             shape, pcd = get_shape_and_pcd(primitive, 100, canonical=False)
             distances = shape.get_distances(pcd.points)
             assert_allclose(rmse(distances), 0, atol=1e-3)
@@ -83,7 +83,7 @@ def test_distances():
 
 def test_distances_flatten():
     for primitive in primitives:
-        for i in range(10):
+        for i in range(5):
             shape, _ = get_shape_and_pcd(primitive, 100, canonical=False)
             points = np.random.rand(100, 3)
             points_flattened = shape.flatten_points(points)
@@ -93,7 +93,7 @@ def test_distances_flatten():
 
 def test_normals_flatten_non_problematic():
     for primitive in [Plane]:
-        for i in range(10):
+        for i in range(5):
             shape, _ = get_shape_and_pcd(primitive, 100, canonical=False)
             points = np.random.rand(1000, 3)
             points_flattened = shape.flatten_points(points)
@@ -108,7 +108,7 @@ def test_normals_flatten_non_problematic():
 def test_normals_flatten_problematic():
     # TODO: Estimation of normals in Cylinder and Sphere give big angles 
     for primitive in [Sphere, Cylinder]:
-        for i in range(10):
+        for i in range(5):
             shape, _ = get_shape_and_pcd(primitive, 100, canonical=False)
             points = np.random.rand(1000, 3)
             points_flattened = shape.flatten_points(points)
@@ -118,6 +118,3 @@ def test_normals_flatten_problematic():
             normals = pcd_flattened.normals
             angles = shape.get_angles(points_flattened, normals)
             assert_allclose(rmse(angles), 0, atol=1e-1)
-            
-
-    

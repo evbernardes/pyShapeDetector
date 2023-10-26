@@ -82,8 +82,8 @@ detector = method([Sphere, Cylinder, PlaneBounded], num_iterations=num_iteration
                   inliers_min=inliers_min)
 
 shape_detector = MultiDetector(detector, pcds_segmented, debug=True,
-                                points_min=500, num_iterations=20,
-                                compare_metric='fitness', metric_min=0.3)             
+                               points_min=500, num_iterations=20,
+                               compare_metric='fitness', metric_min=0.3)             
 
 #%% Plot detected meshes
 meshes = shape_detector.meshes
