@@ -345,7 +345,7 @@ class Cylinder(Primitive):
             solution = skcylinder.best_fit(points)
             
             # base = list(solution.point)
-            center = list(solution.point + vector/2)
+            center = list(solution.point + solution.vector/2)
             vector = list(solution.vector)
             radius = solution.radius
         
