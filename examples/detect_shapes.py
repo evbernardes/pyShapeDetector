@@ -28,17 +28,17 @@ DEG = 0.017453292519943295
 # method = RANSAC_Classic
 # method = RANSAC_Weighted
 # method = MSAC
-# method = BDSAC
-method = LDSAC
+method = BDSAC
+# method = LDSAC
 
 filedir = Path('./data')
 
-filename = '3planes_3spheres_3cylinders'
-# filename = '1cylinders'
+# filename = '3planes_3spheres_3cylinders'
+filename = '1cylinders'
 # filename = '1spheres'
 # filename = 'big'
 
-noise_max = .5
+noise_max = .0
 inliers_min = 1000
 num_iterations = 30
 threshold_distance = 2 + noise_max
@@ -73,7 +73,7 @@ limits = [
     PrimitiveLimits(('radius', 'max', 3)),
     PrimitiveLimits(('radius', 'max', 3)),
     None]
-                    
+
 detector = method([Sphere, Cylinder, PlaneBounded], num_iterations=num_iterations,
                   threshold_angle=threshold_angle,
                   threshold_distance=threshold_distance,

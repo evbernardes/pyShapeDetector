@@ -12,6 +12,7 @@ import open3d as o3d
 from open3d.geometry import TriangleMesh
 from open3d.utility import Vector3dVector, Vector3iVector
 from open3d.visualization import draw_geometries
+from pyShapeDetector.primitives import Plane, Cylinder, Sphere
 import yaml
 from pathlib import Path
 from scipy.spatial.transform import Rotation
@@ -135,33 +136,16 @@ def get_random_cylinders(num_cylinders, translate_lim, radius_lim, height_lim, n
     for idx in range(num_cylinders):
         
         height = random.uniform(*height_lim)
-        radius = random.uniform(*radius_lim)
-        mesh = TriangleMesh.create_cylinder(radius=radius, height=height)
-        
-        # # remove top and bottom planes
-        # bbox = mesh.get_axis_aligned_bounding_box()
-        # x, y, z = bbox.min_bound
-        # bbox_min = [x, y, z+0.001]
-        # x, y, z = bbox.max_bound
-        # bbox_max = [x, y, z-0.001]
-        # bbox = o3d.geometry.AxisAlignedBoundingBox(bbox_min, bbox_max)
-        # mesh = mesh.crop(bbox)
-        
         axis = normalise(np.random.random(3))
-        halfway_axis = normalise(axis + np.array([0, 0, 1]))[..., np.newaxis]
-        rot = 2 * halfway_axis * halfway_axis.T - np.eye(3)
-        
-        
-        translation = translate_lim[0] + \
+        radius = random.uniform(*radius_lim)
+        center = translate_lim[0] + \
             (translate_lim[1]-translate_lim[0]) * np.random.random(3)
-            
-        mesh.rotate(rot)
-        mesh.translate(translation)
-        
-        model = list(translation) + list(axis) + [radius]
-            
-        pcds.append(mesh.sample_points_uniformly(num_points))
-        models.append(model)
+        model = list(center) + list(axis * height) + [radius]
+        shape = Cylinder(model)
+        pcd = shape.get_mesh().sample_points_uniformly(num_points)
+
+        pcds.append(pcd)
+        models.append(shape.model)
     return pcds, models
 
 def center_pointcloud(source):
