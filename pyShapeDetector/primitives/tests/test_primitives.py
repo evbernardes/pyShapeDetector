@@ -105,3 +105,17 @@ def test_normals_flatten_problematic():
             normals = pcd_flattened.normals
             angles = shape.get_angles(points_flattened, normals)
             assert_allclose(rmse(angles), 0, atol=1e-1)
+            
+            
+def test_plane_surface_area_and_volume():
+    model = np.random.rand(4)
+    plane = Plane(model)
+    with pytest.warns(UserWarning, match='surface area is undefined'):
+        assert plane.surface_area is np.nan
+    assert plane.volume == 0
+    
+    length = np.random.rand()
+    plane_bounded = plane.get_square_plane(length)
+    assert plane_bounded.volume == 0
+    assert plane_bounded.surface_area == length ** 2
+    

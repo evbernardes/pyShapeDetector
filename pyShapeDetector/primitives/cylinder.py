@@ -41,6 +41,10 @@ class Cylinder(Primitive):
         Rotation matrix that aligns z-axis with cylinder axis.
     canonical : Cylinder
         Return canonical form for testing.
+    surface_area : float
+        Surface area of primitive
+    volume : float
+        Volume of primitive.
         
     Methods
     ------- 
@@ -100,31 +104,6 @@ class Cylinder(Primitive):
     _fit_n_min = 6
     _model_args_n = 7
     name = 'cylinder'
-    
-    def get_surface_area(self, points=None):
-        """ Gives the surface area of cylinder, needs points. 
-        
-        Parameters
-        ----------
-        points, optional : 3 x N array
-            N input points 
-        
-        Returns
-        -------
-        float
-            surface area.
-        """
-        return 2 * np.pi * self.radius * self.height
-    
-    def get_volume(self):
-        """ Gives the volume of model. 
-        
-        Returns
-        -------
-        float
-            volume.
-        """
-        return np.pi * (self.radius ** 2) * self.height
 
     @property
     def canonical(self):
@@ -175,6 +154,16 @@ class Cylinder(Primitive):
         """ Center point of the cylinder."""
         # return self.base + self.vector / 2
         return np.array(self.model[:3])
+    
+    @property
+    def surface_area(self):
+        """ Surface area of primitive """
+        return 2 * np.pi * self.radius * self.height
+    
+    @property
+    def volume(self):
+        """ Volume of primitive. """
+        return np.pi * (self.radius ** 2) * self.height
     
     @property
     def rotation_from_axis(self):

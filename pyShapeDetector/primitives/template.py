@@ -33,6 +33,10 @@ class Template(Primitive):
         Equation that defines the primitive.
     canonical : Template
         Return canonical form for testing.
+    surface_area : float
+        Surface area of primitive
+    volume : float
+        Volume of primitive.
     
     Methods
     -------
@@ -80,6 +84,16 @@ class Template(Primitive):
     _fit_n_min = 0
     _model_args_n = 0
     name = 'template' 
+    
+    @property
+    def surface_area(self):
+        """ Surface area of primitive """
+        return 0
+    
+    @property
+    def volume(self):
+        """ Volume of primitive. """
+        return 0
     
     def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the model.

@@ -32,18 +32,16 @@ class Plane(Primitive):
         Normal vector defining plane.
     canonical : Plane
         Return canonical form for testing.
+    surface_area : float
+        For unbounded plane, returns NaN and gives warning
+    volume : float
+        Volume of plane, which is zero.
     
     Methods
     ------- 
     get_plane_bounded(points):
         Gives bounded version of plane, using input points to define 
         border.
-    
-    get_surface_area(points):
-        Gives the surface area of Plane. 
-        
-    get_volume():
-        Gives the volume of model. 
     
     def get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
@@ -157,6 +155,17 @@ class Plane(Primitive):
     def normal(self):
         """ Normal vector defining point. """
         return np.array(self.model[:3])
+    
+    @property
+    def surface_area(self):
+        """ For unbounded plane, returns NaN and gives warning """
+        warn('For unbounded planes, the surface area is undefined')
+        return np.nan
+    
+    @property
+    def volume(self):
+        """ Volume of plane, which is zero. """
+        return 0    
     
     def get_surface_area(self, points):
         """ Gives the surface area of plane, needs points. 
@@ -392,6 +401,10 @@ class PlaneBounded(Plane):
         Return canonical form for testing.
     unbounded : Plane
         Unbounded version of plane.
+    surface_area : float
+        Surface area of bounded plane.
+    volume : float
+        Volume of plane, which is zero.
     
     Methods
     ------- 
@@ -502,21 +515,11 @@ class PlaneBounded(Plane):
             model = -model
         return PlaneBounded(list(-self.model), self.bounds)
     
-    def get_surface_area(self, points=None):
-        """ Gives the surface area of plane, needs points. 
-        
-        Parameters
-        ----------
-        points, optional : 3 x N array
-            N input points 
-        
-        Returns
-        -------
-        float
-            surface area.
-        """
+    @property
+    def surface_area(self):
+        """ Surface area of bounded plane. """
         return self.get_mesh().get_surface_area()
-    
+        
     @staticmethod
     def _get_bounds_and_projection(plane, points, flatten=True):
         """ Flatten points according to plane model, get projection of 

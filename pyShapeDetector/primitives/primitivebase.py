@@ -26,6 +26,8 @@ class Primitive(ABC):
     The method `get_mesh` can also optionally be implemented to return a 
     TriangleMesh instance.
     
+    The properties `surface_area` and `volume` can also be implemented.
+    
     When multiple set of parameters can define the same surface, it might be
     useful to implement the property `canonical` to return the canonical form 
     (useful for testing).
@@ -42,15 +44,13 @@ class Primitive(ABC):
         Equation that defines the primitive.
     canonical : Primitive
         Return canonical form for testing.
+    surface_area : float
+        Surface area of primitive
+    volume : float
+        Volume of primitive.
         
     Methods
-    -------
-    get_surface_area(points=None):
-        Gives the surface area of model. 
-        
-    get_volume():
-        Gives the volume of model. 
-    
+    -------    
     def get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
     
@@ -122,36 +122,18 @@ class Primitive(ABC):
         """ Name of primitive. """
         pass
     
-    @abstractmethod
-    def get_surface_area(self, points=None):
-        """ Gives the surface area of model. 
+    @property
+    def surface_area(self):
+        """ Surface area of primitive. """
         
-        Actual implementation depends on the type of primitive.
-        
-        Parameters
-        ----------
-        points, optional : 3 x N array
-            N input points 
-        
-        Returns
-        -------
-        float
-            surface area.
-        """
-        pass
+        raise NotImplementedError('Surface area not implemented for '
+                                  f'{self.name} primitives.')
     
-    @abstractmethod
-    def get_volume(self):
-        """ Gives the volume of model. 
-        
-        Actual implementation depends on the type of primitive.
-        
-        Returns
-        -------
-        float
-            volume.
-        """
-        pass
+    @property
+    def volume(self):
+        """ Volume of primitive. """
+        raise NotImplementedError(f'Volume not implemented for {self.name} '
+                                  'primitives.')
     
     @abstractmethod
     def get_signed_distances(self, points):
