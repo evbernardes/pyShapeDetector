@@ -332,6 +332,240 @@ class Plane(Primitive):
         abc = abc / norm
         return Plane([abc[0], abc[1], abc[2], -abc.dot(centroid)]) 
         
+    
+class PlaneBounded(Plane):
+    """
+    Plane primitive.
+    
+    Attributes
+    ----------
+    _fit_n_min : int
+        Minimum number of points necessary to fit a model.
+    _model_args_n : str
+        Number of parameters in the model.
+    name : str
+        Name of primitive.
+    equation : str
+        Equation that defines the primitive.
+    normal : 3 x 1 array
+        Normal vector defining plane.
+    canonical : Plane
+        Return canonical form for testing.
+    
+    Methods
+    ------- 
+    
+    get_surface_area(points):
+        Gives the surface area of Plane. 
+        
+    get_volume():
+        Gives the volume of model. 
+    
+    def get_signed_distances(points):
+        Gives the minimum distance between each point to the model. 
+    
+    get_distances(points)
+        Gives the minimum distance between each point to the model. 
+        
+    get_normals(points)
+        Gives, for each input point, the normal vector of the point closest 
+        to the primitive. 
+        
+    fit(points, normals=None):
+        Gives plane that fits the input points.
+    
+    get_angles_cos(self, points, normals):
+        Gives the absolute value of cosines of the angles between the input 
+        normal vectors and the calculated normal vectors from the input points.
+    
+    get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
+        Rotation matrix that transforms `axis_origin` in `axis`.
+        
+    flatten_points(points):
+        Stick each point in input to the closest point in shape's surface.
+        
+    get_angles_cos(points, normals):
+        Gives the absolute value of cosines of the angles between the input 
+        normal vectors and the calculated normal vectors from the input points.
+        
+    get_angles(points, normals):
+        Gives the angles between the input normal vectors and the 
+        calculated normal vectors from the input points.
+        
+    get_residuals(points, normals):
+        Convenience function returning both distances and angles.
+    
+    get_mesh(points): TriangleMesh
+        Flatten points and creates a simplified mesh of the plane defined
+        by the points at the borders.
+    
+    """
+    
+    _fit_n_min = 3
+    _model_args_n = 4
+    name = 'plane'
+    
+    def __init__(self, plane, bounds):
+        """
+        Parameters
+        ----------
+        plane : Plane
+            Shape defining plane
+        bounds : array_like, shape (N, 3)
+            Points defining bounds
+                        
+        Raises
+        ------
+        ValueError
+            If number of parameters is incompatible with the model of the 
+            primitive.
+        """
+        bounds = np.asarray(bounds)
+        if bounds.shape[1] != 3:
+            raise ValueError('Expected shape of bounds is (N, 3), got '
+                             f'{bounds.shape}')
+        distances = plane.get_distances(bounds)
+        rmse = np.sqrt(sum(distances * distances)) / len(distances)
+        if  rmse > 1e-7:
+            raise ValueError('Boundary points are not close enough to plane: '
+                             f'rmse={rmse}, expected less than 1e-7.')
+        self.model = plane.model
+        self.bounds = plane.flatten_points(bounds)
+    
+    @property
+    def canonical(self):
+        """ Return canonical form for testing. """
+        model = self.model
+        if self.model[-1] >= 0:
+            model = -model
+        return PlaneBounded(list(-self.model), self.bounds)
+    
+    @property
+    def unbounded(self):
+        """ Return regular unbounded plane. """
+        return Plane(self.model)
+    
+    def get_surface_area(self, points):
+        """ Gives the surface area of plane, needs points. 
+        
+        Parameters
+        ----------
+        points, optional : 3 x N array
+            N input points 
+        
+        Returns
+        -------
+        float
+            surface area.
+        """
+        return self.get_mesh(points).get_surface_area()
+    
+    def get_mesh(self):
+        """ Flatten points and creates a simplified mesh of the plane defined
+        by the points at the borders.      
+
+        Parameters
+        ----------
+        points : 3 x N array
+            Points corresponding to the fitted shape.
+        
+        Returns
+        -------
+        TriangleMesh
+            Mesh corresponding to the plane.
+        """
+        points = self.bounds
+        
+        rot = self.get_rotation_from_axis(self.normal)
+        projection = (rot @ points.T).T[:, :2]
+        
+        chull = ConvexHull(projection)
+        borders = projection[chull.vertices]
+        
+        triangles = Delaunay(borders).simplices
+        
+        # needed to make plane visible from both sides
+        triangles = np.vstack([triangles, triangles[:, ::-1]]) 
+        
+        mesh = TriangleMesh()
+        # mesh.vertices = Vector3dVector(points_flat[chull.vertices])
+        mesh.vertices = Vector3dVector(points[chull.vertices])
+        mesh.triangles = Vector3iVector(triangles)
+        
+        return mesh
+    
+    def get_bounds(self, points):
+        points = np.asarray(points)
+        points_flat = self.flatten_points(points)
+        
+        rot = self.get_rotation_from_axis(self.normal)
+        projection = (rot @ points_flat.T).T[:, :2]
+        
+        chull = ConvexHull(projection)
+        return points[chull.vertices]
+    
+    def get_mesh(self, points=None):
+        """ Flatten points and creates a simplified mesh of the plane defined
+        by the points at the borders.      
+
+        Parameters
+        ----------
+        points : 3 x N array
+            Points corresponding to the fitted shape.
+        
+        Returns
+        -------
+        TriangleMesh
+            Mesh corresponding to the plane.
+        """
+        if points is None:
+            return self.get_square_mesh()
+        points = np.asarray(points)
+        points_flat = self.flatten_points(points)
+        
+        rot = self.get_rotation_from_axis(self.normal)
+        projection = (rot @ points_flat.T).T[:, :2]
+        
+        chull = ConvexHull(projection)
+        borders = projection[chull.vertices]
+        
+        triangles = Delaunay(borders).simplices
+        
+        # needed to make plane visible from both sides
+        triangles = np.vstack([triangles, triangles[:, ::-1]]) 
+        
+        mesh = TriangleMesh()
+        # mesh.vertices = Vector3dVector(points_flat[chull.vertices])
+        mesh.vertices = Vector3dVector(points[chull.vertices])
+        mesh.triangles = Vector3iVector(triangles)
+        
+        return mesh
+    
+    @staticmethod
+    def fit(points, normals=None):
+        """ Gives plane that fits the input points. If the number of points is
+        higher than the `3`, the fitted shape will return a least squares 
+        estimation.
+        
+        Reference:
+            https://www.ilikebigbits.com/2015_03_04_plane_from_points.html
+        
+        Parameters
+        ----------
+        points : 3 x N array
+            N input points 
+        normals : 3 x N array
+            N normal vectors
+        
+        Returns
+        -------
+        PlaneBounded
+            Fitted plane.
+        """
+        
+        plane = Plane.fit(points, normals)
+        
+        return Plane([abc[0], abc[1], abc[2], -abc.dot(centroid)]) 
 
             
         
