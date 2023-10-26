@@ -38,7 +38,7 @@ filename = '3planes_3spheres_3cylinders'
 # filename = '1spheres'
 # filename = 'big'
 
-noise_max = 0.
+noise_max = .5
 inliers_min = 1000
 num_iterations = 30
 threshold_distance = 2 + noise_max
@@ -52,7 +52,7 @@ pcd_full.points = Vector3dVector(pcd_full.points + noise)
 # draw_geometries([pcd_full])
 
 #%% Separate full pointcloud into clusters
-labels = pcd_full.cluster_dbscan(eps=1.0, min_points=20)#, print_progress=True))
+labels = pcd_full.cluster_dbscan(eps=1.0, min_points=10)#, print_progress=True))
 
 labels = np.array(labels)
 max_label = labels.max()
@@ -63,13 +63,14 @@ colors[labels < 0] = 0
 pcd_segmented.colors = Vector3dVector(colors[:, :3])
 # o3d.visualization.draw_geometries([pcd_segmented])
 
+#%%
 pcds_segmented = []
 for label in set(labels):
     idx = np.where(labels == label)[0]
     pcds_segmented.append(pcd_full.select_by_index(idx))
 
 limits = [
-    PrimitiveLimits(('radius', 'max', 5)),
+    PrimitiveLimits(('radius', 'max', 3)),
     PrimitiveLimits(('radius', 'max', 3)),
     None]
                     

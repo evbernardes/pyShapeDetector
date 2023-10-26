@@ -223,8 +223,8 @@ class Plane(Primitive):
         triangles = np.vstack([triangles, triangles[:, ::-1]]) 
         
         mesh = TriangleMesh()
-        # mesh.vertices = Vector3dVector(points_flat[chull.vertices])
-        mesh.vertices = Vector3dVector(points[chull.vertices])
+        mesh.vertices = Vector3dVector(points_flat[chull.vertices])
+        # mesh.vertices = Vector3dVector(points[chull.vertices])
         mesh.triangles = Vector3iVector(triangles)
         
         return mesh
