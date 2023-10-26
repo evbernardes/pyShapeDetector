@@ -167,32 +167,6 @@ class Plane(Primitive):
         """ Volume of plane, which is zero. """
         return 0    
     
-    def get_surface_area(self, points):
-        """ Gives the surface area of plane, needs points. 
-        
-        Parameters
-        ----------
-        points, optional : 3 x N array
-            N input points 
-        
-        Returns
-        -------
-        float
-            surface area.
-        """
-        raise RuntimeError('Unbounded plane has infinite surface area, '
-                           'for bounded planes try primitive PlaneBounded')
-    
-    def get_volume(self):
-        """ Gives the volume of plane, which is zero. 
-        
-        Returns
-        -------
-        float
-            volume.
-        """
-        return 0
-    
     def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the model. 
         
@@ -412,12 +386,6 @@ class PlaneBounded(Plane):
     get_plane_bounded(points):
         Gives bounded version of plane, using input points to define 
         border.
-    
-    get_surface_area(points):
-        Gives the surface area of Plane. 
-        
-    get_volume():
-        Gives the volume of model. 
     
     def get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
