@@ -10,6 +10,10 @@ from abc import ABC, abstractmethod
 import time
 import random
 import numpy as np
+
+from open3d.geometry import PointCloud
+from open3d.utility import Vector3dVector
+
 from pyShapeDetector.utility import PrimitiveLimits
 
 random.seed(time.time())
@@ -49,7 +53,7 @@ class RANSAC_Base(ABC):
     get_samples(points):
         Sample points and return indices of sampled points.
 
-    get_inliers_from_residuals(distances, angles):
+    get_inliers(distances, angles, distances, angles):
         Return indices of inliers: points whose distance to shape and
         angle with normal vector are below the given thresholds.
         
@@ -72,7 +76,8 @@ class RANSAC_Base(ABC):
                  limits=None,
                  max_normal_angle_degrees=10,
                  inliers_min=None,
-                 fitness_min=None):
+                 fitness_min=None,
+                 connected_components_density=None):
         
         if type(primitives) is not list:
             primitives = [primitives]
@@ -147,6 +152,7 @@ class RANSAC_Base(ABC):
         self.max_point_distance = max_point_distance
         self.inliers_min = inliers_min
         self.fitness_min = fitness_min
+        self.eps = connected_components_density
 
     @property
     @abstractmethod
@@ -338,30 +344,32 @@ class RANSAC_Base(ABC):
 
         return list(samples)
     
-    def get_inliers_from_residuals(self, distances, angles):
-        """ Return indices of inliers: points whose distance to shape and
-        angle with normal vector are below the given thresholds.
+    def get_biggest_connected_component(self, shape, points, inliers, 
+                                        min_points=10):
+        if self.eps is None:
+            return inliers
         
-        Parameters
-        ----------
-        distances : array
-            Distances of each point to shape
-        angles : array or None
-            Angles between each input and theoretical normal vector
+        points_flat = shape.flatten_points(points[inliers])
         
-        Returns
-        -------
-        list
-            Indices of inliers
-        """
-        is_inlier = distances < self.threshold_distance
-        if angles is not None:
-            is_inlier *= (angles < self.threshold_angle)
-        return np.where(is_inlier)[0]
+        pcd = PointCloud(Vector3dVector(points_flat))
+        labels = pcd.cluster_dbscan(eps=self.eps, min_points=min_points)
+        labels = np.array(labels)
+        max_label = labels.max()
+        size_connected = {}
+        for label in set(labels):
+            size_connected[label] = sum(labels == label)
+        idx = labels == max(size_connected)
+        return inliers[idx]
+            
+        # pcd_segmented = copy.copy(pcd_full)
     
-    def get_inliers_from_points(self, shape, points, normals=None):
+    
+    def get_inliers(self, shape, points, normals=None,
+                    distances=None, angles=None):
         """ Return indices of inliers: points whose distance to shape and
         angle with normal vector are below the given thresholds.
+        
+        If distances and angles are not given, they are calculated.
         
         Parameters
         ----------
@@ -371,14 +379,33 @@ class RANSAC_Base(ABC):
             All input points
         normals, optional : array
             All input normal vectors 
+        distances : optional, array
+            Distances of each point to shape
+        angles : optional, array
+            Angles between each input and theoretical normal vector
         
         Returns
         -------
         list
             Indices of inliers
         """
-        distances, angles = shape.get_residuals(points, normals)
-        return self.get_inliers_from_residuals(distances, angles)
+        if distances is None:
+            distances = shape.get_distances(points)
+        if angles is None and normals is not None:
+            angles = shape.get_angles(points, normals)
+        # distances, angles = shape.get_residuals(points, normals)
+        
+        is_inlier = distances < self.threshold_distance
+        if angles is not None:
+            is_inlier *= (angles < self.threshold_angle)
+        inliers = np.where(is_inlier)[0]
+        
+        if self.eps is not None:
+            inliers = self.get_biggest_connected_component(
+                shape, points, inliers)
+            
+        return inliers
+
 
     def fit(self, points, normals=None, debug=False):#, filter_model=True):
         """ Main loop implementing RANSAC algorithm.
@@ -472,7 +499,9 @@ class RANSAC_Base(ABC):
                 if shapes[i] is None:
                     continue
                 distances, angles = shapes[i].get_residuals(points, normals)
-                inliers = self.get_inliers_from_residuals(distances, angles)
+                # inliers = self.get_inliers_from_residuals(distances, angles)
+                inliers = self.get_inliers(shapes[i], points, normals, 
+                                           distances, angles)
                 num_inliers = len(inliers)
             
                 times['get_inliers_and_error'] += time.time() - t_
@@ -509,7 +538,7 @@ class RANSAC_Base(ABC):
         
         # Find the final inliers using model_best ...
         # distances, angles = shape_best.get_residuals(points, normals)
-        inliers_final = self.get_inliers_from_points(shape_best, points, normals)
+        inliers_final = self.get_inliers(shape_best, points, normals)
         num_inliers = len(inliers_final)
         metrics_final = self.get_metrics(num_points, num_inliers, 
                                          distances, angles)

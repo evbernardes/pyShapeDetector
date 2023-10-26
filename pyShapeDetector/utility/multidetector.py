@@ -28,16 +28,12 @@ class MultiDetector():
         self.n_pcds = len(pcds)
         self.detectors = detectors
         self.n_detectors = len(detectors)
-        self._shapes_detected = None
-        self._meshes_detected = None
-        self._pcds_inliers = None
-        self._pcds_rest = None
-        self._finished = False
         self.points_min = points_min
         self.num_iterations = num_iterations
         
         # Start:
         self._shapes_detected = None
+        self._metrics_detected = None
         self._meshes_detected = None
         self._pcds_inliers = None
         self._pcds_rest = None
@@ -68,6 +64,14 @@ class MultiDetector():
                                'see: MultiDetector.run')
             
         return self._shapes_detected
+
+    @property
+    def metrics(self):
+        if not self._finished:
+            raise RuntimeError('MultiDetector still did not fit, try to run, '
+                               'see: MultiDetector.run')
+            
+        return self._metrics_detected
     
     @property
     def meshes(self):
@@ -91,16 +95,15 @@ class MultiDetector():
         debug_detectors = debug > 1
         debug = debug > 0
         
-        times = {}
-        for detector in self.detectors:
-            for p in detector.primitives:
-                if p.name not in times:
-                    times[p.name] = 0
-            
-        
-        # times = {detector.primitive.name: 0 for detector in self.detectors}
+        # times = {}
+        # for detector in self.detectors:
+        #     for primitive in detector.primitives:
+        #         if primitive.name in times:
+        #             continue
+        #         times[primitive.name] = 0
         
         shapes_detected = []
+        metrics_detected = []
         pcds_inliers = []
         pcds_rest = []
         
@@ -160,6 +163,7 @@ class MultiDetector():
                     
                 shape = output_shapes[idx]
                 inliers = output_inliers[idx]
+                metrics = output_metrics[idx]
                 if debug:
                     print(f'-> {shape.name.capitalize()} found, with '
                           f'{compare_metric} = {max(compare)}')
@@ -168,22 +172,24 @@ class MultiDetector():
                 pcd_ = pcd_.select_by_index(inliers, invert=True)
                 
                 shapes_detected.append(shape)
+                metrics_detected.append(metrics)
                 pcds_inliers.append(pcd_inliers)
                 iteration += 1
             
             if len(pcd_.points) != 0:
                 pcds_rest.append(pcd_)
 
-        # if debug:
-        #     print('\n-------------------------------------------')
-        #     print(f'Finished after {time.time() - start:.5f}s')
-        #     print('Time spend with each detector:')
+        if debug:
+            print('\n-------------------------------------------')
+            print(f'Finished after {time.time() - start:.5f}s')
+            print('Time spend with each detector:')
             
             # for detector in self.detectors:
             #     name = detector.primitive.name
             #     print(f'- {name}: {times[name]:.3f}s')
                 
         self._shapes_detected = shapes_detected
+        self._metrics_detected = metrics_detected
         self._pcds_inliers = pcds_inliers
         self._pcds_rest = pcds_rest
         self._finished = True
