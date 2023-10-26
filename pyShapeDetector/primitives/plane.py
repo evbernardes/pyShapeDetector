@@ -10,9 +10,9 @@ from scipy.spatial import ConvexHull, Delaunay
 from open3d.geometry import TriangleMesh, PointCloud
 from open3d.utility import Vector3iVector, Vector3dVector
 
-from .primitivebase import PrimitiveBase
+from .primitivebase import Primitive
     
-class Plane(PrimitiveBase):
+class Plane(Primitive):
     """
     Plane primitive.
     
@@ -101,7 +101,7 @@ class Plane(PrimitiveBase):
         norm = np.linalg.norm(model[:3])
         model /= norm
         
-        PrimitiveBase.__init__(self, model)
+        Primitive.__init__(self, model)
     
     @property
     def canonical(self):

@@ -11,9 +11,9 @@ from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector
 from skspatial.objects.cylinder import Cylinder as skcylinder
 
-from .primitivebase import PrimitiveBase
+from .primitivebase import Primitive
     
-class Cylinder(PrimitiveBase):
+class Cylinder(Primitive):
     """
     Cylinder primitive.
     

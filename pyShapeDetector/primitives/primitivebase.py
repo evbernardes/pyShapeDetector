@@ -10,7 +10,7 @@ import numpy as np
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
     
-class PrimitiveBase(ABC):
+class Primitive(ABC):
     """
     Base class used to represent a geometrical primitive.
     
@@ -40,7 +40,7 @@ class PrimitiveBase(ABC):
         Name of primitive.
     equation : str
         Equation that defines the primitive.
-    canonical : PrimitiveBase
+    canonical : Primitive
         Return canonical form for testing.
         
     Methods
@@ -211,7 +211,7 @@ class PrimitiveBase(ABC):
         
         Returns
         -------
-        PrimitiveBase
+        Primitive
             Fitted shape.
         """
         pass

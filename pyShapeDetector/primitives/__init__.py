@@ -6,7 +6,7 @@ Created on Tue Sep 26 16:02:34 2023
 @author: ebernardes
 """
 
-from .primitivebase import PrimitiveBase
+from .primitivebase import Primitive
 from .plane import Plane
 from .sphere import Sphere
 from .cylinder import Cylinder

@@ -8,9 +8,9 @@ Created on Mon Sep 25 15:42:59 2023
 import numpy as np
 from open3d.geometry import TriangleMesh
 
-from .primitivebase import PrimitiveBase
+from .primitivebase import Primitive
     
-class Sphere(PrimitiveBase):
+class Sphere(Primitive):
     """
     Sphere primitive.
     
