@@ -17,6 +17,7 @@ from pyShapeDetector.primitives import Plane, PlaneBounded, Sphere, Cylinder
 primitives = [Plane, PlaneBounded, Sphere, Cylinder]
 
 def rmse(x):
+    """ Helper for root mean square error. """
     return np.sqrt(sum(x * x)) / len(x)
 
 def get_shape_and_pcd(primitive, num_points, canonical=False):
