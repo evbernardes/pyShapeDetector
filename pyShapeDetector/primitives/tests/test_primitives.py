@@ -13,15 +13,19 @@ from numpy.testing import assert_allclose
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
 
-from pyShapeDetector.primitives import Plane, Sphere, Cylinder
-primitives = [Plane, Sphere, Cylinder]
+from pyShapeDetector.primitives import Plane, PlaneBounded, Sphere, Cylinder
+primitives = [Plane, PlaneBounded, Sphere, Cylinder]
 
 def rmse(x):
     return np.sqrt(sum(x * x)) / len(x)
 
 def get_shape_and_pcd(primitive, num_points, canonical=False):
-    model = np.random.rand(primitive._model_args_n)
-    shape = primitive(model)
+    
+    if primitive.name == 'bounded plane':
+        shape = Plane(np.random.rand(4)).get_square_plane(np.random.rand())
+    else:
+        model = np.random.rand(primitive._model_args_n)
+        shape = primitive(model)
     mesh = shape.get_mesh()
     pcd = mesh.sample_points_uniformly(num_points)
     pcd.estimate_normals()
@@ -33,15 +37,19 @@ def get_shape_and_pcd(primitive, num_points, canonical=False):
 def test_primitive_init():
     for primitive in primitives:
         model = np.random.rand(primitive._model_args_n)
-        shape = primitive(model)
-
+        if primitive.name == 'bounded plane':
+            with pytest.warns(UserWarning, match='returning square plane'):
+                primitive(model)
+        else:
+            primitive(model)
+            
         with pytest.raises(ValueError, match='elements, got'): 
             model = np.random.rand(primitive._model_args_n+1)
-            shape = primitive(model)
+            primitive(model)
 
         with pytest.raises(ValueError, match='elements, got'): 
             model = np.random.rand(primitive._model_args_n-1)
-            shape = primitive(model)
+            primitive(model)
 
 
 def test_fit():

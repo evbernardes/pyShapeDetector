@@ -7,10 +7,10 @@ Created on Tue Sep 26 16:02:34 2023
 """
 
 from .primitivebase import Primitive
-from .plane import Plane
+from .plane import Plane, PlaneBounded
 from .sphere import Sphere
 from .cylinder import Cylinder
 
 list_primitives=[
-    Plane, Sphere, Cylinder,
+    Plane, Sphere, Cylinder, PlaneBounded,
 ]

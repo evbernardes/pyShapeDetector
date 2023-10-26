@@ -17,7 +17,7 @@ from open3d.utility import Vector3dVector
 
 # from helpers import color_blue, color_gray, color_red, color_yellow
 from helpers import draw_two_colomns, paint_meshes_by_type
-from pyShapeDetector.primitives import Sphere, Plane, Cylinder
+from pyShapeDetector.primitives import Sphere, Plane, PlaneBounded, Cylinder
 from pyShapeDetector.utility import MultiDetector, PrimitiveLimits
 from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, \
     BDSAC, LDSAC
@@ -74,7 +74,7 @@ limits = [
     PrimitiveLimits(('radius', 'max', 3)),
     None]
                     
-detector = method([Sphere, Cylinder, Plane], num_iterations=num_iterations,
+detector = method([Sphere, Cylinder, PlaneBounded], num_iterations=num_iterations,
                   threshold_angle=threshold_angle,
                   threshold_distance=threshold_distance,
                   # max_point_distance=0.5,
