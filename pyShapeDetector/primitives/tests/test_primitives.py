@@ -110,9 +110,9 @@ def test_normals_flatten_problematic():
 def test_plane_surface_area_and_volume():
     model = np.random.rand(4)
     plane = Plane(model)
+    assert plane.volume == 0
     with pytest.warns(UserWarning, match='surface area is undefined'):
         assert plane.surface_area is np.nan
-    assert plane.volume == 0
     
     length = np.random.rand()
     plane_bounded = plane.get_square_plane(length)
