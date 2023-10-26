@@ -50,6 +50,19 @@ def test_primitive_init():
         with pytest.raises(ValueError, match='elements, got'): 
             model = np.random.rand(primitive._model_args_n-1)
             primitive(model)
+            
+    
+def test_plane_surface_area_and_volume():
+    model = np.random.rand(4)
+    plane = Plane(model)
+    assert plane.volume == 0
+    with pytest.warns(UserWarning, match='surface area is undefined'):
+        assert np.isnan(plane.surface_area)
+    
+    length = np.random.rand()
+    plane_bounded = plane.get_square_plane(length)
+    assert plane_bounded.volume == 0
+    assert_allclose(plane_bounded.surface_area, length ** 2)
 
 
 def test_fit():
@@ -106,16 +119,5 @@ def test_normals_flatten_problematic():
             angles = shape.get_angles(points_flattened, normals)
             assert_allclose(rmse(angles), 0, atol=1e-1)
             
-            
-def test_plane_surface_area_and_volume():
-    model = np.random.rand(4)
-    plane = Plane(model)
-    assert plane.volume == 0
-    with pytest.warns(UserWarning, match='surface area is undefined'):
-        assert plane.surface_area is np.nan
-    
-    length = np.random.rand()
-    plane_bounded = plane.get_square_plane(length)
-    assert plane_bounded.volume == 0
-    assert plane_bounded.surface_area == length ** 2
+
     

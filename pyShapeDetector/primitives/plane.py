@@ -160,7 +160,7 @@ class Plane(Primitive):
     def surface_area(self):
         """ For unbounded plane, returns NaN and gives warning """
         warn('For unbounded planes, the surface area is undefined')
-        return np.nan
+        return float('nan')
     
     @property
     def volume(self):
