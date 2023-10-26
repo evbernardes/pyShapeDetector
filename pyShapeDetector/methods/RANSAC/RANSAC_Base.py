@@ -12,7 +12,7 @@ import random
 import numpy as np
 from pyShapeDetector.utility import PrimitiveLimits
 
-random.seed(951)
+random.seed(time.time())
 
 class RANSAC_Base(ABC):
     """
