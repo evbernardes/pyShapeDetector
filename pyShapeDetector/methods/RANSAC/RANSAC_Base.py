@@ -16,7 +16,8 @@ from open3d.utility import Vector3dVector
 
 from pyShapeDetector.utility import PrimitiveLimits
 
-random.seed(time.time())
+# random.seed(time.time())
+random.seed(931)
 
 class RANSAC_Base(ABC):
     """
@@ -69,7 +70,7 @@ class RANSAC_Base(ABC):
                  reduction_rate=1.0,
                  threshold_distance=0.1,
                  threshold_angle=3.141592653589793,  # ~ 180 degrees
-                 threshold_refit_ratio=3,
+                 threshold_refit_ratio=1,
                  ransac_n=None,
                  num_iterations=100,
                  probability=0.99999,
@@ -85,7 +86,7 @@ class RANSAC_Base(ABC):
         elif len(primitives) != len(set(primitives)):
             raise ValueError("Repeated primitives in input is not allowed.")
             
-        num_primitives = len(primitives)
+        # num_primitives = len(primitives)
             
         if ransac_n is None:
             ransac_n = max([p._fit_n_min for p in primitives])
@@ -142,6 +143,10 @@ class RANSAC_Base(ABC):
             for limit, p in zip(self.limits, primitives):
                 if limit is not None:
                     limit.check_compatibility(p)
+                    
+        if threshold_refit_ratio < 1:
+            raise ValueError('threshold_refit_ratio must be higher or equal to'
+                             f' 1, got {threshold_refit_ratio}')
 
         self.primitives = primitives
         self.ransac_n = ransac_n
@@ -368,7 +373,7 @@ class RANSAC_Base(ABC):
     
     
     def get_inliers(self, shape, points, normals=None,
-                    distances=None, angles=None):
+                    distances=None, angles=None, refit=False):
         """ Return indices of inliers: points whose distance to shape and
         angle with normal vector are below the given thresholds.
         
@@ -386,19 +391,25 @@ class RANSAC_Base(ABC):
             Distances of each point to shape
         angles : optional, array
             Angles between each input and theoretical normal vector
+        refit : boolean, optional
+            Multiply threshold_refit_ratio with threshold_distance to have
+            points in border
         
         Returns
         -------
         list
             Indices of inliers
         """
+        
         if distances is None:
             distances = shape.get_distances(points)
         if angles is None and normals is not None:
             angles = shape.get_angles(points, normals)
         # distances, angles = shape.get_residuals(points, normals)
+            
+        threshold_refit_ratio = self.threshold_refit_ratio if refit else 1
         
-        is_inlier = distances < self.threshold_distance
+        is_inlier = distances < self.threshold_distance * threshold_refit_ratio
         if angles is not None:
             is_inlier *= (angles < self.threshold_angle)
         inliers = np.where(is_inlier)[0]
@@ -504,7 +515,7 @@ class RANSAC_Base(ABC):
                 distances, angles = shapes[i].get_residuals(points, normals)
                 # inliers = self.get_inliers_from_residuals(distances, angles)
                 inliers = self.get_inliers(shapes[i], points, normals, 
-                                           distances, angles)
+                                           distances, angles, refit=False)
                 num_inliers = len(inliers)
             
                 times['get_inliers_and_error'] += time.time() - t_
@@ -540,8 +551,9 @@ class RANSAC_Base(ABC):
             return None, None, self.get_metrics(None)
         
         # Find the final inliers using model_best ...
-        # distances, angles = shape_best.get_residuals(points, normals)
-        inliers_final = self.get_inliers(shape_best, points, normals)
+        distances, angles = shape_best.get_residuals(points, normals)
+        inliers_final = self.get_inliers(shape_best, points, normals,
+                                         distances, angles, refit=True)
         num_inliers = len(inliers_final)
         metrics_final = self.get_metrics(num_points, num_inliers, 
                                          distances, angles)

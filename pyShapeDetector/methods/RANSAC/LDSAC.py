@@ -71,7 +71,7 @@ class LDSAC(RANSAC_WeightedBase):
                  reduction_rate=1.0,
                  threshold_distance=0.1,
                  threshold_angle=3.141592653589793,  # ~ 180 degrees
-                 threshold_refit_ratio=3,
+                 threshold_refit_ratio=1,
                  ransac_n=None,
                  num_iterations=100,
                  probability=0.99999,
