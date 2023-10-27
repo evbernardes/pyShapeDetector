@@ -6,7 +6,8 @@ Created on Tue Sep 26 16:02:34 2023
 @author: ebernardes
 """
 
-from .RANSAC import RANSAC_Classic, RANSAC_Weighted, MSAC, LDSAC, BDSAC
+from .RANSAC import (RANSAC_Classic, RANSAC_Weighted, MSAC, LDSAC, BDSAC
+                     )
 
 list_methods_RANSAC=[
     RANSAC_Classic, RANSAC_Weighted, MSAC, LDSAC, BDSAC

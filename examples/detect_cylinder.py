@@ -16,8 +16,9 @@ from open3d.visualization import draw_geometries
 
 # from helpers import color_blue, color_gray, color_red, color_yellow
 from pyShapeDetector.primitives import Sphere, Plane, Cylinder
-from pyShapeDetector.utility import PrimitiveLimits
+from pyShapeDetector.utility import PrimitiveLimits, RANSAC_Options
 from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, BDSAC, LDSAC
+
 methods = [RANSAC_Classic, 
            RANSAC_Weighted,
            MSAC,
@@ -35,13 +36,16 @@ pcd.estimate_normals()
 normals = pcd.normals
 
 #%%
-inliers_min = 200
 
-detector = method([Cylinder, Sphere], num_iterations=15,
-                  threshold_angle=30,
-                  # max_point_distance=0.5,
-                   # limits=PrimitiveLimits(('radius', 'max', 3)),
-                  inliers_min=inliers_min)
+opt = RANSAC_Options()
+opt.inliers_min = 200
+opt.num_iterations = 15
+opt.threshold_angle = 30 * np.pi / 180
+opt.inliers_min = 200
+
+detector = method(opt)
+detector.add(Cylinder)
+detector.add(Sphere)
 
 shape, inliers, metrics = detector.fit(pcd.points, debug=True, normals=normals)
 pcd_shape = pcd.select_by_index(inliers)

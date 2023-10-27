@@ -19,7 +19,7 @@ from open3d.utility import Vector3dVector
 # from helpers import color_blue, color_gray, color_red, color_yellow
 from helpers import draw_two_colomns, paint_meshes_by_type
 from pyShapeDetector.primitives import Sphere, Plane, PlaneBounded, Cylinder
-from pyShapeDetector.utility import MultiDetector, PrimitiveLimits
+from pyShapeDetector.utility import MultiDetector, PrimitiveLimits, RANSAC_Options
 from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, \
     BDSAC, LDSAC
 
@@ -29,7 +29,7 @@ DEG = 0.017453292519943295
 # method = RANSAC_Classic
 # method = RANSAC_Weighted
 # method = MSAC
-# method = BDSAC
+# method = BDSACreduction_rate
 method = LDSAC
 
 filedir = Path('./data')
@@ -42,10 +42,6 @@ filename = '3planes_3spheres_3cylinders'
 # filename = 'big'
 
 noise_max = 1
-inliers_min = 1000
-num_iterations = 30
-threshold_distance = 0.2 + 2 * noise_max
-threshold_angle=35 * DEG
 fullpath = (filedir / filename).with_suffix('.pcd')
 
 pcd_full = o3d.io.read_point_cloud(str(fullpath))
@@ -79,20 +75,17 @@ for label in set(labels):
     pcds_segmented.append(pcd_full.select_by_index(idx))
 # pcds_segmented = [pcd_full]
 #%%
-limits = [
-    PrimitiveLimits(('radius', 'max', 3)),
-    PrimitiveLimits(('radius', 'max', 3)),
-    None]
+opt = RANSAC_Options()
+opt.inliers_min = 1000
+opt.num_iterations = 30
+opt.threshold_distance = 0.2 + 2 * noise_max
+opt.threshold_angle=35 * DEG
+opt.connected_components_density=None
 
-detector = method([Sphere, Cylinder, PlaneBounded], 
-# detector = method([PlaneBounded], 
-                  num_iterations=num_iterations,
-                  threshold_angle=threshold_angle,
-                  threshold_distance=threshold_distance,
-                  # max_point_distance=0.5,
-                   limits=limits,
-                  inliers_min=inliers_min,
-                  connected_components_density=None)
+detector = method(opt)
+detector.add(Cylinder, PrimitiveLimits(('radius', 'max', 3)))
+detector.add(Sphere, PrimitiveLimits(('radius', 'max', 3)))
+detector.add(PlaneBounded)
 
 shape_detector = MultiDetector(detector, pcds_segmented, debug=True,
                                points_min=100, num_iterations=20,
