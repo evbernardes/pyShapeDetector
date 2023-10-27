@@ -67,10 +67,10 @@ class LDSAC(RANSAC_WeightedBase):
     _type = "LDSAC"
     
     def __init__(self,
-                 primitive,
+                 primitives,
                  reduction_rate=1.0,
                  threshold_distance=0.1,
-                 threshold_angle=10,
+                 threshold_angle=3.141592653589793,  # ~ 180 degrees
                  threshold_refit_ratio=3,
                  ransac_n=None,
                  num_iterations=100,
@@ -93,11 +93,22 @@ class LDSAC(RANSAC_WeightedBase):
         if threshold_ratios[1] < threshold_ratios[0]:
             threshold_ratios = threshold_ratios[::-1]
         
-        RANSAC_WeightedBase.__init__(self, primitive, reduction_rate,
-            threshold_distance, threshold_angle, threshold_refit_ratio, 
-            ransac_n, num_iterations, probability, max_point_distance, limits, 
-            max_normal_angle_degrees, inliers_min, fitness_min, 
-            connected_components_density)
+        RANSAC_WeightedBase.__init__(
+            self,
+            primitives=primitives,
+            reduction_rate=reduction_rate,
+            threshold_distance=threshold_distance,
+            threshold_angle=threshold_angle, 
+            threshold_refit_ratio=threshold_refit_ratio,
+            ransac_n=ransac_n,
+            num_iterations=num_iterations,
+            probability=probability,
+            max_point_distance=max_point_distance,
+            limits=limits,
+            max_normal_angle_degrees=max_normal_angle_degrees,
+            inliers_min=inliers_min,
+            fitness_min=fitness_min,
+            connected_components_density=connected_components_density)
         
         self.threshold_ratios = threshold_ratios
         
