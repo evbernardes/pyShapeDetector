@@ -69,6 +69,7 @@ class RANSAC_Base(ABC):
                  reduction_rate=1.0,
                  threshold_distance=0.1,
                  threshold_angle=3.141592653589793,  # ~ 180 degrees
+                 threshold_refit_ratio=3,
                  ransac_n=None,
                  num_iterations=100,
                  probability=0.99999,
@@ -147,6 +148,7 @@ class RANSAC_Base(ABC):
         self.reduction_rate = reduction_rate
         self.threshold_distance = threshold_distance
         self.threshold_angle = threshold_angle
+        self.threshold_refit_ratio = threshold_refit_ratio
         self.num_iterations = num_iterations
         self.probability = probability
         self.max_point_distance = max_point_distance

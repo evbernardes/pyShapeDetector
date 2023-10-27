@@ -114,6 +114,6 @@ zoom=1
 bbox = pcd_full.get_axis_aligned_bounding_box()
 delta = bbox.max_bound - bbox.min_bound
 
-draw_two_colomns([pcd_full]+meshes, meshes+pcds_rest, 1.3*delta[1],
+draw_two_colomns([pcd_segmented]+meshes, meshes+pcds_rest, 1.3*delta[1],
                  lookat, up, front, zoom)
 
