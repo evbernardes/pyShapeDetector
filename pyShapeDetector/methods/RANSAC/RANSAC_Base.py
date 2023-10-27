@@ -418,12 +418,13 @@ class RANSAC_Base(ABC):
         dict
             Metrics of best fitted shape
         """
-        # primitive = self.primitive
         points = np.asarray(points)
         num_points = len(points)
         inliers_min = self._opt.inliers_min
         fitness_min = self._opt.fitness_min
         
+        # if ransac_n option is not set, get the max minimum value between
+        # primitives
         if self._opt._ransac_n is None:
             self._ransac_n = max([p._fit_n_min for p in self.primitives])
         else:
@@ -447,80 +448,66 @@ class RANSAC_Base(ABC):
                 print('Remaining points less than inliers_min, stopping')
             return None, None, self.get_metrics(None)
 
-        # metrics dict stores metricsrmation used to decide which model is best
+        # metrics dict is used to decide which model is best
         metrics_best = self.get_metrics(None)
-        
         shape_best = None
+        idx_best = None
         iteration_count = 0
 
-        times = {'get_inliers_and_error': 0,
+        times = {'get_inliers': 0,
                  'get_model': 0}
         
         if debug:
             print(f'Starting loop, fitting {[p.name for p in self.primitives]}')
         
         for itr in range(self._opt.num_iterations):
-
             if (iteration_count > metrics_best['break_iteration']):
-                
-                # if debug:
-                    # print('Breaking iteration.')
                 continue
 
             start_itr = time.time()
 
             samples = self.get_samples(points)
             if samples is None:
-                # if debug:
-                    # print('Sampling not possible.')
                 continue
-            
-            t_ = time.time()
-            shapes = [self.get_model(i, points, normals, samples) for i in range(self._num_primitives)]
-            # print(shape)
-            times['get_model'] += time.time() - t_
-
-            if all([s is None for s in shapes]):
-                # if debug:
-                    # print('Model not found.')
-                continue
-            # elif debug:
-                # print(f'Fitted model = {shape.model}')
 
             t_ = time.time()
-            metrics = self.get_metrics(None)
-            idx_best_shape = 0
-            for i in range(len(shapes)):
-                if shapes[i] is None:
+            metrics_itr = self.get_metrics(None)
+            shape_itr = None
+            idx_itr = None
+            # idx_best_shape = 0
+            for i in range(self._num_primitives):
+                t_ = time.time()
+                shape = self.get_model(i, points, normals, samples)
+                times['get_model'] += time.time() - t_
+                
+                if shape is None:
                     continue
-                distances, angles = shapes[i].get_residuals(points, normals)
-                # inliers = self.get_inliers_from_residuals(distances, angles)
-                inliers = self.get_inliers(shapes[i], points, normals, 
-                                           distances, angles, refit=False)
+                
+                distances, angles = shape.get_residuals(points, normals)
+                inliers = self.get_inliers(
+                    shape, points, normals, distances, angles, refit=False)
                 num_inliers = len(inliers)
             
-                times['get_inliers_and_error'] += time.time() - t_
+                times['get_inliers'] += time.time() - t_
 
                 if num_inliers == 0 or (inliers_min and num_inliers < inliers_min):
-                    # if debug:
-                        # print('No inliers.')
                     continue
                 
                 if fitness_min and num_inliers/num_points < fitness_min:
-                    # if debug:
-                        # print('No inliers.')
                     continue
                 
-                metrics_this = self.get_metrics(num_points, num_inliers, 
-                                                distances, angles)
+                metrics_this = self.get_metrics(
+                    num_points, num_inliers, distances, angles)
                 
-                if self.compare_metrics(metrics_this, metrics):
-                    metrics = metrics_this
-                    idx_best_shape = i
+                if self.compare_metrics(metrics_this, metrics_itr):
+                    metrics_itr = metrics_this
+                    shape_itr = shape
+                    idx_itr = i
 
-            if self.compare_metrics(metrics, metrics_best):
-                metrics_best = metrics
-                shape_best = shapes[idx_best_shape]
+            if self.compare_metrics(metrics_itr, metrics_best):
+                metrics_best = metrics_itr
+                shape_best = shape_itr
+                idx_best = idx_itr
 
             iteration_count += 1
 
@@ -533,18 +520,17 @@ class RANSAC_Base(ABC):
         
         # Find the final inliers using model_best ...
         distances, angles = shape_best.get_residuals(points, normals)
-        inliers_final = self.get_inliers(shape_best, points, normals,
-                                         distances, angles, refit=True)
+        
+        inliers_final = self.get_inliers(
+            shape_best, points, normals, distances, angles, refit=True)
+        
         num_inliers = len(inliers_final)
-        metrics_final = self.get_metrics(num_points, num_inliers, 
-                                         distances, angles)
+        
+        metrics_final = self.get_metrics(
+            num_points, num_inliers, distances, angles)
 
         # ... and then find the final model using the final inliers
-        # if filter_model:
-        # n = None if normals is None else normals[inliers_final]
-        # shape_best = primitive.fit(points[inliers_final], n)
-        primitive_best = self.primitives[idx_best_shape]
-        shape = self.get_model(idx_best_shape, points, normals, inliers_final)
+        shape = self.get_model(idx_best, points, normals, inliers_final)
         if shape:
             shape_best = shape
         
@@ -553,7 +539,7 @@ class RANSAC_Base(ABC):
                              'filtering step, this should not happen')
             
         if debug:
-            print(f'\nFinished fitting {primitive_best.name}!')
+            print(f'\nFinished fitting {shape_best.name}!')
             print(f'model: {shape_best.model}')
             print('Execution time:')
             for t_ in times:

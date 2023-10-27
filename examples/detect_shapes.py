@@ -26,11 +26,11 @@ from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, \
 DEG = 0.017453292519943295
 
 #%% Parameters and input
-method = RANSAC_Classic
+# method = RANSAC_Classic
 # method = RANSAC_Weighted
 # method = MSAC
-# method = BDSACreduction_rate
-method = LDSAC
+method = BDSAC
+# method = LDSAC
 
 filedir = Path('./data')
 
@@ -78,10 +78,10 @@ for label in set(labels):
 opt = RANSAC_Options()
 opt.inliers_min = 1000
 opt.num_iterations = 30
-opt.threshold_distance = 0.2 + 2 * noise_max
-opt.threshold_angle=35 * DEG
+opt.threshold_distance = 0.2 + 1 * noise_max
+opt.threshold_angle=40 * DEG
 opt.connected_components_density=None
-opt.threshold_refit_ratio = 2
+opt.threshold_refit_ratio = 3
 
 detector = method(opt)
 detector.add(Cylinder, PrimitiveLimits(('radius', 'max', 3)))
@@ -89,8 +89,9 @@ detector.add(Sphere, PrimitiveLimits(('radius', 'max', 3)))
 detector.add(PlaneBounded)
 
 shape_detector = MultiDetector(detector, pcds_segmented, debug=True,
+                               # normals_reestimate=True,
                                points_min=100, num_iterations=20,
-                                compare_metric='fitness', metric_min=0.5)
+                               compare_metric='fitness', metric_min=0.5)
                                # compare_metric='weight', metric_min=5385206)             
 
 #%% Plot detected meshes
