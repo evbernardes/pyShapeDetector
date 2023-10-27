@@ -81,7 +81,7 @@ class MSAC(RANSAC_WeightedBase):
         array
             Weights of each point
         """
-        threshold = self.reduction_rate * distance_threshold
+        threshold = self._opt.reduction_rate * distance_threshold
         
         weight = np.zeros(len(distances))
         idx = distances > threshold

@@ -131,13 +131,13 @@ class RANSAC_WeightedBase(RANSAC_Base):
             weight_distance = 1
         else:
             weight_distance = sum(
-                self.weight_distances(distances, self.threshold_distance))
+                self.weight_distances(distances, self._opt.threshold_distance))
             
         if angles is None:
             weight_angle = 1
         else:
             weight_angle = sum(
-                self.weight_angles(angles, self.threshold_angle))
+                self.weight_angles(angles, self._opt.threshold_angle))
             
         return weight_distance * weight_angle
     

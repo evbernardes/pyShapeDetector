@@ -14,7 +14,8 @@ import numpy as np
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
 
-from pyShapeDetector.utility import PrimitiveLimits
+from pyShapeDetector.primitives import Primitive
+from pyShapeDetector.utility import PrimitiveLimits, RANSAC_Options
 
 # random.seed(time.time())
 random.seed(931)
@@ -65,102 +66,74 @@ class RANSAC_Base(ABC):
         Convenience function returning both distances and angles.
     """
 
-    def __init__(self,
-                 primitives,
-                 reduction_rate=1.0,
-                 threshold_distance=0.1,
-                 threshold_angle=3.141592653589793,  # ~ 180 degrees
-                 threshold_refit_ratio=1,
-                 ransac_n=None,
-                 num_iterations=100,
-                 probability=0.99999,
-                 max_point_distance=None,
-                 limits=None,
-                 max_normal_angle_degrees=10,
-                 inliers_min=None,
-                 fitness_min=None,
-                 connected_components_density=None):
+    def __init__(self, options=RANSAC_Options()):
         
-        if type(primitives) is not list:
-            primitives = [primitives]
-        elif len(primitives) != len(set(primitives)):
-            raise ValueError("Repeated primitives in input is not allowed.")
-            
-        # num_primitives = len(primitives)
-            
-        if ransac_n is None:
-            ransac_n = max([p._fit_n_min for p in primitives])
-        else:
-            for primitive in primitives:
-                if ransac_n < primitive._fit_n_min:
-                    raise ValueError(f'for {primitive.name}s, ransac_n should be '
-                                     f'at least {primitive._fit_n_min}, got '
-                                     f'{ransac_n}.')
-
-        if threshold_angle < 0:
-            raise ValueError('threshold_angle must be positive')
-
-        if probability <= 0 or probability > 1:
-            raise ValueError('Probability must be > 0 and <= 1.0')
-            
-        if fitness_min and (fitness_min < 0 or fitness_min > 1):
-            raise ValueError('fitness_min must be number between 0 and 1, '
-                             f'got {fitness_min}')
+        self._opt = options
+        self.ransac_n = None
+        self._num_primitives = 0
+        self._primitives = []
+        self._limits = []
         
-        if limits is None:
-            self.limits = [PrimitiveLimits(None)] * len(primitives)
+    def add(self, primitive, limit=None):
         
-        # If only one primitive, accept limits as direct input to create
-        # PrimitiveLimits instance
-        elif len(primitives) == 1:
-            if not isinstance(limits, PrimitiveLimits):
-                self.limits = [PrimitiveLimits(limits)]
-            else:
-                self.limits = [limits]
-                
-        # If more than one primitive, only take instances of PrimitiveLimits
-        else:
-            if isinstance(limits, list):
-                for i in range(len(limits)):
-                    if limits[i] is None:
-                        limits[i] = PrimitiveLimits(None)
+        limit = PrimitiveLimits(limit)
+        
+        if self._opt._ransac_n and primitive._fit_n_min:
+            raise ValueError(f'{primitive.name}s need a minimum of '
+                             f'{primitive._fit_n_min} for fitting, but current'
+                             f'ransac_n option is set to {self._opt._ransac_n}'
+                             '. Either raise the value on the options, or set '
+                             'it to None.')
             
-            if isinstance(limits, list) and all(isinstance(l, PrimitiveLimits) for l in limits):
-                self.limits = limits
-            elif isinstance(limits, PrimitiveLimits):
-                self.limits = [limits] * len(primitives)
-            else:
-                raise ValueError('For multiple primitives, limits must be '
-                                 'explicitly defined as PrimitiveLimits '
-                                 'objects.')
-        # else:
-            # raise ValueError('incompatible limits input')
-
-        if self.limits and len(self.limits) != len(primitives):
-            raise ValueError('different number of limits and primitives')
-
-        if self.limits is not None:
-            for limit, p in zip(self.limits, primitives):
-                if limit is not None:
-                    limit.check_compatibility(p)
-                    
-        if threshold_refit_ratio < 1:
-            raise ValueError('threshold_refit_ratio must be higher or equal to'
-                             f' 1, got {threshold_refit_ratio}')
-
-        self.primitives = primitives
-        self.ransac_n = ransac_n
-        self.reduction_rate = reduction_rate
-        self.threshold_distance = threshold_distance
-        self.threshold_angle = threshold_angle
-        self.threshold_refit_ratio = threshold_refit_ratio
-        self.num_iterations = num_iterations
-        self.probability = probability
-        self.max_point_distance = max_point_distance
-        self.inliers_min = inliers_min
-        self.fitness_min = fitness_min
-        self.eps = connected_components_density
-
+        limit.check_compatibility(primitive)
+        self._primitives.append(primitive)
+        self._limits.append(limit)
+        self._num_primitives += 1
+        
+    def remove(self, idx):
+        if idx < 0 or idx > self._num_primitives - 1:
+            raise ValueError('invalid index')
+        _ = self._primitives.pop(idx)
+        _ = self._limits.pop(idx)
+        self._num_primitives -= 1
+        
+    @property
+    def primitives(self):
+        return self._primitives
+    
+    @primitives.setter
+    def primitives(self, value):
+        raise RuntimeError('primitives, limits and num_primitives should be '
+                           'updated together with add and remove functions')
+        
+    @property
+    def limits(self):
+        return self._limits
+    
+    @limits.setter
+    def limits(self, value):
+        raise RuntimeError('primitives, limits and num_primitives should be '
+                           'updated together with add and remove functions')
+                           
+    @property
+    def num_primitives(self):
+        return self._num_primitives
+    
+    @num_primitives.setter
+    def num_primitives(self, value):
+        raise RuntimeError('primitives, limits and num_primitives should be '
+                           'updated together with add and remove functions')
+        
+    @property
+    def options(self):
+        return self._opt
+    
+    @options.setter
+    def options(self, value):
+        if not isinstance(value, RANSAC_Options()):
+            raise ValueError('options must be an instance of RANSAC_Options')
+        self._opt = value
+            
     @property
     @abstractmethod
     def _type(self):
@@ -223,11 +196,12 @@ class RANSAC_Base(ABC):
         if metrics['fitness'] > 1.0:
             return 0
         
-        den = np.log(1 - metrics['fitness'] ** self.ransac_n)
+        den = np.log(1 - metrics['fitness'] ** self._ransac_n)
         if den != 0:
-            return min(self.num_iterations, np.log(1 - self.probability) / den)
+            return min(self._opt.num_iterations, 
+                       np.log(1 - self._opt.probability) / den)
         else:
-            return self.num_iterations
+            return self._opt.num_iterations
     
     def get_metrics(self, 
                  num_points=None, num_inliers=None, 
@@ -290,8 +264,7 @@ class RANSAC_Base(ABC):
         
         n = None if normals is None else normals[samples]
         shape = primitive.fit(points[samples], n)
-        if shape is None or \
-            (self.limits and not self.limits[idx].check(shape)):
+        if shape is None or not self.limits[idx].check(shape):
             return None
                 
         return shape
@@ -314,8 +287,8 @@ class RANSAC_Base(ABC):
             Indices of samples
         """
         num_points = len(points)
-        num_samples = self.ransac_n
-        if self.max_point_distance is None:
+        num_samples = self._ransac_n
+        if self._opt.max_point_distance is None:
             samples = random.sample(range(num_points), num_samples)
 
         else:
@@ -333,7 +306,7 @@ class RANSAC_Base(ABC):
                 
                 # Find all of the possible points and then remove those already
                 # sampled
-                possible_samples = dist < self.max_point_distance
+                possible_samples = dist < self._opt.max_point_distance
                 possible_samples[list(samples)] = False
                 
                 # Continue only if enough existing samples
@@ -353,13 +326,13 @@ class RANSAC_Base(ABC):
     
     def get_biggest_connected_component(self, shape, points, inliers, 
                                         min_points=10):
-        if self.eps is None:
+        if self._opt.eps is None:
             return inliers
         
         points_flat = shape.flatten_points(points[inliers])
         
         pcd = PointCloud(Vector3dVector(points_flat))
-        labels = pcd.cluster_dbscan(eps=self.eps, min_points=min_points)
+        labels = pcd.cluster_dbscan(eps=self._opt.eps, min_points=min_points)
         labels = np.array(labels)
         if len(labels) < 2:
             return inliers
@@ -407,14 +380,17 @@ class RANSAC_Base(ABC):
             angles = shape.get_angles(points, normals)
         # distances, angles = shape.get_residuals(points, normals)
             
-        threshold_refit_ratio = self.threshold_refit_ratio if refit else 1
+        threshold_distance = self._opt.threshold_distance
+        if refit:
+            threshold_distance *= self._opt.threshold_refit_ratio
+
+        is_inlier = distances < threshold_distance
         
-        is_inlier = distances < self.threshold_distance * threshold_refit_ratio
         if angles is not None:
-            is_inlier *= (angles < self.threshold_angle)
+            is_inlier *= (angles < self._opt.threshold_angle)
         inliers = np.where(is_inlier)[0]
         
-        if self.eps is not None:
+        if self._opt.connected_components_density is not None:
             inliers = self.get_biggest_connected_component(
                 shape, points, inliers)
             
@@ -445,10 +421,15 @@ class RANSAC_Base(ABC):
         # primitive = self.primitive
         points = np.asarray(points)
         num_points = len(points)
-        inliers_min = self.inliers_min
-        fitness_min = self.fitness_min
+        inliers_min = self._opt.inliers_min
+        fitness_min = self._opt.fitness_min
+        
+        if self._opt._ransac_n is None:
+            self._ransac_n = max([p._fit_n_min for p in self.primitives])
+        else:
+            self._ransac_n = self._opt._ransac_n
 
-        if num_points < self.ransac_n:
+        if num_points < self._ransac_n:
             raise ValueError(f'Pointcloud must have at least '
                              f'{self.ransac_n} points, {num_points} '
                              'given.')
@@ -478,7 +459,7 @@ class RANSAC_Base(ABC):
         if debug:
             print(f'Starting loop, fitting {[p.name for p in self.primitives]}')
         
-        for itr in range(self.num_iterations):
+        for itr in range(self._opt.num_iterations):
 
             if (iteration_count > metrics_best['break_iteration']):
                 
@@ -495,7 +476,7 @@ class RANSAC_Base(ABC):
                 continue
             
             t_ = time.time()
-            shapes = [self.get_model(i, points, normals, samples) for i in range(len(self.primitives))]
+            shapes = [self.get_model(i, points, normals, samples) for i in range(self._num_primitives)]
             # print(shape)
             times['get_model'] += time.time() - t_
 
@@ -544,7 +525,7 @@ class RANSAC_Base(ABC):
             iteration_count += 1
 
             if debug:
-                print(f'Iteration {itr+1}/{self.num_iterations} : '
+                print(f'Iteration {itr+1}/{self._opt.num_iterations} : '
                       f'{time.time() - start_itr:.5f}s')
         
         if shape_best is None:
