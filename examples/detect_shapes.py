@@ -29,22 +29,23 @@ DEG = 0.017453292519943295
 # method = RANSAC_Classic
 # method = RANSAC_Weighted
 # method = MSAC
-method = BDSAC
-# method = LDSAC
+# method = BDSAC
+method = LDSAC
 
 filedir = Path('./data')
 
-filename = 'disjoint_planes'
-# filename = '3planes_3spheres_3cylinders'
+# filename = 'disjoint_planes'
+filename = '3planes_3spheres_3cylinders'
+# filename = '1planes_1spheres'
 # filename = '1cylinders'
 # filename = '1spheres'
 # filename = 'big'
 
-noise_max = 0
+noise_max = 1
 inliers_min = 1000
 num_iterations = 30
-threshold_distance = 0.1 + 2 * noise_max
-threshold_angle=50 * DEG
+threshold_distance = 0.2 + 2 * noise_max
+threshold_angle=30 * DEG
 fullpath = (filedir / filename).with_suffix('.pcd')
 
 pcd_full = o3d.io.read_point_cloud(str(fullpath))
@@ -61,22 +62,22 @@ eps = np.mean(dist[args]) * 2
 # eps = 0 
 
 #%%
-# labels = pcd_full.cluster_dbscan(eps=eps, min_points=10)#, print_progress=True))
+labels = pcd_full.cluster_dbscan(eps=eps, min_points=10)#, print_progress=True))
 
-# labels = np.array(labels)
-# max_label = labels.max()
-# pcd_segmented = copy.copy(pcd_full)
-# print(f"\nPoint cloud has {len(set(labels))} clusters!\n")
-# colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
-# colors[labels < 0] = 0
-# pcd_segmented.colors = Vector3dVector(colors[:, :3])
-# # o3d.visualization.draw_geometries([pcd_segmented])
+labels = np.array(labels)
+max_label = labels.max()
+pcd_segmented = copy.copy(pcd_full)
+print(f"\nPoint cloud has {len(set(labels))} clusters!\n")
+colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
+colors[labels < 0] = 0
+pcd_segmented.colors = Vector3dVector(colors[:, :3])
+o3d.visualization.draw_geometries([pcd_segmented])
 
-# pcds_segmented = []
-# for label in set(labels):
-#     idx = np.where(labels == label)[0]
-#     pcds_segmented.append(pcd_full.select_by_index(idx))
-pcds_segmented = [pcd_full]
+pcds_segmented = []
+for label in set(labels):
+    idx = np.where(labels == label)[0]
+    pcds_segmented.append(pcd_full.select_by_index(idx))
+# pcds_segmented = [pcd_full]
 #%%
 limits = [
     PrimitiveLimits(('radius', 'max', 3)),
@@ -91,11 +92,11 @@ detector = method([Sphere, Cylinder, PlaneBounded],
                   # max_point_distance=0.5,
                    limits=limits,
                   inliers_min=inliers_min,
-                  connected_components_density=eps)
+                  connected_components_density=None)
 
 shape_detector = MultiDetector(detector, pcds_segmented, debug=True,
-                               points_min=500, num_iterations=20,
-                               compare_metric='fitness', metric_min=0.2)             
+                               points_min=100, num_iterations=20,
+                               compare_metric='fitness', metric_min=0.5)             
 
 #%% Plot detected meshes
 meshes = shape_detector.meshes

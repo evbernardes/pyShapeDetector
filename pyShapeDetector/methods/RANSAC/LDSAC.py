@@ -78,6 +78,8 @@ class LDSAC(RANSAC_WeightedBase):
                  limits=None,
                  max_normal_angle_degrees=10,
                  inliers_min=None,
+                 fitness_min=None,
+                 connected_components_density=None,
                  threshold_ratios=[0.2, 0.7]):
         
         if len(threshold_ratios) != 2 or \
@@ -92,8 +94,8 @@ class LDSAC(RANSAC_WeightedBase):
         
         RANSAC_WeightedBase.__init__(self, primitive, reduction_rate,
             threshold_distance, threshold_angle, ransac_n, num_iterations,
-            probability, max_point_distance, limits, 
-            max_normal_angle_degrees, inliers_min)
+            probability, max_point_distance, limits, max_normal_angle_degrees, 
+            inliers_min, fitness_min, connected_components_density)
         
         self.threshold_ratios = threshold_ratios
         

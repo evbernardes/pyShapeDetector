@@ -354,7 +354,8 @@ class RANSAC_Base(ABC):
         pcd = PointCloud(Vector3dVector(points_flat))
         labels = pcd.cluster_dbscan(eps=self.eps, min_points=min_points)
         labels = np.array(labels)
-        max_label = labels.max()
+        if len(labels) < 2:
+            return inliers
         size_connected = {}
         for label in set(labels):
             size_connected[label] = sum(labels == label)
