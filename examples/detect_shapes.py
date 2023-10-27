@@ -45,7 +45,7 @@ noise_max = 1
 inliers_min = 1000
 num_iterations = 30
 threshold_distance = 0.2 + 2 * noise_max
-threshold_angle=30 * DEG
+threshold_angle=35 * DEG
 fullpath = (filedir / filename).with_suffix('.pcd')
 
 pcd_full = o3d.io.read_point_cloud(str(fullpath))
