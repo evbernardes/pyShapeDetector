@@ -47,11 +47,14 @@ class Plane(Primitive):
         Gives the minimum distance between each point to the model. 
     
     get_distances(points)
-        Gives the minimum distance between each point to the model. 
+        Gives the minimum distance between each point to the model.
         
     get_normals(points)
         Gives, for each input point, the normal vector of the point closest 
         to the primitive. 
+        
+    random(scale):
+        Generates a random shape.
     
     get_angles_cos(self, points, normals):
         Gives the absolute value of cosines of the angles between the input 
@@ -536,13 +539,30 @@ class PlaneBounded(Plane):
         triangles = Delaunay(self.projection).simplices
         
         # needed to make plane visible from both sides
-        triangles = np.vstack([triangles, triangles[:, ::-1]]) 
+        triangles = np.vstack([triangles, triangles[:, ::-1]])
         
         mesh = TriangleMesh()
         mesh.vertices = Vector3dVector(self.bounds)
         mesh.triangles = Vector3iVector(triangles)
         
         return mesh
+    
+    @classmethod
+    def random(cls, scale=1):
+        """ Generates a random shape.
+        
+        Parameters
+        ----------
+        scale : float, optional
+            scaling factor for random model values.
+
+        Returns
+        -------
+        Primitive
+            Random shape.
+        """
+        plane = Plane(np.random.random(4) * scale)
+        return plane.get_square_plane(np.random.random() * scale)
     
     @staticmethod
     def fit(points, normals=None):

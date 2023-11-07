@@ -47,6 +47,9 @@ class Template(Primitive):
         Gives, for each input point, the normal vector of the point closest 
         to the primitive. 
         
+    random(scale):
+        Generates a random shape.
+        
     fit(points, normals=None):
         Gives shape that fits the input points. If the number of points is
         higher than the `_fit_n_min`, the fitted shape will return some kind of

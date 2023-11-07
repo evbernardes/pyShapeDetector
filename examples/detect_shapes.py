@@ -22,6 +22,8 @@ from pyShapeDetector.primitives import Sphere, Plane, PlaneBounded, Cylinder
 from pyShapeDetector.utility import MultiDetector, PrimitiveLimits, RANSAC_Options
 from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, \
     BDSAC, LDSAC
+    
+from sklearn.neighbors import KDTree
 
 DEG = 0.017453292519943295
 
@@ -50,6 +52,10 @@ noise = noise_max * np.random.random(np.shape(pcd_full.points))
 pcd_full.points = Vector3dVector(np.asarray(pcd_full.points) + noise)
 # draw_geometries([pcd_full])
 
+tree = KDTree(pcd_full.points, leaf_size=2)
+nearest_dist, nearest_ind = tree.query(pcd_full.points, k=15)
+average_nearest_dist = np.mean(nearest_dist[:, 1:])
+
 #%% Separate full pointcloud into clusters
 idx = random.sample(range(len(pcd_full.points)), 1)[0]
 dist = np.linalg.norm(pcd_full.points - pcd_full.points[idx], axis=1)
@@ -75,15 +81,17 @@ for label in set(labels):
     pcds_segmented.append(pcd_full.select_by_index(idx))
 # pcds_segmented = [pcd_full]
 #%%
-opt = RANSAC_Options()
-opt.inliers_min = 1000
-opt.num_iterations = 30
-opt.threshold_distance = 0.2 + 1 * noise_max
-opt.threshold_angle=40 * DEG
-opt.connected_components_density=None
-opt.threshold_refit_ratio = 3
+detector = method()
+detector.options.inliers_min = 1000
+# detector.options.threshold_distance = 0.2 + 1 * noise_max
+detector.options.threshold_distance = 10 * average_nearest_dist
+detector.options.threshold_angle=25 * DEG
+detector.options.connected_components_density=None
+detector.options.threshold_refit_ratio = 3
+detector.options.num_iterations = 100
+# detector.options.probability = 0.9999999
+detector.options.probability = 1
 
-detector = method(opt)
 detector.add(Cylinder, PrimitiveLimits(('radius', 'max', 3)))
 detector.add(Sphere, PrimitiveLimits(('radius', 'max', 3)))
 detector.add(PlaneBounded)

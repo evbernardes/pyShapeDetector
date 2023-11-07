@@ -48,6 +48,9 @@ class Sphere(Primitive):
         Gives, for each input point, the normal vector of the point closest 
         to the sphere. 
         
+    random(scale):
+        Generates a random shape.
+        
     fit(points, normals=None):
         Gives sphere that fits the input points.
     

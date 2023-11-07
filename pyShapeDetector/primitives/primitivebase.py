@@ -59,7 +59,10 @@ class Primitive(ABC):
         
     get_normals(points)
         Gives, for each input point, the normal vector of the point closest 
-        to the primitive. 
+        to the primitive.
+        
+    random(scale):
+        Generates a random shape.
         
     fit(points, normals=None):
         Gives shape that fits the input points. If the number of points is
@@ -171,6 +174,22 @@ class Primitive(ABC):
             Nx3 array containing normal vectors.
         """
         pass
+    
+    @classmethod
+    def random(cls, scale=1):
+        """ Generates a random shape.
+        
+        Parameters
+        ----------
+        scale : float, optional
+            scaling factor for random model values.
+
+        Returns
+        -------
+        Primitive
+            Random shape.
+        """
+        return cls(np.random.random(cls._model_args_n) * scale)
     
     @staticmethod
     @abstractmethod

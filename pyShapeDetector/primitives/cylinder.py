@@ -65,6 +65,9 @@ class Cylinder(Primitive):
         Gives, for each input point, the normal vector of the point closest 
         to the cylinder. 
         
+    random(scale):
+        Generates a random shape.
+        
     fit(points, normals=None):
         Gives cylinder that fits the input points. 
     
