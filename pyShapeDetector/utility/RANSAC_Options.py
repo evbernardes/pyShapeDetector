@@ -5,7 +5,7 @@ Created on Tue Sep 26 15:59:55 2023
 
 @author: ebernardes
 """
-
+import warnings
 import time
 import random
 # import numpy as np
@@ -37,6 +37,7 @@ class RANSAC_Options():
     _threshold_distance=0.1
     _threshold_angle=3.141592653589793  # ~ 180 degrees
     _threshold_ratios=[0.2, 0.7] # for LDSAC
+    _threshold_refit_ratio=1
     _ransac_n=None
     _num_iterations=100
     _probability=0.99999
@@ -45,7 +46,32 @@ class RANSAC_Options():
     _inliers_min=None
     _fitness_min=None
     _eps=None
-    _threshold_refit_ratio=1
+    
+    @property
+    def dict(self):
+        return {
+            'reduction_rate': self.reduction_rate,
+            'threshold_distance': self.threshold_distance,
+            'threshold_angle': self.threshold_angle,
+            'threshold_ratios': self.threshold_ratios,
+            'threshold_refit_ratio': self.threshold_refit_ratio,
+            'ransac_n': self.ransac_n,
+            'num_iterations': self.num_iterations,
+            'probability': self.probability,
+            'max_point_distance': self.max_point_distance,
+            'max_normal_angle_degrees': self.max_normal_angle_degrees,
+            'inliers_min': self.inliers_min,
+            'fitness_min': self.fitness_min,
+            'connected_components_density': self.connected_components_density
+            }
+    
+    def __init__(self, dict_parameters={}):
+        # self = RANSAC_Options()
+        for key in dict_parameters.keys():
+            if not hasattr(self, key):
+                warnings.warn(f"Ignoring unknown attribute '{key}'")
+            else:
+                setattr(self, key, dict_parameters[key])
     
     @property
     def reduction_rate(self):
