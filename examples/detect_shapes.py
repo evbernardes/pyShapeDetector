@@ -17,13 +17,12 @@ from open3d.visualization import draw_geometries
 from open3d.utility import Vector3dVector
 
 # from helpers import color_blue, color_gray, color_red, color_yellow
-from helpers import draw_two_colomns, paint_meshes_by_type
+from helpers import draw_two_colomns, paint_meshes_by_type, average_nearest_dist, segment_dbscan
 from pyShapeDetector.primitives import Sphere, Plane, PlaneBounded, Cylinder
 from pyShapeDetector.utility import MultiDetector, PrimitiveLimits, RANSAC_Options
 from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, \
     BDSAC, LDSAC
-    
-from sklearn.neighbors import KDTree
+
 
 DEG = 0.017453292519943295
 
@@ -52,39 +51,17 @@ noise = noise_max * np.random.random(np.shape(pcd_full.points))
 pcd_full.points = Vector3dVector(np.asarray(pcd_full.points) + noise)
 # draw_geometries([pcd_full])
 
-tree = KDTree(pcd_full.points, leaf_size=2)
-nearest_dist, nearest_ind = tree.query(pcd_full.points, k=15)
-average_nearest_dist = np.mean(nearest_dist[:, 1:])
-
 #%% Separate full pointcloud into clusters
-idx = random.sample(range(len(pcd_full.points)), 1)[0]
-dist = np.linalg.norm(pcd_full.points - pcd_full.points[idx], axis=1)
-args = np.argsort(dist)[1:1 + 20]
-eps = np.mean(dist[args]) * 2
-# eps = 0 
-
-#%%
-labels = pcd_full.cluster_dbscan(eps=eps, min_points=10)#, print_progress=True))
-
-labels = np.array(labels)
-max_label = labels.max()
-pcd_segmented = copy.copy(pcd_full)
-print(f"\nPoint cloud has {len(set(labels))} clusters!\n")
-colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
-colors[labels < 0] = 0
-pcd_segmented.colors = Vector3dVector(colors[:, :3])
-o3d.visualization.draw_geometries([pcd_segmented])
-
-pcds_segmented = []
-for label in set(labels):
-    idx = np.where(labels == label)[0]
-    pcds_segmented.append(pcd_full.select_by_index(idx))
+eps = average_nearest_dist(pcd_full.points, k=15)
+pcds_segmented = segment_dbscan(pcd_full, 2*eps, min_points=10, colors=True)
+# o3d.visualization.draw_geometries(pcds_segmented)
 # pcds_segmented = [pcd_full]
 #%%
+
 detector = method()
 detector.options.inliers_min = 1000
 # detector.options.threshold_distance = 0.2 + 1 * noise_max
-detector.options.threshold_distance = 10 * average_nearest_dist
+detector.options.threshold_distance = 10 * eps
 detector.options.threshold_angle=25 * DEG
 detector.options.connected_components_density=None
 detector.options.threshold_refit_ratio = 3
@@ -118,6 +95,6 @@ zoom=1
 bbox = pcd_full.get_axis_aligned_bounding_box()
 delta = bbox.max_bound - bbox.min_bound
 
-draw_two_colomns([pcd_segmented]+meshes, meshes+pcds_rest, 1.3*delta[1],
+draw_two_colomns([pcds_segmented]+meshes, meshes+pcds_rest, 1.3*delta[1],
                  lookat, up, front, zoom)
 

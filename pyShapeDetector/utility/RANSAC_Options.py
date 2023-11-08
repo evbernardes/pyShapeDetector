@@ -47,6 +47,14 @@ class RANSAC_Options():
     _fitness_min=None
     _eps=None
     
+    # @property
+    # def properties(self):
+    # # class_items = self.__class__.__dict__.iteritems()  # Python 2
+    #     class_items = self.__class__.__dict__.items()
+    #     return dict((k, getattr(self, k)) 
+    #                 for k, v in class_items 
+    #                 if isinstance(v, property))
+    
     @property
     def dict(self):
         return {

@@ -476,6 +476,10 @@ class PlaneBounded(Plane):
             
             self.bounds, self.projection = self._get_bounds_and_projection(
                 self.unbounded, bounds, flatten=True)
+            
+            if self.bounds is None:
+                self = None
+            
         # self.bounds = bounds
     
     @property
@@ -516,11 +520,17 @@ class PlaneBounded(Plane):
         """
         if flatten:
             points = plane.flatten_points(points)
+        if np.any(np.isnan(points)):
+            raise ValueError('NaN found in points')
         # points_flat = self.flatten_points(points)
         rot = plane.get_rotation_from_axis(plane.normal)
         projection = (rot @ points.T).T[:, :2]
-        chull = ConvexHull(projection)
-        return points[chull.vertices], projection[chull.vertices]
+        try:
+            chull = ConvexHull(projection)
+            return points[chull.vertices], projection[chull.vertices]
+        except ValueError:
+            return None, None
+            
     
     def get_mesh(self, points=None):
         """ Flatten points and creates a simplified mesh of the plane defined
