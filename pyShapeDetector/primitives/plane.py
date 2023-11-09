@@ -111,7 +111,7 @@ class Plane(Primitive):
         """
         model = np.array(model)
         norm = np.linalg.norm(model[:3])
-        model /= norm
+        model = model / norm
         Primitive.__init__(self, model)
         
     def get_plane_bounded(self, points):
