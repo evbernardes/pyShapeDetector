@@ -151,7 +151,7 @@ class MultiDetector():
                 if np.all(np.array(output_shapes) == None):
                     if debug:
                         print('No shapes found anymore, breaking...')
-                    break
+                    continue
                 
                 if max(compare) < metric_min:
                     if debug:
