@@ -245,8 +245,13 @@ class Cylinder(Primitive):
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
     
-    def get_mesh(self, points=None):
-        """ Returns mesh defined by the cylinder model.      
+    def get_mesh(self, points=None, closed=False):
+        """ Returns mesh defined by the cylinder model.
+        
+        Parameters
+        ----------
+        closed : bool, optional
+            If True, does not remove top and bottom of cylinder
         
         Returns
         -------
@@ -259,9 +264,12 @@ class Cylinder(Primitive):
         
         # first and second points are the central points defining top / base
         triangles = np.asarray(mesh.triangles)
-        triangles = np.array([t for t in triangles if 0 not in t and 1 not in t])
-        triangles = np.vstack([triangles, triangles[:, ::-1]])
-        mesh.triangles = Vector3iVector(triangles)
+        
+        if not closed:
+            triangles = np.array(
+                [t for t in triangles if 0 not in t and 1 not in t])
+            triangles = np.vstack([triangles, triangles[:, ::-1]])
+            mesh.triangles = Vector3iVector(triangles)
         
         mesh.rotate(self.rotation_from_axis)
         mesh.translate(self.center)
