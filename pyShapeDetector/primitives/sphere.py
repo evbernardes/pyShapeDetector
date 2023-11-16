@@ -117,7 +117,7 @@ class Sphere(Primitive):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
         
         Returns
@@ -135,7 +135,7 @@ class Sphere(Primitive):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
         
         Returns
@@ -156,7 +156,7 @@ class Sphere(Primitive):
         TriangleMesh
             Mesh corresponding to the plane.
         """
-        mesh = TriangleMesh.create_sphere(radius=self.model[3])
+        mesh = TriangleMesh.create_sphere(radius=self.model[3], resolution=1000)
         mesh.translate(self.model[:3])
         return mesh
    
@@ -168,7 +168,7 @@ class Sphere(Primitive):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points
         
         Returns

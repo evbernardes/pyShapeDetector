@@ -103,7 +103,7 @@ class Template(Primitive):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
         
         Returns
@@ -119,7 +119,7 @@ class Template(Primitive):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
         
         Returns
@@ -141,6 +141,22 @@ class Template(Primitive):
     
     @staticmethod
     def fit(points, normals=None):
+        """ Gives shape that fits the input points. If the number of points is
+        higher than the `_fit_n_min`, the fitted shape will return some kind of
+        estimation.
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+        normals : N x 3 array
+            N normal vectors
+        
+        Returns
+        -------
+        Template
+            Dummy template.
+        """
         # points_ = np.asarray(points)[samples]
         
         num_points = len(points)

@@ -179,12 +179,12 @@ class Cylinder(Primitive):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
         
         Returns
         -------
-        points_closest: 3 x N array
+        points_closest: N x 3 array
             N points in cylinder line
         """
         points = np.asarray(points)
@@ -196,12 +196,12 @@ class Cylinder(Primitive):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
         
         Returns
         -------
-        points_orthogonal: 3 x N array
+        points_orthogonal: N x 3 array
             N points
         """
         points = np.asarray(points)
@@ -213,7 +213,7 @@ class Cylinder(Primitive):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
         
         Returns
@@ -233,7 +233,7 @@ class Cylinder(Primitive):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
         
         Returns
@@ -260,7 +260,7 @@ class Cylinder(Primitive):
         """
         
         mesh = TriangleMesh.create_cylinder(
-            radius=self.radius, height=self.height)
+            radius=self.radius, height=self.height, resolution=100, split=100)
         
         # first and second points are the central points defining top / base
         triangles = np.asarray(mesh.triangles)
@@ -293,7 +293,7 @@ class Cylinder(Primitive):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points
         
         Returns

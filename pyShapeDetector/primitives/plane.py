@@ -177,7 +177,7 @@ class Plane(Primitive):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
         
         Returns
@@ -196,7 +196,7 @@ class Plane(Primitive):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
         
         Returns
@@ -212,7 +212,7 @@ class Plane(Primitive):
 
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             Points corresponding to the fitted shape.
         
         Returns
@@ -295,9 +295,9 @@ class Plane(Primitive):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
-        normals : 3 x N array
+        normals : N x 3 array
             N normal vectors
         
         Returns
@@ -538,7 +538,7 @@ class PlaneBounded(Plane):
 
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             Points corresponding to the fitted shape.
         
         Returns
@@ -585,9 +585,9 @@ class PlaneBounded(Plane):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
-        normals : 3 x N array
+        normals : N x 3 array
             N normal vectors
         
         Returns
