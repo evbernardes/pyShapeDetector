@@ -40,7 +40,7 @@ def segment_dbscan(pcd, eps, min_points=10, colors=False):
         colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
         colors[labels < 0] = 0
         pcd_segmented.colors = Vector3dVector(colors[:, :3])
-    o3d.visualization.draw_geometries([pcd_segmented])
+    # o3d.visualization.draw_geometries([pcd_segmented])
 
     pcds_segmented = []
     for label in set(labels):

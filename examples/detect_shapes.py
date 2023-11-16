@@ -36,16 +36,19 @@ method = BDSAC
 filedir = Path('./data')
 
 # filename = 'disjoint_planes'
-filename = '3planes_3spheres_3cylinders'
+# filename = '3planes_3spheres_3cylinders'
+filename = 'cylinders_box_sphere.noise_0.0'
 # filename = '1planes_1spheres'
 # filename = '1cylinders'
 # filename = '1spheres'
 # filename = 'big'
 
-noise_max = 1
-fullpath = (filedir / filename).with_suffix('.pcd')
 
-pcd_full = o3d.io.read_point_cloud(str(fullpath))
+
+noise_max = 0
+fullpath = (filedir / filename)
+
+pcd_full = o3d.io.read_point_cloud(str(fullpath) + '.pcd')
 # draw_geometries([pcd_full])
 noise = noise_max * np.random.random(np.shape(pcd_full.points))
 pcd_full.points = Vector3dVector(np.asarray(pcd_full.points) + noise)
@@ -69,7 +72,7 @@ detector.options.num_iterations = 100
 # detector.options.probability = 0.9999999
 detector.options.probability = 1
 
-detector.add(Cylinder, PrimitiveLimits(('radius', 'max', 3)))
+# detector.add(Cylinder, PrimitiveLimits(('radius', 'max', 3)))
 detector.add(Sphere, PrimitiveLimits(('radius', 'max', 3)))
 detector.add(PlaneBounded)
 

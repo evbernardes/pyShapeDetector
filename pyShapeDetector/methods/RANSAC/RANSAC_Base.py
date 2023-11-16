@@ -350,7 +350,9 @@ class RANSAC_Base(ABC):
         """ Return indices of inliers: points whose distance to shape and
         angle with normal vector are below the given thresholds.
         
-        If distances and angles are not given, they are calculated.
+        Distances and angles can be taken as input if they have already been
+        calculated to speed up execution. Otherwise, they are computed from 
+        points.
         
         Parameters
         ----------
