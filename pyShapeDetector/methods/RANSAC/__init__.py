@@ -7,7 +7,6 @@ Created on Tue Sep 26 16:02:34 2023
 """
 
 from .RANSAC_Classic import RANSAC_Classic
-from .RANSAC_Weighted import RANSAC_Weighted
 from .MSAC import MSAC
 from .BDSAC import BDSAC
 from .LDSAC import LDSAC

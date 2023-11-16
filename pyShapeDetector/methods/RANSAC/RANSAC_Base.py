@@ -44,6 +44,15 @@ class RANSAC_Base(ABC):
     termination_criterion(metrics):
         Gives number of max needed iterations, depending on current metrics.
         
+    weight_distances(distances, threshold_distances):
+        Gives weights for each point based on the distances.
+
+    weight_angles(angles, threshold_angles):
+        Gives weights for each point based on the distances.
+
+    get_total_weight(distances, angles):
+        Total weight of shape.
+        
     get_metrics(num_points=None, num_inliers=None, distances=None, 
     angles=None):
         Gives a dictionary with metrics that can be used to compared fits.
@@ -64,6 +73,7 @@ class RANSAC_Base(ABC):
                
     get_residuals(points, normals):
         Convenience function returning both distances and angles.
+        
     """
 
     def __init__(self, options=RANSAC_Options()):
@@ -141,11 +151,79 @@ class RANSAC_Base(ABC):
         pass
     
     @abstractmethod
+    def weight_distances(self, distances, threshold_distances):
+        """ Gives weights for each point based on the distances.
+
+        Actual implementation depends on method.
+        
+        Parameters
+        ----------
+        distances : array
+            Distances of each point to shape
+        threshold_distances : float
+            Max distance accepted between points and shape
+        
+        Returns
+        -------
+        array
+            Weights of each point
+        """
+        pass
+
+    def weight_angles(self, angles, threshold_angles):
+        """ Gives weights for each point based on the distances.
+
+        Actual implementation depends on method, but usually considered
+        the same as `weight_distances`.
+        
+        Parameters
+        ----------
+        angles : array or None
+            Angles between each input and theoretical normal vector
+        threshold_angles : float
+            Max angle accepted between point normals and shape
+        
+        Returns
+        -------
+        array
+            Weights of each normal vector
+        """
+        return self.weight_distances(angles, threshold_angles)
+    
+    def get_total_weight(self, distances, angles):
+        """ Total weight of shape.
+        
+        Parameters
+        ----------
+        distances : array
+            Distances of each point to shape
+        angles : array or None
+            Angles between each input and theoretical normal vector
+        
+        Returns
+        -------
+        float
+            Total weight
+        """
+        if distances is None:
+            weight_distance = 1
+        else:
+            weight_distance = sum(
+                self.weight_distances(distances, self._opt.threshold_distance))
+            
+        if angles is None:
+            weight_angle = 1
+        else:
+            weight_angle = sum(
+                self.weight_angles(angles, self._opt.threshold_angle))
+            
+        return weight_distance * weight_angle
+    
     def compare_metrics(self, metrics, metrics_best):
         """ Compare metrics to decide if new fit is better than current
         best fit.
 
-        Actual implementation depends on exact type of RANSAC-based method.
+        For weighted RANSAC methods, choose the shape with higher weight.
         
         Parameters
         ----------
@@ -159,7 +237,28 @@ class RANSAC_Base(ABC):
         bool
             True if `metrics` is considered better than `metrics_best`
         """
-        pass
+        return metrics['weight'] > metrics_best['weight']
+    
+    # @abstractmethod
+    # def compare_metrics(self, metrics, metrics_best):
+    #     """ Compare metrics to decide if new fit is better than current
+    #     best fit.
+
+    #     Actual implementation depends on exact type of RANSAC-based method.
+        
+    #     Parameters
+    #     ----------
+    #     metrics : dict
+    #         Metrics analyzing current fit
+    #     metrics_best : dict
+    #         Metrics analyzing current best fit
+        
+    #     Returns
+    #     -------
+    #     bool
+    #         True if `metrics` is considered better than `metrics_best`
+    #     """
+    #     pass
     
     # def get_probabilities(self, distances, angles=None):
 
@@ -226,7 +325,7 @@ class RANSAC_Base(ABC):
         """
         if num_points is None or num_inliers is None or distances is None:
             metrics = {'num_inliers': 0, 'fitness': 0, 
-                    'rmse_distances': 0, 'rmse_angles': 0}
+                    'rmse_distances': 0, 'rmse_angles': 0, 'weight': 0}
             
         else:
             rmse_distances = np.sqrt(distances.dot(distances)) / len(distances)
@@ -235,9 +334,10 @@ class RANSAC_Base(ABC):
             else:
                 rmse_angles = None
             metrics = {'num_inliers': num_inliers,
-                    'fitness': num_inliers / num_points,
-                    'rmse_distances': rmse_distances,
-                    'rmse_angles': rmse_angles}
+                       'fitness': num_inliers / num_points,
+                       'rmse_distances': rmse_distances,
+                       'rmse_angles': rmse_angles,
+                       'weight': self.get_total_weight(distances, angles)}
             
         metrics['break_iteration'] = self.termination_criterion(metrics)
         return metrics

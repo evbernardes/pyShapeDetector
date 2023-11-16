@@ -57,6 +57,28 @@ class RANSAC_Classic(RANSAC_Base):
     
     _type = "RANSAC Classic"
     
+    def weight_distances(self, distances, distance_threshold):
+        """ Gives weights for each point based on the distances.
+
+        For `RANSAC_Weighted`, the weight function is a simple
+        step that changes at threshold.
+        
+        Parameters
+        ----------
+        distances : array
+            Distances of each point to shape
+        threshold_distances : float
+            Max distance accepted between points and shape
+        
+        Returns
+        -------
+        array
+            Weights of each point
+        """
+        weight = np.zeros(len(distances))
+        weight[distances < distance_threshold] = 1
+        return weight
+    
     def compare_metrics(self, metrics, metrics_best):
         """ Compare metrics to decide if new fit is better than current
         best fit.
