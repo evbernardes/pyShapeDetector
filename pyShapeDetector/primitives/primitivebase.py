@@ -15,10 +15,10 @@ class Primitive(ABC):
     Base class used to represent a geometrical primitive.
     
     To define a primitive, inherit from this class and define at least the 
-    following properties:
+    following internal attributes:
         `_fit_n_min`
-        `model_args_n`
-        `name`
+        `_model_args_n`
+        `_name`
     And the following methods:
         `get_distances`
         `get_normals`
@@ -34,7 +34,7 @@ class Primitive(ABC):
     
     Attributes
     ----------
-    _fit_n_min : int
+    fit_n_min : int
         Minimum number of points necessary to fit a model.
     model_args_n : str
         Number of parameters in the model.
@@ -99,6 +99,11 @@ class Primitive(ABC):
         Creates mesh of the shape.
     """
     _inlier_points = np.asarray([])
+    
+    def __repr__(self):
+        round_ = lambda x:round(x, 5)
+        params = list(map(round_, self.model))
+        return type(self).__name__+'('+str(params)+')'
     
     @property
     def inlier_points(self):

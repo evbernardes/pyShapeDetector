@@ -361,9 +361,9 @@ class PlaneBounded(Plane):
     
     Attributes
     ----------
-    _fit_n_min : int
+    fit_n_min : int
         Minimum number of points necessary to fit a model.
-    _model_args_n : str
+    model_args_n : str
         Number of parameters in the model.
     name : str
         Name of primitive.
