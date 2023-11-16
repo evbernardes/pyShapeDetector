@@ -7,7 +7,7 @@ Created on Mon Sep 25 15:42:59 2023
 """
 from abc import ABC, abstractmethod
 import numpy as np
-from open3d.geometry import PointCloud
+from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
     
 class Primitive(ABC):
@@ -48,6 +48,8 @@ class Primitive(ABC):
         Surface area of primitive
     volume : float
         Volume of primitive.
+    inlier_points : N x 3 array
+        Convenience attribute that can be set to save inlier points
         
     Methods
     -------    
@@ -96,6 +98,24 @@ class Primitive(ABC):
     get_mesh(points=None):
         Creates mesh of the shape. Points are not always necessary.
     """
+    _inlier_points = np.asarray([])
+    
+    @property
+    def inlier_points(self):
+        """ Convenience attribute that can be set to save inlier points """
+        return self._inlier_points
+    
+    @inlier_points.setter
+    def inlier_points(self, points):
+        points = np.asarray(points)
+        if points.shape == (3,):
+            points = np.reshape(points, (1,3))
+        elif points.shape[1] != 3:
+            raise ValueError('Invalid shape for input points, must be a single'
+                             ' point or an array of shape (N, 3), got '
+                             f'{points.shape}')
+        self._inlier_points = points
+        
     @property
     def canonical(self):
         """ Return canonical form for testing."""
@@ -146,7 +166,7 @@ class Primitive(ABC):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
         
         Returns
@@ -165,7 +185,7 @@ class Primitive(ABC):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
         
         Returns
@@ -205,9 +225,9 @@ class Primitive(ABC):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
-        normals : 3 x N array
+        normals : N x 3 array
             N normal vectors
         
         Returns
@@ -222,7 +242,7 @@ class Primitive(ABC):
         Parameters
         ----------
         model : list or tuple
-            Parameters defining the shape model
+            Parameters defining the shape model            
                         
         Raises
         ------
@@ -283,12 +303,12 @@ class Primitive(ABC):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points
         
         Returns
         -------
-        points_flattened : 3 x N array
+        points_flattened : N x 3 array
             N points on the surface
             
         """
@@ -306,9 +326,9 @@ class Primitive(ABC):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
-        normals : 3 x N array
+        normals : N x 3 array
             N normal vectors
             
         Raises
@@ -340,9 +360,9 @@ class Primitive(ABC):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
-        normals : 3 x N array
+        normals : N x 3 array
             N normal vectors
             
         Raises
@@ -368,7 +388,7 @@ class Primitive(ABC):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
         
         Returns
@@ -383,9 +403,9 @@ class Primitive(ABC):
         
         Parameters
         ----------
-        points : 3 x N array
+        points : N x 3 array
             N input points 
-        normals : 3 x N array
+        normals : N x 3 array
             N normal vectors
             
         Raises
@@ -408,7 +428,7 @@ class Primitive(ABC):
 
         Parameters
         ----------
-        points, optional : 3 x N array
+        points, optional : N x 3 array
             Points corresponding to the fitted shape.
         
         Returns
@@ -419,6 +439,16 @@ class Primitive(ABC):
         raise NotImplementedError('The mesh generating function for '
                                   f'primitives of type {self.name} has not '
                                   'been implemented.')
+        
+    def get_cropped_mesh(self, points, eps=1E-3):
+        mesh = self.get_mesh()
+        points_flattened = self.flatten_points(points)
+        pcd = PointCloud(Vector3dVector(points_flattened))
+        bb = pcd.get_axis_aligned_bounding_box()
+        bb = AxisAlignedBoundingBox(bb.min_bound - [eps]*3, 
+                                    bb.max_bound + [eps]*3)
+        return mesh.crop(bb)
+        
         
 
             
