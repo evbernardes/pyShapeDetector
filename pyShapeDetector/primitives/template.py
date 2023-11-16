@@ -86,7 +86,7 @@ class Template(Primitive):
     
     _fit_n_min = 0
     _model_args_n = 0
-    name = 'template' 
+    _name = 'template' 
     
     @property
     def surface_area(self):
@@ -113,14 +113,9 @@ class Template(Primitive):
         """
         return np.zeros(len(points))
     
-    def get_normals(self, points):
+    def get_normals(self):
         """ Gives, for each input point, the normal vector of the point closest 
         to the primitive.
-        
-        Parameters
-        ----------
-        points : N x 3 array
-            N input points 
         
         Returns
         -------

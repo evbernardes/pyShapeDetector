@@ -106,7 +106,7 @@ class Cylinder(Primitive):
     
     _fit_n_min = 6
     _model_args_n = 7
-    name = 'cylinder'
+    _name = 'cylinder'
 
     @property
     def canonical(self):
@@ -245,7 +245,7 @@ class Cylinder(Primitive):
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
     
-    def get_mesh(self, points=None, closed=False):
+    def get_mesh(self, closed=False):
         """ Returns mesh defined by the cylinder model.
         
         Parameters

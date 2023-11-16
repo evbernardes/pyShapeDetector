@@ -77,9 +77,10 @@ class Plane(Primitive):
     get_residuals(points, normals):
         Convenience function returning both distances and angles.
     
-    get_mesh(points): TriangleMesh
-        Flatten points and creates a simplified mesh of the plane defined
-        by the points at the borders.
+    get_mesh(): TriangleMesh
+        Flatten points and creates a simplified mesh of the plane. If the
+        shape has pre-defined inlier points, use them to find borders.
+        Otherwise, return square mesh.
         
     get_square_plane(length=1):
         Gives four points defining boundary of square plane.
@@ -94,7 +95,7 @@ class Plane(Primitive):
     
     _fit_n_min = 3
     _model_args_n = 4
-    name = 'plane'
+    _name = 'plane'
     
     def __init__(self, model):
         """
@@ -206,23 +207,19 @@ class Plane(Primitive):
         """
         return np.tile(self.normal, (len(points), 1))
     
-    def get_mesh(self, points=None):
-        """ Flatten points and creates a simplified mesh of the plane defined
-        by the points at the borders.      
-
-        Parameters
-        ----------
-        points : N x 3 array
-            Points corresponding to the fitted shape.
+    def get_mesh(self):
+        """ Flatten points and creates a simplified mesh of the plane. If the
+        shape has pre-defined inlier points, use them to find borders.
+        Otherwise, return square mesh.
         
         Returns
         -------
         TriangleMesh
             Mesh corresponding to the plane.
         """
-        if points is None:
+        if len(self.inlier_points) == 0:
             return self.get_square_mesh()
-        bounds = self.flatten_points(points)
+        bounds = self.flatten_points(self.inlier_points)
         return PlaneBounded(self, bounds).get_mesh()
     
     def get_square_plane(self, length=1):
@@ -433,7 +430,7 @@ class PlaneBounded(Plane):
     
     """
     
-    name = 'bounded plane'
+    _name = 'bounded plane'
     
     def __init__(self, planemodel, bounds=None):
         """

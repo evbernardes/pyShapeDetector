@@ -17,7 +17,7 @@ class Primitive(ABC):
     To define a primitive, inherit from this class and define at least the 
     following properties:
         `_fit_n_min`
-        `_model_args_n`
+        `model_args_n`
         `name`
     And the following methods:
         `get_distances`
@@ -36,7 +36,7 @@ class Primitive(ABC):
     ----------
     _fit_n_min : int
         Minimum number of points necessary to fit a model.
-    _model_args_n : str
+    model_args_n : str
         Number of parameters in the model.
     name : str
         Name of primitive.
@@ -95,8 +95,8 @@ class Primitive(ABC):
     get_residuals(points, normals):
         Convenience function returning both distances and angles.
         
-    get_mesh(points=None):
-        Creates mesh of the shape. Points are not always necessary.
+    get_mesh():
+        Creates mesh of the shape.
     """
     _inlier_points = np.asarray([])
     
@@ -115,7 +115,7 @@ class Primitive(ABC):
                              ' point or an array of shape (N, 3), got '
                              f'{points.shape}')
         self._inlier_points = points
-        
+    
     @property
     def canonical(self):
         """ Return canonical form for testing."""
@@ -128,22 +128,19 @@ class Primitive(ABC):
                                   'primitives.')
     
     @property
-    @abstractmethod
-    def _fit_n_min(self):
+    def fit_n_min(self):
         """ Minimum number of points necessary to fit a model."""
-        pass
+        return self._fit_n_min
 
     @property
-    @abstractmethod
-    def _model_args_n(self):
+    def model_args_n(self):
         """ Number of parameters in the model. """
-        pass
+        return self._model_args_n
     
     @property
-    @abstractmethod
     def name(self):
         """ Name of primitive. """
-        pass
+        return self._name
     
     @property
     def surface_area(self):
@@ -209,7 +206,7 @@ class Primitive(ABC):
         Primitive
             Random shape.
         """
-        return cls(np.random.random(cls._model_args_n) * scale)
+        return cls(np.random.random(cls.model_args_n) * scale)
     
     @staticmethod
     @abstractmethod
@@ -251,9 +248,9 @@ class Primitive(ABC):
             primitive.
         """
         
-        if len(model) != self._model_args_n:
+        if len(model) != self.model_args_n:
             raise ValueError(f'{self.name.capitalize()} primitives take '
-                             f'{self._model_args_n} elements, got {model}')
+                             f'{self.model_args_n} elements, got {model}')
         self.model = model
         
     @staticmethod
@@ -423,13 +420,8 @@ class Primitive(ABC):
             self.get_angles(points, normals)
     
     @staticmethod
-    def get_mesh(self, points=None):
-        """ Creates mesh of the shape. Points are not always necessary.
-
-        Parameters
-        ----------
-        points, optional : N x 3 array
-            Points corresponding to the fitted shape.
+    def get_mesh(self):
+        """ Creates mesh of the shape.
         
         Returns
         -------

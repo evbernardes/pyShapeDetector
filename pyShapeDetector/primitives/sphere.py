@@ -81,7 +81,7 @@ class Sphere(Primitive):
     
     _fit_n_min = 4
     _model_args_n = 4
-    name = 'sphere'
+    _name = 'sphere'
     
     @property
     def equation(self):
@@ -148,7 +148,7 @@ class Sphere(Primitive):
         normals = dist_vec / np.linalg.norm(dist_vec, axis=1)[..., np.newaxis]
         return normals
 
-    def get_mesh(self, points=None):
+    def get_mesh(self):
         """ Returns mesh defined by the sphere model.      
         
         Returns
