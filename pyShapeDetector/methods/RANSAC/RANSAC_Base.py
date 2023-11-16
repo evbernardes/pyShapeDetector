@@ -78,9 +78,9 @@ class RANSAC_Base(ABC):
         
         limit = PrimitiveLimits(limit)
         
-        if self._opt._ransac_n and primitive._fit_n_min:
+        if self._opt._ransac_n and primitive.fit_n_min:
             raise ValueError(f'{primitive.name}s need a minimum of '
-                             f'{primitive._fit_n_min} for fitting, but current'
+                             f'{primitive.fit_n_min} for fitting, but current'
                              f'ransac_n option is set to {self._opt._ransac_n}'
                              '. Either raise the value on the options, or set '
                              'it to None.')
@@ -550,5 +550,7 @@ class RANSAC_Base(ABC):
                   f'{int(100*metrics_final["fitness"])}% fitness')
             print(f'RMSE for distances: {metrics_final["rmse_distances"]}')
             print(f'RMSE for angles: {metrics_final["rmse_angles"]}\n')
+            
+        shape_best.inlier_points = points[inliers_final]
 
         return shape_best, inliers_final, metrics_final

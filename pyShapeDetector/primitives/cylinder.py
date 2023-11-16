@@ -107,6 +107,10 @@ class Cylinder(Primitive):
     _fit_n_min = 6
     _model_args_n = 7
     _name = 'cylinder'
+    
+    @property
+    def color(self):
+        return np.array([1, 0, 0])
 
     @property
     def canonical(self):

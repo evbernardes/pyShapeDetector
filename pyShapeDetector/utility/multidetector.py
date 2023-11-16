@@ -82,7 +82,11 @@ class MultiDetector():
         if self._meshes_detected is None:
             meshes_detected = []
             for shape, pcd in zip(self._shapes_detected, self._pcds_inliers):                
-                mesh = shape.get_mesh(pcd.points)
+                # mesh = shape.get_mesh(pcd.points)
+                if shape.name == 'sphere':
+                    mesh = shape.get_cropped_mesh(shape.inlier_points)
+                else:
+                    mesh = shape.get_mesh(pcd.points)
                 mesh.paint_uniform_color(np.random.random(3))
                 meshes_detected.append(mesh)
             self._meshes_detected = meshes_detected
@@ -153,7 +157,7 @@ class MultiDetector():
                         print('No shapes found anymore, breaking...')
                     continue
                 
-                if max(compare) < metric_min:
+                if metric_min is not None and max(compare) < metric_min:
                     if debug:
                         print(f'{compare_metric} of {max(compare)} is too '
                               'small, breaking...')

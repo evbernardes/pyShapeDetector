@@ -84,6 +84,10 @@ class Sphere(Primitive):
     _name = 'sphere'
     
     @property
+    def color(self):
+        return np.array([0, 1, 0])
+    
+    @property
     def equation(self):
         def sig(x):
             return "-" if x < 0 else '+'

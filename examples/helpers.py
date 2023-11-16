@@ -63,13 +63,15 @@ def draw(objs):
     draw_geometries(objs)
     
 def paint_meshes_by_type(meshes, shapes):
-    shape_types = list({type(shape) for shape in shapes})
+    for mesh, shape in zip(meshes, shapes):
+        mesh.paint_uniform_color(shape.color)
+    # shape_types = list({type(shape) for shape in shapes})
 
-    for i in range(len(shape_types)):
-        color = plt.get_cmap("tab20")(i)[:3]
-        for mesh, shape in zip(meshes, shapes):
-            if type(shape) == shape_types[i]:
-                mesh.paint_uniform_color(color)
+    # for i in range(len(shape_types)):
+    #     color = plt.get_cmap("tab20")(i)[:3]
+    #     for mesh, shape in zip(meshes, shapes):
+    #         if type(shape) == shape_types[i]:
+    #             mesh.paint_uniform_color(color)
     
 def draw_two_colomns(objs_left, objs_right, dist=5,
                      lookat=None, up=None, front=None, zoom=None):

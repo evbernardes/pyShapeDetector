@@ -106,6 +106,12 @@ class Primitive(ABC):
         return type(self).__name__+'('+str(params)+')'
     
     @property
+    def color(self):
+        seed = int(str(abs(hash(self.name)))[:9])
+        np.random.seed(seed)
+        return np.random.random(3)
+        
+    @property
     def inlier_points(self):
         """ Convenience attribute that can be set to save inlier points """
         return self._inlier_points

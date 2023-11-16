@@ -97,6 +97,10 @@ class Plane(Primitive):
     _model_args_n = 4
     _name = 'plane'
     
+    @property
+    def color(self):
+        return np.array([0, 0, 1])
+    
     def __init__(self, model):
         """
         Parameters
