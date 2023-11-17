@@ -133,8 +133,14 @@ class Cylinder(Primitive):
     @property
     def base(self):
         """ Point at the base of the cylinder. """
+        return np.array(self.model[:3])
+        # return self.center + self.vector / 2
+    
+    @property
+    def center(self):
+        """ Center point of the cylinder."""
+        return self.base + self.vector / 2
         # return np.array(self.model[:3])
-        return self.center + self.vector / 2
     
     @property
     def vector(self):
@@ -155,12 +161,6 @@ class Cylinder(Primitive):
     def radius(self):
         """ Radius of the cylinder. """
         return self.model[6]
-    
-    @property
-    def center(self):
-        """ Center point of the cylinder."""
-        # return self.base + self.vector / 2
-        return np.array(self.model[:3])
     
     @property
     def surface_area(self):
@@ -347,10 +347,10 @@ class Cylinder(Primitive):
             height = max(proj) - min(proj)
             vector = axis * height
             center = -np.cross(axis, np.cross(axis, point)) + np.median(proj) * axis     
-            # base = center - vector / 2
+            base = center - vector / 2
             
-            # base = list(base)
-            center = list(center)
+            base = list(base)
+            # center = list(center)
             vector = list(vector)
         
         else:
@@ -359,9 +359,10 @@ class Cylinder(Primitive):
                           'are given.')
             solution = skcylinder.best_fit(points)
             
-            # base = list(solution.point)
-            center = list(solution.point + solution.vector/2)
+            base = list(solution.point)
+            # center = list(solution.point + solution.vector/2)
             vector = list(solution.vector)
             radius = solution.radius
         
-        return Cylinder(center+vector+[radius]) 
+        # return Cylinder(center+vector+[radius]) 
+        return Cylinder(base+vector+[radius]) 
