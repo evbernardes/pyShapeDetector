@@ -13,9 +13,9 @@ from skspatial.objects.cylinder import Cylinder as skcylinder
 
 from .primitivebase import Primitive
     
-class Cylinder(Primitive):
+class Cone(Primitive):
     """
-    Cylinder primitive.
+    Cone primitive.
     
     Attributes
     ----------
@@ -25,35 +25,31 @@ class Cylinder(Primitive):
         Number of parameters in the model.
     name : str
         Name of primitive.
-    base : 3 x 1 array
-        Point at the base of the cylinder.
+    appex : 3 x 1 array
+        Point at the appex of the cone.
     vector : 3 x 1 array
-        Vector from base point to top point.
+        Vector from appex point to top point.
     height: float
-        Height of cylinder.
+        Height of cone.
     axis : 3 x 1 float
-        Unit vector defining axis of cylinder.
+        Unit vector defining axis of cone.
     radius : float
-        Radius of the cylinder.
+        Radius of the cone.
+    half_angle : float
+        Half angle of cone.
     center : 3 x 1 array
-        Center point of the cylinder.
+        Center point of the cone.
     rotation_from_axis : 3 x 3 array
-        Rotation matrix that aligns z-axis with cylinder axis.
+        Rotation matrix that aligns z-axis with cone axis.
     canonical : Cylinder
-        Return canonical form for testing.
+        Return cone form for testing.
     surface_area : float
-        Surface area of primitive
+        Surface area of cone
     volume : float
-        Volume of primitive.
+        Volume of cone.
         
     Methods
     ------- 
-    
-    get_surface_area():
-        Gives the surface area of model. 
-        
-    get_volume():
-        Gives the volume of model. 
     
     def get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
@@ -104,13 +100,13 @@ class Cylinder(Primitive):
     
     """
     
-    _fit_n_min = 6
-    _model_args_n = 7
-    _name = 'cylinder'
+    _fit_n_min = 7
+    _model_args_n = 8
+    _name = 'cone'
     
     @property
     def color(self):
-        return np.array([1, 0, 0])
+        return np.array([0.707, 0, 0.707])
 
     @property
     def canonical(self):
@@ -118,7 +114,7 @@ class Cylinder(Primitive):
         if self.vector[-1] >= 0:
             return self
         
-        return Cylinder(list(self.center) + list(-self.vector) + [self.radius])
+        return Cone(list(self.center) + list(-self.vector) + [self.radius] + [self.half_angle])
 
     @property
     def equation(self):
@@ -131,7 +127,7 @@ class Cylinder(Primitive):
         return A + " + [" + B + "]**2" + f" = {self.radius ** 2}"
     
     @property
-    def base(self):
+    def appex(self):
         """ Point at the base of the cylinder. """
         # return np.array(self.model[:3])
         return self.center + self.vector / 2
@@ -143,23 +139,28 @@ class Cylinder(Primitive):
     
     @property
     def height(self):
-        """ Height of cylinder. """
+        """ Height of cone. """
         return np.linalg.norm(self.vector)
     
     @property
     def axis(self):
-        """ Unit vector defining axis of cylinder. """
+        """ Unit vector defining axis of cone. """
         return self.vector / self.height
     
     @property
     def radius(self):
-        """ Radius of the cylinder. """
+        """ Radius of the cone. """
         return self.model[6]
     
     @property
+    def half_angle(self):
+        """ Half angle of cone. """
+        return self.model[7]
+    
+    @property
     def center(self):
-        """ Center point of the cylinder."""
-        # return self.base + self.vector / 2
+        """ Center point of the cone."""
+        # return self.appex + self.vector / 2
         return np.array(self.model[:3])
     
     @property
@@ -192,8 +193,8 @@ class Cylinder(Primitive):
             N points in cylinder line
         """
         points = np.asarray(points)
-        projection = (points - self.base).dot(self.axis)
-        return self.base + projection[..., np.newaxis] * self.axis
+        projection = (points - self.appex).dot(self.axis)
+        return self.appex + projection[..., np.newaxis] * self.axis
     
     def get_orthogonal_component(self, points):
         """ Removes the axis-aligned components of points.
@@ -209,7 +210,7 @@ class Cylinder(Primitive):
             N points
         """
         points = np.asarray(points)
-        delta = points - self.base
+        delta = points - self.appex
         return -np.cross(self.axis, np.cross(self.axis, delta))
 
     def get_signed_distances(self, points):
@@ -227,7 +228,7 @@ class Cylinder(Primitive):
         """
         points = np.asarray(points)             
         distances = np.linalg.norm(
-            np.cross(self.axis, points - self.base), axis=1)
+            np.cross(self.axis, points - self.appex), axis=1)
         
         return distances - self.radius
     
@@ -302,16 +303,16 @@ class Cylinder(Primitive):
         
         Returns
         -------
-        Cylinder
-            Fitted cylinder.
+        Plane
+            Fitted sphere.
         """
         points = np.asarray(points)
         
         num_points = len(points)
         
-        if num_points < 6:
+        if num_points < 7:
             raise ValueError('A minimun of 6 points are needed to fit a '
-                             'cylinder')
+                             'cone')
             
         if normals is not None:
             # Reference for axis estimation with normals: 
@@ -328,7 +329,7 @@ class Cylinder(Primitive):
             axis = eigvec.T[idx][0]
             
             # Reference for the rest:
-            # Was revealed to me in a dream
+            # Was revealed to me in a dream, again
             axis_neg_squared_skew = np.eye(3) - axis[np.newaxis].T * axis
             points_skew = (axis_neg_squared_skew @ points.T).T
             b = sum(points_skew.T * points_skew.T)
@@ -364,4 +365,4 @@ class Cylinder(Primitive):
             vector = list(solution.vector)
             radius = solution.radius
         
-        return Cylinder(center+vector+[radius]) 
+        return Cone(center+vector+[radius]) 
