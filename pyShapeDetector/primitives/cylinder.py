@@ -302,8 +302,8 @@ class Cylinder(Primitive):
         
         Returns
         -------
-        Plane
-            Fitted sphere.
+        Cylinder
+            Fitted cylinder.
         """
         points = np.asarray(points)
         
