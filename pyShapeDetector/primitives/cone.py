@@ -333,7 +333,10 @@ class Cone(Primitive):
             axis_neg_squared_skew = np.eye(3) - axis[np.newaxis].T * axis
             points_skew = (axis_neg_squared_skew @ points.T).T
             b = sum(points_skew.T * points_skew.T)
-            a = np.c_[2 * points_skew, np.ones(num_points)]
+            a = np.c_[2 * points_skew, 
+                      np.ones(num_points),
+                      sum(points.T * points.T),
+                      points]
             X = np.linalg.lstsq(a, b, rcond=None)[0]
             
             point = X[:3]
