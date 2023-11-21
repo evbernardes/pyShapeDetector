@@ -8,7 +8,7 @@ Created on Fri Oct  6 15:57:08 2023
 import warnings
 import numpy as np
 from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
-from open3d.utility import Vector3iVector
+from open3d.utility import Vector3iVector, Vector3dVector
 from skspatial.objects.cylinder import Cylinder as skcylinder
 
 from .primitivebase import Primitive
@@ -100,8 +100,8 @@ class Cone(Primitive):
     
     """
     
-    _fit_n_min = 7
-    _model_args_n = 8
+    _fit_n_min = 6
+    _model_args_n = 7
     _name = 'cone'
     
     @property
@@ -128,13 +128,25 @@ class Cone(Primitive):
     
     @property
     def appex(self):
-        """ Point at the base of the cylinder. """
+        """ Cone appex. """
+        return np.array(self.model[:3])
+        # return self.center + self.vector / 2
+
+    @property
+    def top(self):
+        """ Central point at top base. """
+        return self.appex + self.vector
+        # return self.center + self.vector / 2
+    
+    @property
+    def center(self):
+        """ Center point of the cylinder."""
+        return self.appex + self.vector / 2
         # return np.array(self.model[:3])
-        return self.center + self.vector / 2
     
     @property
     def vector(self):
-        """ Vector from base point to top point. """
+        """ Vector from appex point to top point. """
         return np.array(self.model[3:6])
     
     @property
@@ -150,18 +162,12 @@ class Cone(Primitive):
     @property
     def radius(self):
         """ Radius of the cone. """
-        return self.model[6]
+        return self.height * np.tan(self.half_angle)
     
     @property
     def half_angle(self):
         """ Half angle of cone. """
-        return self.model[7]
-    
-    @property
-    def center(self):
-        """ Center point of the cone."""
-        # return self.appex + self.vector / 2
-        return np.array(self.model[:3])
+        return self.model[6]
     
     @property
     def surface_area(self):
@@ -264,20 +270,24 @@ class Cone(Primitive):
             Mesh corresponding to the plane.
         """
         
-        mesh = TriangleMesh.create_cylinder(
+        mesh = TriangleMesh.create_cone(
             radius=self.radius, height=self.height, resolution=100, split=100)
+        mesh.vertices = Vector3dVector(-np.asarray(mesh.vertices))
+        # mesh.translate(-mesh.get_center())
         
         # first and second points are the central points defining top / base
         triangles = np.asarray(mesh.triangles)
         
-        if not closed:
-            triangles = np.array(
-                [t for t in triangles if 0 not in t and 1 not in t])
-            triangles = np.vstack([triangles, triangles[:, ::-1]])
-            mesh.triangles = Vector3iVector(triangles)
-        
+        # if not closed:
+        #     triangles = np.array(
+        #         [t for t in triangles if 0 not in t and 1 not in t])
+        #     triangles = np.vstack([triangles, triangles[:, ::-1]])
+        #     mesh.triangles = Vector3iVector(triangles)
+        # center = mesh.get_center()
+        # mesh.translate()
         mesh.rotate(self.rotation_from_axis)
-        mesh.translate(self.center)
+        mesh.translate(self.center-mesh.get_center())
+        # mesh.translate(self.center)
         
         return mesh
     
@@ -310,7 +320,7 @@ class Cone(Primitive):
         
         num_points = len(points)
         
-        if num_points < 7:
+        if num_points < 6:
             raise ValueError('A minimun of 6 points are needed to fit a '
                              'cone')
             
@@ -337,10 +347,12 @@ class Cone(Primitive):
                       np.ones(num_points),
                       sum(points.T * points.T),
                       points]
+            
             X = np.linalg.lstsq(a, b, rcond=None)[0]
             
             point = X[:3]
-            radius = np.sqrt(X[3] + point.dot(axis_neg_squared_skew @ point))
+            half_angle = np.arcsin( np.sqrt(X[5]) )
+            # radius = np.sqrt(X[3] + point.dot(axis_neg_squared_skew @ point))
             
             # find point in base of cylinder
             proj = points.dot(axis)
@@ -351,21 +363,16 @@ class Cone(Primitive):
             height = max(proj) - min(proj)
             vector = axis * height
             center = -np.cross(axis, np.cross(axis, point)) + np.median(proj) * axis     
-            # base = center - vector / 2
+            appex = center - vector / 2
             
-            # base = list(base)
-            center = list(center)
+            appex = list(appex)
+            # center = list(center)
             vector = list(vector)
         
         else:
-            # if no normals, use scikit spatial, slower
-            warnings.warn('Cylinder fitting works much quicker if normals '
-                          'are given.')
-            solution = skcylinder.best_fit(points)
-            
-            # base = list(solution.point)
-            center = list(solution.point + solution.vector/2)
-            vector = list(solution.vector)
-            radius = solution.radius
+            raise NotImplementedError('Fitting of cone without normals has not'
+                                      'been implemented.')
+
         
-        return Cone(center+vector+[radius]) 
+        # return Cone(center+vector+[radius]) 
+        return Cone(appex+vector+[half_angle]) 
