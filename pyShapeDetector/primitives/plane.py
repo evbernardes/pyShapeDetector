@@ -524,7 +524,7 @@ class PlaneBounded(Plane):
         if np.any(np.isnan(points)):
             raise ValueError('NaN found in points')
         # points_flat = self.flatten_points(points)
-        rot = plane.get_rotation_from_axis(plane.normal)
+        rot = plane.get_rotation_from_axis([0, 0, 1], plane.normal)
         projection = (rot @ points.T).T[:, :2]
         try:
             chull = ConvexHull(projection)

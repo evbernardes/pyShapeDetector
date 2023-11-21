@@ -137,7 +137,6 @@ class Cone(Primitive):
     def top(self):
         """ Central point at top base. """
         return self.appex + self.vector
-        # return self.center + self.vector / 2
     
     @property
     def center(self):
@@ -183,7 +182,7 @@ class Cone(Primitive):
     @property
     def rotation_from_axis(self):
         """ Rotation matrix that aligns z-axis with cylinder axis."""
-        return self.get_rotation_from_axis(self.axis)
+        return self.get_rotation_from_axis([0, 0, 1], self.axis)
     
     def closest_to_line(self, points):
         """ Returns points in cylinder axis that are the closest to the input
@@ -277,7 +276,7 @@ class Cone(Primitive):
         # mesh.translate(-mesh.get_center())
         
         mesh.rotate(self.rotation_from_axis)
-        mesh.translate(self.center-mesh.get_center())        
+        mesh.translate(self.center - mesh.get_center())
         
         if not closed:
             

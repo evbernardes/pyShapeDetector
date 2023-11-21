@@ -135,6 +135,11 @@ class Cylinder(Primitive):
         """ Point at the base of the cylinder. """
         return np.array(self.model[:3])
         # return self.center + self.vector / 2
+        
+    @property
+    def top(self):
+        """ Point at the top of the cylinder. """
+        return self.base + self.vector
     
     @property
     def center(self):
@@ -175,7 +180,7 @@ class Cylinder(Primitive):
     @property
     def rotation_from_axis(self):
         """ Rotation matrix that aligns z-axis with cylinder axis."""
-        return self.get_rotation_from_axis(self.axis)
+        return self.get_rotation_from_axis([0, 0, 1], self.axis)
     
     def closest_to_line(self, points):
         """ Returns points in cylinder axis that are the closest to the input
@@ -260,7 +265,7 @@ class Cylinder(Primitive):
         Returns
         -------
         TriangleMesh
-            Mesh corresponding to the plane.
+            Mesh corresponding to the cylinder.
         """
         
         mesh = TriangleMesh.create_cylinder(

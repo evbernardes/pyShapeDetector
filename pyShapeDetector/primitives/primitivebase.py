@@ -265,20 +265,20 @@ class Primitive(ABC):
         self.model = model
         
     @staticmethod
-    def get_rotation_from_axis(axis, axis_origin=[0, 0, 1]):
+    def get_rotation_from_axis(axis_origin, axis):
         """ Rotation matrix that transforms `axis_origin` in `axis`.
         
         Parameters
         ----------
         axis : 3 x 1 array
-            Goal axis (default is None)
-        axis_origin : 3 x 1 array, optional
-            Initial axis (default is the z-axis)
+            Goal axis.
+        axis_origin : 3 x 1 array
+            Initial axis.
         
         Returns
         -------
         rotation
-            3x3 array representing a rotation matrix
+            3x3 rotation matrix
         """
         axis_origin = np.array(axis_origin)
         if axis.dot(axis_origin) == 0:
