@@ -11,6 +11,8 @@ from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector, Vector3dVector
 from skspatial.objects.cylinder import Cylinder as skcylinder
 
+from scipy.spatial.transform import Rotation
+
 from .primitivebase import Primitive
 from .plane import Plane
     
@@ -92,6 +94,10 @@ class Cone(Primitive):
     get_orthogonal_component(points):
         Removes the axis-aligned components of points.
         
+    get_closest_axes(self, points):
+        Get the axes that define the closest lines in the cone's surface
+        for each point.
+    
     closest_to_line(points):
         Returns points in cylinder axis that are the closest to the input
         points.
@@ -202,6 +208,29 @@ class Cone(Primitive):
         projection = (points - self.appex).dot(self.axis)
         return self.appex + projection[..., np.newaxis] * self.axis
     
+    def get_closest_axes(self, points):
+        """ Get the axes that define the closest lines in the cone's surface
+        for each point.
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+        
+        Returns
+        -------
+        axes: N x 3 array
+            N closest axes
+        """
+        points = np.asarray(points)
+        delta = points - self.appex
+        
+        normalized = lambda x: x / np.linalg.norm(x)
+        
+        rot = Rotation.from_rotvec(
+            normalized(np.cross(self.axis, delta)) * self.half_angle)
+        return rot.apply(self.axis)
+    
     def get_orthogonal_component(self, points):
         """ Removes the axis-aligned components of points.
         
@@ -217,7 +246,14 @@ class Cone(Primitive):
         """
         points = np.asarray(points)
         delta = points - self.appex
-        return -np.cross(self.axis, np.cross(self.axis, delta))
+        closest_axes = self.get_closest_axes(points)
+        
+        return -np.cross(closest_axes, np.cross(closest_axes, delta))
+    
+    def get_point_angle(self, points):
+        delta = points - self.appex
+        projection = delta.dot(self.axis)
+        return np.arccos(projection / np.linalg.norm(delta, axis=1))
 
     def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the cylinder. 
@@ -232,11 +268,19 @@ class Cone(Primitive):
         distances
             Nx1 array distances.
         """
-        points = np.asarray(points)             
-        distances = np.linalg.norm(
-            np.cross(self.axis, points - self.appex), axis=1)
-        
-        return distances - self.radius
+        # cone_normals = self.get_normals(points)
+        # # return cone_normals.dot(points - self.appex)
+        # # return np.sum(cone_normals * (points - self.appex), axis=1)
+        # delta = points - self.appex
+        # # return np.linalg.norm(np.cross(cone_normals, delta))
+        # return sum(cone_normals.T * delta.T)
+        delta = points - self.appex
+        # axis = self.axis
+        # return np.linalg.norm(delta - self.axis * delta.dot(self.axis)[None].T, axis=1)
+        # axis = self.get_closest_axes(points)
+        # return np.linalg.norm(delta - axis * sum(delta.T * axis.T)[None].T, axis=1)
+        alpha = self.get_point_angle(points)
+        return np.sin(alpha - self.half_angle) * np.linalg.norm(delta, axis=1)
     
     def get_normals(self, points):
         """ Gives, for each input point, the normal vector of the point closest 
