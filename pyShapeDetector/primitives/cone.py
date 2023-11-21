@@ -12,6 +12,7 @@ from open3d.utility import Vector3iVector, Vector3dVector
 from skspatial.objects.cylinder import Cylinder as skcylinder
 
 from .primitivebase import Primitive
+from .plane import Plane
     
 class Cone(Primitive):
     """
@@ -267,7 +268,7 @@ class Cone(Primitive):
         Returns
         -------
         TriangleMesh
-            Mesh corresponding to the plane.
+            Mesh corresponding to the cone.
         """
         
         mesh = TriangleMesh.create_cone(
@@ -275,18 +276,24 @@ class Cone(Primitive):
         mesh.vertices = Vector3dVector(-np.asarray(mesh.vertices))
         # mesh.translate(-mesh.get_center())
         
-        # first and second points are the central points defining top / base
-        triangles = np.asarray(mesh.triangles)
+        mesh.rotate(self.rotation_from_axis)
+        mesh.translate(self.center-mesh.get_center())        
         
-        # if not closed:
-        #     triangles = np.array(
-        #         [t for t in triangles if 0 not in t and 1 not in t])
-        #     triangles = np.vstack([triangles, triangles[:, ::-1]])
-        #     mesh.triangles = Vector3iVector(triangles)
+        if not closed:
+            
+            triangles = np.asarray(mesh.triangles)
+            
+            plane = Plane(list(self.axis)+[-np.dot(self.top, self.axis)])
+            dist = plane.get_distances(mesh.vertices)
+            base_vertices = np.where(abs(dist - min(dist)) < 1e-4)[0]
+            triangles = np.asarray(mesh.triangles)
+            triangles = np.array(
+                [t for t in triangles if not np.any(np.isin(base_vertices, t))])
+            triangles = np.vstack([triangles, triangles[:, ::-1]])
+            mesh.triangles = Vector3iVector(triangles)
         # center = mesh.get_center()
         # mesh.translate()
-        mesh.rotate(self.rotation_from_axis)
-        mesh.translate(self.center-mesh.get_center())
+        
         # mesh.translate(self.center)
         
         return mesh
