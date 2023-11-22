@@ -217,7 +217,7 @@ class Primitive(ABC):
         Primitive
             Random shape.
         """
-        return cls(np.random.random(cls.model_args_n) * scale)
+        return cls(np.random.random(cls._model_args_n) * scale)
     
     @staticmethod
     @abstractmethod
