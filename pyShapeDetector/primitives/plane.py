@@ -30,6 +30,10 @@ class Plane(Primitive):
         Equation that defines the primitive.
     normal : 3 x 1 array
         Normal vector defining plane.
+    dist : float
+        Distance to origin.
+    centroid : 3 x 1 array
+        A point in the plane.
     canonical : Plane
         Return canonical form for testing.
     surface_area : float
@@ -140,14 +144,14 @@ class Plane(Primitive):
     def canonical(self):
         """ Return canonical form for testing. """
         model = self.model
-        if self.model[-1] >= 0:
+        if self.dist >= 0:
             model = -model
         return Plane(list(-self.model))
     
     @property
     def equation(self):
         n = self.normal
-        d = self.model[-1]
+        d = self.dist
         equation = ''
         equation += f'{n[0]} * x '
         equation += '-' if n[1] < 0 else '+'
@@ -163,6 +167,16 @@ class Plane(Primitive):
     def normal(self):
         """ Normal vector defining point. """
         return np.array(self.model[:3])
+    
+    @property
+    def dist(self):
+        """ Distance to origin. """
+        return self.model[3]
+    
+    @property
+    def centroid(self):
+        """ A point in the plane. """
+        return -self.normal * self.dist
     
     @property
     def surface_area(self):
@@ -191,7 +205,7 @@ class Plane(Primitive):
             Nx1 array distances.
         """
         points = np.asarray(points)
-        return points.dot(self.normal) + self.model[3]
+        return points.dot(self.normal) + self.dist
     
     def get_normals(self, points):
         """ Gives, for each input point, the normal vector of the point closest 
@@ -239,7 +253,7 @@ class Plane(Primitive):
         Plane
             Square plane
         """
-        center = -self.model[-1] * self.normal
+        # center = self.centroid
         # center = np.mean(np.asarray(pcd.points), axis=0)
         # bb = pcd.get_axis_aligned_bounding_box()
         # half_length = max(bb.max_bound - bb.min_bound) / 2
@@ -254,10 +268,10 @@ class Plane(Primitive):
         v2 /= np.linalg.norm(v2)
 
         vertices = np.vstack([
-            center + v1 * length / 2,
-            center + v2 * length / 2,
-            center - v1 * length / 2,
-            center - v2 * length / 2])
+            self.centroid + v1 * length / 2,
+            self.centroid + v2 * length / 2,
+            self.centroid - v1 * length / 2,
+            self.centroid - v2 * length / 2])
         
         return PlaneBounded(self, vertices)
 
@@ -487,7 +501,7 @@ class PlaneBounded(Plane):
     def canonical(self):
         """ Return canonical form for testing. """
         model = self.model
-        if self.model[-1] >= 0:
+        if self.dist >= 0:
             model = -model
         return PlaneBounded(list(-self.model), self.bounds)
     
