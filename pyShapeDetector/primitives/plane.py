@@ -6,7 +6,7 @@ Created on Mon Sep 25 15:42:59 2023
 @author: ebernardes
 """
 from warnings import warn
-
+from itertools import permutations
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
 from open3d.geometry import TriangleMesh, PointCloud
@@ -267,7 +267,7 @@ class Plane(Primitive):
         """
         return np.tile(self.normal, (len(points), 1))
     
-    def get_mesh(self):
+    def get_mesh(self, points=None):
         """ Flatten points and creates a simplified mesh of the plane. If the
         shape has pre-defined inlier points, use them to find borders.
         Otherwise, return square mesh.
@@ -632,7 +632,8 @@ class PlaneBounded(Plane):
     
     @staticmethod
     def fit(points, normals=None):
-        """ Gives plane that fits the input points. If the number of points is
+        """ Gives plane that fits the input points. If the numb
+        points : N x 3 arrayer of points is
         higher than the `3`, the fitted shape will return a least squares 
         estimation.
         
@@ -653,4 +654,34 @@ class PlaneBounded(Plane):
         """
         
         plane = Plane.fit(points, normals)
-        return plane.get_plane_bounded(points) 
+        return plane.get_plane_bounded(points)
+  
+    @staticmethod  
+    def create_box(center=[0,0,0], dimensions=[1, 1, 1]):
+        
+        vectors = np.eye(3) * np.array(dimensions) / 2
+        center = np.array(center)
+        planes = []
+        
+        for i, j in permutations([0, 1, 2], 2):
+            k = 3 - i - j
+            sign = int((i-j)*(j-k)*(k-i)/2)
+            v1, v2, v3 = vectors[[i, j, k]]
+            
+            points = center + np.array([
+                + v1 + v2,
+                + v1 - v2,
+                - v1 - v2,
+                - v1 + v2,
+                ])
+            
+            plane = Plane.from_normal_point(v3, center + sign * v3)
+            planes.append(plane.get_plane_bounded(points))
+            
+        return planes
+            
+            
+        
+        
+        
+    

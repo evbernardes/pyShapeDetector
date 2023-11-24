@@ -86,7 +86,7 @@ class Primitive(ABC):
     flatten_points(points):
         Stick each point in input to the closest point in shape's surface.
         
-    get_angles_cos(points, normals):
+    get_angles_cos(points, normals):PrimitiveBase
         Gives the absolute value of cosines of the angles between the input 
         normal vectors and the calculated normal vectors from the input points.
         
