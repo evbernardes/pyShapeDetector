@@ -507,6 +507,7 @@ class PlaneBounded(Plane):
         ------
         ValueError
             If number of parameters is incompatible with the model of the 
+        -------
             primitive.
         """
         
@@ -580,6 +581,7 @@ class PlaneBounded(Plane):
         if flatten:
             points = plane.flatten_points(points)
         if np.any(np.isnan(points)):
+        -------
             raise ValueError('NaN found in points')
         # points_flat = self.flatten_points(points)
         rot = plane.get_rotation_from_axis([0, 0, 1], plane.normal)
@@ -685,7 +687,7 @@ class PlaneBounded(Plane):
         
         for i, j in permutations([0, 1, 2], 2):
             k = 3 - i - j
-            sign = int((i-j)*(j-k)*(k-i)/2)
+            sign = int((i-j) * (j-k) * (k-i) / 2)
             v1, v2, v3 = vectors[[i, j, k]]
             
             points = center + np.array([
