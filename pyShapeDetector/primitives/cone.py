@@ -7,7 +7,7 @@ Created on Fri Oct  6 15:57:08 2023
 """
 import warnings
 import numpy as np
-from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
+from open3d.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector, Vector3dVector
 from skspatial.objects.cylinder import Cylinder as skcylinder
 
@@ -17,6 +17,7 @@ from scipy.spatial.transform import Rotation
 from pyShapeDetector.methods import RANSAC_Classic
 from .primitivebase import Primitive
 from .plane import Plane
+from .cylinder import Cylinder
     
 class Cone(Primitive):
     """
@@ -55,7 +56,13 @@ class Cone(Primitive):
         
     Methods
     ------- 
-    I'm a farse though, I say taht 
+    def from_appex_vector_radius(appex, vector, radius)
+        Creates cone from appex, vector and radius as separated arguments.
+    
+    def from_appex_vector_half_angle(appex, vector, half_angle)
+        Creates cone from appex, vector and half_angle as 
+        separated arguments.
+        
     def get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
     
@@ -109,7 +116,7 @@ class Cone(Primitive):
     
     """
     
-    _fit_n_min = 6
+    _fit_n_min = 10
     _model_args_n = 7
     _name = 'cone'
     
@@ -132,8 +139,53 @@ class Cone(Primitive):
         """
         Primitive.__init__(self, model)
 
-        if not (0 <= self.half_angle < np.pi/2):
+        if not (0 <= self.half_angle < np.pi / 2):
             raise ValueError('half_angle must be between 0 and pi/2 radians.')
+            
+    @classmethod
+    def from_appex_vector_radius(cls, appex, vector, radius):
+        """ Creates cone from appex, vector and radius as separated arguments.
+        
+        Parameters
+        ----------            
+        appex : 3 x 1 array
+            Point at the appex of the cone.
+        vector : 3 x 1 array
+            Vector from appex point to top point.
+        radius : float
+            Radius of the cone.
+
+        Returns
+        -------
+        Cone
+            Generated shape.
+        """
+        if radius <= 0:
+            raise ValueError('radius must be positive real value.')
+        height = np.linalg.norm(vector)
+        return cls(list(appex)+list(vector)+[np.arctan(radius/height)])
+    
+    @classmethod
+    def from_appex_vector_half_angle(cls, appex, vector, half_angle):
+        """ Creates cone from appex, vector and half_angle as 
+        separated arguments.
+        
+        Parameters
+        ----------            
+        appex : 3 x 1 array
+            Point at the appex of the cone.
+        vector : 3 x 1 array
+            Vector from appex point to top point.
+        half_angle : float
+            Half angle of cone.
+
+        Returns
+        -------
+        Cone
+            Generated shape.
+        """
+        return cls(list(appex)+list(vector)+[half_angle])
+            
             
     @classmethod
     def random(cls, scale=1):
@@ -149,9 +201,11 @@ class Cone(Primitive):
         Cone
             Random shape.
         """
-        model = np.random.random(cls._model_args_n - 1) * scale
-        half_angle = np.random.rand() * (np.pi / 4 - 1E-5)
-        return cls(np.append(model, half_angle))
+        model = np.random.random(cls._model_args_n - 1)
+        height = np.linalg.norm(model[3:6])
+        radius = np.random.random()
+        half_angle = np.arctan(radius / height)
+        return cls(np.append(model * scale, half_angle))
 
     @property
     def canonical(self):
@@ -412,44 +466,54 @@ class Cone(Primitive):
             raise ValueError('A minimun of 6 points are needed to fit a '
                              'cone')
             
-        if normals is not None:
-            
-            normals = np.asarray(normals)
-            if len(normals) != num_points:
-                raise ValueError('Different number of points and normals')
-            
-            # appex is found minimizing distant to tangent planes
-            A = normals.T @ normals
-            B = normals.T @ (points * normals).sum(1)
-            appex =  list(np.linalg.lstsq(A, B, rcond=None)[0] )
-            
-            # axis can be found by doing a plane fitting using the normals
-            # instead of points, see: https://doi.org/10.48550/arXiv.1811.08988
-            # pseudo_plane = Plane.fit(normals).normal
-            
-            # simple fitting does not give good results, though
-            detector = RANSAC_Classic()
-            detector.add(Plane)
-            pseudo_plane = detector.fit(normals)[0]
-            
-            axis = pseudo_plane.normal
-            
-            projection = points.dot(axis)
-            height = max(projection) - min(projection)
-            vector = list(axis * height)
-
-            delta = points - appex
-            norm = np.linalg.norm(delta, axis=1)
-            cossines_half_angle = delta.dot(axis) / norm
-            half_angle = np.arccos(cossines_half_angle.mean())
-            # S = (norm ** 2) * np.sin(2 * cossines_half_angle)
-            # C = (norm ** 2) * np.cos(2 * cossines_half_angle)
-            # half_angle = np.arctan2(sum(S), sum(C)) / 2
-        
-        else:
+        if normals is None:
             raise NotImplementedError('Fitting of cone without normals has not'
                                       'been implemented.')
+            
+        normals = np.asarray(normals)
+        if len(normals) != num_points:
+            raise ValueError('Different number of points and normals')
+        
+        # appex is found minimizing distant to tangent planes
+        A = normals.T @ normals
+        B = normals.T @ (points * normals).sum(1)
+        appex =  list(np.linalg.lstsq(A, B, rcond=None)[0] )
+        
+        # axis can be found by doing a plane fitting using the normals
+        # instead of points, see: https://doi.org/10.48550/arXiv.1811.08988
+        # pseudo_plane = Plane.fit(normals).normal
+        
+        # simple fitting does not give good results, though
+        detector = RANSAC_Classic()
+        detector.add(Plane)
+        pseudo_plane = detector.fit(normals)[0]
+        
+        if pseudo_plane is None:
+            return None
+        
+        axis = pseudo_plane.normal
+        # detector.add(Cylinder)
+        # pseudo_pcd = PointCloud(Vector3dVector(normals))
+        # pseudo_pcd.estimate_normals()
+        # # pseudo_cylinder = Cylinder.fit(pseudo_pcd.points, pseudo_pcd.normals)
+        # pseudo_cylinder = detector.fit(pseudo_pcd.points, pseudo_pcd.normals)[0]
+        # axis = pseudo_cylinder.axis
+        
+        projection = points.dot(axis)
+        # height = max(projection) - min(projection)
+        height = max(projection) - axis.dot(appex)
+        vector = list(axis * height)
 
+        delta = points - appex
+        norm = np.linalg.norm(delta, axis=1)
+        cossines_half_angle = delta.dot(axis) / norm
+        half_angle = np.arccos(cossines_half_angle.mean())
+        # S = (norm ** 2) * np.sin(2 * cossines_half_angle)
+        # C = (norm ** 2) * np.cos(2 * cossines_half_angle)
+        # half_angle = np.arctan2(sum(S), sum(C)) / 2
+        
+        if not (0 <= half_angle < np.pi / 2):
+            return None
         
         # return Cone(center+vector+[radius]) 
         return Cone(appex+vector+[half_angle]) 
