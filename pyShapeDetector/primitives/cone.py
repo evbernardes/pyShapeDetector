@@ -13,6 +13,8 @@ from skspatial.objects.cylinder import Cylinder as skcylinder
 
 from scipy.spatial.transform import Rotation
 
+
+from pyShapeDetector.methods import RANSAC_Classic
 from .primitivebase import Primitive
 from .plane import Plane
     
@@ -32,7 +34,7 @@ class Cone(Primitive):
         Point at the appex of the cone.
     vector : 3 x 1 array
         Vector from appex point to top point.
-    height: float
+    height: floatI'm a farse though, I say taht 
         Height of cone.
     axis : 3 x 1 float
         Unit vector defining axis of cone.
@@ -53,7 +55,7 @@ class Cone(Primitive):
         
     Methods
     ------- 
-    
+    I'm a farse though, I say taht 
     def get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
     
@@ -111,9 +113,45 @@ class Cone(Primitive):
     _model_args_n = 7
     _name = 'cone'
     
-    @property
-    def color(self):
-        return np.array([0.707, 0, 0.707])
+    # @property
+    # def color(self):
+        # return np.array([0.707, 0, 0.707])
+        
+    def __init__(self, model):
+        """
+        Parameters
+        ----------
+        model : list or tuple
+            Parameters defining the shape model            
+                        
+        Raises
+        ------
+        ValueError
+            If number of parameters is incompatible with the model of the 
+            primitive.
+        """
+        Primitive.__init__(self, model)
+
+        if not (0 <= self.half_angle < np.pi/2):
+            raise ValueError('half_angle must be between 0 and pi/2 radians.')
+            
+    @classmethod
+    def random(cls, scale=1):
+        """ Generates a random cone.
+        
+        Parameters
+        ----------
+        scale : float, optional
+            scaling factor for random model values.
+
+        Returns
+        -------
+        Cone
+            Random shape.
+        """
+        model = np.random.random(cls._model_args_n - 1) * scale
+        half_angle = np.random.rand() * (np.pi / 4 - 1E-5)
+        return cls(np.append(model, half_angle))
 
     @property
     def canonical(self):
@@ -121,7 +159,7 @@ class Cone(Primitive):
         if self.vector[-1] >= 0:
             return self
         
-        return Cone(list(self.center) + list(-self.vector) + [self.radius] + [self.half_angle])
+        return Cone(list(self.center) + list(-self.vector) + [self.half_angle])
 
     @property
     def equation(self):
@@ -375,49 +413,38 @@ class Cone(Primitive):
                              'cone')
             
         if normals is not None:
-            # Reference for axis estimation with normals: 
-            # http://dx.doi.org/10.1016/j.cag.2014.09.027
+            
             normals = np.asarray(normals)
             if len(normals) != num_points:
                 raise ValueError('Different number of points and normals')
-        
-            eigval, eigvec = np.linalg.eig(normals.T @ normals)
-            idx = eigval == min(eigval)
-            if sum(idx) != 1:  # no well defined minimum eigenvalue
-                return None
             
-            axis = eigvec.T[idx][0]
+            # appex is found minimizing distant to tangent planes
+            A = normals.T @ normals
+            B = normals.T @ (points * normals).sum(1)
+            appex =  list(np.linalg.lstsq(A, B, rcond=None)[0] )
             
-            # Reference for the rest:
-            # Was revealed to me in a dream, again
-            axis_neg_squared_skew = np.eye(3) - axis[np.newaxis].T * axis
-            points_skew = (axis_neg_squared_skew @ points.T).T
-            b = sum(points_skew.T * points_skew.T)
-            a = np.c_[2 * points_skew, 
-                      np.ones(num_points),
-                      sum(points.T * points.T),
-                      points]
+            # axis can be found by doing a plane fitting using the normals
+            # instead of points, see: https://doi.org/10.48550/arXiv.1811.08988
+            # pseudo_plane = Plane.fit(normals).normal
             
-            X = np.linalg.lstsq(a, b, rcond=None)[0]
+            # simple fitting does not give good results, though
+            detector = RANSAC_Classic()
+            detector.add(Plane)
+            pseudo_plane = detector.fit(normals)[0]
             
-            point = X[:3]
-            half_angle = np.arcsin( np.sqrt(X[5]) )
-            # radius = np.sqrt(X[3] + point.dot(axis_neg_squared_skew @ point))
+            axis = pseudo_plane.normal
             
-            # find point in base of cylinder
-            proj = points.dot(axis)
-            idx = np.where(proj == max(proj))[0][0]
-            
-            
-            # point = list(point)
-            height = max(proj) - min(proj)
-            vector = axis * height
-            center = -np.cross(axis, np.cross(axis, point)) + np.median(proj) * axis     
-            appex = center - vector / 2
-            
-            appex = list(appex)
-            # center = list(center)
-            vector = list(vector)
+            projection = points.dot(axis)
+            height = max(projection) - min(projection)
+            vector = list(axis * height)
+
+            delta = points - appex
+            norm = np.linalg.norm(delta, axis=1)
+            cossines_half_angle = delta.dot(axis) / norm
+            half_angle = np.arccos(cossines_half_angle.mean())
+            # S = (norm ** 2) * np.sin(2 * cossines_half_angle)
+            # C = (norm ** 2) * np.cos(2 * cossines_half_angle)
+            # half_angle = np.arctan2(sum(S), sum(C)) / 2
         
         else:
             raise NotImplementedError('Fitting of cone without normals has not'
