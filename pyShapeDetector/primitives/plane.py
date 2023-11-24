@@ -486,6 +486,9 @@ class PlaneBounded(Plane):
         
     fit(points, normals=None):
         Gives plane that fits the input points.
+        
+    create_box(center=[0,0,0], dimensions=[1, 1, 1]):
+        Gives list of planes that create, together, a closed box.
     
     """
     
@@ -658,6 +661,23 @@ class PlaneBounded(Plane):
   
     @staticmethod  
     def create_box(center=[0,0,0], dimensions=[1, 1, 1]):
+        """ Gives list of planes that create, together, a closed box.
+        
+        Reference:
+            https://www.ilikebigbits.com/2015_03_04_plane_from_points.html
+        
+        Parameters
+        ----------
+        center : array
+            Center point of box
+        dimensions : array
+            Dimensions of box
+        
+        Returns
+        -------
+        box : list
+            List of planes.
+        """
         
         vectors = np.eye(3) * np.array(dimensions) / 2
         center = np.array(center)
