@@ -9,6 +9,8 @@ from abc import ABC, abstractmethod
 import numpy as np
 from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
+
+from scipy.spatial.transform import Rotation
     
 class Primitive(ABC):
     """
@@ -280,12 +282,18 @@ class Primitive(ABC):
         rotation
             3x3 rotation matrix
         """
-        axis_origin = np.array(axis_origin)
-        if axis.dot(axis_origin) == 0:
-            axis = -axis
-        halfway_axis = (axis_origin + axis)[..., np.newaxis]
-        halfway_axis /= np.linalg.norm(halfway_axis)
-        return 2 * halfway_axis * halfway_axis.T - np.eye(3)
+        axis = np.array(axis) / np.linalg.norm(axis)
+        axis_origin = np.array(axis_origin) / np.linalg.norm(axis_origin)
+        if abs(axis.dot(axis_origin) + 1) > 1E-6:
+            # axis_origin = -axis_origin
+            halfway_axis = (axis_origin + axis)[..., np.newaxis]
+            halfway_axis /= np.linalg.norm(halfway_axis)
+            return 2 * halfway_axis * halfway_axis.T - np.eye(3)
+        else:
+            orthogonal_axis = np.cross(np.random.random(3), axis)
+            orthogonal_axis /= np.linalg.norm(orthogonal_axis)
+            return Rotation.from_quat(list(orthogonal_axis)+[0]).as_matrix()
+            
     
     def flatten_pcd(self, pcd):
         """ Return new pointcloud with flattened points.
