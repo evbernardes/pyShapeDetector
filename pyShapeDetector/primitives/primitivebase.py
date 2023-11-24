@@ -55,7 +55,7 @@ class Primitive(ABC):
         
     Methods
     -------    
-    def get_signed_distances(points):
+    get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
     
     get_distances(points)

@@ -128,7 +128,7 @@ class Cylinder(Primitive):
         vector : 3 x 1 array
             Vector from base center point to top center point.
         radius : float
-            Radius of the cone.
+            Radius of the cylinder.
 
         Returns
         -------
@@ -149,7 +149,7 @@ class Cylinder(Primitive):
         top : 3 x 1 array
             Center point at the top of the cylinder.
         radius : float
-            Radius of the cone.
+            Radius of the cylinder.
 
         Returns
         -------
@@ -416,9 +416,9 @@ class Cylinder(Primitive):
         center = -np.cross(axis, np.cross(axis, point)) + np.median(proj) * axis     
         base = center - vector / 2
         
-        base = list(base)
+        # base = list(base)
         # center = list(center)
-        vector = list(vector)
+        # vector = list(vector)
         
         # return Cylinder(center+vector+[radius])
         return Cylinder.from_base_vector_radius(base, vector, radius)

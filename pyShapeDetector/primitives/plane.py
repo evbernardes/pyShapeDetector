@@ -43,11 +43,17 @@ class Plane(Primitive):
     
     Methods
     ------- 
+    from_normal_dist(normal, dist):
+        Creates plane from normal vector and distance to origin.
+    
+    from_normal_point(normal, point):
+        Creates plane from normal vector and point in plane.
+        
     get_plane_bounded(points):
         Gives bounded version of plane, using input points to define 
         border.
     
-    def get_signed_distances(points):
+    get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
     
     get_distances(points)
@@ -100,6 +106,42 @@ class Plane(Primitive):
     _fit_n_min = 3
     _model_args_n = 4
     _name = 'plane'
+    
+    @classmethod
+    def from_normal_dist(cls, normal, dist):
+        """ Creates plane from normal vector and distance to origin.
+        
+        Parameters
+        ----------            
+        normal : 3 x 1 array
+            Normal vector defining plane.
+        radius : float
+            Distance to origin.
+
+        Returns
+        -------
+        Cone
+            Generated shape.
+        """
+        return cls(list(normal)+[dist])
+    
+    @classmethod
+    def from_normal_point(cls, normal, point):
+        """ Creates plane from normal vector and point in plane.
+        
+        Parameters
+        ----------            
+        normal : 3 x 1 array
+            Normal vector defining plane.
+        point : 3 x 1 array
+            Point in plane.
+
+        Returns Creates plane from normal vector and point in plane.
+        -------
+        Cone
+            Generated shape.
+        """
+        return cls.from_normal_dist(normal, -np.dot(normal, point))
     
     @property
     def color(self):
@@ -368,9 +410,8 @@ class Plane(Primitive):
         norm = np.linalg.norm(abc)
         if norm == 0.0:
             return None
-        
-        abc = abc / norm
-        return Plane([abc[0], abc[1], abc[2], -abc.dot(centroid)]) 
+
+        return Plane.from_normal_point(abc / norm, centroid)
         
     
 class PlaneBounded(Plane):

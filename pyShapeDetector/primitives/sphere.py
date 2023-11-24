@@ -38,7 +38,10 @@ class Sphere(Primitive):
     Methods
     -------
     
-    def get_signed_distances(points):
+    from_center_radius(center, radius):
+        Creates sphere from center and radius as separated arguments.
+    
+    get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
     
     get_distances(points)
@@ -82,6 +85,24 @@ class Sphere(Primitive):
     _fit_n_min = 4
     _model_args_n = 4
     _name = 'sphere'
+    
+    @classmethod
+    def from_center_radius(cls, center, radius):
+        """ Creates sphere from center and radius as separated arguments.
+        
+        Parameters
+        ----------            
+        center : 3 x 1 array
+            Center point.
+        radius : float
+            Radius of the sphere.
+
+        Returns
+        -------
+        Cone
+            Generated shape.
+        """
+        return cls(list(center)+[radius])
     
     @property
     def color(self):
