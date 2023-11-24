@@ -61,7 +61,7 @@ class RANSAC_Base(ABC):
         Fits shape, then test if its model parameters respect input
         max and min values. If it does, return shape, otherwise, return None.
         
-    get_samples(points):
+    get_samples(points), num_samples:
         Sample points and return indices of sampled points.
 
     get_inliers(distances, angles, distances, angles):
@@ -369,7 +369,7 @@ class RANSAC_Base(ABC):
                 
         return shape
 
-    def get_samples(self, points):
+    def get_samples(self, points, num_samples):
         """ Sample points and return indices of sampled points.
 
         If the method's `max_point_distance` attribute is set, then only
@@ -380,6 +380,8 @@ class RANSAC_Base(ABC):
         ----------
         points : N x 3 array
             All input points
+        num_samples : int
+            Number of samples
         
         Returns
         -------
@@ -387,7 +389,6 @@ class RANSAC_Base(ABC):
             Indices of samples
         """
         num_points = len(points)
-        num_samples = self._ransac_n
         if self._opt.max_point_distance is None:
             samples = random.sample(range(num_points), num_samples)
 
@@ -560,7 +561,7 @@ class RANSAC_Base(ABC):
                  'get_model': 0}
         
         if debug:
-            print(f'Starting loop, fitting {[p.name for p in self.primitives]}')
+            print(f'Starting loop, fitting {[p._name for p in self.primitives]}')
         
         for itr in range(self._opt.num_iterations):
             if (iteration_count > metrics_best['break_iteration']):
@@ -568,7 +569,7 @@ class RANSAC_Base(ABC):
 
             start_itr = time.time()
 
-            samples = self.get_samples(points)
+            samples = self.get_samples(points, self._ransac_n)
             if samples is None:
                 continue
 

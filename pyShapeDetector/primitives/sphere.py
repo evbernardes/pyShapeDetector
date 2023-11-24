@@ -152,7 +152,7 @@ class Sphere(Primitive):
         normals = dist_vec / np.linalg.norm(dist_vec, axis=1)[..., np.newaxis]
         return normals
 
-    def get_mesh(self):
+    def get_mesh(self, resolution=1000):
         """ Returns mesh defined by the sphere model.      
         
         Returns
@@ -160,7 +160,7 @@ class Sphere(Primitive):
         TriangleMesh
             Mesh corresponding to the plane.
         """
-        mesh = TriangleMesh.create_sphere(radius=self.model[3], resolution=1000)
+        mesh = TriangleMesh.create_sphere(radius=self.model[3], resolution=resolution)
         mesh.translate(self.model[:3])
         return mesh
    

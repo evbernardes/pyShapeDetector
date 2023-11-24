@@ -13,8 +13,9 @@ from numpy.testing import assert_allclose
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
 
-from pyShapeDetector.primitives import Plane, PlaneBounded, Sphere, Cylinder
-primitives = [Plane, PlaneBounded, Sphere, Cylinder]
+from pyShapeDetector.primitives import Plane, Sphere, Cylinder, Cone
+from pyShapeDetector.primitives import PlaneBounded
+primitives_simple = [Plane, Sphere, Cylinder, Cone]
 
 def rmse(x):
     """ Helper for root mean square error. """
@@ -22,7 +23,7 @@ def rmse(x):
 
 def get_shape_and_pcd(primitive, num_points, canonical=False):
     
-    if primitive.name == 'bounded plane':
+    if primitive._name == 'bounded plane':
         shape = Plane(np.random.rand(4)).get_square_plane(np.random.rand())
     else:
         model = np.random.rand(primitive._model_args_n)
@@ -36,7 +37,7 @@ def get_shape_and_pcd(primitive, num_points, canonical=False):
 
 
 def test_primitive_init():
-    for primitive in primitives:
+    for primitive in primitives_simple:
         model = np.random.rand(primitive._model_args_n)
         if primitive.name == 'bounded plane':
             with pytest.warns(UserWarning, match='returning square plane'):
@@ -67,23 +68,27 @@ def test_plane_surface_area_and_volume():
 
 
 def test_fit():
-    for primitive in primitives:
+    for primitive in primitives_simple:
+        # if primitive == Cone:
+            # pass
         for i in range(5):
             shape, pcd = get_shape_and_pcd(primitive, 10000, canonical=True)
+            assert shape is not None
             shape_fit = primitive.fit(pcd.points, normals=pcd.normals).canonical
             assert_allclose(shape.model, shape_fit.model, rtol=1e-2, atol=1e-2)
 
 
 def test_distances():
-    for primitive in primitives:
+    for primitive in primitives_simple:
         for i in range(5):
             shape, pcd = get_shape_and_pcd(primitive, 100, canonical=False)
+            assert shape is not None
             distances = shape.get_distances(pcd.points)
             assert_allclose(rmse(distances), 0, atol=1e-3)
 
 
 def test_distances_flatten():
-    for primitive in primitives:
+    for primitive in primitives_simple:
         for i in range(5):
             shape, _ = get_shape_and_pcd(primitive, 100, canonical=False)
             points = np.random.rand(100, 3)

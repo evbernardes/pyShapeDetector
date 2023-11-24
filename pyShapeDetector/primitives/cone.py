@@ -56,14 +56,14 @@ class Cone(Primitive):
         
     Methods
     ------- 
-    def from_appex_vector_radius(appex, vector, radius)
+    from_appex_vector_radius(appex, vector, radius)
         Creates cone from appex, vector and radius as separated arguments.
     
-    def from_appex_vector_half_angle(appex, vector, half_angle)
+    from_appex_vector_half_angle(appex, vector, half_angle)
         Creates cone from appex, vector and half_angle as 
         separated arguments.
         
-    def get_signed_distances(points):
+    get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
     
     get_distances(points)
