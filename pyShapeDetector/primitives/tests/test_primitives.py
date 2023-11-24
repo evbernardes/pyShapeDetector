@@ -69,11 +69,8 @@ def test_plane_surface_area_and_volume():
 
 def test_fit():
     for primitive in primitives_simple:
-        # if primitive == Cone:
-            # pass
         for i in range(5):
             shape, pcd = get_shape_and_pcd(primitive, 10000, canonical=True)
-            assert shape is not None
             shape_fit = primitive.fit(pcd.points, normals=pcd.normals).canonical
             assert_allclose(shape.model, shape_fit.model, rtol=1e-2, atol=1e-2)
 
@@ -82,7 +79,6 @@ def test_distances():
     for primitive in primitives_simple:
         for i in range(5):
             shape, pcd = get_shape_and_pcd(primitive, 100, canonical=False)
-            assert shape is not None
             distances = shape.get_distances(pcd.points)
             assert_allclose(rmse(distances), 0, atol=1e-3)
 
