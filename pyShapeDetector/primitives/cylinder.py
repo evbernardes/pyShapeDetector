@@ -49,6 +49,14 @@ class Cylinder(Primitive):
     Methods
     ------- 
     
+    from_base_vector_radius(base, vector, radius):
+        Creates cylinder from center base point, vector and radius as 
+        separated arguments.
+    
+    from_base_top_radius(base, top, radius)
+        Creates cylinder from center base point, center top point and 
+        radius as separated arguments.
+    
     get_surface_area():
         Gives the surface area of model. 
         
@@ -107,6 +115,49 @@ class Cylinder(Primitive):
     _fit_n_min = 6
     _model_args_n = 7
     _name = 'cylinder'
+    
+    @classmethod
+    def from_base_vector_radius(cls, base, vector, radius):
+        """ Creates cylinder from center base point, vector and radius as 
+        separated arguments.
+        
+        Parameters
+        ----------            
+        base : 3 x 1 array
+            Center point at the base of the cylinder.
+        vector : 3 x 1 array
+            Vector from base center point to top center point.
+        radius : float
+            Radius of the cone.
+
+        Returns
+        -------
+        Cone
+            Generated shape.
+        """
+        return cls(list(base)+list(vector)+[radius])
+        
+    @classmethod
+    def from_base_top_radius(cls, base, top, radius):
+        """ Creates cylinder from center base point, center top point and 
+        radius as separated arguments.
+        
+        Parameters
+        ----------            
+        base : 3 x 1 array
+            Center point at the base of the cylinder.
+        top : 3 x 1 array
+            Center point at the top of the cylinder.
+        radius : float
+            Radius of the cone.
+
+        Returns
+        -------
+        Cone
+            Generated shape.
+        """
+        vector = np.array(top) - np.array(base)
+        return cls.from_base_vector_radius(base, vector, radius)
     
     @property
     def color(self):
@@ -318,56 +369,56 @@ class Cylinder(Primitive):
             raise ValueError('A minimun of 6 points are needed to fit a '
                              'cylinder')
             
-        if normals is not None:
-            # Reference for axis estimation with normals: 
-            # http://dx.doi.org/10.1016/j.cag.2014.09.027
-            normals = np.asarray(normals)
-            if len(normals) != num_points:
-                raise ValueError('Different number of points and normals')
+        if normals is None:
+            raise NotImplementedError('Fitting of cylinder without normals '
+                                      'has not been implemented.')
+            # # if no normals, use scikit spatial, slower
+            # warnings.warn('Cylinder fitting works much quicker if normals '
+            #               'are given.')
+            # solution = skcylinder.best_fit(points)
+            
+            # base = list(solution.point)
+            # # center = list(solution.point + solution.vector/2)
+            # vector = list(solution.vector)
+            # radius = solution.radius
+            
+        # Reference for axis estimation with normals: 
+        # http://dx.doi.org/10.1016/j.cag.2014.09.027
+        normals = np.asarray(normals)
+        if len(normals) != num_points:
+            raise ValueError('Different number of points and normals')
+    
+        eigval, eigvec = np.linalg.eig(normals.T @ normals)
+        idx = eigval == min(eigval)
+        if sum(idx) != 1:  # no well defined minimum eigenvalue
+            return None
         
-            eigval, eigvec = np.linalg.eig(normals.T @ normals)
-            idx = eigval == min(eigval)
-            if sum(idx) != 1:  # no well defined minimum eigenvalue
-                return None
-            
-            axis = eigvec.T[idx][0]
-            
-            # Reference for the rest:
-            # Was revealed to me in a dream
-            axis_neg_squared_skew = np.eye(3) - axis[np.newaxis].T * axis
-            points_skew = (axis_neg_squared_skew @ points.T).T
-            b = sum(points_skew.T * points_skew.T)
-            a = np.c_[2 * points_skew, np.ones(num_points)]
-            X = np.linalg.lstsq(a, b, rcond=None)[0]
-            
-            point = X[:3]
-            radius = np.sqrt(X[3] + point.dot(axis_neg_squared_skew @ point))
-            
-            # find point in base of cylinder
-            proj = points.dot(axis)
-            idx = np.where(proj == max(proj))[0][0]
-            
-            
-            # point = list(point)
-            height = max(proj) - min(proj)
-            vector = axis * height
-            center = -np.cross(axis, np.cross(axis, point)) + np.median(proj) * axis     
-            base = center - vector / 2
-            
-            base = list(base)
-            # center = list(center)
-            vector = list(vector)
+        axis = eigvec.T[idx][0]
         
-        else:
-            # if no normals, use scikit spatial, slower
-            warnings.warn('Cylinder fitting works much quicker if normals '
-                          'are given.')
-            solution = skcylinder.best_fit(points)
-            
-            base = list(solution.point)
-            # center = list(solution.point + solution.vector/2)
-            vector = list(solution.vector)
-            radius = solution.radius
+        # Reference for the rest:
+        # Was revealed to me in a dream
+        axis_neg_squared_skew = np.eye(3) - axis[np.newaxis].T * axis
+        points_skew = (axis_neg_squared_skew @ points.T).T
+        b = sum(points_skew.T * points_skew.T)
+        a = np.c_[2 * points_skew, np.ones(num_points)]
+        X = np.linalg.lstsq(a, b, rcond=None)[0]
         
-        # return Cylinder(center+vector+[radius]) 
-        return Cylinder(base+vector+[radius]) 
+        point = X[:3]
+        radius = np.sqrt(X[3] + point.dot(axis_neg_squared_skew @ point))
+        
+        # find point in base of cylinder
+        proj = points.dot(axis)
+        idx = np.where(proj == max(proj))[0][0]
+        
+        # point = list(point)
+        height = max(proj) - min(proj)
+        vector = axis * height
+        center = -np.cross(axis, np.cross(axis, point)) + np.median(proj) * axis     
+        base = center - vector / 2
+        
+        base = list(base)
+        # center = list(center)
+        vector = list(vector)
+        
+        # return Cylinder(center+vector+[radius])
+        return Cylinder.from_base_vector_radius(base, vector, radius)
