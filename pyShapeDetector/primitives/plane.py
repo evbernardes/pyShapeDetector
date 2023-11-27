@@ -581,7 +581,6 @@ class PlaneBounded(Plane):
         if flatten:
             points = plane.flatten_points(points)
         if np.any(np.isnan(points)):
-        -------
             raise ValueError('NaN found in points')
         # points_flat = self.flatten_points(points)
         rot = plane.get_rotation_from_axis([0, 0, 1], plane.normal)
