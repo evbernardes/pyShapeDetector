@@ -323,24 +323,23 @@ class Cone(Primitive):
             normalized(np.cross(self.axis, delta)) * self.half_angle)
         return rot.apply(self.axis)
     
-    def get_orthogonal_component(self, points):
-        """ Removes the axis-aligned components of points.
+    # def get_orthogonal_component(self, points):
+    #     """ Removes the axis-aligned components of points.
         
-        Parameters
-        ----------
-        points : N x 3 array
-            N input points 
+    #     Parameters
+    #     ----------
+    #     points : N x 3 array
+    #         N input points 
         
-        Returns
-        -------
-        points_orthogonal: N x 3 array
-            N points
-        """
-        points = np.asarray(points)
-        delta = points - self.appex
-        closest_axes = self.get_closest_axes(points)
+    #     Returns
+    #     -------
+    #     points_orthogonal: N x 3 array
+    #         N points
+    #     """
+
         
-        return -np.cross(closest_axes, np.cross(closest_axes, delta))
+
+    #     return normals
     
     def get_point_angle(self, points):
         delta = points - self.appex
@@ -388,7 +387,19 @@ class Cone(Primitive):
         normals
             Nx3 array containing normal vectors.
         """
-        normals = self.get_orthogonal_component(points)
+        points = np.asarray(points)
+        delta_norm = np.linalg.norm(points - self.appex, axis=1)
+        closest_axes = self.get_closest_axes(points)
+        alpha = self.get_point_angle(points)
+        half_angle = self.half_angle
+        
+        dist_axis = delta_norm * np.cos(alpha - half_angle) / np.cos(half_angle)
+        p = self.appex + self.axis * dist_axis[None].T
+        
+        
+        normals = points - p
+        # coef = np.cos(alpha - self.half_angle) * np.linalg.norm(delta, axis=1)
+        # normals = delta - closest_axes * coef[None].T
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
     
@@ -407,6 +418,7 @@ class Cone(Primitive):
         """
         
         mesh = TriangleMesh.create_cone(
+            # radius=self.radius, height=self.height, resolution=100, split=100)
             radius=self.radius, height=self.height, resolution=100, split=100)
         mesh.vertices = Vector3dVector(-np.asarray(mesh.vertices))
         # mesh.translate(-mesh.get_center())
