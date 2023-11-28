@@ -522,22 +522,23 @@ class Cone(Primitive):
         # appex is found minimizing distant to tangent planes
         A = normals.T @ normals
         B = normals.T @ (points * normals).sum(1)
-        appex =  list(np.linalg.lstsq(A, B, rcond=None)[0] )
+        appex =  np.linalg.lstsq(A, B, rcond=None)[0]
+        delta = points - appex
         
         # axis can be found by doing a plane fitting using the normals
         # instead of points, see: https://doi.org/10.48550/arXiv.1811.08988
         # pseudo_plane = Plane.fit(normals).normal
         
         # simple fitting does not give good results, though
-        detector = RANSAC_Classic()
-        detector.add(Plane)
-        pseudo_plane = detector.fit(normals)[0]
+        # detector = RANSAC_Classic()
+        # detector.add(Plane)
+        # pseudo_plane = detector.fit(normals)[0]
         
-        if pseudo_plane is None:
+        # if pseudo_plane is None:
             # print('a')
-            return None
+            # return None
         
-        axis = pseudo_plane.normal
+        # axis = -pseudo_plane.normal
         # detector.add(Cylinder)
         # pseudo_pcd = PointCloud(Vector3dVector(normals))
         # pseudo_pcd.estimate_normals()
@@ -545,12 +546,13 @@ class Cone(Primitive):
         # pseudo_cylinder = detector.fit(pseudo_pcd.points, pseudo_pcd.normals)[0]
         # axis = pseudo_cylinder.axis
         
+        axis = -np.linalg.svd(delta)[-1][0]
+        
         projection = points.dot(axis)
         # height = max(projection) - min(projection)
         height = max(projection) - axis.dot(appex)
         vector = axis * height
-
-        delta = points - appex
+        
         norm = np.linalg.norm(delta, axis=1)
         cossines_half_angle = delta.dot(axis) / norm
         half_angle = np.arccos(cossines_half_angle.mean())
