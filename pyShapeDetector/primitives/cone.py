@@ -35,7 +35,7 @@ class Cone(Primitive):
         Point at the appex of the cone.
     vector : 3 x 1 array
         Vector from appex point to top point.
-    height: floatI'm a farse though, I say taht 
+    height: float 
         Height of cone.
     axis : 3 x 1 float
         Unit vector defining axis of cone.
@@ -143,6 +143,29 @@ class Cone(Primitive):
             raise ValueError('half_angle must be between 0 and pi/2 radians.')
             
     @classmethod
+    def from_appex_top_radius(cls, appex, top, radius):
+        """ Creates cone from appex, vector and radius as separated arguments.
+        
+        Parameters
+        ----------            
+        appex : 3 x 1 array
+            Point at the appex of the cone.
+        top : 3 x 1 array
+            Point at top of cone.
+        radius : float
+            Radius of the cone.
+
+        Returns
+        -------
+        Cone
+            Generated shape.
+        """
+        if radius <= 0:
+            raise ValueError('radius must be positive real value.')
+        vector = np.array(top) - appex
+        return cls.from_appex_vector_radius(appex, vector, radius)
+    
+    @classmethod
     def from_appex_vector_radius(cls, appex, vector, radius):
         """ Creates cone from appex, vector and radius as separated arguments.
         
@@ -162,8 +185,8 @@ class Cone(Primitive):
         """
         if radius <= 0:
             raise ValueError('radius must be positive real value.')
-        height = np.linalg.norm(vector)
-        return cls(list(appex)+list(vector)+[np.arctan(radius/height)])
+        half_angle = np.arctan(radius / np.linalg.norm(vector))
+        return cls.from_appex_vector_half_angle(appex, vector, half_angle)
     
     @classmethod
     def from_appex_vector_half_angle(cls, appex, vector, half_angle):
@@ -317,11 +340,16 @@ class Cone(Primitive):
         points = np.asarray(points)
         delta = points - self.appex
         
-        normalized = lambda x: x / np.linalg.norm(x)
+        # normalized = lambda x: x / np.linalg.norm(x)
         
-        rot = Rotation.from_rotvec(
-            normalized(np.cross(self.axis, delta)) * self.half_angle)
-        return rot.apply(self.axis)
+        # rot = Rotation.from_rotvec(
+        #     normalized(np.cross(self.axis, delta)) * self.half_angle)
+        # return rot.apply(self.axis)
+        
+        axis_other = -np.cross(self.axis, np.cross(self.axis, delta))
+        axis_other /= np.linalg.norm(axis_other, axis=1)[None].T
+        C, S = np.cos(self.half_angle), np.sin(self.half_angle)
+        return C * self.axis + S * axis_other
     
     # def get_orthogonal_component(self, points):
     #     """ Removes the axis-aligned components of points.
@@ -359,17 +387,7 @@ class Cone(Primitive):
         distances
             Nx1 array distances.
         """
-        # cone_normals = self.get_normals(points)
-        # # return cone_normals.dot(points - self.appex)
-        # # return np.sum(cone_normals * (points - self.appex), axis=1)
-        # delta = points - self.appex
-        # # return np.linalg.norm(np.cross(cone_normals, delta))
-        # return sum(cone_normals.T * delta.T)
         delta = points - self.appex
-        # axis = self.axis
-        # return np.linalg.norm(delta - self.axis * delta.dot(self.axis)[None].T, axis=1)
-        # axis = self.get_closest_axes(points)
-        # return np.linalg.norm(delta - axis * sum(delta.T * axis.T)[None].T, axis=1)
         alpha = self.get_point_angle(points)
         return np.sin(alpha - self.half_angle) * np.linalg.norm(delta, axis=1)
     
@@ -389,19 +407,38 @@ class Cone(Primitive):
         """
         points = np.asarray(points)
         delta_norm = np.linalg.norm(points - self.appex, axis=1)
-        closest_axes = self.get_closest_axes(points)
+        # closest_axes = self.get_closest_axes(points)
         alpha = self.get_point_angle(points)
         half_angle = self.half_angle
         
         dist_axis = delta_norm * np.cos(alpha - half_angle) / np.cos(half_angle)
         p = self.appex + self.axis * dist_axis[None].T
         
-        
         normals = points - p
         # coef = np.cos(alpha - self.half_angle) * np.linalg.norm(delta, axis=1)
         # normals = delta - closest_axes * coef[None].T
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
+    
+    def flatten_points(self, points):
+        """ Stick each point in input to the closest point in shape's surface.
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points
+        
+        Returns
+        -------
+        points_flattened : N x 3 array
+            N points on the surface
+            
+        """
+        points_flattened = Primitive.flatten_points(self, points)
+        # delta = points_flattened - self.appex
+        # projection = (points_flattened - self.appex).dot(self.axis)
+        # points_flattened[projection < 0] = self.appex
+        return points_flattened
     
     def get_mesh(self, closed=False):
         """ Returns mesh defined by the cylinder model.
@@ -501,6 +538,7 @@ class Cone(Primitive):
         pseudo_plane = detector.fit(normals)[0]
         
         if pseudo_plane is None:
+            # print('a')
             return None
         
         axis = pseudo_plane.normal
@@ -514,7 +552,7 @@ class Cone(Primitive):
         projection = points.dot(axis)
         # height = max(projection) - min(projection)
         height = max(projection) - axis.dot(appex)
-        vector = list(axis * height)
+        vector = axis * height
 
         delta = points - appex
         norm = np.linalg.norm(delta, axis=1)
@@ -525,7 +563,11 @@ class Cone(Primitive):
         # half_angle = np.arctan2(sum(S), sum(C)) / 2
         
         if not (0 <= half_angle < np.pi / 2):
-            return None
+            half_angle = np.pi - half_angle
+            vector = -vector
+            # print(half_angle * 180 / np.pi)
+            # return None
         
         # return Cone(center+vector+[radius]) 
-        return Cone(appex+vector+[half_angle]) 
+        # return Cone(appex+vector+[half_angle]) 
+        return Cone.from_appex_vector_half_angle(appex, vector, half_angle)

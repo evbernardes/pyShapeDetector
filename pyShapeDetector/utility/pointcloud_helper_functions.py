@@ -39,6 +39,7 @@ def read_point_cloud(filepath):
             pcds.append(pcd)
         if len(pcds) == 1:
             pcds = pcds[0]
+        f.close()
 
     else:
         pcds = o3d.io.read_point_cloud(filename)

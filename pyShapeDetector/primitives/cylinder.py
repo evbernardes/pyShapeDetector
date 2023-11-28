@@ -169,7 +169,7 @@ class Cylinder(Primitive):
         if self.vector[-1] >= 0:
             return self
         
-        return Cylinder(list(self.center) + list(-self.vector) + [self.radius])
+        return Cylinder(list(self.base) + list(-self.vector) + [self.radius])
 
     @property
     def equation(self):
@@ -196,6 +196,12 @@ class Cylinder(Primitive):
     def center(self):
         """ Center point of the cylinder."""
         return self.base + self.vector / 2
+        # return np.array(self.model[:3])
+        
+    @property
+    def center_projection(self):
+        """ Center point of the cylinder."""
+        return self.center - self.axis.dot(self.center)
         # return np.array(self.model[:3])
     
     @property
@@ -320,7 +326,8 @@ class Cylinder(Primitive):
         """
         
         mesh = TriangleMesh.create_cylinder(
-            radius=self.radius, height=self.height, resolution=100, split=100)
+            radius=self.radius, height=self.height)
+            # radius=self.radius, height=self.height, resolution=100, split=100)
         
         # first and second points are the central points defining top / base
         triangles = np.asarray(mesh.triangles)
