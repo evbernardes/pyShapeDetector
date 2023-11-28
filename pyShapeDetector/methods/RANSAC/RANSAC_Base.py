@@ -325,7 +325,8 @@ class RANSAC_Base(ABC):
         """
         if num_points is None or num_inliers is None or distances is None:
             metrics = {'num_inliers': 0, 'fitness': 0, 
-                    'rmse_distances': 0, 'rmse_angles': 0, 'weight': 0}
+                    'rmse_distances': 0, 'rmse_angles': 0, 
+                    'weight': 0, 'weight_ratio': 0}
             
         else:
             rmse_distances = np.sqrt(distances.dot(distances)) / len(distances)
@@ -337,7 +338,8 @@ class RANSAC_Base(ABC):
                        'fitness': num_inliers / num_points,
                        'rmse_distances': rmse_distances,
                        'rmse_angles': rmse_angles,
-                       'weight': self.get_total_weight(distances, angles)}
+                       'weight': (w:= self.get_total_weight(distances, angles)),
+                       'weight_ratio': w / num_inliers}
             
         metrics['break_iteration'] = self.termination_criterion(metrics)
         return metrics
