@@ -340,34 +340,16 @@ class Cone(Primitive):
         points = np.asarray(points)
         delta = points - self.appex
         
-        # normalized = lambda x: x / np.linalg.norm(x)
-        
-        # rot = Rotation.from_rotvec(
-        #     normalized(np.cross(self.axis, delta)) * self.half_angle)
-        # return rot.apply(self.axis)
-        
         axis_other = -np.cross(self.axis, np.cross(self.axis, delta))
         axis_other /= np.linalg.norm(axis_other, axis=1)[None].T
         C, S = np.cos(self.half_angle), np.sin(self.half_angle)
         return C * self.axis + S * axis_other
     
-    # def get_orthogonal_component(self, points):
-    #     """ Removes the axis-aligned components of points.
-        
-    #     Parameters
-    #     ----------
-    #     points : N x 3 array
-    #         N input points 
-        
-    #     Returns
-    #     -------
-    #     points_orthogonal: N x 3 array
-    #         N points
-    #     """
-
-        
-
-    #     return normals
+    def get_angle_diff(self, points):
+        alpha = self.get_point_angle(points)
+        # the clipping prevents distances to be calculated from the closets
+        # point in the symmetric inverted cone
+        return np.clip(alpha - self.half_angle, 0, np.pi/2)
     
     def get_point_angle(self, points):
         delta = points - self.appex
@@ -393,9 +375,8 @@ class Cone(Primitive):
             Nx1 array distances.
         """
         delta = points - self.appex
-        alpha = self.get_point_angle(points)
-        alpha_diff = np.clip(alpha - self.half_angle, 0, np.pi/2)
-        return np.sin(alpha_diff) * np.linalg.norm(delta, axis=1)
+        angle_diff = self.get_angle_diff(points)
+        return np.sin(angle_diff) * np.linalg.norm(delta, axis=1)
     
     def get_normals(self, points):
         """ Gives, for each input point, the normal vector of the point closest 
@@ -413,14 +394,13 @@ class Cone(Primitive):
         """
         points = np.asarray(points)
         delta_norm = np.linalg.norm(points - self.appex, axis=1)
-        # closest_axes = self.get_closest_axes(points)
         alpha = self.get_point_angle(points)
-        # half_angle = self.half_angle
         
-        alpha_diff = np.clip(alpha - self.half_angle, 0, np.pi/2)
-        dist_axis = delta_norm * np.cos(alpha_diff) / np.cos(self.half_angle)
+        angle_diff = self.get_angle_diff(points)
+        dist_axis = delta_norm * np.cos(angle_diff) / np.cos(self.half_angle)
         p = self.appex + self.axis * dist_axis[None].T
         
+        # preventing numerical problems when point is in the axis
         eps = 1E-8
         unsafe1 = abs(alpha) < eps
         unsafe2 = abs(alpha - np.pi) < eps
