@@ -652,6 +652,6 @@ class RANSAC_Base(ABC):
             print(f'RMSE for distances: {metrics_final["rmse_distances"]}')
             print(f'RMSE for angles: {metrics_final["rmse_angles"]}\n')
             
-        shape_best.inlier_points = points[inliers_final]
+        # shape_best.inlier_points = points[inliers_final]
 
         return shape_best, inliers_final, metrics_final

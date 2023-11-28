@@ -121,7 +121,7 @@ class Primitive(ABC):
     @inlier_points.setter
     def inlier_points(self, points):
         points = np.asarray(points)
-        if points.shape == (3,):
+        if points.shape == (3, ):
             points = np.reshape(points, (1,3))
         elif points.shape[1] != 3:
             raise ValueError('Invalid shape for input points, must be a single'
