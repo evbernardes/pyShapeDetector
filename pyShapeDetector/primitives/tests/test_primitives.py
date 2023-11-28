@@ -77,6 +77,15 @@ def test_fit():
         assert_allclose(shape.vector, shape_fit.vector, rtol=1e-2, atol=1e-2)
         assert_allclose(shape.radius, shape_fit.radius, rtol=1e-2, atol=1e-2)
 
+    # # testing Cone separately
+    # for i in range(5):
+    #     shape, pcd = get_shape_and_pcd(Cone, 10000, canonical=True)
+    #     shape_fit = Cone.fit(pcd.points, normals=pcd.normals).canonical
+    #     assert_allclose(shape.appex, shape_fit.appex, rtol=1e-1, atol=1e-1)
+    #     assert_allclose(shape.half_angle, shape_fit.half_angle, rtol=1e-1, atol=1e-1)
+    #     # assert_allclose(shape.vector, shape_fit.vector, rtol=1e-2, atol=1e-2)
+    #     # assert_allclose(shape.radius, shape_fit.radius, rtol=1e-2, atol=1e-2)
+
     for primitive in [Plane, Sphere]:
         for i in range(5):
             shape, pcd = get_shape_and_pcd(primitive, 100, canonical=True)
@@ -93,8 +102,7 @@ def test_distances():
 
 
 def test_distances_flatten():
-    # for primitive in [Plane, Sphere, Cylinder, Cone]:
-    for primitive in [Cone]:
+    for primitive in [Plane, Sphere, Cylinder, Cone]:
         for i in range(5):
             shape, _ = get_shape_and_pcd(primitive, 100, canonical=False)
             points = np.random.rand(100, 3)
@@ -119,7 +127,7 @@ def test_normals_flatten_non_problematic():
 
 def test_normals_flatten_problematic():
     # TODO: Estimation of normals in Cylinder and Sphere give big angles 
-    for primitive in [Sphere, Cylinder]:
+    for primitive in [Sphere, Cylinder, Cone]:
         for i in range(5):
             shape, _ = get_shape_and_pcd(primitive, 100, canonical=False)
             points = np.random.rand(1000, 3)
