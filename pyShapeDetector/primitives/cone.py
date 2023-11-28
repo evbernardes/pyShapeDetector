@@ -371,8 +371,13 @@ class Cone(Primitive):
     
     def get_point_angle(self, points):
         delta = points - self.appex
+        delta_norm = np.linalg.norm(delta, axis=1)
+        safe = delta_norm > 1E-8
         projection = delta.dot(self.axis)
-        return np.arccos(projection / np.linalg.norm(delta, axis=1))
+        alpha = np.empty(len(points))
+        alpha[safe] = np.arccos(projection[safe] / delta_norm[safe])
+        alpha[~safe] = 0
+        return alpha
 
     def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the cylinder. 
@@ -389,7 +394,8 @@ class Cone(Primitive):
         """
         delta = points - self.appex
         alpha = self.get_point_angle(points)
-        return np.sin(alpha - self.half_angle) * np.linalg.norm(delta, axis=1)
+        alpha_diff = np.clip(alpha - self.half_angle, 0, np.pi/2)
+        return np.sin(alpha_diff) * np.linalg.norm(delta, axis=1)
     
     def get_normals(self, points):
         """ Gives, for each input point, the normal vector of the point closest 
@@ -409,15 +415,25 @@ class Cone(Primitive):
         delta_norm = np.linalg.norm(points - self.appex, axis=1)
         # closest_axes = self.get_closest_axes(points)
         alpha = self.get_point_angle(points)
-        half_angle = self.half_angle
+        # half_angle = self.half_angle
         
-        dist_axis = delta_norm * np.cos(alpha - half_angle) / np.cos(half_angle)
+        alpha_diff = np.clip(alpha - self.half_angle, 0, np.pi/2)
+        dist_axis = delta_norm * np.cos(alpha_diff) / np.cos(self.half_angle)
         p = self.appex + self.axis * dist_axis[None].T
         
-        normals = points - p
+        eps = 1E-8
+        unsafe1 = abs(alpha) < eps
+        unsafe2 = abs(alpha - np.pi) < eps
+        safe = np.logical_and(~unsafe1, ~unsafe2)
+        normals = np.empty(points.shape)
+        
+        normals[unsafe1] = self.axis
+        normals[unsafe2] = -self.axis
+        
+        normals[safe] = points[safe] - p[safe]
         # coef = np.cos(alpha - self.half_angle) * np.linalg.norm(delta, axis=1)
         # normals = delta - closest_axes * coef[None].T
-        normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
+        normals[safe] /= np.linalg.norm(normals[safe], axis=1)[..., np.newaxis]
         return normals
     
     def flatten_points(self, points):
