@@ -116,7 +116,7 @@ class Cone(Primitive):
     
     """
     
-    _fit_n_min = 10
+    _fit_n_min = 15
     _model_args_n = 7
     _name = 'cone'
     
@@ -140,7 +140,8 @@ class Cone(Primitive):
         Primitive.__init__(self, model)
 
         if not (0 <= self.half_angle < np.pi / 2):
-            raise ValueError('half_angle must be between 0 and pi/2 radians.')
+            raise ValueError('half_angle must be between 0 and 90 degrees, '
+                             f'got {self.half_angle * 180 / np.pi}.')
             
     @classmethod
     def from_appex_top_radius(cls, appex, top, radius):
@@ -530,15 +531,20 @@ class Cone(Primitive):
         # pseudo_plane = Plane.fit(normals).normal
         
         # simple fitting does not give good results, though
-        # detector = RANSAC_Classic()
-        # detector.add(Plane)
-        # pseudo_plane = detector.fit(normals)[0]
+        detector = RANSAC_Classic()
+        detector.add(Plane)
+        pseudo_plane = detector.fit(normals)[0]
         
-        # if pseudo_plane is None:
+        if pseudo_plane is None:
             # print('a')
-            # return None
+            return None
         
-        # axis = -pseudo_plane.normal
+        axis = pseudo_plane.normal
+        
+        # correct axis direction
+        s = np.sign(delta.dot(axis).sum())
+        axis *= s
+        
         # detector.add(Cylinder)
         # pseudo_pcd = PointCloud(Vector3dVector(normals))
         # pseudo_pcd.estimate_normals()
@@ -546,7 +552,8 @@ class Cone(Primitive):
         # pseudo_cylinder = detector.fit(pseudo_pcd.points, pseudo_pcd.normals)[0]
         # axis = pseudo_cylinder.axis
         
-        axis = -np.linalg.svd(delta)[-1][0]
+        # axis = -np.linalg.svd(delta)[-1][0]
+        # axis = np.linalg.svd(delta)[-1][0]
         
         projection = points.dot(axis)
         # height = max(projection) - min(projection)
@@ -559,6 +566,9 @@ class Cone(Primitive):
         # S = (norm ** 2) * np.sin(2 * cossines_half_angle)
         # C = (norm ** 2) * np.cos(2 * cossines_half_angle)
         # half_angle = np.arctan2(sum(S), sum(C)) / 2
+        
+        if abs(half_angle - np.pi / 2) < 1E-10:
+            return None
         
         if not (0 <= half_angle < np.pi / 2):
             half_angle = np.pi - half_angle
