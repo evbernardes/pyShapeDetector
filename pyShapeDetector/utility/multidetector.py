@@ -87,7 +87,7 @@ class MultiDetector():
                     mesh = shape.get_cropped_mesh(shape.inlier_points)
                 else:
                     # mesh = shape.get_mesh(pcd.points)
-                    mesh = shape.get_mesh(pcd.points)
+                    mesh = shape.get_mesh()
                 mesh.paint_uniform_color(np.random.random(3))
                 meshes_detected.append(mesh)
             self._meshes_detected = meshes_detected
@@ -176,6 +176,7 @@ class MultiDetector():
                 pcd_inliers = pcd_.select_by_index(inliers)
                 pcd_ = pcd_.select_by_index(inliers, invert=True)
                 
+                shape.inlier_indices = inliers
                 shape.inlier_points = pcd_inliers.points
                 shape.metrics = metrics
                 

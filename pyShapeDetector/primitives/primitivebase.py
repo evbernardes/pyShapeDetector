@@ -101,6 +101,7 @@ class Primitive(ABC):
         Creates mesh of the shape.
     """
     _inlier_points = np.asarray([])
+    _inlier_indices = np.asarray([])
     _metrics = {}
     
     def __repr__(self):
@@ -129,6 +130,18 @@ class Primitive(ABC):
                              ' point or an array of shape (N, 3), got '
                              f'{points.shape}')
         self._inlier_points = points
+        
+    @property
+    def inlier_indices(self):
+        """ Convenience attribute that can be set to save inlier points """
+        return self._inlier_indices
+    
+    @inlier_indices.setter
+    def inlier_indices(self, indices):
+        indices = np.asarray(indices)
+        if len(indices.shape) != 1:
+            raise ValueError('Invalid shape for input indices.')
+        self._inlier_indices = indices
         
     @property
     def metrics(self):
