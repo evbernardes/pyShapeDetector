@@ -347,7 +347,8 @@ class RANSAC_Base(ABC):
                 'rmse_distances': rmse_distances,
                 'rmse_angles': rmse_angles,
                 'weight': (weight:= self.get_total_weight(distances, angles)),
-                'weight_ratio': weight / num_inliers}
+                'weight_ratio': weight / num_points
+                }
             
         metrics['break_iteration'] = self.termination_criterion(metrics)
         return metrics
