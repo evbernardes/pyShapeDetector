@@ -341,12 +341,13 @@ class RANSAC_Base(ABC):
                 rmse_angles = np.sqrt(angles.dot(angles)) / len(angles)
             else:
                 rmse_angles = None
-            metrics = {'num_inliers': num_inliers,
-                       'fitness': num_inliers / num_points,
-                       'rmse_distances': rmse_distances,
-                       'rmse_angles': rmse_angles,
-                       'weight': (w:= self.get_total_weight(distances, angles)),
-                       'weight_ratio': w / num_inliers}
+            metrics = {
+                'num_inliers': num_inliers,
+                'fitness': num_inliers / num_points,
+                'rmse_distances': rmse_distances,
+                'rmse_angles': rmse_angles,
+                'weight': (weight:= self.get_total_weight(distances, angles)),
+                'weight_ratio': weight / num_inliers}
             
         metrics['break_iteration'] = self.termination_criterion(metrics)
         return metrics
