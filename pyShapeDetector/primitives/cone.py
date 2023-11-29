@@ -376,8 +376,13 @@ class Cone(Primitive):
             Nx1 array distances.
         """
         delta = points - self.appex
+        delta_norm = np.linalg.norm(delta, axis=1)
         angle_diff = self.get_angle_diff(points)
-        return np.sin(angle_diff) * np.linalg.norm(delta, axis=1)
+        distances = np.empty(len(points))
+        safe = abs(angle_diff) > 1E-7
+        distances[safe] = np.sin(angle_diff[safe]) * delta_norm[safe]
+        distances[~safe] = delta_norm[~safe] / (2 * np.cos(self.half_angle))
+        return distances
     
     def get_normals(self, points):
         """ Gives, for each input point, the normal vector of the point closest 
@@ -408,7 +413,17 @@ class Cone(Primitive):
         safe = np.logical_and(~unsafe1, ~unsafe2)
         normals = np.empty(points.shape)
         
-        normals[unsafe1] = self.axis
+        # points aligned to axis but inside cone, infinite solutions, finc
+        # a random one
+        axis_perpendicular = np.cross(np.random.random(3), self.axis)
+        axis_perpendicular /= np.linalg.norm(axis_perpendicular)
+        s, c = np.sin(self.half_angle), np.cos(self.half_angle) 
+        normals[unsafe1] = -s * self.axis + c * axis_perpendicular
+        
+        # normals[unsafe1] = self.axis
+        
+        # points aligned to axis but behind the cone, normal is not defined
+        # at the appex but give a value anyways
         normals[unsafe2] = -self.axis
         
         normals[safe] = points[safe] - p[safe]
