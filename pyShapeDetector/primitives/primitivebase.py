@@ -101,6 +101,7 @@ class Primitive(ABC):
         Creates mesh of the shape.
     """
     _inlier_points = np.asarray([])
+    _metrics = {}
     
     def __repr__(self):
         round_ = lambda x:round(x, 5)
@@ -128,6 +129,17 @@ class Primitive(ABC):
                              ' point or an array of shape (N, 3), got '
                              f'{points.shape}')
         self._inlier_points = points
+        
+    @property
+    def metrics(self):
+        """ Convenience attribute that can be set to save shape metrics """
+        return self._metrics
+    
+    @metrics.setter
+    def metrics(self, metrics):
+        if type(metrics) != dict:
+            raise ValueError('metrics should be a dict')
+        self._metrics = metrics
     
     @property
     def canonical(self):
