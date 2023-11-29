@@ -38,7 +38,7 @@ class RANSAC_Options():
     _threshold_angle=3.141592653589793  # ~ 180 degrees
     _threshold_ratios=[0.2, 0.7] # for LDSAC
     _threshold_refit_ratio=1
-    _ransac_n=None
+    _num_samples=None
     _num_iterations=100
     _probability=0.99999
     _max_point_distance=None
@@ -63,7 +63,7 @@ class RANSAC_Options():
             'threshold_angle': self.threshold_angle,
             'threshold_ratios': self.threshold_ratios,
             'threshold_refit_ratio': self.threshold_refit_ratio,
-            'ransac_n': self.ransac_n,
+            'num_samples': self.num_samples,
             'num_iterations': self.num_iterations,
             'probability': self.probability,
             'max_point_distance': self.max_point_distance,
@@ -136,12 +136,12 @@ class RANSAC_Options():
         self._threshold_refit_ratio = value
         
     @property
-    def ransac_n(self):
-        return self._ransac_n
+    def num_samples(self):
+        return self._num_samples
     
-    @ransac_n.setter
-    def ransac_n(self, value):
-        self._ransac_n = value
+    @num_samples.setter
+    def num_samples(self, value):
+        self._num_samples = value
         
     @property
     def num_iterations(self):

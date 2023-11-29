@@ -76,22 +76,29 @@ class RANSAC_Base(ABC):
         
     """
 
+
     def __init__(self, options=RANSAC_Options()):
         
         self._opt = options
-        self.ransac_n = None
         self._num_primitives = 0
         self._primitives = []
         self._limits = []
-        
+    
+    @property
+    def num_samples(self):
+        if self._opt._num_samples is None:
+            return max([p._fit_n_min for p in self.primitives])
+        else:
+            return self._opt._num_samples    
+    
     def add(self, primitive, limit=None):
         
         limit = PrimitiveLimits(limit)
         
-        if self._opt._ransac_n and primitive.fit_n_min:
+        if self._opt._num_samples and primitive.fit_n_min:
             raise ValueError(f'{primitive.name}s need a minimum of '
                              f'{primitive.fit_n_min} for fitting, but current'
-                             f'ransac_n option is set to {self._opt._ransac_n}'
+                             f'num_samples option is set to {self._opt._num_samples}'
                              '. Either raise the value on the options, or set '
                              'it to None.')
             
@@ -295,7 +302,7 @@ class RANSAC_Base(ABC):
         if metrics['fitness'] > 1.0:
             return 0
         
-        den = np.log(1 - metrics['fitness'] ** self._ransac_n)
+        den = np.log(1 - metrics['fitness'] ** self.num_samples)
         if den != 0:
             return min(self._opt.num_iterations, 
                        np.log(1 - self._opt.probability) / den)
@@ -399,7 +406,7 @@ class RANSAC_Base(ABC):
             
             while len(samples) < num_samples:
                 
-                # Array of shape (ransac_n, num_points, 3), where diff[i, :, :]
+                # Array of shape (num_samples, num_points, 3), where diff[i, :, :]
                 # is the different between each point to the ith sample
                 diff = points[None] - points[list(samples)][:, None]
                 
@@ -528,16 +535,13 @@ class RANSAC_Base(ABC):
         inliers_min = self._opt.inliers_min
         fitness_min = self._opt.fitness_min
         
-        # if ransac_n option is not set, get the max minimum value between
+        # if num_samples option is not set, get the max minimum value between
         # primitives
-        if self._opt._ransac_n is None:
-            self._ransac_n = max([p._fit_n_min for p in self.primitives])
-        else:
-            self._ransac_n = self._opt._ransac_n
+        num_samples = self.num_samples
 
-        if num_points < self._ransac_n:
+        if num_points < num_samples:
             raise ValueError(f'Pointcloud must have at least '
-                             f'{self.ransac_n} points, {num_points} '
+                             f'{self.num_samples} points, {num_points} '
                              'given.')
 
         if normals is not None:
@@ -571,7 +575,7 @@ class RANSAC_Base(ABC):
 
             start_itr = time.time()
 
-            samples = self.get_samples(points, self._ransac_n)
+            samples = self.get_samples(points, num_samples)
             if samples is None:
                 continue
 
