@@ -149,8 +149,15 @@ class RANSAC_Base(ABC):
     @options.setter
     def options(self, value):
         if not isinstance(value, RANSAC_Options):
-            raise ValueError('options must be an instance of RANSAC_Options')
+            raise ValueError('must be an instance of RANSAC_Options')
+        # self._opt = copy.copy(value)
+        self._opt = value
+    
+    def copy_options(self, value):
+        if not isinstance(value, RANSAC_Options):
+            raise ValueError('input must be an instance of RANSAC_Options')
         self._opt = copy.copy(value)
+        # self._opt = value
             
     @property
     @abstractmethod
