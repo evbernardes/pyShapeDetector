@@ -176,8 +176,10 @@ class MultiDetector():
                 pcd_inliers = pcd_.select_by_index(inliers)
                 pcd_ = pcd_.select_by_index(inliers, invert=True)
                 
-                shape.inlier_indices = inliers
-                shape.inlier_points = pcd_inliers.points
+                # shape.inlier_indices = inliers
+                # shape.inlier_points = pcd_inliers.points
+                # shape.inlier_normals = pcd_inliers.normals
+                shape.add_inliers(pcd_inliers.points, pcd_inliers.normals)
                 shape.metrics = metrics
                 
                 shapes_detected.append(shape)

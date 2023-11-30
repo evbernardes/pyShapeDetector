@@ -11,7 +11,7 @@ import time
 import random
 import numpy as np
 
-random.seed(951)
+# random.seed(951)
 
 from .RANSAC_Base import RANSAC_Base
 
