@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 import time
 import random
 import numpy as np
+import copy
 
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
@@ -147,9 +148,9 @@ class RANSAC_Base(ABC):
     
     @options.setter
     def options(self, value):
-        if not isinstance(value, RANSAC_Options()):
+        if not isinstance(value, RANSAC_Options):
             raise ValueError('options must be an instance of RANSAC_Options')
-        self._opt = value
+        self._opt = copy.copy(value)
             
     @property
     @abstractmethod
