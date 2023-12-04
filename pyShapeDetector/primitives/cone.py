@@ -120,9 +120,9 @@ class Cone(Primitive):
     _model_args_n = 7
     _name = 'cone'
     
-    # @property
-    # def color(self):
-        # return np.array([0.707, 0, 0.707])
+    @property
+    def color(self):
+        return np.array([0, 0.707, 0.707])
         
     def __init__(self, model):
         """
