@@ -90,7 +90,11 @@ class RANSAC_Base(ABC):
         if self._opt._num_samples is None:
             return max([p._fit_n_min for p in self.primitives])
         else:
-            return self._opt._num_samples    
+            return self._opt._num_samples
+        
+    @property
+    def max_weight(self):
+        return self.weight_distances(np.zeros(1), 100)[0]
     
     def add(self, primitive, limit=None):
         
@@ -349,13 +353,15 @@ class RANSAC_Base(ABC):
                 rmse_angles = np.sqrt(angles.dot(angles)) / len(angles)
             else:
                 rmse_angles = None
+                
+            weight_norm = (self.max_weight ** 2) * (num_points ** 2)
             metrics = {
                 'num_inliers': num_inliers,
                 'fitness': num_inliers / num_points,
                 'rmse_distances': rmse_distances,
                 'rmse_angles': rmse_angles,
                 'weight': (weight:= self.get_total_weight(distances, angles)),
-                'weight_ratio': weight / num_points
+                'weight_ratio': weight / weight_norm
                 }
             
         metrics['break_iteration'] = self.termination_criterion(metrics)

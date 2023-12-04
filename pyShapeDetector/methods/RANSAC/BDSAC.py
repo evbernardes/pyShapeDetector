@@ -82,6 +82,7 @@ class BDSAC(RANSAC_Base):
             Weights of each point
         """        
         threshold = self._opt.reduction_rate * distance_threshold
+        distances = np.array(distances)
         return np.exp( - (distances / threshold) ** 2)
     
     
