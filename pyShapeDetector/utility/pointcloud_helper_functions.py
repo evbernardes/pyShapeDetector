@@ -12,10 +12,7 @@ import copy
 import open3d as o3d
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
-# from open3d.utility import Vect
 
-# datafolder = Path('/home/ebernardes/OneDrive_ebernardes/Documents/Data/traceparts/')
-# datafile = datafolder / '114csnb_bolt_1_2_13_2_02_1_25_10.h5'
 def read_point_cloud(filepath):
     if isinstance(filepath, Path):
         filename = filepath.as_posix()
@@ -52,10 +49,4 @@ def paint_random(pcds):
     else:
         for pcd in pcds:
             pcd.paint_uniform_color(np.random.random(3))
-    
 
-    
-    
-# f = h5py.File(datafile, 'r')
-
-# pcd = 
