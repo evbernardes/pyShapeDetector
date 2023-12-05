@@ -186,9 +186,9 @@ class Plane(Primitive):
     def canonical(self):
         """ Return canonical form for testing. """
         model = self.model
-        if self.dist >= 0:
+        if np.sign(self.dist) < 0:
             model = -model
-        return Plane(list(-self.model))
+        return Plane(list(self.model))
     
     @property
     def equation(self):

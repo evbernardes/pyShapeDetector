@@ -524,31 +524,27 @@ class Primitive(ABC):
         bb = AxisAlignedBoundingBox(bb.min_bound - [eps]*3, 
                                     bb.max_bound + [eps]*3)
         return mesh.crop(bb)
+    
+    def is_similar_to(self, other_shape, rtol=1e-02, atol=1e-02):
+        """ Check if shapes represent same model.
         
+        Parameters
+        ----------
+        other_shape : Primitive
+            Primitive to compare
         
-
+        Returns
+        -------
+        Bool
+            True if shapes are similar.
+        """
+        if not isinstance(self, type(other_shape)):
+            return False
+        
+        compare = np.isclose(self.canonical.model, other_shape.canonical.model,
+                             rtol=rtol, atol=atol)
+        return compare.all()
             
+    def __eq__(self, other_shape):
+        return self.is_similar_to(other_shape, rtol=1e-05, atol=1e-08)
         
-        
-    
-            
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-    
-    
-    
