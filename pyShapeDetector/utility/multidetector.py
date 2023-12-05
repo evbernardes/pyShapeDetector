@@ -14,7 +14,7 @@ import numpy as np
 
 class MultiDetector():
     
-    def __init__(self, detectors, pcds, points_min=500, num_iterations=20,
+    def __init__(self, detectors, pcds, points_min=500, shapes_per_cluster=20,
                  debug=0, compare_metric='fitness', metric_min=0.1, 
                  normals_reestimate=False):
     
@@ -29,7 +29,7 @@ class MultiDetector():
         self.detectors = detectors
         self.n_detectors = len(detectors)
         self.points_min = points_min
-        self.num_iterations = num_iterations
+        self.shapes_per_cluster = shapes_per_cluster
         
         # Start:
         self._shapes_detected = None
@@ -126,10 +126,10 @@ class MultiDetector():
             iteration = 0
             
             while(len(pcd_.points) > self.points_min and \
-                  iteration < self.num_iterations):
+                  iteration < self.shapes_per_cluster):
                 
                 if debug:
-                    print(f'\niteration {iteration+1}/{self.num_iterations}, '
+                    print(f'\niteration {iteration+1}/{self.shapes_per_cluster}, '
                           f'cluster {idx+1}/{len(self.pcds)}')
                 
                 if normals_reestimate:
