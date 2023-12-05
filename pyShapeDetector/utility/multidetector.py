@@ -10,13 +10,19 @@ import copy
 import time
 import numpy as np
 
+from open3d.geometry import PointCloud
+from open3d.utility import Vector3dVector
+
+from .helpers_primitives import group_similar_shapes, fuse_shape_groups
+
 #%% Parameters and input
 
 class MultiDetector():
     
     def __init__(self, detectors, pcds, points_min=500, shapes_per_cluster=20,
                  debug=0, compare_metric='fitness', metric_min=0.1, 
-                 normals_reestimate=False):
+                 normals_reestimate=False, 
+                 fuse_shapes=False, rtol=1e-02, atol=1e-02):
     
         if not isinstance(detectors, list):
             detectors = [detectors]
@@ -39,7 +45,8 @@ class MultiDetector():
         self._pcds_rest = None
         self._finished = False
         
-        self.run(debug, compare_metric, metric_min, normals_reestimate)
+        self.run(debug, compare_metric, metric_min, normals_reestimate,
+                 fuse_shapes, rtol, atol)
         
     @property
     def pcds_inliers(self):
@@ -94,8 +101,8 @@ class MultiDetector():
             
         return self._meshes_detected
         
-    def run(self, debug=0, compare_metric='fitness', metric_min=0.1, 
-            normals_reestimate=False):
+    def run(self, debug, compare_metric, metric_min, 
+            normals_reestimate, fuse_shapes, rtol, atol):
         
         debug_detectors = debug > 1
         debug = debug > 0
@@ -198,6 +205,23 @@ class MultiDetector():
             # for detector in self.detectors:
             #     name = detector.primitive.name
             #     print(f'- {name}: {times[name]:.3f}s')
+            
+        if fuse_shapes:
+            shapes_lists = group_similar_shapes(shapes_detected, 
+                                                rtol=rtol, atol=atol)
+            shapes_detected = fuse_shape_groups(shapes_lists, detector)
+            # metrics_detected = [s.metrics for s in shapes_detected]
+            
+            pcds_inliers = []
+            metrics_detected = []
+            for s in shapes_detected:
+                pcd = PointCloud(Vector3dVector(s.inlier_points))
+                if s.inlier_normals is not None:
+                    pcd.normals = Vector3dVector(s.inlier_normals)
+                
+                pcds_inliers.append(pcd)
+                metrics_detected.append(s.metrics)
+                
                 
         self._shapes_detected = shapes_detected
         self._metrics_detected = metrics_detected

@@ -6,7 +6,7 @@ Created on Tue Dec  5 15:48:31 2023
 @author: ebernardes
 """
 import numpy as np
-from itertools import combinations, compress
+from itertools import combinations
 
 def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02):
     
@@ -27,7 +27,7 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02):
         
     return sublists
 
-def fuse_shapes(shapes_lists, detector=None):
+def fuse_shape_groups(shapes_lists, detector=None):
     # num_partitions = len(shapes_lists):
     new_list = []
     for sublist in shapes_lists:

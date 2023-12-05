@@ -12,8 +12,6 @@ from .sphere import Sphere
 from .cylinder import Cylinder
 from .cone import Cone
 
-from .utilities import group_similar_shapes, fuse_shapes
-
 list_primitives=[
     Plane, Sphere, Cylinder, PlaneBounded, Cone,
 ]
