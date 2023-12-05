@@ -267,7 +267,7 @@ class Plane(Primitive):
         """
         return np.tile(self.normal, (len(points), 1))
     
-    def get_mesh(self, points=None):
+    def get_mesh(self, resolution=None):
         """ Flatten points and creates a simplified mesh of the plane. If the
         shape has pre-defined inlier points, use them to find borders.
         Otherwise, return square mesh.
@@ -278,6 +278,7 @@ class Plane(Primitive):
             Mesh corresponding to the plane.
         """
         if len(self.inlier_points) == 0:
+            warn('No inlier points, returning square plane...')
             return self.get_square_mesh()
         bounds = self.flatten_points(self.inlier_points)
         return PlaneBounded(self, bounds).get_mesh()
@@ -592,7 +593,7 @@ class PlaneBounded(Plane):
             return None, None
             
     
-    def get_mesh(self, points=None):
+    def get_mesh(self, resolution=None):
         """ Flatten points and creates a simplified mesh of the plane defined
         by the points at the borders.      
 

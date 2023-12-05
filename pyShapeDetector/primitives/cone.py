@@ -452,7 +452,7 @@ class Cone(Primitive):
         # points_flattened[projection < 0] = self.appex
         return points_flattened
     
-    def get_mesh(self, closed=False):
+    def get_mesh(self, resolution=50, closed=False):
         """ Returns mesh defined by the cylinder model.
         
         Parameters
@@ -468,7 +468,7 @@ class Cone(Primitive):
         
         mesh = TriangleMesh.create_cone(
             # radius=self.radius, height=self.height, resolution=100, split=100)
-            radius=self.radius, height=self.height, resolution=100, split=100)
+            radius=self.radius, height=self.height, resolution=resolution, split=100)
         mesh.vertices = Vector3dVector(-np.asarray(mesh.vertices))
         # mesh.translate(-mesh.get_center())
         
