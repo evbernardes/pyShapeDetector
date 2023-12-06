@@ -522,6 +522,28 @@ class Primitive(ABC):
                                   'been implemented.')
         
     def get_cropped_mesh(self, points=None, eps=1E-3):
+        """ Creates mesh of the shape and crops it according to points.
+        
+        Parameters
+        ----------
+        points : N x 3 array, optional
+            N input points. If points are not given, tries to use inlier points
+            of shape.
+        eps : float, optional
+            Small value for cropping.
+        
+        Returns
+        -------
+        TriangleMesh
+            Mesh corresponding to the shape.
+        """
+        
+        if points is None:
+            points = self.inlier_points
+        
+        if len(points) == 0:
+            raise ValueError('No points given, and no inlier points.')
+            
         mesh = self.get_mesh()
         points_flattened = self.flatten_points(points)
         pcd = PointCloud(Vector3dVector(points_flattened))

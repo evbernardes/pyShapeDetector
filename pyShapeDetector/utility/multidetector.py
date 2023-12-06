@@ -90,8 +90,9 @@ class MultiDetector():
             meshes_detected = []
             for shape, pcd in zip(self._shapes_detected, self._pcds_inliers):                
                 # mesh = shape.get_mesh(pcd.points)
-                if shape.name == 'sphere':
-                    mesh = shape.get_cropped_mesh(shape.inlier_points)
+                if shape.name in ['sphere', 'cone']:
+                    # mesh = shape.get_cropped_mesh(shape.inlier_points)
+                    mesh = shape.get_cropped_mesh()
                 else:
                     # mesh = shape.get_mesh(pcd.points)
                     mesh = shape.get_mesh()
