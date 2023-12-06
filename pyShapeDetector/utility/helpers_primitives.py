@@ -31,7 +31,9 @@ def fuse_shape_groups(shapes_lists, detector=None):
     # num_partitions = len(shapes_lists):
     new_list = []
     for sublist in shapes_lists:
-        model = np.vstack([s.model for s in sublist]).mean(axis=0)
+        fitness = [s.metrics['fitness'] for s in sublist]
+        model = np.vstack([s.model for s in sublist])
+        model = np.average(model, axis=0, weights=fitness)
         shape = type(sublist[0])(model)
         
         points = np.vstack([s.inlier_points for s in sublist])
