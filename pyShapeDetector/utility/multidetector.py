@@ -40,7 +40,7 @@ class MultiDetector():
         # Start:
         self._shapes_detected = None
         self._metrics_detected = None
-        self._meshes_detected = None
+        # self._meshes_detected = None
         self._pcds_inliers = None
         self._pcds_rest = None
         self._finished = False
@@ -80,27 +80,35 @@ class MultiDetector():
             
         return self._metrics_detected
     
-    @property
-    def meshes(self):
+    def get_meshes(self, crop_types=['sphere', 'cone']):
+        """ Returns meshes from detected shapes.
+        
+        Parameters
+        ----------
+        crop_types : list of strings, optional
+            Define type of primitives that should be cropped according to their
+            inlier points. Default: ['sphere', 'cone']
+        
+        Returns
+        -------
+        list
+            Meshes corresponding to the detected shapes.
+        """
+        
         if not self._finished:
             raise RuntimeError('MultiDetector still did not fit, try to run, '
                                'see: MultiDetector.run')
             
-        if self._meshes_detected is None:
-            meshes_detected = []
-            for shape, pcd in zip(self._shapes_detected, self._pcds_inliers):                
-                # mesh = shape.get_mesh(pcd.points)
-                if shape.name in ['sphere', 'cone']:
-                    # mesh = shape.get_cropped_mesh(shape.inlier_points)
-                    mesh = shape.get_cropped_mesh()
-                else:
-                    # mesh = shape.get_mesh(pcd.points)
-                    mesh = shape.get_mesh()
-                mesh.paint_uniform_color(np.random.random(3))
-                meshes_detected.append(mesh)
-            self._meshes_detected = meshes_detected
-            
-        return self._meshes_detected
+        meshes = []
+        for shape in self.shapes:
+            if shape.name in crop_types:
+                mesh = shape.get_cropped_mesh()
+            else:
+                mesh = shape.get_mesh()
+            mesh.paint_uniform_color(np.random.random(3))
+            meshes.append(mesh)
+
+        return meshes
         
     def run(self, debug, compare_metric, metric_min, 
             normals_reestimate, fuse_shapes, rtol, atol):
