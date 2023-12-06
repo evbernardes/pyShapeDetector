@@ -75,6 +75,9 @@ class RANSAC_Base(ABC):
     get_residuals(points, normals):
         Convenience function returning both distances and angles.
         
+    copy_options(value):
+        Copies options instead of pointing to the same options.
+        
     """
 
 
@@ -158,9 +161,21 @@ class RANSAC_Base(ABC):
         self._opt = value
     
     def copy_options(self, value):
-        if not isinstance(value, RANSAC_Options):
-            raise ValueError('input must be an instance of RANSAC_Options')
-        self._opt = copy.copy(value)
+        """ Copies options instead of pointing to the same options.
+
+        Actual implementation depends on method.
+        
+        Parameters
+        ----------
+        value : RANSAC method or RANSAC_Options instance
+            Options to copy
+        """
+        if isinstance(value, RANSAC_Base):
+            value = value.options
+        elif not isinstance(value, RANSAC_Options):
+            raise ValueError('input must be an instance of RANSAC_Options '
+                             'or of a RANSAC method.')
+        self.options = copy.copy(value)
         # self._opt = value
             
     @property
