@@ -329,12 +329,17 @@ class RANSAC_Base(ABC):
         if metrics['fitness'] > 1.0:
             return 0
         
-        den = np.log(1 - metrics['fitness'] ** self.num_samples)
-        if den != 0:
-            return min(self._opt.num_iterations, 
-                       np.log(1 - self._opt.probability) / den)
-        else:
+        exp_den = 1 - metrics['fitness'] ** self.num_samples
+        if np.isclose(exp_den, 0, atol=1E-7):
             return self._opt.num_iterations
+        
+        den = np.log(exp_den)
+        if np.isclose(den, 0, atol=1E-7):
+            return self._opt.num_iterations
+        
+        return min(self._opt.num_iterations, 
+                   np.log(1 - self._opt.probability) / den)
+            
     
     def get_metrics(self, 
                  num_points=None, num_inliers=None, 
