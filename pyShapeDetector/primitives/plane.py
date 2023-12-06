@@ -267,7 +267,7 @@ class Plane(Primitive):
         """
         return np.tile(self.normal, (len(points), 1))
     
-    def get_mesh(self, resolution=None):
+    def get_mesh(self, resolution=1):
         """ Flatten points and creates a simplified mesh of the plane. If the
         shape has pre-defined inlier points, use them to find borders.
         Otherwise, return square mesh.
@@ -301,7 +301,7 @@ class Plane(Primitive):
         # bb = pcd.get_axis_aligned_bounding_box()
         # half_length = max(bb.max_bound - bb.min_bound) / 2
         
-        if list(self.normal) == [0, 0, 1]: 
+        if np.isclose(self.normal[2], 1, atol=1e-7): 
             v1 = np.cross([0, 1, 0], self.normal)
         else:
             v1 = np.cross([0, 0, 1], self.normal)
@@ -310,11 +310,12 @@ class Plane(Primitive):
         v1 /= np.linalg.norm(v1)
         v2 /= np.linalg.norm(v2)
 
+        centroid = self.centroid
         vertices = np.vstack([
-            self.centroid + v1 * length / 2,
-            self.centroid + v2 * length / 2,
-            self.centroid - v1 * length / 2,
-            self.centroid - v2 * length / 2])
+            centroid + v1 * length / 2,
+            centroid + v2 * length / 2,
+            centroid - v1 * length / 2,
+            centroid - v2 * length / 2])
         
         return PlaneBounded(self, vertices)
 

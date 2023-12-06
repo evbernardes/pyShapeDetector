@@ -504,8 +504,13 @@ class Primitive(ABC):
             self.get_angles(points, normals)
     
     @staticmethod
-    def get_mesh(self):
+    def get_mesh(self, resolution=30):
         """ Creates mesh of the shape.
+        
+        Parameters
+        ----------
+        resolution : int, optional
+            Resolution parameter for mesh. Default: 30
         
         Returns
         -------
@@ -516,7 +521,7 @@ class Primitive(ABC):
                                   f'primitives of type {self.name} has not '
                                   'been implemented.')
         
-    def get_cropped_mesh(self, points, eps=1E-3):
+    def get_cropped_mesh(self, points=None, eps=1E-3):
         mesh = self.get_mesh()
         points_flattened = self.flatten_points(points)
         pcd = PointCloud(Vector3dVector(points_flattened))

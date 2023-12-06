@@ -74,9 +74,8 @@ class RANSAC_Options():
             }
     
     def __repr__(self):
-        dict_str = str(self.dict)
-        # dict_str = dict_str[1:-1]
-        dict_str = "{\n" + "\n".join("{!r}: {!r},".format(k, v) for k, v in self.dict.items()) + "}"
+        lines = "\n".join("{!r}: {!r},".format(k, v) for k, v in self.dict.items())
+        dict_str = "{\n" + lines + "}"
         return type(self).__name__+'('+dict_str+')'
     
     def __init__(self, dict_parameters={}):

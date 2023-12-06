@@ -311,11 +311,13 @@ class Cylinder(Primitive):
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
     
-    def get_mesh(self, resolution=20, closed=False):
+    def get_mesh(self, resolution=30, closed=False):
         """ Returns mesh defined by the cylinder model.
         
         Parameters
         ----------
+        resolution : int, optional
+            Resolution parameter for mesh. Default: 30
         closed : bool, optional
             If True, does not remove top and bottom of cylinder
         

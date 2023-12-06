@@ -452,11 +452,13 @@ class Cone(Primitive):
         # points_flattened[projection < 0] = self.appex
         return points_flattened
     
-    def get_mesh(self, resolution=50, closed=False):
+    def get_mesh(self, resolution=30, closed=False):
         """ Returns mesh defined by the cylinder model.
         
         Parameters
         ----------
+        resolution : int, optional
+            Resolution parameter for mesh. Default: 30
         closed : bool, optional
             If True, does not remove top and bottom of cylinder
         

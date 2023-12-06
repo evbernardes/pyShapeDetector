@@ -174,7 +174,12 @@ class Sphere(Primitive):
         return normals
 
     def get_mesh(self, resolution=30):
-        """ Returns mesh defined by the sphere model.      
+        """ Returns mesh defined by the sphere model.   
+        
+        Parameters
+        ----------
+        resolution : int, optional
+            Resolution parameter for mesh. Default: 30   
         
         Returns
         -------
