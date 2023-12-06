@@ -174,7 +174,7 @@ class RANSAC_Base(ABC):
             value = value.options
         elif not isinstance(value, RANSAC_Options):
             raise ValueError('input must be an instance of RANSAC_Options '
-                             'or of a RANSAC method.')
+                             'or RANSAC method.')
         self.options = copy.copy(value)
         # self._opt = value
             
