@@ -39,8 +39,9 @@ def fuse_shape_groups(shapes_lists, detector=None):
         shape.add_inliers(points, normals)
         
         if detector is not None:
+            # num_points = sum([])
             distances, angles = shape.get_residuals(points, normals)
-            num_points = num_inliers = len(points)
+            num_inliers = len(points)
             shape.metrics = detector.get_metrics(
                 num_points, num_inliers, distances, angles)
             
