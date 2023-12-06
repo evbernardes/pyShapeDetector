@@ -123,17 +123,16 @@ class Primitive(ABC):
                              f'{points.shape}')
         self._inlier_points = points
         
-        if normals is None:
-            pass
+        if normals is not None:
         
-        normals = np.asarray(normals)
-        if normals.shape == (3, ):
-            normals = np.reshape(normals, (1,3))
-        elif normals.shape[1] != 3:
-            raise ValueError('Invalid shape for input normals, must be a single'
-                             ' point or an array of shape (N, 3), got '
-                             f'{normals.shape}')
-        self._inlier_normals = normals
+            normals = np.asarray(normals)
+            if normals.shape == (3, ):
+                normals = np.reshape(normals, (1,3))
+            elif normals.shape[1] != 3:
+                raise ValueError('Invalid shape for input normals, must be a single'
+                                 ' point or an array of shape (N, 3), got '
+                                 f'{normals.shape}')
+            self._inlier_normals = normals
     
     @property
     def color(self):
