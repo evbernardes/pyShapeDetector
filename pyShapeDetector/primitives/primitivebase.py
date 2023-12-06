@@ -11,6 +11,8 @@ from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
 
 from scipy.spatial.transform import Rotation
+
+from pyShapeDetector.utility import clean_crop
     
 class Primitive(ABC):
     """
@@ -535,7 +537,7 @@ class Primitive(ABC):
         Returns
         -------
         TriangleMesh
-            Mesh corresponding to the shape.
+            Mesh corresponding to the shape. Default: 1E-3
         """
         
         if points is None:
@@ -550,7 +552,8 @@ class Primitive(ABC):
         bb = pcd.get_axis_aligned_bounding_box()
         bb = AxisAlignedBoundingBox(bb.min_bound - [eps]*3, 
                                     bb.max_bound + [eps]*3)
-        return mesh.crop(bb)
+        # return mesh.crop(bb)
+        return clean_crop(mesh, bb)
     
     def is_similar_to(self, other_shape, rtol=1e-02, atol=1e-02):
         """ Check if shapes represent same model.
