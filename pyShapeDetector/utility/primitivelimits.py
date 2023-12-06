@@ -90,7 +90,7 @@ class PrimitiveLimits:
                 if not isinstance(limits, (tuple, list)) or len(limits) != 2:
                     raise ValueError("limits must be a list or tuple of 2 "
                                      f"elements, got {limits}")
-                    
+                
                 limits = sorted(limits)
                 
                 if type(attribute) is not str:
