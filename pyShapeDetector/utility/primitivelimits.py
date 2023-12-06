@@ -22,9 +22,9 @@ class PrimitiveLimits:
             test_value = getattr(shape, arg['attribute'])
             if arg['func'] is not None:
                 test_value = arg['func'](test_value)
-            if (arg['limit_type']=='max' and test_value > arg['value']) or \
-                (arg['limit_type']=='min' and test_value < arg['value']):
+            if not (arg['limits'][0] <= test_value <= arg['limits'][1]):
                 return False
+            
         return True
         
     @property
@@ -40,22 +40,16 @@ class PrimitiveLimits:
         return [a['attribute'] for a in self.args]
     
     @property
-    def limit_type(self):
+    def limits(self):
         if self.args is None:
             return None
-        return [a['limit_type'] for a in self.args]
-    
-    @property
-    def value(self):
-        if self.args is None:
-            return None
-        return [a['value'] for a in self.args]
+        return [a['limits'] for a in self.args]
     
     
     @property
     def args_list(self):
         # func, attribute, limit_type, value = zip(self.args_list)
-        return self.func, self.attribute, self.limit_type, self.value
+        return self.func, self.attribute, self.value
     
     def __add__(self, limits_other):
         assert isinstance(limits_other, PrimitiveLimits)
@@ -80,38 +74,32 @@ class PrimitiveLimits:
             
             for arg in args:
                 
-                if len(arg) == 4:
-                    func, attribute, limit_type, value = arg
+                if len(arg) == 3:
+                    func, attribute, limits = arg
                     if not callable(func):
                         raise ValueError(f"{func} is not callable")
                             
-                elif len(arg) == 3:
-                    attribute, limit_type, value = arg
+                elif len(arg) == 2:
+                    attribute, limits = arg
                     func = None
                     
                 else:
-                    raise ValueError("Limits are defined by 3 or 4 attributes: "
-                                     "(func), attribute, limit_type, value.")
+                    raise ValueError("Limits are defined by 2 or 3 attributes: "
+                                     "(func), attribute, limits.")
+                    
+                if not isinstance(limits, (tuple, list)) or len(limits) != 2:
+                    raise ValueError("limits must be a list or tuple of 2 "
+                                     f"elements, got {limits}")
+                    
+                limits = sorted(limits)
                 
                 if type(attribute) is not str:
                     raise ValueError("attribute must be a string.")
                     
-                if type(limit_type) is not str:
-                    raise ValueError("limit_type must be a string.")
-                    
-                if limit_type not in ('max', 'min'):
-                    raise ValueError("limit_type must be a 'max' or 'min'.")
-                    
-                possible_types = {'max', 'min'}
-                if limit_type not in possible_types:
-                    raise ValueError(f"limit_type must be in set {possible_types},"
-                                     f" got {limit_type}.")
-                    
-                limit = {
+                limits_dict = {
                     'func': func,
                     'attribute': attribute,
-                    'limit_type': limit_type,
-                    'value': value
+                    'limits': limits
                     }
                     
-                self.args.append(limit)
+                self.args.append(limits_dict)
