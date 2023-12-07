@@ -516,10 +516,10 @@ class PlaneBounded(Plane):
             primitive.
         """
         
-        if isinstance(planemodel, Plane):
-            self.unbounded = planemodel
-        elif isinstance(planemodel, PlaneBounded):
+        if isinstance(planemodel, PlaneBounded):
             self.unbounded = planemodel.unbounded
+        elif isinstance(planemodel, Plane):
+            self.unbounded = planemodel
         else:
             self.unbounded = Plane(planemodel)
         # self.model = self.unbounded.model
@@ -604,7 +604,8 @@ class PlaneBounded(Plane):
             return None, None
             
     
-def get_mesh(plane, holes=None, resolution=None):
+# def get_mesh(plane, resolution=None, holes=None):
+def get_mesh(plane, resolution=None):
     """ Flatten points and creates a simplified mesh of the plane defined
     by the points at the borders.      
 
@@ -622,6 +623,7 @@ def get_mesh(plane, holes=None, resolution=None):
     TriangleMesh
         Mesh corresponding to the plane.
     """
+    holes = None
     has_holes = holes is not None and len(holes) != 0
     
     points = plane.bounds
