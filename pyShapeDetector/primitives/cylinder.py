@@ -65,7 +65,7 @@ class Cylinder(Primitive):
     get_volume():
         Gives the volume of model. 
     
-    def get_signed_distances(points):
+    get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
     
     get_distances(points)
@@ -111,6 +111,9 @@ class Cylinder(Primitive):
     
     get_mesh(): TriangleMesh
         Returns mesh defined by the cylinder model. 
+        
+    project_to_plane(plane, resolution=30):
+        Projects cylinder into a plane, creating an elliptical plane.
     
     """
     
@@ -348,6 +351,21 @@ class Cylinder(Primitive):
         return mesh
     
     def project_to_plane(self, plane, resolution=30):
+        """ Projects cylinder into a plane, creating an elliptical plane.
+        
+        Parameters
+        ----------
+        plane : Plane
+            Plane instance.
+        resolution : int, optional
+            Number of points defining elliptical plane.
+        
+        Returns
+        -------
+        PlaneBounded
+            Fitted elliptical plane.
+        """
+        
         circle = PlaneBounded.create_circle(
             self.center, self.axis, self.radius, resolution)
         
@@ -364,13 +382,7 @@ class Cylinder(Primitive):
             center = points.mean(axis=0)
             points = center + rot.apply(points - center)
         
-        # new_bounds = plane.flatten_points(circle.bounds)
-        # new_circle = plane.get_plane_bounded(circle.bounds)
-        
         return plane.get_bounded_plane(points)
-        # from open3d.geometry import PointCloud
-        # from open3d.utility import Vector3dVector
-        # return PointCloud(Vector3dVector(points))
     
     @staticmethod
     def fit(points, normals=None):

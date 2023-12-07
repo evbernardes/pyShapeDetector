@@ -448,7 +448,7 @@ class PlaneBounded(Plane):
         Gives bounded version of plane, using input points to define 
         border.
     
-    def get_signed_distances(points):
+    get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
     
     get_distances(points)
@@ -491,6 +491,9 @@ class PlaneBounded(Plane):
         
     create_box(center=[0,0,0], dimensions=[1, 1, 1]):
         Gives list of planes that create, together, a closed box.
+        
+    create_circle(center, normal, radius, resolution=30):
+        Creates circular plane.
     
     """
     
@@ -664,6 +667,24 @@ class PlaneBounded(Plane):
     
     @staticmethod
     def create_circle(center, normal, radius, resolution=30):
+        """ Creates circular plane.
+        
+        Parameters
+        ----------
+        center : 3 x 1 array
+            Center of circle.
+        normal : 3 x 1 array
+            Normal vector of plane.
+        radius : float
+            Radius of circle.
+        resolution : int, optional
+            Number of points defining circular plane.
+        
+        Returns
+        -------
+        PlaneBounded
+            Fitted circular plane.
+        """
         
         normalize = lambda x:x / np.linalg.norm(x)
         
