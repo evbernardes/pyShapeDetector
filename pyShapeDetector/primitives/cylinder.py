@@ -11,9 +11,10 @@ from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector
 # from skspatial.objects.cylinder import Cylinder as skcylinder
 from scipy.spatial.transform import Rotation
+from scipy.spatial import ConvexHull
 
 from .primitivebase import Primitive
-from .plane import PlaneBounded
+from .plane import Plane, PlaneBounded
     
 class Cylinder(Primitive):
     """
@@ -115,6 +116,8 @@ class Cylinder(Primitive):
     project_to_plane(plane, resolution=30):
         Projects cylinder into a plane, creating an elliptical plane.
     
+    cuts(plane):
+        Returns true if cylinder cuts through plane.
     """
     
     _fit_n_min = 6
@@ -383,6 +386,58 @@ class Cylinder(Primitive):
             points = center + rot.apply(points - center)
         
         return plane.get_bounded_plane(points)
+    
+    def cuts(self, plane):
+        """ Returns true if cylinder cuts through plane.
+        
+        Parameters
+        ----------
+        plane : Plane
+            Plane instance.
+        
+        Returns
+        -------
+        Bool
+            True if cylinder cuts plane.
+        """
+        if not isinstance(plane, Plane):
+            warnings.warn("'cuts_shape' is only known to work with planes, "
+                          "trying it anyway with {plane.name}")
+        
+        top = PlaneBounded.create_circle(self.top, self.axis, self.radius)
+        base = PlaneBounded.create_circle(self.base, self.axis, self.radius)
+        sign_center = np.sign(np.dot(self.center, plane.normal))
+        
+        test_passes = False
+        sign_top = np.sign(plane.get_signed_distances(top.bounds))
+        sign_top = [s for s in sign_top if s != 0]
+        if np.all(sign_top == sign_top[0]) and sign_center != sign_top[0]:
+            test_passes = True
+        
+        sign_base = np.sign(plane.get_signed_distances(base.bounds))
+        sign_base = [s for s in sign_base if s != 0]
+        if np.all(sign_base == sign_base[0]) and sign_center != sign_base[0]:
+            test_passes = True
+        
+        return test_passes
+        # if not test_passes:
+        #     return False
+        
+        # def point_in_poly(hull, point):
+        #     for simplex in hull.simplices:
+        #         x, y = hull.points[simplex, 0], hull.points[simplex, 1]
+        #         p1, p2 = (x[0], y[0]), (x[1], y[1])
+        #         # Check if the point is on the left side of all edges
+        #         if (point[0] - p1[0]) * (p2[1] - p1[1]) - (point[1] - p1[1]) * (p2[0] - p1[0]) > 0:
+        #             return False
+        #     return True
+        
+        # rot = plane.get_rotation_from_axis([0, 0, 1], plane.normal)
+        # projected_circle = self.project_to_plane(plane)
+        # projected_points = (rot @ projected_circle.bounds.T).T[:, :2]
+        # hull = ConvexHull((rot @ plane.bounds.T).T[:, :2])
+        
+        # return np.all([point_in_poly(hull, p) for p in projected_points])
     
     @staticmethod
     def fit(points, normals=None):
