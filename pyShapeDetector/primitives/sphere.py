@@ -171,7 +171,7 @@ class Sphere(Primitive):
         points = np.asarray(points)
         dist_vec = points - self.model[:3]
         normals = dist_vec / np.linalg.norm(dist_vec, axis=1)[..., np.newaxis]
-        return normals
+        return normals        
 
     def get_mesh(self, resolution=30):
         """ Returns mesh defined by the sphere model.   

@@ -12,6 +12,7 @@ from open3d.utility import Vector3iVector
 from skspatial.objects.cylinder import Cylinder as skcylinder
 
 from .primitivebase import Primitive
+from .plane import PlaneBounded
     
 class Cylinder(Primitive):
     """
@@ -344,6 +345,15 @@ class Cylinder(Primitive):
         mesh.translate(self.center)
         
         return mesh
+    
+    def project_to_plane(self, plane, resolution=30):
+        circle = PlaneBounded.create_circle(
+            self.center, self.axis, self.radius, resolution)
+        
+        # new_bounds = plane.flatten_points(circle.bounds)
+        # new_circle = plane.get_plane_bounded(circle.bounds)
+        
+        return plane.get_plane_bounded(circle.bounds)
     
     @staticmethod
     def fit(points, normals=None):

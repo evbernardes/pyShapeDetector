@@ -661,6 +661,24 @@ class PlaneBounded(Plane):
         
         plane = Plane.fit(points, normals)
         return plane.get_plane_bounded(points)
+    
+    @staticmethod
+    def create_circle(center, normal, radius, resolution=30):
+        
+        normalize = lambda x:x / np.linalg.norm(x)
+        
+        center = np.array(center)
+        normal = normalize(np.array(normal))
+        
+        random_axis = normalize(np.random.random(3))
+        ex = normalize(np.cross(random_axis, normal))
+        ey = normalize(np.cross(normal, ex))
+        
+        theta = np.linspace(-np.pi, np.pi, resolution)[None].T
+        points = center + np.cos(theta) * ex + np.sin(theta) * ey
+        
+        plane = Plane.from_normal_point(normal, center)
+        return plane.get_plane_bounded(points)
   
     @staticmethod  
     def create_box(center=[0,0,0], dimensions=[1, 1, 1]):
