@@ -604,30 +604,51 @@ class PlaneBounded(Plane):
             return None, None
             
     
-    def get_mesh(self, resolution=None):
-        """ Flatten points and creates a simplified mesh of the plane defined
-        by the points at the borders.      
+def get_mesh(plane, holes=None, resolution=None):
+    """ Flatten points and creates a simplified mesh of the plane defined
+    by the points at the borders.      
 
-        Parameters
-        ----------
-        points : N x 3 array
-            Points corresponding to the fitted shape.
+    Holes can be given in the form of a list of BoundedPlane instances.
+
+    Parameters
+    ----------
+    points : N x 3 array
+        Points corresponding to the fitted shape.
+    holes : list of PlaneBounded instances, optional
+        BoundedPlane instances defining holes in the surface.
+    
+    Returns
+    -------
+    TriangleMesh
+        Mesh corresponding to the plane.
+    """
+    has_holes = holes is not None and len(holes) != 0
+    
+    points = plane.bounds
+    projection = plane.projection
+    if has_holes:
+        projection_holes = np.vstack([h.projection for h in holes])
+        points_holes = np.vstack([h.bounds for h in holes])
+        hole_points = np.array(
+            [False] * len(projection) + [True] * len(projection_holes))
+        projection = np.vstack([projection, projection_holes])
+        points = np.vstack([points, points_holes])
         
-        Returns
-        -------
-        TriangleMesh
-            Mesh corresponding to the plane.
-        """
-        triangles = Delaunay(self.projection).simplices
-        
-        # needed to make plane visible from both sides
-        triangles = np.vstack([triangles, triangles[:, ::-1]])
-        
-        mesh = TriangleMesh()
-        mesh.vertices = Vector3dVector(self.bounds)
-        mesh.triangles = Vector3iVector(triangles)
-        
-        return mesh
+    # is_points = np.asarray(is_points)
+    # A = dict(vertices=plane.projection, holes=[circle.projection])
+    # triangles = tr.triangulate(A)
+    triangles = Delaunay(projection).simplices
+    if has_holes:
+        triangles = triangles[~np.all(hole_points[triangles], axis=1)]
+    
+    # needed to make plane visible from both sides
+    triangles = np.vstack([triangles, triangles[:, ::-1]])
+    
+    mesh = TriangleMesh()
+    mesh.vertices = Vector3dVector(points)
+    mesh.triangles = Vector3iVector(triangles)
+    
+    return mesh
     
     @classmethod
     def random(cls, scale=1):
