@@ -518,9 +518,11 @@ class PlaneBounded(Plane):
         
         if isinstance(planemodel, Plane):
             self.unbounded = planemodel
+        elif isinstance(planemodel, PlaneBounded):
+            self.unbounded = planemodel.unbounded
         else:
             self.unbounded = Plane(planemodel)
-        self.model = self.unbounded.model
+        # self.model = self.unbounded.model
         
         if bounds is None:
             warn('No input bounds, returning square plane')
@@ -546,6 +548,11 @@ class PlaneBounded(Plane):
                 self = None
             
         # self.bounds = bounds
+        
+    @property
+    def model(self):
+        """ Return model. """
+        return self.unbounded.model
     
     @property
     def canonical(self):
