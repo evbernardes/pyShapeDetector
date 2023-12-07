@@ -9,7 +9,8 @@ import warnings
 import numpy as np
 from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector
-from skspatial.objects.cylinder import Cylinder as skcylinder
+# from skspatial.objects.cylinder import Cylinder as skcylinder
+from scipy.spatial.transform import Rotation
 
 from .primitivebase import Primitive
 from .plane import PlaneBounded
@@ -350,10 +351,26 @@ class Cylinder(Primitive):
         circle = PlaneBounded.create_circle(
             self.center, self.axis, self.radius, resolution)
         
+        dist = plane.get_distances(self.center)
+        cos_theta = np.dot(self.axis, plane.normal)
+        
+        points = circle.bounds
+        points += self.axis * dist / cos_theta
+        
+        if not np.isclose(cos_theta, 1):
+            rot_axis = np.cross(self.axis, plane.normal)
+            rot_axis /= np.linalg.norm(rot_axis)
+            rot = Rotation.from_rotvec(np.arccos(cos_theta) * rot_axis)
+            center = points.mean(axis=0)
+            points = center + rot.apply(points - center)
+        
         # new_bounds = plane.flatten_points(circle.bounds)
         # new_circle = plane.get_plane_bounded(circle.bounds)
         
-        return plane.get_plane_bounded(circle.bounds)
+        return plane.get_bounded_plane(points)
+        # from open3d.geometry import PointCloud
+        # from open3d.utility import Vector3dVector
+        # return PointCloud(Vector3dVector(points))
     
     @staticmethod
     def fit(points, normals=None):

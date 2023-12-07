@@ -49,7 +49,7 @@ class Plane(Primitive):
     from_normal_point(normal, point):
         Creates plane from normal vector and point in plane.
         
-    get_plane_bounded(points):
+    get_bounded_plane(points):
         Gives bounded version of plane, using input points to define 
         border.
     
@@ -165,7 +165,7 @@ class Plane(Primitive):
         model = model / norm
         Primitive.__init__(self, model)
         
-    def get_plane_bounded(self, points):
+    def get_bounded_plane(self, points):
         """ Gives bounded version of plane, using input points to define 
         border.
         
@@ -444,7 +444,7 @@ class PlaneBounded(Plane):
     Methods
     ------- 
     
-    get_plane_bounded(points):
+    get_bounded_plane(points):
         Gives bounded version of plane, using input points to define 
         border.
     
@@ -660,7 +660,7 @@ class PlaneBounded(Plane):
         """
         
         plane = Plane.fit(points, normals)
-        return plane.get_plane_bounded(points)
+        return plane.get_bounded_plane(points)
     
     @staticmethod
     def create_circle(center, normal, radius, resolution=30):
@@ -675,10 +675,10 @@ class PlaneBounded(Plane):
         ey = normalize(np.cross(normal, ex))
         
         theta = np.linspace(-np.pi, np.pi, resolution)[None].T
-        points = center + np.cos(theta) * ex + np.sin(theta) * ey
+        points = center + (np.cos(theta) * ex + np.sin(theta) * ey) * radius
         
         plane = Plane.from_normal_point(normal, center)
-        return plane.get_plane_bounded(points)
+        return plane.get_bounded_plane(points)
   
     @staticmethod  
     def create_box(center=[0,0,0], dimensions=[1, 1, 1]):
@@ -717,7 +717,7 @@ class PlaneBounded(Plane):
                 ])
             
             plane = Plane.from_normal_point(v3, center + sign * v3)
-            planes.append(plane.get_plane_bounded(points))
+            planes.append(plane.get_bounded_plane(points))
             
         return planes
             
