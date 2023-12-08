@@ -60,6 +60,12 @@ class Cylinder(Primitive):
         Creates cylinder from center base point, center top point and 
         radius as separated arguments.
     
+    project_to_plane(plane, resolution=30):
+        Projects cylinder into a plane, creating an elliptical plane.
+    
+    cuts(plane):
+        Returns true if cylinder cuts through plane.
+    
     get_surface_area():
         Gives the surface area of model. 
         
@@ -113,11 +119,17 @@ class Cylinder(Primitive):
     get_mesh(): TriangleMesh
         Returns mesh defined by the cylinder model. 
         
-    project_to_plane(plane, resolution=30):
-        Projects cylinder into a plane, creating an elliptical plane.
+    get_cropped_mesh(points=None, eps=1E-3):
+        Creates mesh of the shape and crops it according to points.
+        
+    is_similar_to(other_shape, rtol=1e-02, atol=1e-02):
+        Check if shapes represent same model.
+        
+    copy():
+        Returns copy of shape
     
-    cuts(plane):
-        Returns true if cylinder cuts through plane.
+    align(axis):
+        Returns aligned
     """
     
     _fit_n_min = 6

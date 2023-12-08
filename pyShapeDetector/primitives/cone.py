@@ -113,6 +113,18 @@ class Cone(Primitive):
     
     get_mesh(): TriangleMesh
         Returns mesh defined by the cylinder model. 
+        
+    get_cropped_mesh(points=None, eps=1E-3):
+        Creates mesh of the shape and crops it according to points.
+        
+    is_similar_to(other_shape, rtol=1e-02, atol=1e-02):
+        Check if shapes represent same model.
+        
+    copy():
+        Returns copy of shape
+    
+    align(axis):
+        Returns aligned 
     
     """
     

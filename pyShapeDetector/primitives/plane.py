@@ -40,6 +40,8 @@ class Plane(Primitive):
         For unbounded plane, returns NaN and gives warning
     volume : float
         Volume of plane, which is zero.
+    holes : list
+        List of holes in plane.
     
     Methods
     ------- 
@@ -52,6 +54,18 @@ class Plane(Primitive):
     get_bounded_plane(points):
         Gives bounded version of plane, using input points to define 
         border.
+        
+    get_square_plane(length=1):
+        Gives four points defining boundary of square plane.
+        
+    get_square_mesh(length=1):
+        Gives square plane defined by four points.
+        
+    add_holes(holes):
+        Add one or more holes to plane.
+        
+    remove_hole(idx):
+        Remove hole according to index.
     
     get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
@@ -65,6 +79,9 @@ class Plane(Primitive):
         
     random(scale):
         Generates a random shape.
+        
+    fit(points, normals=None):
+        Gives plane that fits the input points.
     
     get_angles_cos(self, points, normals):
         Gives the absolute value of cosines of the angles between the input 
@@ -92,14 +109,17 @@ class Plane(Primitive):
         shape has pre-defined inlier points, use them to find borders.
         Otherwise, return square mesh.
         
-    get_square_plane(length=1):
-        Gives four points defining boundary of square plane.
+    get_cropped_mesh(points=None, eps=1E-3):
+        Creates mesh of the shape and crops it according to points.
         
-    get_square_mesh(length=1):
-        Gives square plane defined by four points.
+    is_similar_to(other_shape, rtol=1e-02, atol=1e-02):
+        Check if shapes represent same model.
         
-    fit(points, normals=None):
-        Gives plane that fits the input points.
+    copy(copy_holes):
+        Returns copy of plane
+    
+    align(axis):
+        Returns aligned 
     
     """
     
@@ -109,6 +129,18 @@ class Plane(Primitive):
     _holes = []
     
     def copy(self, copy_holes=True):
+        """ Returns copy of plane
+        
+        Parameters
+        ----------
+        copy_holes: boolean, optional
+            If True, also copy holes. Default: True.
+        
+        Returns
+        -------
+        Primitive
+            Copied primitive
+        """
         shape = Plane(self.model.copy())
         shape._inlier_points = self._inlier_points.copy()
         shape._inlier_normals = self._inlier_normals.copy()
@@ -124,6 +156,13 @@ class Plane(Primitive):
         return self.get_mesh().get_surface_area()
     
     def add_holes(self, holes):
+        """ Add one or more holes to plane.
+        
+        Parameters
+        ----------            
+        holes : PlaneBounded or list of PlaneBounded instances
+            Planes defining holes.
+        """
         if not isinstance(holes, list):
             holes = [holes]
         for hole in holes:
@@ -133,10 +172,18 @@ class Plane(Primitive):
         self._holes += holes
     
     def remove_hole(self, idx):
+        """ Remove hole according to index.
+        
+        Parameters
+        ----------            
+        idx : int
+            Index of hole to be removed.
+        """
         self._holes.pop(idx)
     
     @property
     def holes(self):
+        """ Existing holes in plane. """
         return self._holes
     
     @classmethod
@@ -486,6 +533,8 @@ class PlaneBounded(Plane):
         Surface area of bounded plane.
     volume : float
         Volume of plane, which is zero.
+    holes : list
+        List of holes in plane.
     
     Methods
     ------- 
@@ -532,6 +581,12 @@ class PlaneBounded(Plane):
     get_square_mesh(length=1):
         Gives a square mesh that fits the plane model.
         
+    add_holes(holes):
+        Add one or more holes to plane.
+        
+    remove_hole(idx):
+        Remove hole according to index.
+        
     fit(points, normals=None):
         Gives plane that fits the input points.
         
@@ -540,12 +595,36 @@ class PlaneBounded(Plane):
         
     create_circle(center, normal, radius, resolution=30):
         Creates circular plane.
+        
+    get_cropped_mesh(points=None, eps=1E-3):
+        Creates mesh of the shape and crops it according to points.
+        
+    is_similar_to(other_shape, rtol=1e-02, atol=1e-02):
+        Check if shapes represent same model.
+        
+    copy(copy_holes):
+        Returns copy of plane
+    
+    align(axis):
+        Returns aligned 
     
     """
     
     _name = 'bounded plane'
     
     def copy(self, copy_holes=True):
+        """ Returns copy of plane
+        
+        Parameters
+        ----------
+        copy_holes: boolean, optional
+            If True, also copy holes. Default: True.
+        
+        Returns
+        -------
+        Primitive
+            Copied primitive
+        """
         shape = PlaneBounded(self.model.copy(), self.bounds.copy())
         shape._inlier_points = self._inlier_points.copy()
         shape._inlier_normals = self._inlier_normals.copy()

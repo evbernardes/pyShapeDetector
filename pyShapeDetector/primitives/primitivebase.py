@@ -101,37 +101,23 @@ class Primitive(ABC):
         
     get_mesh():
         Creates mesh of the shape.
+        
+    get_cropped_mesh(points=None, eps=1E-3):
+        Creates mesh of the shape and crops it according to points.
+        
+    is_similar_to(other_shape, rtol=1e-02, atol=1e-02):
+        Check if shapes represent same model.
+        
+    copy():
+        Returns copy of shape
+    
+    align(axis):
+        Returns aligned 
     """
     _inlier_points = np.asarray([])
     _inlier_normals = np.asarray([])
     # _inlier_indices = np.asarray([])
     _metrics = {}
-    
-    def align(self, axis):
-        """ Returns aligned 
-        
-        Parameters
-        ----------
-        axis : 3 x 1 array
-            Axis to which the shape should be aligned.
-        
-        Returns
-        -------
-        Primitive
-            Aligned shape with axis
-        """
-        if hasattr(self, 'axis') or hasattr(self, 'vector'):
-            raise NotImplementedError(f'{self.name} has an axis, but its '
-                                      'alignement method has not been '
-                                      'implemented.')
-        return self.copy()
-    
-    def copy(self):
-        shape = type(self)(self.model.copy())
-        shape._inlier_points = self._inlier_points.copy()
-        shape._inlier_normals = self._inlier_normals.copy()
-        shape._metrics = self._metrics.copy()
-        return shape
     
     def __repr__(self):
         round_ = lambda x:round(x, 5)
@@ -598,6 +584,39 @@ class Primitive(ABC):
         compare = np.isclose(self.canonical.model, other_shape.canonical.model,
                              rtol=rtol, atol=atol)
         return compare.all()
+    
+    def copy(self):
+        """ Returns copy of shape 
+        
+        Returns
+        -------
+        Primitive
+            Copied primitive
+        """
+        shape = type(self)(self.model.copy())
+        shape._inlier_points = self._inlier_points.copy()
+        shape._inlier_normals = self._inlier_normals.copy()
+        shape._metrics = self._metrics.copy()
+        return shape
+    
+    def align(self, axis):
+        """ Returns aligned 
+        
+        Parameters
+        ----------
+        axis : 3 x 1 array
+            Axis to which the shape should be aligned.
+        
+        Returns
+        -------
+        Primitive
+            Aligned shape with axis
+        """
+        if hasattr(self, 'axis') or hasattr(self, 'vector'):
+            raise NotImplementedError(f'{self.name} has an axis, but its '
+                                      'alignement method has not been '
+                                      'implemented.')
+        return self.copy()
             
     def __eq__(self, other_shape):
         return self.is_similar_to(other_shape, rtol=1e-05, atol=1e-08)
