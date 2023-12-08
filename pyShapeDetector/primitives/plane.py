@@ -106,6 +106,28 @@ class Plane(Primitive):
     _fit_n_min = 3
     _model_args_n = 4
     _name = 'plane'
+    _holes = []
+    
+    @property
+    def surface_area(self):
+        """ Surface area of bounded plane. """
+        return self.get_mesh().get_surface_area()
+    
+    def add_holes(self, holes):
+        if not isinstance(holes, list):
+            holes = [holes]
+        for hole in holes:
+            if not isinstance(hole, PlaneBounded):
+                raise ValueError("Holes must be instances of PlaneBounded, got"
+                                 f" {hole}.")
+        self._holes += holes
+    
+    def remove_hole(self, idx):
+        self._holes.pop(idx)
+    
+    @property
+    def holes(self):
+        return self._holes
     
     @classmethod
     def from_normal_dist(cls, normal, dist):
@@ -184,7 +206,9 @@ class Plane(Primitive):
         if len(points) == 0:
             raise ValueError('if no points are given, shape must have inlier points')
         bounds = self.flatten_points(points)
-        return PlaneBounded(self, bounds)
+        bounded_plane = PlaneBounded(self, bounds)
+        bounded_plane._holes = self.holes
+        return bounded_plane
     
     @property
     def canonical(self):
@@ -192,7 +216,9 @@ class Plane(Primitive):
         model = self.model
         if np.sign(self.dist) < 0:
             model = -model
-        return Plane(list(self.model))
+        plane = Plane(list(self.model))
+        plane._holes = self.holes
+        return plane
     
     @property
     def equation(self):
@@ -285,7 +311,10 @@ class Plane(Primitive):
             warn('No inlier points, returning square plane...')
             return self.get_square_mesh()
         bounds = self.flatten_points(self.inlier_points)
-        return PlaneBounded(self, bounds).get_mesh()
+        
+        bounded_plane = PlaneBounded(self, bounds)
+        bounded_plane._holes = self.holes
+        return bounded_plane.get_mesh()
     
     def get_square_plane(self, length=1):
         """ Gives square plane defined by four points.
@@ -321,7 +350,9 @@ class Plane(Primitive):
             centroid - v1 * length / 2,
             centroid - v2 * length / 2])
         
-        return PlaneBounded(self, vertices)
+        plane_bounded = PlaneBounded(self, vertices)
+        plane_bounded._holes = self.holes
+        return plane_bounded
 
         # triangles = Vector3iVector(np.array([
         #     [0, 1, 2], 
@@ -564,12 +595,9 @@ class PlaneBounded(Plane):
         model = self.model
         if self.dist >= 0:
             model = -model
-        return PlaneBounded(list(-self.model), self.bounds)
-    
-    @property
-    def surface_area(self):
-        """ Surface area of bounded plane. """
-        return self.get_mesh().get_surface_area()
+        canonical_plane = PlaneBounded(list(-self.model), self.bounds)
+        canonical_plane._holes = self.holes
+        return canonical_plane
         
     @staticmethod
     def _get_bounds_and_projection(plane, points, flatten=True):
