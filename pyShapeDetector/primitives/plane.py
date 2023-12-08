@@ -671,25 +671,36 @@ class PlaneBounded(Plane):
         TriangleMesh
             Mesh corresponding to the plane.
         """
-        holes = self._holes
-        has_holes = len(holes) != 0
+
         
         points = self.bounds
         projection = self.projection
+        
+        holes = self._holes
+        has_holes = len(holes) != 0
         if has_holes:
-            projection_holes = np.vstack([h.projection for h in holes])
-            points_holes = np.vstack([h.bounds for h in holes])
-            hole_points = np.array(
-                [False] * len(projection) + [True] * len(projection_holes))
-            projection = np.vstack([projection, projection_holes])
-            points = np.vstack([points, points_holes])
+            labels = []
+            projection_holes = []
+            points_holes = []
+            labels_holes = []
+            for i in range(len(holes)):
+                hole = holes[i]
+                projection_holes.append(hole.projection)
+                points_holes.append(hole.bounds)
+                labels += [i+1] * len(hole.projection)                
+            labels = np.array(
+                [0] * len(projection) + labels)
+            projection = np.vstack([projection]+projection_holes)
+            points = np.vstack([points]+points_holes)
             
         # is_points = np.asarray(is_points)
         # A = dict(vertices=plane.projection, holes=[circle.projection])
         # triangles = tr.triangulate(A)
         triangles = Delaunay(projection).simplices
         if has_holes:
-            triangles = triangles[~np.all(hole_points[triangles], axis=1)]
+            for i in range(len(holes)):
+                triangles = triangles[
+                    ~np.all(labels[triangles] == i+1, axis=1)]
         
         # needed to make plane visible from both sides
         triangles = np.vstack([triangles, triangles[:, ::-1]])
