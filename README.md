@@ -31,14 +31,17 @@ Simple example for detecting a sphere in a pointcloud using classical RANSAC:
 >>> from open3d.io import read_point_cloud
 >>> from pyShapeDetector.methods import RANSAC_Classic
 >>> from pyShapeDetector.primitives import Sphere
+>>>
 >>> pcd = read_point_cloud('data/1spheres.pcd')
 >>> pcd.estimate_normals()
->>> detector = RANSAC_Classic(Sphere, num_iterations=15,
-                              threshold_angle=30,
-                              threshold_angle=15,
-                              inliers_min=100)
-
->>> shape, inliers, metrics = detector.fit(pcd.points, debug=True, normals=normals)
+>>>
+>>> detector = RANSAC_Classic()
+>>> detector.add(Sphere)
+>>> detector.options.num_iterations = 15
+>>> detector.options.threshold_angle = np.radians(15)
+>>> detector.options.inliers_min = 100
+>>>
+>>> shape, inliers, metrics = detector.fit(pcd.points, normals=pcd.normals, debug=True)
 ```
 
 For more examples, see the `examples` directory.
