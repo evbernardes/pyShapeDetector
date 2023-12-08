@@ -7,6 +7,7 @@ Created on Mon Sep 25 15:42:59 2023
 """
 from abc import ABC, abstractmethod
 import numpy as np
+import copy
 from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
 
@@ -107,11 +108,18 @@ class Primitive(ABC):
     # _inlier_indices = np.asarray([])
     _metrics = {}
     
+    def copy(self):
+        shape = type(self)(
+            copy.deepcopy(self.model))
+        shape._inlier_points = copy.deepcopy(self.inlier_points)
+        shape._inlier_normals = copy.deepcopy(self.inlier_normals)
+        shape._metrics = copy.deepcopy(self.metrics)
+        return shape
+    
     def __repr__(self):
         round_ = lambda x:round(x, 5)
         params = list(map(round_, self.model))
         return type(self).__name__+'('+str(params)+')'
-    
     
     def add_inliers(self, points, normals=None):
         points = np.asarray(points)

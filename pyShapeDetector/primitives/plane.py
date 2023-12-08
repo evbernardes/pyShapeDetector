@@ -108,6 +108,12 @@ class Plane(Primitive):
     _name = 'plane'
     _holes = []
     
+    def copy(self):
+        shape = Primitive.copy(self)
+        holes = [h.copy() for h in self._holes]
+        shape._holes = holes
+        return shape
+    
     @property
     def surface_area(self):
         """ Surface area of bounded plane. """
@@ -186,6 +192,7 @@ class Plane(Primitive):
         norm = np.linalg.norm(model[:3])
         model = model / norm
         Primitive.__init__(self, model)
+        self._holes = []
         
     def get_bounded_plane(self, points=None):
         """ Gives bounded version of plane, using input points to define 
@@ -207,7 +214,7 @@ class Plane(Primitive):
             raise ValueError('if no points are given, shape must have inlier points')
         bounds = self.flatten_points(points)
         bounded_plane = PlaneBounded(self, bounds)
-        bounded_plane._holes = self.holes
+        bounded_plane._holes = self._holes
         return bounded_plane
     
     @property
@@ -217,7 +224,7 @@ class Plane(Primitive):
         if np.sign(self.dist) < 0:
             model = -model
         plane = Plane(list(self.model))
-        plane._holes = self.holes
+        plane._holes = self._holes
         return plane
     
     @property
@@ -313,7 +320,7 @@ class Plane(Primitive):
         bounds = self.flatten_points(self.inlier_points)
         
         bounded_plane = PlaneBounded(self, bounds)
-        bounded_plane._holes = self.holes
+        bounded_plane._holes = self._holes
         return bounded_plane.get_mesh()
     
     def get_square_plane(self, length=1):
@@ -351,7 +358,7 @@ class Plane(Primitive):
             centroid - v2 * length / 2])
         
         plane_bounded = PlaneBounded(self, vertices)
-        plane_bounded._holes = self.holes
+        plane_bounded._holes = self._holes
         return plane_bounded
 
         # triangles = Vector3iVector(np.array([
@@ -581,8 +588,8 @@ class PlaneBounded(Plane):
             
             if self.bounds is None:
                 self = None
-            
-        # self.bounds = bounds
+                
+        self._holes = []
         
     @property
     def model(self):
@@ -596,7 +603,7 @@ class PlaneBounded(Plane):
         if self.dist >= 0:
             model = -model
         canonical_plane = PlaneBounded(list(-self.model), self.bounds)
-        canonical_plane._holes = self.holes
+        canonical_plane._holes = self._holes
         return canonical_plane
         
     @staticmethod
@@ -650,7 +657,7 @@ class PlaneBounded(Plane):
         TriangleMesh
             Mesh corresponding to the plane.
         """
-        holes = self.holes
+        holes = self._holes
         has_holes = len(holes) != 0
         
         points = self.bounds
