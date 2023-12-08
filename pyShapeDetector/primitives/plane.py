@@ -636,25 +636,22 @@ class PlaneBounded(Plane):
             return None, None
             
     
-    def get_mesh(self, resolution=None, holes=None):
+    def get_mesh(self, resolution=None):
         """ Flatten points and creates a simplified mesh of the plane defined
-        by the points at the borders.      
-    
-        Holes can be given in the form of a list of BoundedPlane instances.
+        by the points at the borders.
     
         Parameters
         ----------
         points : N x 3 array
             Points corresponding to the fitted shape.
-        holes : list of PlaneBounded instances, optional
-            BoundedPlane instances defining holes in the surface.
         
         Returns
         -------
         TriangleMesh
             Mesh corresponding to the plane.
         """
-        has_holes = holes is not None and len(holes) != 0
+        holes = self.holes
+        has_holes = len(holes) != 0
         
         points = self.bounds
         projection = self.projection
