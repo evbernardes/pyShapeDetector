@@ -62,3 +62,29 @@ def cut_planes_with_cylinders(shapes, radius_min, total_cut=False, eps=0):
             if c.cuts(p, total_cut=total_cut, eps=eps):
                 p.add_holes(c.project_to_plane(p))
                 
+                
+def get_meshes(shapes, crop_types=['sphere', 'cone']):
+    """ Returns meshes from shapes.
+    
+    Parameters
+    ----------
+    crop_types : list of strings, optional
+        Define type of primitives that should be cropped according to their
+        inlier points. Default: ['sphere', 'cone']
+    
+    Returns
+    -------
+    list
+        List of meshes.
+    """
+    meshes = []
+    for shape in shapes:
+        if shape.name in crop_types:
+            mesh = shape.get_cropped_mesh()
+        else:
+            mesh = shape.get_mesh()
+        mesh.paint_uniform_color(np.random.random(3))
+        meshes.append(mesh)
+
+    return meshes
+                

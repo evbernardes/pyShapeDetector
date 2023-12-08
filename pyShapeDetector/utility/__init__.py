@@ -10,5 +10,6 @@ from .multidetector import MultiDetector
 from .primitivelimits import PrimitiveLimits
 from .RANSAC_Options import RANSAC_Options
 from .helpers_pointclouds import read_point_cloud, paint_random
-from .helpers_primitives import group_similar_shapes, fuse_shape_groups, cut_planes_with_cylinders
+from .helpers_primitives import (group_similar_shapes, fuse_shape_groups, 
+                                 cut_planes_with_cylinders, get_meshes)
 from .helpers_meshes import clean_crop
