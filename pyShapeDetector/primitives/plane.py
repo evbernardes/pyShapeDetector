@@ -165,7 +165,7 @@ class Plane(Primitive):
         model = model / norm
         Primitive.__init__(self, model)
         
-    def get_bounded_plane(self, points):
+    def get_bounded_plane(self, points=None):
         """ Gives bounded version of plane, using input points to define 
         border.
         
@@ -179,6 +179,10 @@ class Plane(Primitive):
         PlaneBounded
             Bounded version of plane.
         """
+        if points is None:
+            points = self.inlier_points
+        if len(points) == 0:
+            raise ValueError('if no points are given, shape must have inlier points')
         bounds = self.flatten_points(points)
         return PlaneBounded(self, bounds)
     
