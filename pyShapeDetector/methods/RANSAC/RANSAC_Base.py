@@ -16,7 +16,7 @@ from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
 
 from pyShapeDetector.primitives import Primitive
-from pyShapeDetector.utility import PrimitiveLimits, RANSAC_Options
+from pyShapeDetector.utility import PrimitiveLimits, DetectorOptions
 
 # random.seed(time.time())
 random.seed(931)
@@ -24,12 +24,6 @@ random.seed(931)
 class RANSAC_Base(ABC):
     """
     Base class used to define RANSAC-based methods.
-    
-    To define a primitive, inherit from this class and define at least the 
-    following attribute:
-        `_type`
-    And the following method:
-        `compare_metrics`
 
     Attributes
     ----------
@@ -79,9 +73,7 @@ class RANSAC_Base(ABC):
         Copies options instead of pointing to the same options.
         
     """
-
-
-    def __init__(self, options=RANSAC_Options()):
+    def __init__(self, options=DetectorOptions()):
         
         self._opt = options
         self._num_primitives = 0
@@ -155,8 +147,8 @@ class RANSAC_Base(ABC):
     
     @options.setter
     def options(self, value):
-        if not isinstance(value, RANSAC_Options):
-            raise ValueError('must be an instance of RANSAC_Options')
+        if not isinstance(value, DetectorOptions):
+            raise ValueError('must be an instance of DetectorOptions')
         # self._opt = copy.copy(value)
         self._opt = value
     
@@ -167,13 +159,13 @@ class RANSAC_Base(ABC):
         
         Parameters
         ----------
-        value : RANSAC method or RANSAC_Options instance
+        value : RANSAC method or DetectorOptions instance
             Options to copy
         """
         if isinstance(value, RANSAC_Base):
             value = value.options
-        elif not isinstance(value, RANSAC_Options):
-            raise ValueError('input must be an instance of RANSAC_Options '
+        elif not isinstance(value, DetectorOptions):
+            raise ValueError('input must be an instance of DetectorOptions '
                              'or RANSAC method.')
         self.options = copy.copy(value)
         # self._opt = value

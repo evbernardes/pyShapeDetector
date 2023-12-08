@@ -6,31 +6,10 @@ Created on Tue Sep 26 15:59:55 2023
 @author: ebernardes
 """
 import warnings
-import time
-import random
-# import numpy as np
 
-# from pyShapeDetector.utility import PrimitiveLimits
-
-# random.seed(time.time())
-
-class RANSAC_Options():
+class DetectorOptions():
     """
-    Base class used to define RANSAC-based methods.
-    
-    To define a primitive, inherit from this class and define at least the 
-    following attribute:
-        `_type`
-    And the following method:
-        `compare_metrics`
-
-    Attributes
-    ----------
-    _type : str
-        Name of method.
-    
-    Methods
-    -------
+    Base class used to define options for detector methods.
 
     """
     _reduction_rate=1.0
@@ -79,7 +58,6 @@ class RANSAC_Options():
         return type(self).__name__+'('+dict_str+')'
     
     def __init__(self, dict_parameters={}):
-        # self = RANSAC_Options()
         for key in dict_parameters.keys():
             if not hasattr(self, key):
                 warnings.warn(f"Ignoring unknown attribute '{key}'")

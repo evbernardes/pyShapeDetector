@@ -8,7 +8,7 @@ Created on Tue Sep 26 16:02:34 2023
 
 from .multidetector import MultiDetector
 from .primitivelimits import PrimitiveLimits
-from .RANSAC_Options import RANSAC_Options
+from .detector_options import DetectorOptions
 from .helpers_pointclouds import read_point_cloud, paint_random
 from .helpers_primitives import (group_similar_shapes, fuse_shape_groups, 
                                  cut_planes_with_cylinders, get_meshes)

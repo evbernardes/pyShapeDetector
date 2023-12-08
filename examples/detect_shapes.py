@@ -19,7 +19,7 @@ from open3d.utility import Vector3dVector
 # from helpers import color_blue, color_gray, color_red, color_yellow
 from helpers import draw_two_colomns, paint_meshes_by_type, average_nearest_dist, segment_dbscan
 from pyShapeDetector.primitives import Sphere, Plane, PlaneBounded, Cylinder
-from pyShapeDetector.utility import MultiDetector, PrimitiveLimits, RANSAC_Options
+from pyShapeDetector.utility import MultiDetector, PrimitiveLimits, DetectorOptions
 from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, \
     BDSAC, LDSAC
 
