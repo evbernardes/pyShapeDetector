@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Helper functions that act on meshes.
+
 Created on Wed Dec  6 14:59:38 2023
 
 @author: ebernardes
@@ -10,15 +12,12 @@ import copy
 import open3d as o3d
 import numpy as np
 
-def sliceplane(mesh, axis, value, direction):
+def _sliceplane(mesh, axis, value, direction):
     # axis can be 0,1,2 (which corresponds to x,y,z)
     # value where the plane is on that axis
     # direction can be True or False (True means remove everything that is
     # greater, False means less
     # than)
-    
-    # Reference: 
-    # https://stackoverflow.com/questions/75082217/crop-function-that-slices-triangles-instead-of-removing-them-open3d
 
     vertices = np.asarray(mesh.vertices)
     triangles = np.asarray(mesh.triangles)
@@ -116,6 +115,26 @@ def sliceplane(mesh, axis, value, direction):
     return mesh
 
 def clean_crop(mesh, axis_aligned_bounding_box):
+    """ Crops mesh by slicing facets instead of completely removing them, as
+    seen on [1].
+    
+    Parameters
+    ----------
+    mesh: TriangleMesh
+        Mesh to be cropped
+    axis_aligned_bounding_box: AxisAlignedBoundingBox
+        Bounding box defining region of mesh to be saved.
+    
+    Returns
+    -------
+    TriangleMesh
+        Cropped mesh.
+        
+    References
+    ----------
+    [1] https://stackoverflow.com/questions/75082217/crop-function-that-slices-triangles-instead-of-removing-them-open3d
+    """
+    
     min_bound = axis_aligned_bounding_box.min_bound
     max_bound = axis_aligned_bounding_box.max_bound
 
@@ -123,9 +142,6 @@ def clean_crop(mesh, axis_aligned_bounding_box):
     mesh_sliced = copy.copy(mesh)
     for i in range(3):
         min_, max_ = sorted([min_bound[i], max_bound[i]])
-        mesh_sliced = sliceplane(mesh_sliced, i, max_, True)
-        mesh_sliced = sliceplane(mesh_sliced, i, min_, False)
-
+        mesh_sliced = _sliceplane(mesh_sliced, i, max_, True)
+        mesh_sliced = _sliceplane(mesh_sliced, i, min_, False)
     return mesh_sliced
-
-
