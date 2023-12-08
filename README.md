@@ -5,9 +5,8 @@ Python 3 module to detect geometrical primitives in pointclouds.
 ## Dependencies
 
 - `Open3D`
+- `Scipy`
 - `TODO` ...
-
-
 
 ## Installation
 
