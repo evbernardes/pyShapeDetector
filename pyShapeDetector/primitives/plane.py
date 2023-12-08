@@ -108,10 +108,14 @@ class Plane(Primitive):
     _name = 'plane'
     _holes = []
     
-    def copy(self):
-        shape = Primitive.copy(self)
-        holes = [h.copy() for h in self._holes]
-        shape._holes = holes
+    def copy(self, copy_holes=True):
+        shape = Plane(self.model.copy())
+        shape._inlier_points = self._inlier_points.copy()
+        shape._inlier_normals = self._inlier_normals.copy()
+        shape._metrics = self._metrics.copy()
+        if copy_holes:
+            holes = [h.copy(copy_holes=False) for h in self._holes]
+            shape._holes = holes
         return shape
     
     @property
@@ -540,6 +544,16 @@ class PlaneBounded(Plane):
     """
     
     _name = 'bounded plane'
+    
+    def copy(self, copy_holes=True):
+        shape = PlaneBounded(self.model.copy(), self.bounds.copy())
+        shape._inlier_points = self._inlier_points.copy()
+        shape._inlier_normals = self._inlier_normals.copy()
+        shape._metrics = self._metrics.copy()
+        if copy_holes:
+            holes = [h.copy(copy_holes=False) for h in self._holes]
+            shape._holes = holes
+        return shape
     
     def __init__(self, planemodel, bounds=None):
         """
