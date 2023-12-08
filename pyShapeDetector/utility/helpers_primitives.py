@@ -7,6 +7,7 @@ Created on Tue Dec  5 15:48:31 2023
 """
 import numpy as np
 from itertools import combinations
+# from pyShapeDetector.primitives import Plane, Cylinder
 
 def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02):
     
@@ -50,3 +51,13 @@ def fuse_shape_groups(shapes_lists, detector=None):
         new_list.append(shape)
         
     return new_list
+
+def cut_planes_with_cylinders(shapes, radius_min, total_cut=False, eps=0):
+    planes = [s for s in shapes if s.name == 'plane' or s.name == 'bounded plane']
+    cylinders = [s for s in shapes if s.name == 'cylinder']
+    cylinders = [s for s in cylinders if s.radius < radius_min + eps]
+
+    for c in cylinders:
+        for p in planes:
+            if c.cuts(p, total_cut=total_cut, eps=eps):
+                p.add_holes(c.project_to_plane(p))
