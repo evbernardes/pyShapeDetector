@@ -387,13 +387,18 @@ class Cylinder(Primitive):
         
         return plane.get_bounded_plane(points)
     
-    def cuts(self, plane):
+    def cuts(self, plane, total_cut=False, eps=0):
         """ Returns true if cylinder cuts through plane.
         
         Parameters
         ----------
         plane : Plane
             Plane instance.
+        total_cut : boolean, optional
+            When True, only accepts cuts when either the top of the bottom 
+            completely cuts the plane. Default: False.
+        eps : float, optional
+            Adds some backlash to top and bottom of cylinder. Default: 0.
         
         Returns
         -------
@@ -404,24 +409,22 @@ class Cylinder(Primitive):
             warnings.warn("'cuts_shape' is only known to work with planes, "
                           "trying it anyway with {plane.name}")
         
-        top = PlaneBounded.create_circle(self.top, self.axis, self.radius)
-        base = PlaneBounded.create_circle(self.base, self.axis, self.radius)
-        sign_center = np.sign(np.dot(self.center, plane.normal))
+        top = PlaneBounded.create_circle(self.top+eps*self.axis, self.axis, self.radius)
+        base = PlaneBounded.create_circle(self.base-eps*self.axis, self.axis, self.radius)
+        center = np.sign(np.dot(self.center, plane.normal))
         
-        test_passes = False
-        sign_top = np.sign(plane.get_signed_distances(top.bounds))
-        sign_top = [s for s in sign_top if s != 0]
-        if np.all(sign_top == sign_top[0]) and sign_center != sign_top[0]:
-            test_passes = True
+        # test_passes = False
         
-        sign_base = np.sign(plane.get_signed_distances(base.bounds))
-        sign_base = [s for s in sign_base if s != 0]
-        if np.all(sign_base == sign_base[0]) and sign_center != sign_base[0]:
-            test_passes = True
+        def test(center, circle, total_cut):
+            sign_circle = np.sign(plane.get_signed_distances(circle.bounds))
+            if not total_cut and not np.all(sign_circle == sign_circle[0]):
+                return True
+            sign_circle = [s for s in sign_circle if s != 0]
+            if np.all(sign_circle == sign_circle[0]) and center != sign_circle[0]:
+                return True
+            return False
         
-        return test_passes
-        # if not test_passes:
-        #     return False
+        return test(center, base, total_cut) or test(center, top, total_cut) 
         
         # def point_in_poly(hull, point):
         #     for simplex in hull.simplices:
