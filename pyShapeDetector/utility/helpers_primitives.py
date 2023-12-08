@@ -61,3 +61,4 @@ def cut_planes_with_cylinders(shapes, radius_min, total_cut=False, eps=0):
         for p in planes:
             if c.cuts(p, total_cut=total_cut, eps=eps):
                 p.add_holes(c.project_to_plane(p))
+                
