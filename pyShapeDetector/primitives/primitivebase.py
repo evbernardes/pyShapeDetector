@@ -107,6 +107,25 @@ class Primitive(ABC):
     # _inlier_indices = np.asarray([])
     _metrics = {}
     
+    def align(self, axis):
+        """ Returns aligned 
+        
+        Parameters
+        ----------
+        axis : 3 x 1 array
+            Axis to which the shape should be aligned.
+        
+        Returns
+        -------
+        Primitive
+            Aligned shape with axis
+        """
+        if hasattr(self, 'axis') or hasattr(self, 'vector'):
+            raise NotImplementedError(f'{self.name} has an axis, but its '
+                                      'alignement method has not been '
+                                      'implemented.')
+        return self.copy()
+    
     def copy(self):
         shape = type(self)(self.model.copy())
         shape._inlier_points = self._inlier_points.copy()

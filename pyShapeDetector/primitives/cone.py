@@ -120,6 +120,23 @@ class Cone(Primitive):
     _model_args_n = 7
     _name = 'cone'
     
+    def align(self, axis):
+        """ Returns aligned 
+        
+        Parameters
+        ----------
+        axis : 3 x 1 array
+            Axis to which the shape should be aligned.
+        
+        Returns
+        -------
+        Cone
+            Aligned cone with axis
+        """
+        vector = self.height * np.array(axis) / np.linalg.norm(axis)
+        return Cone.from_appex_vector_half_angle(
+            self.appex, vector, self.half_angle)
+    
     @property
     def color(self):
         return np.array([0, 0.707, 0.707])
