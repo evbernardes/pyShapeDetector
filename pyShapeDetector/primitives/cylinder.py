@@ -446,7 +446,7 @@ class Cylinder(Primitive):
         return PlaneBounded.create_ellipse(center, vx, vy, resolution)
         
     
-    
+        # Older wrong circular implementation
         # circle = PlaneBounded.create_circle(
         #     self.center, self.axis, self.radius, resolution)
         

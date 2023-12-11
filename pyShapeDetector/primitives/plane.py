@@ -163,13 +163,24 @@ class Plane(Primitive):
         holes : PlaneBounded or list of PlaneBounded instances
             Planes defining holes.
         """
+        fixed_holes = []
         if not isinstance(holes, list):
             holes = [holes]
         for hole in holes:
             if not isinstance(hole, PlaneBounded):
                 raise ValueError("Holes must be instances of PlaneBounded, got"
                                  f" {hole}.")
-        self._holes += holes
+                
+            cos_theta = np.dot(hole.normal, self.normal)
+            if abs(cos_theta) < 1 - 1e-5:
+                raise ValueError("Plane and hole must be aligned.")
+                
+            if cos_theta < 0:
+                hole = PlaneBounded(-hole.model, bounds=hole.bounds)
+                
+            fixed_holes.append(hole)
+            
+        self._holes += fixed_holes
     
     def remove_hole(self, idx):
         """ Remove hole according to index.
