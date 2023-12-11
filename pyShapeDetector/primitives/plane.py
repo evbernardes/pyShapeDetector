@@ -894,13 +894,13 @@ class PlaneBounded(Plane):
         PlaneBounded
             Fitted circular plane.
         """
-        if np.linalg.norm(np.cross(vx, vy)) > 1e-5:
+        if np.dot(vx, vy) > 1e-5:
             raise ValueError('Axes must be orthogonal.')
         
         center = np.array(center)
         vx = np.array(vx)
         vy = np.array(vy)
-        normal = np.cross(np.random.random(3), vx)
+        normal = np.cross(vx, vy)
         normal /= np.linalg.norm(normal)
         
         theta = np.linspace(-np.pi, np.pi, resolution)[None].T

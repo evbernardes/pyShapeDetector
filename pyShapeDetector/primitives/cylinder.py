@@ -424,24 +424,51 @@ class Cylinder(Primitive):
         PlaneBounded
             Fitted elliptical plane.
         """
+        cos_theta = np.dot(self.axis, plane.normal)
+        if np.abs(np.dot(self.axis, plane.normal)) < 1e-7:
+            warnings.warn('Plane normal and cylinder axis cannot be '
+                         'orthogonal.')
+            return None
         
-        circle = PlaneBounded.create_circle(
-            self.center, self.axis, self.radius, resolution)
+        random_axis_in_plane = np.cross(np.random.random(3), plane.normal)
+        random_axis_in_plane /= np.linalg.norm(random_axis_in_plane)
+        vx = np.cross(self.axis, plane.normal)
+        if np.linalg.norm(vx) < 1e-7:
+            vx = random_axis_in_plane
+        vy = np.cross(plane.normal, vx)
+        vx *= self.radius / np.linalg.norm(vx) 
+        vy *= self.radius / np.linalg.norm(vy) / cos_theta
         
         dist = plane.get_distances(self.center)
         cos_theta = np.dot(self.axis, plane.normal)
+        center = self.center + self.axis * dist / cos_theta
         
-        points = circle.bounds
-        points += self.axis * dist / cos_theta
+        return PlaneBounded.create_ellipse(center, vx, vy, resolution)
         
-        if not np.isclose(cos_theta, 1):
-            rot_axis = np.cross(self.axis, plane.normal)
-            rot_axis /= np.linalg.norm(rot_axis)
-            rot = Rotation.from_rotvec(np.arccos(cos_theta) * rot_axis)
-            center = points.mean(axis=0)
-            points = center + rot.apply(points - center)
+    
+    
+        # circle = PlaneBounded.create_circle(
+        #     self.center, self.axis, self.radius, resolution)
         
-        return plane.get_bounded_plane(points)
+        # random_axis = np.random.random(3)
+        # random_axis /= np.linalg.norm(random_axis)
+        # vx = np.cross(random_axis, plane.normal)
+        # vy = np.cross(plane.normal, vx)
+        
+        # dist = plane.get_distances(self.center)
+        # cos_theta = np.dot(self.axis, plane.normal)
+        
+        # points = circle.bounds
+        # points += self.axis * dist / cos_theta
+        
+        # if not np.isclose(cos_theta, 1):
+        #     rot_axis = np.cross(self.axis, plane.normal)
+        #     rot_axis /= np.linalg.norm(rot_axis)
+        #     rot = Rotation.from_rotvec(np.arccos(cos_theta) * rot_axis)
+        #     center = points.mean(axis=0)
+        #     points = center + rot.apply(points - center)
+        
+        # return PlaneBounded.create_ellipse(center, vx, vy)
     
     def cuts(self, plane, total_cut=False, eps=0):
         """ Returns true if cylinder cuts through plane.
