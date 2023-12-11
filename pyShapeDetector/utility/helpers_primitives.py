@@ -110,7 +110,6 @@ def cut_planes_with_cylinders(shapes, radius_min, total_cut=False, eps=0):
     """
     planes = [s for s in shapes if s.name == 'plane' or s.name == 'bounded plane']
     cylinders = [s for s in shapes if s.name == 'cylinder' and s.radius < radius_min + eps]
-    # cylinders = [s for s in cylinders if s.radius < radius_min + eps]
 
     for c, p in product(cylinders, planes):
         if c.cuts(p, total_cut=total_cut, eps=eps):
