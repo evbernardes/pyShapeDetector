@@ -55,6 +55,10 @@ class Cylinder(Primitive):
     from_base_vector_radius(base, vector, radius):
         Creates cylinder from center base point, vector and radius as 
         separated arguments.
+        
+    from_center_half_vector_radius(center, half_vector, radius):
+        Creates cylinder from center point, half vector and radius as 
+        separated arguments.
     
     from_base_top_radius(base, top, radius)
         Creates cylinder from center base point, center top point and 
@@ -173,6 +177,29 @@ class Cylinder(Primitive):
             Generated shape.
         """
         return cls(list(base)+list(vector)+[radius])
+
+    @classmethod
+    def from_center_half_vector_radius(cls, center, half_vector, radius):
+        """ Creates cylinder from center point, half vector and radius as 
+        separated arguments.
+        
+        Parameters
+        ----------            
+        center : 3 x 1 array
+            Center point of the cylinder.
+        half_vector : 3 x 1 array
+            Vector from center point to top center point.
+        radius : float
+            Radius of the cylinder.
+    
+        Returns
+        -------
+        Cone
+            Generated shape.
+        """
+        half_vector = np.asarray(half_vector)
+        base = np.asarray(center) - half_vector
+        return cls.from_base_vector_radius(base, 2 * half_vector, radius)
         
     @classmethod
     def from_base_top_radius(cls, base, top, radius):
