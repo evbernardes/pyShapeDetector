@@ -439,7 +439,7 @@ class Cylinder(Primitive):
         vx *= self.radius / np.linalg.norm(vx) 
         vy *= self.radius / np.linalg.norm(vy) / cos_theta
         
-        dist = plane.get_distances(self.center)
+        dist = plane.get_signed_distances(self.center)
         cos_theta = np.dot(self.axis, plane.normal)
         center = self.center + self.axis * dist / cos_theta
         
