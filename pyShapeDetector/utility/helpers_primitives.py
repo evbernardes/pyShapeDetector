@@ -136,6 +136,7 @@ def get_meshes(shapes, crop_types=['sphere', 'cone']):
         else:
             mesh = shape.get_mesh()
         mesh.paint_uniform_color(np.random.random(3))
+        # mesh.paint_uniform_color(np.random.random(3))
         meshes.append(mesh)
 
     return meshes
