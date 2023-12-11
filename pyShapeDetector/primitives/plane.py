@@ -868,6 +868,46 @@ class PlaneBounded(Plane):
         
         plane = Plane.from_normal_point(normal, center)
         return plane.get_bounded_plane(points)
+    
+    
+    
+    @staticmethod
+    def create_ellipse(center, vx, vy, resolution=30):
+        """ Creates elliptical plane from two vectors. The input vectors are 
+        interpreted as the two axes of the ellipse, multiplied by their radius.
+        
+        They must be orthogonal.
+        
+        Parameters
+        ----------
+        center : 3 x 1 array
+            Center of circle.
+        vx : 3 x 1 array
+            First axis and multiplied by its semiradius.
+        vy : 3 x 1 array
+            Second axis and multiplied by its semiradius.
+        resolution : int, optional
+            Number of points defining circular plane.
+        
+        Returns
+        -------
+        PlaneBounded
+            Fitted circular plane.
+        """
+        if np.linalg.norm(np.cross(vx, vy)) > 1e-5:
+            raise ValueError('Axes must be orthogonal.')
+        
+        center = np.array(center)
+        vx = np.array(vx)
+        vy = np.array(vy)
+        normal = np.cross(np.random.random(3), vx)
+        normal /= np.linalg.norm(normal)
+        
+        theta = np.linspace(-np.pi, np.pi, resolution)[None].T
+        points = center + np.cos(theta) * vx + np.sin(theta) * vy
+        
+        plane = Plane.from_normal_point(normal, center)
+        return plane.get_bounded_plane(points)
   
     @staticmethod  
     def create_box(center=[0,0,0], dimensions=[1, 1, 1]):
