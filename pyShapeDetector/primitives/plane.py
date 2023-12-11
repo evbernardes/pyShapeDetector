@@ -776,7 +776,8 @@ class PlaneBounded(Plane):
             for i in range(len(holes)):
                 hole = holes[i]
                 projection_holes.append(hole.projection)
-                points_holes.append(hole.bounds)
+                points_holes.append(self.flatten_points(
+                    hole.bounds))
                 labels += [i+1] * len(hole.projection)                
             labels = np.array(
                 [0] * len(projection) + labels)
@@ -914,7 +915,7 @@ class PlaneBounded(Plane):
         normal = np.cross(vx, vy)
         normal /= np.linalg.norm(normal)
         
-        theta = np.linspace(-np.pi, np.pi, resolution)[None].T
+        theta = np.linspace(-np.pi, np.pi, resolution+1)[None].T
         points = center + np.cos(theta) * vx + np.sin(theta) * vy
         
         plane = Plane.from_normal_point(normal, center)
