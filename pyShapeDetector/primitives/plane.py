@@ -155,17 +155,25 @@ class Plane(Primitive):
         """ Surface area of bounded plane. """
         return self.get_mesh().get_surface_area()
     
-    def add_holes(self, holes):
+    def add_holes(self, holes, remove_points=True):
         """ Add one or more holes to plane.
         
         Parameters
         ----------            
         holes : PlaneBounded or list of PlaneBounded instances
             Planes defining holes.
+        remove_points : boolean, optional
+            If True, removes points of plane inside holes and points of holes
+            outside of plane. Default: True.
         """
-        fixed_holes = []
+        if remove_points and not isinstance(self, PlaneBounded):
+            warn('Option remove_points only works if plane is bounded.')
+            remove_points = False
+        
         if not isinstance(holes, list):
             holes = [holes]
+        
+        fixed_holes = []
         for hole in holes:
             if not isinstance(hole, PlaneBounded):
                 raise ValueError("Holes must be instances of PlaneBounded, got"
@@ -174,12 +182,22 @@ class Plane(Primitive):
             cos_theta = np.dot(hole.normal, self.normal)
             if abs(cos_theta) < 1 - 1e-5:
                 raise ValueError("Plane and hole must be aligned.")
-                
-            if cos_theta < 0:
-                hole = PlaneBounded(-hole.model, bounds=hole.bounds)
-                
-            fixed_holes.append(hole)
             
+            model = hole.model
+            if cos_theta < 0:
+                model = -model
+            
+            if remove_points:
+                inside1 = self.contains_points(hole.projection)
+                if sum(inside1) < 3:
+                    continue
+                inside2 = hole.contains_points(self.projection)
+                hole = PlaneBounded(model, hole.bounds[inside1])
+                self.bounds = self.bounds[~inside2]
+                self.projection = self.projection[~inside2]
+            else: 
+                hole = PlaneBounded(model, hole.bounds)
+            fixed_holes.append(hole)
         self._holes += fixed_holes
     
     def remove_hole(self, idx):
@@ -622,6 +640,18 @@ class PlaneBounded(Plane):
     """
     
     _name = 'bounded plane'
+    
+    def contains_points(self, points):
+        inside = np.array([True] * len(points))
+        for i in range(len(points)):
+            point = points[i]
+            for j in range(1, len(self.projection)):
+                p1 = self.projection[j-1]
+                p2 = self.projection[j]
+                if (point[0] - p1[0]) * (p2[1] - p1[1]) - (point[1] - p1[1]) * (p2[0] - p1[0]) > 0:
+                    inside[i] = False
+                    continue
+        return inside
     
     def copy(self, copy_holes=True):
         """ Returns copy of plane
