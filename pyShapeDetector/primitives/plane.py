@@ -137,12 +137,11 @@ class Plane(Primitive):
             Translation vector.
         """
         centroid = self.centroid + translation
-        self._model = Plane.from_normal_point(self.normal, centroid).model
-        self._inlier_points = self._inlier_points + translation
-        try:
-            self.bounds = self.bounds + translation
-        except:
-            pass
+        self._model = Plane.from_normal_point(
+            self.normal, centroid).model
+        
+        if len(self._inlier_points) > 0:
+            self._inlier_points = self._inlier_points + translation
     
     def rotate(self, rotation):
         """ Rotate the shape.
@@ -157,34 +156,17 @@ class Plane(Primitive):
                                       'have an implemented _rotatable '
                                       'attribute')
             
-        if not isinstance(rotation, Rotation):
-            rotation = Rotation.from_matrix(rotation)
-            
-        if isinstance(rotation, Rotation):
-            try:
-                length = len(rotation)
-                if length[0] != 1:
-                    raise ValueError('Rotation input should contain a single '
-                                     ' rotation but has len(rotation) instead')
-                rotation = rotation[0]
-                
-            except TypeError:
-                pass
+        rotation = Primitive._parse_rotation(rotation)
             
         centroid = rotation.apply(self.centroid)
-        self._model = Plane.from_normal_point(
-            self.normal, centroid).model
+        normal = rotation.apply(self.normal)
+        self._model = Plane.from_normal_point(normal, centroid).model
             
-        self._model[self._rotatable] = rotation.apply(
-            self.model[self._rotatable])
-        self._inlier_points = rotation.apply(self._inlier_points)
-        self._inlier_normals = rotation.apply(self._inlier_normals)
-        
-        try:
-            self.bounds = rotation.apply(rotation)
-        except:
-            pass
-    
+        if len(self._inlier_points) > 0:
+            self._inlier_points = rotation.apply(self._inlier_points)
+        if len(self._inlier_normals) > 0:
+            self._inlier_normals = rotation.apply(self._inlier_normals)
+
     def copy(self, copy_holes=True):
         """ Returns copy of plane
         
@@ -705,13 +687,10 @@ class PlaneBounded(Plane):
         translation : 1 x 3 array
             Translation vector.
         """
-        centroid = self.centroid + translation
-        self.unbounded._model = Plane.from_normal_point(
-            self.normal, centroid).model
-        self._inlier_points = self._inlier_points + translation
+        Plane.translate(self.unbounded, translation)
         self.bounds = self.bounds + translation
     
-    def rotate(self, rotation):
+    def rotate(self, rotation, is_hole=False):
         """ Rotate the shape.
         
         Parameters
@@ -724,32 +703,21 @@ class PlaneBounded(Plane):
                                       'have an implemented _rotatable '
                                       'attribute')
             
-        if not isinstance(rotation, Rotation):
-            rotation = Rotation.from_matrix(rotation)
-            
-        if isinstance(rotation, Rotation):
-            try:
-                length = len(rotation)
-                if length[0] != 1:
-                    raise ValueError('Rotation input should contain a single '
-                                     ' rotation but has len(rotation) instead')
-                rotation = rotation[0]
-                
-            except TypeError:
-                pass
-        
-        centroid = rotation.apply(self.centroid)
-        self.unbounded._model = Plane.from_normal_point(
-            self.normal, centroid).model
+        Plane.rotate(self.unbounded, rotation)
 
-        self.unbounded._model[self._rotatable] = rotation.apply(
-            self.model[self._rotatable])
-        self._inlier_points = rotation.apply(self._inlier_points)
-        self._inlier_normals = rotation.apply(self._inlier_normals)
+        try:
+            self._inlier_points = rotation.apply(self._inlier_points)
+            self._inlier_normals = rotation.apply(self._inlier_normals)
+        except:
+            pass
         
         bounds = rotation.apply(self.bounds)
         self.bounds, self.projection = self._get_bounds_and_projection(
             self.unbounded, bounds, flatten=True)
+        
+        if not is_hole and len(self.holes) > 0:
+            for hole in self.holes:
+                hole.rotate(rotation, is_hole=True)
     
     def contains_points(self, points):
         inside = np.array([True] * len(points))

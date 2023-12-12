@@ -555,7 +555,27 @@ class Primitive(ABC):
                                       'have an implemented _translatable '
                                       'attribute')
         self._model[self._translatable] += translation
-        self._inlier_points = self._inlier_points + translation
+        
+        if len(self._inlier_points) > 0:
+            self._inlier_points = self._inlier_points + translation
+        
+    @staticmethod
+    def _parse_rotation(rotation):
+        if not isinstance(rotation, Rotation):
+            rotation = Rotation.from_matrix(rotation)
+            
+        if isinstance(rotation, Rotation):
+            try:
+                length = len(rotation)
+                if length[0] != 1:
+                    raise ValueError('Rotation input should contain a single '
+                                     ' rotation but has len(rotation) instead')
+                rotation = rotation[0]
+        
+            except TypeError:
+                pass
+
+        return rotation
         
     def rotate(self, rotation):
         """ Rotate the shape.
@@ -570,26 +590,17 @@ class Primitive(ABC):
                                       'have an implemented _rotatable '
                                       'attribute')
             
-        if not isinstance(rotation, Rotation):
-            rotation = Rotation.from_matrix(rotation)
-            
-        if isinstance(rotation, Rotation):
-            try:
-                length = len(rotation)
-                if length[0] != 1:
-                    raise ValueError('Rotation input should contain a single '
-                                     ' rotation but has len(rotation) instead')
-                rotation = rotation[0]
-                
-            except TypeError:
-                pass
+        rotation = Primitive._parse_rotation(rotation)
             
         self._model[self._rotatable] = rotation.apply(
             self.model[self._rotatable])
         self._model[self._translatable] = rotation.apply(
             self.model[self._translatable])
-        self._inlier_points = rotation.apply(self._inlier_points)
-        self._inlier_normals = rotation.apply(self._inlier_normals)
+        
+        if len(self._inlier_points) > 0:
+            self._inlier_points = rotation.apply(self._inlier_points)
+        if len(self._inlier_normals) > 0:
+            self._inlier_normals = rotation.apply(self._inlier_normals)
     
     def align(self, axis):
         """ Returns aligned 
