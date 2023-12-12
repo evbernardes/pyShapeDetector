@@ -9,6 +9,7 @@ from warnings import warn
 from itertools import permutations
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
+from scipy.spatial.transform import Rotation
 from open3d.geometry import TriangleMesh
 from open3d.utility import Vector3iVector, Vector3dVector
 
@@ -125,6 +126,64 @@ class Plane(Primitive):
     _model_args_n = 4
     _name = 'plane'
     _holes = []
+    _rotatable = [0, 1, 2]
+    
+    def translate(self, translation):
+        """ Translate the shape.
+        
+        Parameters
+        ----------
+        translation : 1 x 3 array
+            Translation vector.
+        """
+        centroid = self.centroid + translation
+        self._model = Plane.from_normal_point(self.normal, centroid).model
+        self._inlier_points = self._inlier_points + translation
+        try:
+            self.bounds = self.bounds + translation
+        except:
+            pass
+    
+    def rotate(self, rotation):
+        """ Rotate the shape.
+        
+        Parameters
+        ----------
+        rotation : 3 x 3 rotation matrix or scipy.spatial.transform.Rotation
+            Rotation matrix.
+        """
+        if not hasattr(self, '_rotatable'):
+            raise NotImplementedError('Shapes of type {shape.name} do not '
+                                      'have an implemented _rotatable '
+                                      'attribute')
+            
+        if not isinstance(rotation, Rotation):
+            rotation = Rotation.from_matrix(rotation)
+            
+        if isinstance(rotation, Rotation):
+            try:
+                length = len(rotation)
+                if length[0] != 1:
+                    raise ValueError('Rotation input should contain a single '
+                                     ' rotation but has len(rotation) instead')
+                rotation = rotation[0]
+                
+            except TypeError:
+                pass
+            
+        centroid = rotation.apply(self.centroid)
+        self._model = Plane.from_normal_point(
+            self.normal, centroid).model
+            
+        self._model[self._rotatable] = rotation.apply(
+            self.model[self._rotatable])
+        self._inlier_points = rotation.apply(self._inlier_points)
+        self._inlier_normals = rotation.apply(self._inlier_normals)
+        
+        try:
+            self.bounds = rotation.apply(rotation)
+        except:
+            pass
     
     def copy(self, copy_holes=True):
         """ Returns copy of plane
@@ -638,6 +697,60 @@ class PlaneBounded(Plane):
     
     _name = 'bounded plane'
     
+    def translate(self, translation):
+        """ Translate the shape.
+        
+        Parameters
+        ----------
+        translation : 1 x 3 array
+            Translation vector.
+        """
+        centroid = self.centroid + translation
+        self.unbounded._model = Plane.from_normal_point(
+            self.normal, centroid).model
+        self._inlier_points = self._inlier_points + translation
+        self.bounds = self.bounds + translation
+    
+    def rotate(self, rotation):
+        """ Rotate the shape.
+        
+        Parameters
+        ----------
+        rotation : 3 x 3 rotation matrix or scipy.spatial.transform.Rotation
+            Rotation matrix.
+        """
+        if not hasattr(self, '_rotatable'):
+            raise NotImplementedError('Shapes of type {shape.name} do not '
+                                      'have an implemented _rotatable '
+                                      'attribute')
+            
+        if not isinstance(rotation, Rotation):
+            rotation = Rotation.from_matrix(rotation)
+            
+        if isinstance(rotation, Rotation):
+            try:
+                length = len(rotation)
+                if length[0] != 1:
+                    raise ValueError('Rotation input should contain a single '
+                                     ' rotation but has len(rotation) instead')
+                rotation = rotation[0]
+                
+            except TypeError:
+                pass
+        
+        centroid = rotation.apply(self.centroid)
+        self.unbounded._model = Plane.from_normal_point(
+            self.normal, centroid).model
+
+        self.unbounded._model[self._rotatable] = rotation.apply(
+            self.model[self._rotatable])
+        self._inlier_points = rotation.apply(self._inlier_points)
+        self._inlier_normals = rotation.apply(self._inlier_normals)
+        
+        bounds = rotation.apply(self.bounds)
+        self.bounds, self.projection = self._get_bounds_and_projection(
+            self.unbounded, bounds, flatten=True)
+    
     def contains_points(self, points):
         inside = np.array([True] * len(points))
         for i in range(len(points)):
@@ -700,7 +813,7 @@ class PlaneBounded(Plane):
             self.unbounded = planemodel
         else:
             self.unbounded = Plane(planemodel)
-        # self.model = self.unbounded.model
+        # self._model = self.unbounded.model
         
         if bounds is None:
             warn('No input bounds, returning square plane')

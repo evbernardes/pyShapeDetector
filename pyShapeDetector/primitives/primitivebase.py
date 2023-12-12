@@ -6,10 +6,11 @@ Created on Mon Sep 25 15:42:59 2023
 @author: ebernardes
 """
 from abc import ABC, abstractmethod
+import copy
 import numpy as np
 from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
-
+from scipy.spatial.transform import Rotation
 from pyShapeDetector.utility import clean_crop
     
 class Primitive(ABC):
@@ -25,7 +26,7 @@ class Primitive(ABC):
         `get_distances`
         `get_normals`
         
-    The method `get_mesh` can also optionally be implemented to return a 
+    The method `get_mesh` can also optionally be implemented to return a : 3 x 3 array
     TriangleMesh instance.
     
     The properties `surface_area` and `volume` can also be implemented.
@@ -105,6 +106,12 @@ class Primitive(ABC):
         
     copy():
         Returns copy of shape
+        
+    translate(translation):
+        Translate the shape.
+        
+    rotate(rotation):
+        Rotate the shape.
     
     align(axis):
         Returns aligned 
@@ -113,6 +120,10 @@ class Primitive(ABC):
     _inlier_normals = np.asarray([])
     # _inlier_indices = np.asarray([])
     _metrics = {}
+    
+    @property
+    def model(self):
+        return self._model
     
     def __repr__(self):
         round_ = lambda x:round(x, 5)
@@ -298,11 +309,11 @@ class Primitive(ABC):
             If number of parameters is incompatible with the model of the 
             primitive.
         """
-        
+        model = np.array(model)
         if len(model) != self.model_args_n:
             raise ValueError(f'{self.name.capitalize()} primitives take '
                              f'{self.model_args_n} elements, got {model}')
-        self.model = model
+        self._model = model
             
     def flatten_pcd(self, pcd):
         """ Return new pointcloud with flattened points.
@@ -530,6 +541,55 @@ class Primitive(ABC):
         shape._inlier_normals = self._inlier_normals.copy()
         shape._metrics = self._metrics.copy()
         return shape
+    
+    def translate(self, translation):
+        """ Translate the shape.
+        
+        Parameters
+        ----------
+        translation : 1 x 3 array
+            Translation vector.
+        """
+        if not hasattr(self, '_translatable'):
+            raise NotImplementedError('Shapes of type {shape.name} do not '
+                                      'have an implemented _translatable '
+                                      'attribute')
+        self._model[self._translatable] += translation
+        self._inlier_points = self._inlier_points + translation
+        
+    def rotate(self, rotation):
+        """ Rotate the shape.
+        
+        Parameters
+        ----------
+        rotation : 3 x 3 rotation matrix or scipy.spatial.transform.Rotation
+            Rotation matrix.
+        """
+        if not hasattr(self, '_rotatable'):
+            raise NotImplementedError('Shapes of type {shape.name} do not '
+                                      'have an implemented _rotatable '
+                                      'attribute')
+            
+        if not isinstance(rotation, Rotation):
+            rotation = Rotation.from_matrix(rotation)
+            
+        if isinstance(rotation, Rotation):
+            try:
+                length = len(rotation)
+                if length[0] != 1:
+                    raise ValueError('Rotation input should contain a single '
+                                     ' rotation but has len(rotation) instead')
+                rotation = rotation[0]
+                
+            except TypeError:
+                pass
+            
+        self._model[self._rotatable] = rotation.apply(
+            self.model[self._rotatable])
+        self._model[self._translatable] = rotation.apply(
+            self.model[self._translatable])
+        self._inlier_points = rotation.apply(self._inlier_points)
+        self._inlier_normals = rotation.apply(self._inlier_normals)
     
     def align(self, axis):
         """ Returns aligned 

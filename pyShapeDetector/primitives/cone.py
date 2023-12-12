@@ -125,6 +125,8 @@ class Cone(Primitive):
     _fit_n_min = 15
     _model_args_n = 7
     _name = 'cone'
+    _translatable = [0, 1, 2]
+    _rotatable = [3, 4, 5]
     
     def align(self, axis):
         """ Returns aligned 

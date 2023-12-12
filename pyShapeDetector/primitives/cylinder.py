@@ -138,6 +138,8 @@ class Cylinder(Primitive):
     _fit_n_min = 6
     _model_args_n = 7
     _name = 'cylinder'
+    _translatable = [0, 1, 2]
+    _rotatable = [3, 4, 5]
     
     def align(self, axis):
         """ Returns aligned 
