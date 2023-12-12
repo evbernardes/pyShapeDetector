@@ -10,9 +10,8 @@ import numpy as np
 from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector
 # from skspatial.objects.cylinder import Cylinder as skcylinder
-from scipy.spatial.transform import Rotation
-from scipy.spatial import ConvexHull
 
+from pyShapeDetector.utility import get_rotation_from_axis
 from .primitivebase import Primitive
 from .plane import Plane, PlaneBounded
     
@@ -301,7 +300,7 @@ class Cylinder(Primitive):
     @property
     def rotation_from_axis(self):
         """ Rotation matrix that aligns z-axis with cylinder axis."""
-        return self.get_rotation_from_axis([0, 0, 1], self.axis)
+        return get_rotation_from_axis([0, 0, 1], self.axis)
     
     def closest_to_line(self, points):
         """ Returns points in cylinder axis that are the closest to the input

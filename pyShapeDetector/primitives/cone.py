@@ -7,17 +7,14 @@ Created on Fri Oct  6 15:57:08 2023
 """
 import warnings
 import numpy as np
-from open3d.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
+from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector, Vector3dVector
-from skspatial.objects.cylinder import Cylinder as skcylinder
 
-from scipy.spatial.transform import Rotation
-
-
+from pyShapeDetector.utility import get_rotation_from_axis
 from pyShapeDetector.methods import RANSAC_Classic
 from .primitivebase import Primitive
 from .plane import Plane
-from .cylinder import Cylinder
+# from .cylinder import Cylinder
     
 class Cone(Primitive):
     """
@@ -82,9 +79,6 @@ class Cone(Primitive):
     get_angles_cos(points, normals):
         Gives the absolute value of cosines of the angles between the input 
         normal vectors and the calculated normal vectors from the input points.
-    
-    get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
-        Rotation matrix that transforms `axis_origin` in `axis`.
         
     flatten_points(points):
         Stick each point in input to the closest point in shape's surface.
@@ -333,7 +327,7 @@ class Cone(Primitive):
     @property
     def rotation_from_axis(self):
         """ Rotation matrix that aligns z-axis with cylinder axis."""
-        return self.get_rotation_from_axis([0, 0, 1], self.axis)
+        return get_rotation_from_axis([0, 0, 1], self.axis)
     
     def closest_to_line(self, points):
         """ Returns points in cylinder axis that are the closest to the input

@@ -9,9 +9,10 @@ from warnings import warn
 from itertools import permutations
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
-from open3d.geometry import TriangleMesh, PointCloud
+from open3d.geometry import TriangleMesh
 from open3d.utility import Vector3iVector, Vector3dVector
 
+from pyShapeDetector.utility import get_rotation_from_axis
 from .primitivebase import Primitive
     
 class Plane(Primitive):
@@ -86,9 +87,6 @@ class Plane(Primitive):
     get_angles_cos(self, points, normals):
         Gives the absolute value of cosines of the angles between the input 
         normal vectors and the calculated normal vectors from the input points.
-    
-    get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
-        Rotation matrix that transforms `axis_origin` in `axis`.
         
     flatten_points(points):
         Stick each point in input to the closest point in shape's surface.
@@ -564,6 +562,8 @@ class PlaneBounded(Plane):
         Volume of plane, which is zero.
     holes : list
         List of holes in plane.
+    rotation_from_axis : 3 x 3 array
+        Rotation matrix that aligns z-axis with plane normal.
     
     Methods
     ------- 
@@ -585,9 +585,6 @@ class PlaneBounded(Plane):
     get_angles_cos(self, points, normals):
         Gives the absolute value of cosines of the angles between the input 
         normal vectors and the calculated normal vectors from the input points.
-    
-    get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
-        Rotation matrix that transforms `axis_origin` in `axis`.
         
     flatten_points(points):
         Stick each point in input to the closest point in shape's surface.
@@ -674,6 +671,11 @@ class PlaneBounded(Plane):
             holes = [h.copy(copy_holes=False) for h in self._holes]
             shape._holes = holes
         return shape
+    
+    @property
+    def rotation_from_axis(self):
+        """ Rotation matrix that aligns z-axis with plane normal."""
+        return get_rotation_from_axis([0, 0, 1], self.normal)
     
     def __init__(self, planemodel, bounds=None):
         """
@@ -768,7 +770,7 @@ class PlaneBounded(Plane):
         if np.any(np.isnan(points)):
             raise ValueError('NaN found in points')
         # points_flat = self.flatten_points(points)
-        rot = plane.get_rotation_from_axis([0, 0, 1], plane.normal)
+        rot = get_rotation_from_axis([0, 0, 1], plane.normal)
         projection = (rot @ points.T).T[:, :2]
         try:
             chull = ConvexHull(projection)

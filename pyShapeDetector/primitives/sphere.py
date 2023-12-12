@@ -30,7 +30,7 @@ class Sphere(Primitive):
         Center point of the sphere.
     canonical : Sphere
         Return canonical form for testing.  
-    surface_area : float
+    surface_area : float: 3 x 3 array
         Surface area of primitive
     volume : float
         Volume of primitive.  
@@ -60,9 +60,6 @@ class Sphere(Primitive):
     get_angles_cos(points, normals):
         Gives the absolute value of cosines of the angles between the input 
         normal vectors and the calculated normal vectors from the input points.
-    
-    get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
-        Rotation matrix that transforms `axis_origin` in `axis`.
         
     flatten_points(points):
         Stick each point in input to the closest point in shape's surface.

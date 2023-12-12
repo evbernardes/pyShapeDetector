@@ -10,8 +10,6 @@ import numpy as np
 from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
 
-from scipy.spatial.transform import Rotation
-
 from pyShapeDetector.utility import clean_crop
     
 class Primitive(ABC):
@@ -78,9 +76,6 @@ class Primitive(ABC):
     get_angles_cos(points, normals):
         Gives the absolute value of cosines of the angles between the input 
         normal vectors and the calculated normal vectors from the input points.
-    
-    get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
-        Rotation matrix that transforms `axis_origin` in `axis`.
         
     flatten_pcd(pcd):
         Return new pointcloud with flattened points.
@@ -308,36 +303,7 @@ class Primitive(ABC):
             raise ValueError(f'{self.name.capitalize()} primitives take '
                              f'{self.model_args_n} elements, got {model}')
         self.model = model
-        
-    @staticmethod
-    def get_rotation_from_axis(axis_origin, axis):
-        """ Rotation matrix that transforms `axis_origin` in `axis`.
-        
-        Parameters
-        ----------
-        axis : 3 x 1 array
-            Goal axis.
-        axis_origin : 3 x 1 array
-            Initial axis.
-        
-        Returns
-        -------
-        rotation
-            3x3 rotation matrix
-        """
-        axis = np.array(axis) / np.linalg.norm(axis)
-        axis_origin = np.array(axis_origin) / np.linalg.norm(axis_origin)
-        if abs(axis.dot(axis_origin) + 1) > 1E-6:
-            # axis_origin = -axis_origin
-            halfway_axis = (axis_origin + axis)[..., np.newaxis]
-            halfway_axis /= np.linalg.norm(halfway_axis)
-            return 2 * halfway_axis * halfway_axis.T - np.eye(3)
-        else:
-            orthogonal_axis = np.cross(np.random.random(3), axis)
-            orthogonal_axis /= np.linalg.norm(orthogonal_axis)
-            return Rotation.from_quat(list(orthogonal_axis)+[0]).as_matrix()
             
-    
     def flatten_pcd(self, pcd):
         """ Return new pointcloud with flattened points.
         
