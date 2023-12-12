@@ -155,45 +155,11 @@ class Primitive(ABC):
     def inlier_points(self):
         """ Convenience attribute that can be set to save inlier points """
         return self._inlier_points
-    
-    # @inlier_points.setter
-    # def inlier_points(self, points):
-    #     points = np.asarray(points)
-    #     if points.shape == (3, ):
-    #         points = np.reshape(points, (1,3))
-    #     elif points.shape[1] != 3:
-    #         raise ValueError('Invalid shape for input points, must be a single'
-    #                          ' point or an array of shape (N, 3), got '
-    #                          f'{points.shape}')
-    #     self._inlier_points = points
         
     @property
     def inlier_normals(self):
         """ Convenience attribute that can be set to save inlier points """
         return self._inlier_normals
-    
-    # @inlier_normals.setter
-    # def inlier_normals(self, normals):
-    #     normals = np.asarray(normals)
-    #     if normals.shape == (3, ):
-    #         normals = np.reshape(normals, (1,3))
-    #     elif normals.shape[1] != 3:
-    #         raise ValueError('Invalid shape for input normals, must be a single'
-    #                          ' point or an array of shape (N, 3), got '
-    #                          f'{normals.shape}')
-    #     self._inlier_normals = normals
-        
-    # @property
-    # def inlier_indices(self):
-    #     """ Convenience attribute that can be set to save inlier points """
-    #     return self._inlier_indices
-    
-    # @inlier_indices.setter
-    # def inlier_indices(self, indices):
-    #     indices = np.asarray(indices)
-    #     if len(indices.shape) != 1:
-    #         raise ValueError('Invalid shape for input indices.')
-    #     self._inlier_indices = indices
         
     @property
     def metrics(self):
