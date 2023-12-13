@@ -48,6 +48,17 @@ class MultiDetector():
         self.run(debug, compare_metric, metric_min, normals_reestimate,
                  fuse_shapes, rtol, atol)
         
+    def __repr__(self):
+        line = type(self).__name__+'('
+        line += str(self.detectors)+', '
+        line += f'{len(self.shapes)} shapes detected, '
+        points_classified = sum([len(s.inlier_points) for s in self.shapes])
+        # line += f'{points_classified} points classified, '
+        points_remaining = sum([len(p.points) for p in self.pcds_rest])
+        # line += f'{points_remaining} points remaining)'
+        line += f'{points_classified}/{points_classified+points_remaining} points classified)'
+        return line
+        
     @property
     def pcds_inliers(self):
         if not self._finished:
