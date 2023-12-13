@@ -7,6 +7,7 @@ Created on Tue Nov 14 16:40:48 2023
 
 @author: ebernardes
 """
+import time
 import numpy as np
 import h5py
 from pathlib import Path
