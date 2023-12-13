@@ -109,6 +109,8 @@ def segment_with_region_growing(pcd, residuals=None, k=20,
     
     label = 0
     
+    time_start = time.time()
+    
     while sum(labels == 0) > 0:
         if debug:
             print(f'{sum(labels == 0)} points to go')
@@ -142,8 +144,13 @@ def segment_with_region_growing(pcd, residuals=None, k=20,
         # idx = list(idx)
         # idx.remove(usedseeds)
         idx = list(set(idx) - usedseeds)
-        print(f'-- adding {len(idx)} points')
+        if debug:
+            print(f'-- adding {len(idx)} points')
         seedlist += idx
+        
+    if debug:
+        m, s = divmod(time.time() - time_start, 60)
+        h, m = divmod(m, 60)
         
     pcds_segmented = []
     for label in set(labels):
@@ -152,4 +159,6 @@ def segment_with_region_growing(pcd, residuals=None, k=20,
     
     if debug:
         print(f'\n {len(pcds_segmented)} point clouds found')
+        print(f'Algorithm took {m} minutes and {s} seconds')
+        
     return pcds_segmented
