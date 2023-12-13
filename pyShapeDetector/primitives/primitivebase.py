@@ -11,7 +11,7 @@ import numpy as np
 from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
 from scipy.spatial.transform import Rotation
-from pyShapeDetector.utility import clean_crop
+from pyShapeDetector.utility import clean_crop, get_rotation_from_axis
     
 class Primitive(ABC):
     """
@@ -615,11 +615,9 @@ class Primitive(ABC):
         Primitive
             Aligned shape with axis
         """
-        if hasattr(self, 'axis') or hasattr(self, 'vector'):
-            raise NotImplementedError(f'{self.name} has an axis, but its '
-                                      'alignement method has not been '
-                                      'implemented.')
-        return self.copy()
+        if hasattr(self, 'axis'):
+            rotation = get_rotation_from_axis(self.axis, axis)
+            self.rotate(rotation)
             
     def __eq__(self, other_shape):
         return self.is_similar_to(other_shape, rtol=1e-05, atol=1e-08)

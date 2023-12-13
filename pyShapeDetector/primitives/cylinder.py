@@ -141,23 +141,6 @@ class Cylinder(Primitive):
     _translatable = [0, 1, 2]
     _rotatable = [3, 4, 5]
     
-    def align(self, axis):
-        """ Returns aligned 
-        
-        Parameters
-        ----------
-        axis : 3 x 1 array
-            Axis to which the shape should be aligned.
-        
-        Returns
-        -------
-        Cylinder
-            Aligned cylinder with axis
-        """
-        vector = self.height * np.array(axis) / np.linalg.norm(axis)
-        return Cylinder.from_base_vector_radius(
-            self.base, vector, self.radius)
-    
     @classmethod
     def from_base_vector_radius(cls, base, vector, radius):
         """ Creates cylinder from center base point, vector and radius as 
