@@ -7,6 +7,8 @@ Created on Tue Nov 14 16:40:48 2023
 
 @author: ebernardes
 """
+import copy
+import matplotlib.pyplot as plt
 import time
 import numpy as np
 import h5py
@@ -72,6 +74,27 @@ def paint_random(elements):
     else:
         for element in elements:
             element.paint_uniform_color(np.random.random(3))
+            
+    
+def segment_dbscan(pcd, eps, min_points=10, colors=False):
+    labels = pcd.cluster_dbscan(eps=eps, min_points=min_points)#, print_progress=True))
+
+    labels = np.array(labels)
+    # max_label = labels.max()
+    pcd_segmented = copy.copy(pcd)
+    # print(f"\nPoint cloud has {len(set(labels))} clusters!\n")
+    if colors:
+        # colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
+        colors[labels < 0] = 0
+        pcd_segmented.colors = Vector3dVector(colors[:, :3])
+    # o3d.visualization.draw_geometries([pcd_segmented])
+
+    pcds_segmented = []
+    for label in set(labels):
+        idx = np.where(labels == label)[0]
+        pcds_segmented.append(pcd.select_by_index(idx))
+        
+    return pcds_segmented
             
             
 def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
