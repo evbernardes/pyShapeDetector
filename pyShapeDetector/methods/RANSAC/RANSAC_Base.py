@@ -83,7 +83,7 @@ class RANSAC_Base(ABC):
     def __repr__(self):
         primitives = str([s.__name__ for s in self.primitives])
         primitives = primitives[1:-1].replace("'","")
-        return type(self).__name__+'_Detector''('+primitives+')'
+        return type(self).__name__+'('+primitives+')'
     
     @property
     def num_samples(self):
