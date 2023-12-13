@@ -74,7 +74,7 @@ def paint_random(elements):
             element.paint_uniform_color(np.random.random(3))
             
             
-def segment_with_region_growing(pcd, residuals=None, k=20, 
+def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
                                 threshold_angle=np.radians(10), debug=False):
     """ Segment point cloud into multiple sub clouds according to their 
     curvature by analying normals of neighboring points.
@@ -88,6 +88,8 @@ def segment_with_region_growing(pcd, residuals=None, k=20,
         the unlabeled point with the least residual.
     k : int, optional
         Number of neighbors points to be tested at each time. Default: 20.
+    k_retest : int, optional
+        Number of points after test to be added to seedlist. Default: 10.
     threshold_angle : float, optional
         Maximum angle (in radians) for neighboring points to be considered in
         the same region. Default = 0.17453 (10 degrees).
@@ -99,6 +101,10 @@ def segment_with_region_growing(pcd, residuals=None, k=20,
     list
         Segmented pointclouds
     """
+    
+    if k_retest > k:
+        raise ValueError('k_retest must be smaller than k, got '
+                         f'got {k_retest} and {k} respectively')
     
     cos_thr = np.cos(threshold_angle)
     pcd_tree = o3d.geometry.KDTreeFlann(pcd)
@@ -142,6 +148,9 @@ def segment_with_region_growing(pcd, residuals=None, k=20,
         idx = idx[is_neighbor]
         
         labels[idx] = label
+        
+        if k_retest > len(idx):
+            idx = idx[k_retest:]
         # idx = list(idx)
         # idx.remove(usedseeds)
         idx = list(set(idx) - usedseeds)
