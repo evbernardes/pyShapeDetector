@@ -168,7 +168,7 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         pcds_segmented.append(pcd.select_by_index(idx))
     
     if debug:
-        print(f'\n {len(pcds_segmented)} point clouds found')
+        print(f'\n {len(pcds_segmented.points)} point clouds found')
         print(f'Algorithm took {m} minutes and {s} seconds')
         
     return pcds_segmented
