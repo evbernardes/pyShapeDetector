@@ -615,9 +615,14 @@ class Primitive(ABC):
         Primitive
             Aligned shape with axis
         """
-        if hasattr(self, 'axis'):
-            rotation = get_rotation_from_axis(self.axis, axis)
-            self.rotate(rotation)
+        possible_attributes = ['axis', 'vector', 'normal']
+            
+        for attr in possible_attributes:
+            if hasattr(self, attr):
+                axis_original = getattr(self, attr)
+                rotation = get_rotation_from_axis(axis_original, axis)
+                self.rotate(rotation)
+                break
             
     def __eq__(self, other_shape):
         return self.is_similar_to(other_shape, rtol=1e-05, atol=1e-08)
