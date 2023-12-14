@@ -602,21 +602,18 @@ class Primitive(ABC):
         if len(self._inlier_normals) > 0:
             self._inlier_normals = rotation.apply(self._inlier_normals)
     
-    def align(self, axis):
+    def align(self, axis, possible_attributes=['axis', 'vector', 'normal']):
         """ Returns aligned 
         
         Parameters
         ----------
         axis : 3 x 1 array
             Axis to which the shape should be aligned.
-        
-        Returns
-        -------
-        Primitive
-            Aligned shape with axis
+        possible_attributes : list of strings, optional
+            Attribute that should be aligned to axis. If shape has any of 
+            those, it will be aligned. Otherwise, nothing is done. 
+            Default: ['axis', 'vector', 'normal']
         """
-        possible_attributes = ['axis', 'vector', 'normal']
-            
         for attr in possible_attributes:
             if hasattr(self, attr):
                 axis_original = getattr(self, attr)
