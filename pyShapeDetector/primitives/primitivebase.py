@@ -6,7 +6,6 @@ Created on Mon Sep 25 15:42:59 2023
 @author: ebernardes
 """
 from abc import ABC, abstractmethod
-import copy
 import numpy as np
 from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
@@ -542,6 +541,11 @@ class Primitive(ABC):
         shape._metrics = self._metrics.copy()
         return shape
     
+    def _translate_points(self, translation):
+        """ Internal helper function for translation"""
+        if len(self._inlier_points) > 0:
+            self._inlier_points = self._inlier_points + translation
+    
     def translate(self, translation):
         """ Translate the shape.
         
@@ -554,13 +558,12 @@ class Primitive(ABC):
             raise NotImplementedError('Shapes of type {shape.name} do not '
                                       'have an implemented _translatable '
                                       'attribute')
-        self._model[self._translatable] += translation
-        
-        if len(self._inlier_points) > 0:
-            self._inlier_points = self._inlier_points + translation
+        self._model[self._translatable] += translation        
+        self._translate_points(translation)
         
     @staticmethod
     def _parse_rotation(rotation):
+        """ Internal helper function for rotation"""
         if not isinstance(rotation, Rotation):
             rotation = Rotation.from_matrix(rotation)
             
@@ -576,6 +579,14 @@ class Primitive(ABC):
                 pass
 
         return rotation
+    
+    def _rotate_points_normals(self, rotation):
+        """ Internal helper function for rotation"""
+        if len(self._inlier_points) > 0:
+            self._inlier_points = rotation.apply(self._inlier_points)
+        if len(self._inlier_normals) > 0:
+            self._inlier_normals = rotation.apply(self._inlier_normals)
+        
         
     def rotate(self, rotation):
         """ Rotate the shape.
@@ -597,10 +608,8 @@ class Primitive(ABC):
         self._model[self._translatable] = rotation.apply(
             self.model[self._translatable])
         
-        if len(self._inlier_points) > 0:
-            self._inlier_points = rotation.apply(self._inlier_points)
-        if len(self._inlier_normals) > 0:
-            self._inlier_normals = rotation.apply(self._inlier_normals)
+        self._rotate_points_normals(rotation)
+        
     
     def align(self, axis, possible_attributes=['axis', 'vector', 'normal']):
         """ Returns aligned 

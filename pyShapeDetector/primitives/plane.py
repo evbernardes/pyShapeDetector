@@ -140,8 +140,7 @@ class Plane(Primitive):
         self._model = Plane.from_normal_point(
             self.normal, centroid).model
         
-        if len(self._inlier_points) > 0:
-            self._inlier_points = self._inlier_points + translation
+        self._translate_points(translation)
     
     def rotate(self, rotation):
         """ Rotate the shape.
@@ -161,12 +160,8 @@ class Plane(Primitive):
         centroid = rotation.apply(self.centroid)
         normal = rotation.apply(self.normal)
         self._model = Plane.from_normal_point(normal, centroid).model
-            
-        if len(self._inlier_points) > 0:
-            self._inlier_points = rotation.apply(self._inlier_points)
-        if len(self._inlier_normals) > 0:
-            self._inlier_normals = rotation.apply(self._inlier_normals)
-
+        self._rotate_points_normals(rotation)
+        
     def copy(self, copy_holes=True):
         """ Returns copy of plane
         
@@ -702,14 +697,10 @@ class PlaneBounded(Plane):
             raise NotImplementedError('Shapes of type {shape.name} do not '
                                       'have an implemented _rotatable '
                                       'attribute')
-            
+        rotation = self._parse_rotation(rotation)
         Plane.rotate(self.unbounded, rotation)
-
-        try:
-            self._inlier_points = rotation.apply(self._inlier_points)
-            self._inlier_normals = rotation.apply(self._inlier_normals)
-        except:
-            pass
+        
+        self._rotate_points_normals(rotation)
         
         bounds = rotation.apply(self.bounds)
         self.bounds, self.projection = self._get_bounds_and_projection(
