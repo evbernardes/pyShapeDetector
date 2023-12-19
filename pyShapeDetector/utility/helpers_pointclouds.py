@@ -127,7 +127,8 @@ def segment_dbscan(pcd, eps, min_points=10, colors=False):
             
             
 def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
-                                threshold_angle=np.radians(10), debug=False):
+                                threshold_angle=np.radians(10), min_points=10,
+                                debug=False):
     """ Segment point cloud into multiple sub clouds according to their 
     curvature by analying normals of neighboring points.
     
@@ -145,6 +146,10 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     threshold_angle : float, optional
         Maximum angle (in radians) for neighboring points to be considered in
         the same region. Default = 0.17453 (10 degrees).
+    min_points : int, optional
+        Minimum of points necessary for each grouping. If bigger than 0, then
+        every grouping smaller than the given value will be degrouped and added
+        a last grouping.
     debug : boolean, optional
         If True, print information .
         
@@ -153,6 +158,10 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     list
         Segmented pointclouds
     """
+    
+    if min_points < 0 or not isinstance(min_points, int):
+        raise ValueError('min_points must be a non-negative int, got '
+                         f'{min_points}')
     
     if k_retest > k:
         raise ValueError('k_retest must be smaller than k, got '
@@ -215,12 +224,22 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         h, m = divmod(m, 60)
         
     pcds_segmented = []
+    pcd_rest = PointCloud()
     for label in set(labels):
         idx = np.where(labels == label)[0]
-        pcds_segmented.append(pcd.select_by_index(idx))
+        pcd_group = pcd.select_by_index(idx)
+        if len(idx) > min_points:
+            pcds_segmented.append(pcd_group)
+        else:
+            pcd_rest += pcd_group
     
     if debug:
-        print(f'\n {len(pcds_segmented)} point clouds found')
+        print(f'\n{len(pcds_segmented)} point clouds found')
         print(f'Algorithm took {m} minutes and {s} seconds')
+        
+    if len(pcd_rest.points) > 0:
+        pcds_segmented.append(pcd_rest)
+        if debug:
+            print(f'{len(pcd_rest.points)} ungroupped points')
         
     return pcds_segmented
