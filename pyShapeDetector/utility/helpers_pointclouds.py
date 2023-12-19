@@ -17,6 +17,35 @@ from pathlib import Path
 import open3d as o3d
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
+from sklearn.neighbors import KDTree
+
+def average_nearest_dist(points, k=15, leaf_size=40):
+    """ Calculates the K nearest neighbors and returns the average distance 
+    between them.
+    
+    Parameters
+    ----------
+    k : positive int, default = 15
+        Number of neighbors.
+    
+    leaf_size : positive int, default=40
+        Number of points at which to switch to brute-force. Changing
+        leaf_size will not affect the results of a query, but can
+        significantly impact the speed of a query and the memory required
+        to store the constructed tree.  The amount of memory needed to
+        store the tree scales as approximately n_samples / leaf_size.
+        For a specified ``leaf_size``, a leaf node is guaranteed to
+        satisfy ``leaf_size <= n_points <= 2 * leaf_size``, except in
+        the case that ``n_samples < leaf_size``.
+    
+    Returns
+    -------
+    PointCloud
+        Loaded point cloud.
+    """
+    tree = KDTree(points, leaf_size=leaf_size)
+    nearest_dist, nearest_ind = tree.query(points, k=k)
+    return np.mean(nearest_dist[:, 1:])
 
 def read_point_cloud(filepath):
     """ Read file to pointcloud. Can also read .h5 files from traceparts 
