@@ -198,59 +198,10 @@ def segment_by_position(pcd, shape, min_points=1):
             pcds.append(pcd_sub)
     return pcds
             
-def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
-                                threshold_angle=np.radians(10), min_points=10,
-                                cores=1, debug=False):
-    """ Segment point cloud into multiple sub clouds according to their 
-    curvature by analying normals of neighboring points.
+def _segment_with_region_growing_worker(
+        pcd, residuals, k, k_retest, cos_thr, min_points, debug):
+    """ Worker function for region growing segmentation"""
     
-    Parameters
-    ----------
-    pcd : PointCloud
-        Input point cloud.
-    residuals : array, optional
-        Array of residuals used to find the next random region, by selecting
-        the unlabeled point with the least residual.
-    k : int, optional
-        Number of neighbors points to be tested at each time. Default: 20.
-    k_retest : int, optional
-        Number of points after test to be added to seedlist. Default: 10.
-    threshold_angle : float, optional
-        Maximum angle (in radians) for neighboring points to be considered in
-        the same region. Default = 0.17453 (10 degrees).
-    min_points : positive int, optional
-        Minimum of points necessary for each grouping. If bigger than 0, then
-        every grouping smaller than the given value will be degrouped and added
-        a last grouping.
-    cores : positive int, optional
-        Number of cores. Default: 1.
-    debug : boolean, optional
-        If True, print information.
-        
-    Returns
-    -------
-    list
-        Segmented pointclouds
-    """
-    
-    if min_points < 0 or not isinstance(min_points, int):
-        raise ValueError('min_points must be a non-negative int, got '
-                         f'{min_points}')
-                         
-    if cores < 1 or not isinstance(cores, int):
-        raise ValueError('cores must be a positive int, got '
-                         f'{cores}')
-        
-    if cores > multiprocessing.cpu_count():
-        warn(f'Only {multiprocessing.cpu_count()} available, {cores} required.'
-              ' limiting to max availability.')
-        cores = multiprocessing.cpu_count()
-    
-    if k_retest > k:
-        raise ValueError('k_retest must be smaller than k, got '
-                         f'got {k_retest} and {k} respectively')
-    
-    cos_thr = np.cos(threshold_angle)
     pcd_tree = o3d.geometry.KDTreeFlann(pcd)
     num_points = len(pcd.points)
     labels = np.repeat(0, num_points)
@@ -259,8 +210,6 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     usedseeds = set()
     
     label = 0
-    
-    time_start = time.time()
     
     while sum(labels == 0) > 0:
         if debug:
@@ -295,16 +244,10 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         
         if k_retest > len(idx):
             idx = idx[-k_retest-1:-1:1]
-        # idx = list(idx)
-        # idx.remove(usedseeds)
         idx = list(set(idx) - usedseeds)
         if debug:
             print(f'-- adding {len(idx)} points')
         seedlist += idx
-        
-    if debug:
-        m, s = divmod(time.time() - time_start, 60)
-        h, m = divmod(m, 60)
         
     pcds_segmented = []
     pcd_rest = PointCloud()
@@ -316,13 +259,75 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         else:
             pcd_rest += pcd_group
     
+    num_ungroupped = len(pcd_rest.points)
+    if num_ungroupped > 0:
+        pcds_segmented.append(pcd_rest)
+        
+    return pcds_segmented, num_ungroupped
+
+def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
+                                threshold_angle=np.radians(10), min_points=10,
+                                cores=1, debug=False):
+    """ Segment point cloud into multiple sub clouds according to their 
+    curvature by analying normals of neighboring points.
+    
+    Parameters
+    ----------
+    pcd : PointCloud
+        Input point cloud.
+    residuals : array, optional
+        Array of residuals used to find the next random region, by selecting
+        the unlabeled point with the least residual.
+    k : int, optional
+        Number of neighbors points to be tested at each time. Default: 20.
+    k_retest : int, optional
+        Number of points after test to be added to seedlist. Default: 10.
+    threshold_angle : float, optional
+        Maximum angle (in radians) for neighboring points to be considered in
+        the same region. Default = 0.17453 (10 degrees).
+    min_points : positive int, optional
+        Minimum of points necessary for each grouping. If bigger than 0, then
+        every grouping smaller than the given value will be degrouped and added
+        a last grouping.
+    cores : positive int, optional
+        Number of cores. Default: 1.
+    debug : boolean, optional
+        If True, print information.
+        
+    Returns
+    -------
+    list
+        Segmented pointclouds
+    """
+    if min_points < 0 or not isinstance(min_points, int):
+        raise ValueError('min_points must be a non-negative int, got '
+                         f'{min_points}')
+                         
+    if cores < 1 or not isinstance(cores, int):
+        raise ValueError('cores must be a positive int, got '
+                         f'{cores}')
+        
+    if cores > multiprocessing.cpu_count():
+        warn(f'Only {multiprocessing.cpu_count()} available, {cores} required.'
+              ' limiting to max availability.')
+        cores = multiprocessing.cpu_count()
+    
+    if k_retest > k:
+        raise ValueError('k_retest must be smaller than k, got '
+                         f'got {k_retest} and {k} respectively')
+        
+    cos_thr = np.cos(threshold_angle)
+        
+    time_start = time.time()
+    
+    pcds_segmented, num_ungroupped = _segment_with_region_growing_worker(
+            pcd, residuals, k, k_retest, cos_thr, min_points, debug)
+    
     if debug:
+        m, s = divmod(time.time() - time_start, 60)
+        h, m = divmod(m, 60)
         print(f'\n{len(pcds_segmented)} point clouds found')
         print(f'Algorithm took {m} minutes and {s} seconds')
-        
-    if len(pcd_rest.points) > 0:
-        pcds_segmented.append(pcd_rest)
-        if debug:
-            print(f'{len(pcd_rest.points)} ungroupped points')
+        print(f'{num_ungroupped} ungroupped points')
         
     return pcds_segmented
