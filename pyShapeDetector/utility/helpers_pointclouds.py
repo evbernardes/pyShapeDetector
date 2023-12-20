@@ -211,7 +211,7 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     seedlist = []
     usedseeds = set()
     
-    label = 0d
+    label = 0
     
     time_start = time.time()
     
