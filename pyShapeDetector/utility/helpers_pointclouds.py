@@ -211,7 +211,7 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         labels[idx] = label
         
         if k_retest > len(idx):
-            idx = idx[k_retest:]
+            idx = idx[-k_retest-1:-1:1]
         # idx = list(idx)
         # idx.remove(usedseeds)
         idx = list(set(idx) - usedseeds)
