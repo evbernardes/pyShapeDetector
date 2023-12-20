@@ -11,6 +11,19 @@ Created on Wed Dec  6 14:59:38 2023
 import copy
 import open3d as o3d
 import numpy as np
+            
+def paint_by_type(elements, shapes):
+    """ Paint each pointcloud/mesh with a color according to shape type.
+    
+    Parameters
+    ----------
+    elements : list of meshes
+        Elements to be painted
+    shapes : list of shapes
+        Shapes definying color of element.
+    """
+    for element, shape in zip(elements, shapes):
+        element.paint_uniform_color(shape.color)
 
 def _sliceplane(mesh, axis, value, direction):
     # axis can be 0,1,2 (which corresponds to x,y,z)

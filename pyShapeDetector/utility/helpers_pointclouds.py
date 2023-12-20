@@ -14,9 +14,10 @@ import time
 import numpy as np
 import h5py
 from pathlib import Path
+import itertools
 # import copy
 import open3d as o3d
-from open3d.geometry import PointCloud
+from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
 from sklearn.neighbors import KDTree
 import multiprocessing
@@ -107,8 +108,35 @@ def paint_random(elements):
             element.paint_uniform_color(np.random.random(3))
             
     
-def segment_dbscan(pcd, eps, min_points=10, colors=False):
-    labels = pcd.cluster_dbscan(eps=eps, min_points=min_points)#, print_progress=True))
+def segment_dbscan(pcd, eps, min_points=1, print_progress=False, colors=False):
+    """ Read file to pointcloud, label it according to Open3D's cluster_dbscan
+    implementation and then return a list of segmented pointclouds.
+    
+    Parameters
+    ----------
+    pcd : instance of Pointcloud
+        Point cloud to be segmented
+    eps : float
+        Density parameter that is used to find neighbouring points.
+    min_points : int, optional
+        Minimum number of points to form a cluster. Default: 1
+    print_progress : bool, optional
+        If true the progress is visualized in the console. Default=False
+    colors : bool, optional
+        If true each cluster is uniformly painted with a different color. 
+        Default=False
+        
+    Returns
+    -------
+    list
+        Segmented pointcloud clusters.
+    """
+    if min_points < 1 or not isinstance(min_points, int):
+        raise ValueError(
+            f'min_points must be positive integer, got {min_points}')
+        
+    labels = pcd.cluster_dbscan(
+        eps=eps, min_points=min_points, print_progress=print_progress)
 
     labels = np.array(labels)
     # max_label = labels.max()
@@ -126,7 +154,49 @@ def segment_dbscan(pcd, eps, min_points=10, colors=False):
         pcds_segmented.append(pcd.select_by_index(idx))
         
     return pcds_segmented
-            
+
+def segment_by_position(pcd, shape, min_points=1):
+    """ Uniformly divide pcd into different subsets based purely on position.
+    
+    Parameters
+    ----------
+    pcd : instance of Pointcloud
+        Point cloud to be segmented
+    shape : list or tuple of 3 elements
+        Defines how many subdividions along the x, y and z axes respectively.
+    min_points : int, optional
+        Minimum number of points to form a cluster. Default: 1
+        
+    Returns
+    -------
+    list
+        Subdivided pointclouds
+    """
+    if min_points < 1 or not isinstance(min_points, int):
+        raise ValueError(
+            f'min_points must be positive integer, got {min_points}')
+    
+    if len(shape) != 3:
+        raise ValueError(f'shapes must have 3 elements, got {shape}')
+        
+    for n in shape:
+        if n < 1 or not isinstance(n, int):
+            raise ValueError(
+                f'shapes must only contain positive integers, got {shape}')
+    
+    bbox = pcd.get_axis_aligned_bounding_box()
+    min_bound = bbox.min_bound
+    max_bound = bbox.max_bound
+    delta = (max_bound - min_bound) / shape
+    pcds = []
+    for ix, iy, iz in itertools.product(*[range(n) for n in shape]):
+        min_bound_sub = min_bound + delta * (ix, iy, iz)
+        max_bound_sub = min_bound + delta * (ix+1, iy+1, iz+1)
+        bbox_sub = AxisAlignedBoundingBox(min_bound_sub, max_bound_sub)
+        pcd_sub = pcd.crop(bbox_sub)
+        if len(pcd_sub.points) >= min_points:
+            pcds.append(pcd_sub)
+    return pcds
             
 def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
                                 threshold_angle=np.radians(10), min_points=10,
@@ -241,7 +311,7 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     for label in set(labels):
         idx = np.where(labels == label)[0]
         pcd_group = pcd.select_by_index(idx)
-        if len(idx) > min_points:
+        if len(idx) >= min_points:
             pcds_segmented.append(pcd_group)
         else:
             pcd_rest += pcd_group

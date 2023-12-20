@@ -24,31 +24,6 @@ color_blue = [0.11372549, 0.14509804, 0.87843137]   # 1D25E0
 color_yellow = [1., 0.90196078, 0.]                 # FFE600
 color_gray = [0.6, 0.6, 0.6]
 
-def average_nearest_dist(points, k=15, leaf_size=2):
-    tree = KDTree(points, leaf_size=leaf_size)
-    nearest_dist, nearest_ind = tree.query(points, k=k)
-    return np.mean(nearest_dist[:, 1:])
-
-def segment_dbscan(pcd, eps, min_points=10, colors=False):
-    labels = pcd.cluster_dbscan(eps=eps, min_points=min_points)#, print_progress=True))
-
-    labels = np.array(labels)
-    max_label = labels.max()
-    pcd_segmented = copy.copy(pcd)
-    print(f"\nPoint cloud has {len(set(labels))} clusters!\n")
-    if colors:
-        colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
-        colors[labels < 0] = 0
-        pcd_segmented.colors = Vector3dVector(colors[:, :3])
-    # o3d.visualization.draw_geometries([pcd_segmented])
-
-    pcds_segmented = []
-    for label in set(labels):
-        idx = np.where(labels == label)[0]
-        pcds_segmented.append(pcd.select_by_index(idx))
-        
-    return pcds_segmented
-
 def normalise(v):
     return v / np.linalg.norm(v)
 
@@ -61,17 +36,6 @@ def draw(objs):
             objs[i] = objs[i].to_legacy()
             
     draw_geometries(objs)
-    
-def paint_meshes_by_type(meshes, shapes):
-    for mesh, shape in zip(meshes, shapes):
-        mesh.paint_uniform_color(shape.color)
-    # shape_types = list({type(shape) for shape in shapes})
-
-    # for i in range(len(shape_types)):
-    #     color = plt.get_cmap("tab20")(i)[:3]
-    #     for mesh, shape in zip(meshes, shapes):
-    #         if type(shape) == shape_types[i]:
-    #             mesh.paint_uniform_color(color)
     
 def draw_two_colomns(objs_left, objs_right, dist=5,
                      lookat=None, up=None, front=None, zoom=None):
