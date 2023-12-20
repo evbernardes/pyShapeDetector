@@ -7,6 +7,7 @@ Created on Tue Nov 14 16:40:48 2023
 
 @author: ebernardes
 """
+from warnings import warn
 import copy
 import matplotlib.pyplot as plt
 import time
@@ -18,6 +19,7 @@ import open3d as o3d
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
 from sklearn.neighbors import KDTree
+import multiprocessing
 
 def average_nearest_dist(points, k=15, leaf_size=40):
     """ Calculates the K nearest neighbors and returns the average distance 
@@ -105,8 +107,31 @@ def paint_random(elements):
             element.paint_uniform_color(np.random.random(3))
             
     
-def segment_dbscan(pcd, eps, min_points=10, colors=False):
-    labels = pcd.cluster_dbscan(eps=eps, min_points=min_points)#, print_progress=True))
+def segment_dbscan(pcd, eps, min_points=10, print_progress=False, colors=False):
+    """ Read file to pointcloud, label it according to Open3D's cluster_dbscan
+    implementation and then return a list of segmented pointclouds.
+    
+    Parameters
+    ----------
+    pcd : instance of Pointcloud
+        Point cloud to be segmented
+    eps : float
+        Density parameter that is used to find neighbouring points.
+    min_points : int, optional
+        Minimum number of points to form a cluster. Default: 10
+    print_progress : bool, optional
+        If true the progress is visualized in the console. Default=False
+    colors : bool, optional
+        If true each cluster is uniformly painted with a different color. 
+        Default=False
+        
+    Returns
+    -------
+    list
+        Segmented pointcloud clusters.
+    """
+    labels = pcd.cluster_dbscan(
+        eps=eps, min_points=min_points, print_progress=print_progress)
 
     labels = np.array(labels)
     # max_label = labels.max()
@@ -128,7 +153,7 @@ def segment_dbscan(pcd, eps, min_points=10, colors=False):
             
 def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
                                 threshold_angle=np.radians(10), min_points=10,
-                                debug=False):
+                                cores=1, debug=False):
     """ Segment point cloud into multiple sub clouds according to their 
     curvature by analying normals of neighboring points.
     
@@ -146,12 +171,14 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     threshold_angle : float, optional
         Maximum angle (in radians) for neighboring points to be considered in
         the same region. Default = 0.17453 (10 degrees).
-    min_points : int, optional
+    min_points : positive int, optional
         Minimum of points necessary for each grouping. If bigger than 0, then
         every grouping smaller than the given value will be degrouped and added
         a last grouping.
+    cores : positive int, optional
+        Number of cores. Default: 1.
     debug : boolean, optional
-        If True, print information .
+        If True, print information.
         
     Returns
     -------
@@ -162,6 +189,15 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     if min_points < 0 or not isinstance(min_points, int):
         raise ValueError('min_points must be a non-negative int, got '
                          f'{min_points}')
+                         
+    if cores < 1 or not isinstance(cores, int):
+        raise ValueError('cores must be a positive int, got '
+                         f'{cores}')
+        
+    if cores > multiprocessing.cpu_count():
+        warn(f'Only {multiprocessing.cpu_count()} available, {cores} required.'
+              ' limiting to max availability.')
+        cores = multiprocessing.cpu_count()
     
     if k_retest > k:
         raise ValueError('k_retest must be smaller than k, got '
@@ -175,7 +211,7 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     seedlist = []
     usedseeds = set()
     
-    label = 0
+    label = 0d
     
     time_start = time.time()
     
