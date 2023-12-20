@@ -194,7 +194,7 @@ def segment_by_position(pcd, shape, min_points=1):
         max_bound_sub = min_bound + delta * (ix+1, iy+1, iz+1)
         bbox_sub = AxisAlignedBoundingBox(min_bound_sub, max_bound_sub)
         pcd_sub = pcd.crop(bbox_sub)
-        if len(pcd_sub.points) > min_points:
+        if len(pcd_sub.points) >= min_points:
             pcds.append(pcd_sub)
     return pcds
             
@@ -311,7 +311,7 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     for label in set(labels):
         idx = np.where(labels == label)[0]
         pcd_group = pcd.select_by_index(idx)
-        if len(idx) > min_points:
+        if len(idx) >= min_points:
             pcds_segmented.append(pcd_group)
         else:
             pcd_rest += pcd_group
