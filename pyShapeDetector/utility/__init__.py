@@ -18,4 +18,4 @@ from .helpers_primitives import (
     get_rotation_from_axis, group_similar_shapes, fuse_shape_groups, 
     cut_planes_with_cylinders, get_meshes)
 
-from .helpers_meshes import clean_crop
+from .helpers_meshes import clean_crop, paint_by_type
