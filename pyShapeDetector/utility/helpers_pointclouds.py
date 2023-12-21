@@ -197,73 +197,6 @@ def segment_by_position(pcd, shape, min_points=1):
         if len(pcd_sub.points) >= min_points:
             pcds.append(pcd_sub)
     return pcds
-            
-def _segment_with_region_growing_worker(
-        pcd, residuals, k, k_retest, cos_thr, min_points, debug):
-    """ Worker function for region growing segmentation"""
-    
-    pcd_tree = o3d.geometry.KDTreeFlann(pcd)
-    num_points = len(pcd.points)
-    labels = np.repeat(0, num_points)
-    normals = np.asarray(pcd.normals)
-    seedlist = []
-    usedseeds = set()
-    
-    label = 0
-    
-    while sum(labels == 0) > 0:
-        if debug:
-            print(f'{sum(labels == 0)} points to go')
-        # available_residuals = residuals[labels == 0]
-        # res_diff = abs(available_residuals - max(available_residuals) * rth_ratio)
-        # rth_idx = np.where(res_diff == min(res_diff))[0][0]
-        # rth = residuals[rth_idx]
-        try:
-            seed = seedlist.pop()
-            
-        except IndexError:
-            label += 1
-            if residuals is None:
-                seed = np.where(labels == 0)[0][0]
-            else:
-                min_residuals = min(residuals[labels == 0])
-                seed = np.where(residuals == min_residuals)[0][0]
-            labels[seed] = label
-            
-        point = pcd.points[seed]
-        normal = pcd.normals[seed]
-        usedseeds.add(seed)
-            
-        _, idx, b = pcd_tree.search_knn_vector_3d(point, k)
-        idx = np.array(idx)
-        normals_neighbors = normals[idx]
-        is_neighbor = np.abs(normals_neighbors.dot(normal)) > cos_thr
-        idx = idx[is_neighbor]
-        
-        labels[idx] = label
-        
-        if k_retest > len(idx):
-            idx = idx[-k_retest-1:-1:1]
-        idx = list(set(idx) - usedseeds)
-        if debug:
-            print(f'-- adding {len(idx)} points')
-        seedlist += idx
-        
-    pcds_segmented = []
-    pcd_rest = PointCloud()
-    for label in set(labels):
-        idx = np.where(labels == label)[0]
-        pcd_group = pcd.select_by_index(idx)
-        if len(idx) >= min_points:
-            pcds_segmented.append(pcd_group)
-        else:
-            pcd_rest += pcd_group
-    
-    num_ungroupped = len(pcd_rest.points)
-    if num_ungroupped > 0:
-        pcds_segmented.append(pcd_rest)
-        
-    return pcds_segmented, num_ungroupped
 
 def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
                                 threshold_angle=np.radians(10), min_points=10,
@@ -299,6 +232,75 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     list
         Segmented pointclouds
     """
+    
+    def _get_labels_region_growing(
+            pcd, residuals, k, k_retest, cos_thr, min_points, debug):
+        """ Worker function for region growing segmentation"""
+        pcd_tree = o3d.geometry.KDTreeFlann(pcd)
+        num_points = len(pcd.points)
+        labels = np.repeat(0, num_points)
+        normals = np.asarray(pcd.normals)
+        seedlist = []
+        usedseeds = set()
+        label = 0
+        while sum(labels == 0) > 0:
+            if debug:
+                print(f'{sum(labels == 0)} points to go')
+            # available_residuals = residuals[labels == 0]
+            # res_diff = abs(available_residuals - max(available_residuals) * rth_ratio)
+            # rth_idx = np.where(res_diff == min(res_diff))[0][0]
+            # rth = residuals[rth_idx]
+            try:
+                seed = seedlist.pop()
+                
+            except IndexError:
+                label += 1
+                if residuals is None:
+                    seed = np.where(labels == 0)[0][0]
+                else:
+                    min_residuals = min(residuals[labels == 0])
+                    seed = np.where(residuals == min_residuals)[0][0]
+                labels[seed] = label
+                
+            point = pcd.points[seed]
+            normal = pcd.normals[seed]
+            usedseeds.add(seed)
+                
+            _, idx, b = pcd_tree.search_knn_vector_3d(point, k)
+            idx = np.array(idx)
+            normals_neighbors = normals[idx]
+            is_neighbor = np.abs(normals_neighbors.dot(normal)) > cos_thr
+            idx = idx[is_neighbor]
+            
+            labels[idx] = label
+            
+            if k_retest > len(idx):
+                idx = idx[-k_retest-1:-1:1]
+            idx = list(set(idx) - usedseeds)
+            if debug:
+                print(f'-- adding {len(idx)} points')
+            seedlist += idx
+            
+        return labels
+    
+    def _separate_with_labels(pcd, labels):
+        pcds_segmented = []
+        pcd_rest = PointCloud()
+        for label in set(labels):
+            idx = np.where(labels == label)[0]
+            pcd_group = pcd.select_by_index(idx)
+            if len(idx) >= min_points:
+                pcds_segmented.append(pcd_group)
+            else:
+                pcd_rest += pcd_group
+        
+        num_ungroupped = len(pcd_rest.points)
+        if num_ungroupped > 0:
+            pcds_segmented.append(pcd_rest)
+            
+        return pcds_segmented, num_ungroupped
+    
+    
     if min_points < 0 or not isinstance(min_points, int):
         raise ValueError('min_points must be a non-negative int, got '
                          f'{min_points}')
@@ -320,8 +322,10 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         
     time_start = time.time()
     
-    pcds_segmented, num_ungroupped = _segment_with_region_growing_worker(
+    labels = _get_labels_region_growing(
             pcd, residuals, k, k_retest, cos_thr, min_points, debug)
+    
+    pcds_segmented, num_ungroupped = _separate_with_labels(pcd, labels)
     
     if debug:
         m, s = divmod(time.time() - time_start, 60)
