@@ -21,6 +21,7 @@ from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
 from sklearn.neighbors import KDTree
 import multiprocessing
+from queue import Empty
 
 def average_nearest_dist(points, k=15, leaf_size=40):
     """ Calculates the K nearest neighbors and returns the average distance 
@@ -289,21 +290,23 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
             
             if len(idx) > 0:
                 seedlist += idx
-                if len(seedlist) > seedlist_max:
-                    seedlist = seedlist[-1-seedlist_max:-1]
-            
+                if len(seedlist) > seeds_max:
+                    seedlist = seedlist[-1-seeds_max:-1]
+        
         if queue is not None:
-            data = queue.get()
-            data[i] = labels
+            # data = queue.get()
+            data = {i: list(labels)}
             queue.put(data)
+            # queue.put([i]+list(labels))
             if debug:
-                print(f'Process {i+1}/{len(data)} finished!')
+                print(f'Process {i+1} finished!')
 
         if debug:
-            print(f'Process {i+1}/{len(data)} returning...')
+            print(f'Process {i+1} returning, {len(labels)} points labeled...')
         return labels
     
     def _separate_with_labels(pcd, labels):
+        labels = np.asarray(labels)
         pcds_segmented = []
         pcd_rest = PointCloud()
         for label in set(labels):
@@ -365,9 +368,9 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         if debug:
             print(f'Starting parallel with {cores} cores.')
         
-        data = {i: [] for i in range(cores)}
+        # data = {i: [] for i in range(cores)}
         queue = multiprocessing.Queue()
-        queue.put(data)
+        # queue.put(data)
         
         # for i in range(cores):
         #     _get_labels_region_growing(
@@ -379,6 +382,7 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
             args=(pcds[i], None, k, k_retest, cos_thr, min_points, debug, i, queue)) for i in range(cores)]
         
         # Start all processes
+        # for process in [processes[1], processes[2], processes[3]]:
         for process in processes:
             print(f'Starting process...')
             process.start()
@@ -394,8 +398,18 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
             
         if debug:
             print(f'All {cores} processes finished!')
+        
+        data = {}
+        while(True):
+            try:
+                data = data | queue.get(False)
+                # data[labels[0]] = labels[1:]
+            except Empty:
+                break
             
-        data = queue.get()
+        if debug:
+            print(f'Dict assembled!')
+        
         pcds_segmented = []
         num_ungroupped = 0
         for i in data:
