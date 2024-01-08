@@ -237,7 +237,7 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     """
     
     def _get_labels_region_growing(
-            pcd, residuals, k, k_retest, cos_thr, min_points, debug, i=None, queue=None):
+            pcd, residuals, k, k_retest, cos_thr, min_points, debug, i=None, data=None):
         """ Worker function for region growing segmentation"""
         if debug and i is not None:
             print(f'Process {i+1} entering...')
@@ -293,10 +293,11 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
                 if len(seedlist) > seeds_max:
                     seedlist = seedlist[-1-seeds_max:-1]
         
-        if queue is not None:
+        if data is not None:
             # data = queue.get()
-            data = {i: list(labels)}
-            queue.put(data)
+            data[i] = labels
+            # data = {i: list(labels)}
+            # queue.put(data)
             # queue.put([i]+list(labels))
             if debug:
                 print(f'Process {i+1} finished!')
@@ -377,35 +378,35 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         #             pcds[i], residuals, k, k_retest, cos_thr, min_points, debug, i, queue)
         
         # Create processes and queues
+        manager = multiprocessing.Manager()
+        data = manager.dict()
         processes = [multiprocessing.Process(
             target=_get_labels_region_growing,
-            args=(pcds[i], None, k, k_retest, cos_thr, min_points, debug, i, queue)) for i in range(cores)]
+            args=(pcds[i], None, k, k_retest, cos_thr, min_points, False, i, data)) for i in range(cores)]
         
         # Start all processes
         # for process in [processes[1], processes[2], processes[3]]:
         for process in processes:
-            print(f'Starting process...')
             process.start()
-            print(f'Joining process...')
-            process.join()
-            print(f'Process joined...')
         if debug:
             print(f'All {cores} processes created, initializing...')
             
         # Wait until all processes are finished
-        # for process in processes:
-            # process.join()
+        for process in processes:
+            process.join()
+            
+        assert len(data) == cores
             
         if debug:
             print(f'All {cores} processes finished!')
         
-        data = {}
-        while(True):
-            try:
-                data = data | queue.get(False)
-                # data[labels[0]] = labels[1:]
-            except Empty:
-                break
+        # data = {}
+        # while(True):
+        #     try:
+        #         data = data | queue.get(False)
+        #         # data[labels[0]] = labels[1:]
+        #     except Empty:
+        #         break
             
         if debug:
             print(f'Dict assembled!')
