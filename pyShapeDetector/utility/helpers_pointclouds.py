@@ -200,7 +200,7 @@ def segment_by_position(pcd, shape, min_points=1):
             
 def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
                                 threshold_angle=np.radians(10), min_points=10,
-                                cores=1, debug=False):
+                                cores=1, seeds_max = 150, debug=False):
     """ Segment point cloud into multiple sub clouds according to their 
     curvature by analying normals of neighboring points.
     
@@ -222,6 +222,8 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         Minimum of points necessary for each grouping. If bigger than 0, then
         every grouping smaller than the given value will be degrouped and added
         a last grouping.
+    seeds_max : positive int, optional
+        Max number of seeds in seedlist. Default: 150.
     cores : positive int, optional
         Number of cores. Default: 1.
     debug : boolean, optional
@@ -241,10 +243,13 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         raise ValueError('cores must be a positive int, got '
                          f'{cores}')
         
-    if cores > multiprocessing.cpu_count():
-        warn(f'Only {multiprocessing.cpu_count()} available, {cores} required.'
-              ' limiting to max availability.')
-        cores = multiprocessing.cpu_count()
+    if cores > 1:
+        warn("Parallel not yet implemented, setting cores = 1.")
+        
+    # if cores > multiprocessing.cpu_count():
+    #     warn(f'Only {multiprocessing.cpu_count()} available, {cores} required.'
+    #           ' limiting to max availability.')
+    #     cores = multiprocessing.cpu_count()
     
     if k_retest > k:
         raise ValueError('k_retest must be smaller than k, got '
@@ -264,7 +269,8 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     
     while sum(labels == 0) > 0:
         if debug:
-            print(f'{sum(labels == 0)} points to go')
+            print(f'{sum(labels == 0)} points to go, {len(seedlist)} points '
+                  'in seeds list')
         # available_residuals = residuals[labels == 0]
         # res_diff = abs(available_residuals - max(available_residuals) * rth_ratio)
         # rth_idx = np.where(res_diff == min(res_diff))[0][0]
@@ -300,7 +306,10 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         idx = list(set(idx) - usedseeds)
         if debug:
             print(f'-- adding {len(idx)} points')
+        # if len(idx) > 0:
         seedlist += idx
+        if len(seedlist) > seeds_max:
+            seedlist = seedlist[-seeds_max-1:-1]
         
     if debug:
         m, s = divmod(time.time() - time_start, 60)
