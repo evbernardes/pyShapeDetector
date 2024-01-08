@@ -200,7 +200,7 @@ def segment_by_position(pcd, shape, min_points=1):
 
 def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
                                 threshold_angle=np.radians(10), min_points=10,
-                                cores=1, debug=False):
+                                cores=1, debug=False, seedlist_max=200):
     """ Segment point cloud into multiple sub clouds according to their 
     curvature by analying normals of neighboring points.
     
@@ -234,8 +234,11 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     """
     
     def _get_labels_region_growing(
-            pcd, residuals, k, k_retest, cos_thr, min_points, debug):
+            pcd, residuals, k, k_retest, cos_thr, min_points, debug, i=None, queue=None):
         """ Worker function for region growing segmentation"""
+        if debug and i is not None:
+            print(f'Process {i+1} entering...')
+        
         pcd_tree = o3d.geometry.KDTreeFlann(pcd)
         num_points = len(pcd.points)
         labels = np.repeat(0, num_points)
@@ -244,8 +247,9 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         usedseeds = set()
         label = 0
         while sum(labels == 0) > 0:
+            # if debug and i is None:
             if debug:
-                print(f'{sum(labels == 0)} points to go')
+                print(f'{sum(labels == 0)} points to go, {len(seedlist)} in seed list')
             # available_residuals = residuals[labels == 0]
             # res_diff = abs(available_residuals - max(available_residuals) * rth_ratio)
             # rth_idx = np.where(res_diff == min(res_diff))[0][0]
@@ -277,10 +281,24 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
             if k_retest > len(idx):
                 idx = idx[-k_retest-1:-1:1]
             idx = list(set(idx) - usedseeds)
+            # if debug and i is None:
             if debug:
                 print(f'-- adding {len(idx)} points')
-            seedlist += idx
             
+            if len(idx) > 0:
+                seedlist += idx
+                if len(seedlist) > seedlist_max:
+                    seedlist = seedlist[-1-seedlist_max:-1]
+            
+        if queue is not None:
+            data = queue.get()
+            data[i] = labels
+            queue.put(data)
+            if debug:
+                print(f'Process {i+1}/{len(data)} finished!')
+
+        if debug:
+            print(f'Process {i+1}/{len(data)} returning...')
         return labels
     
     def _separate_with_labels(pcd, labels):
@@ -322,10 +340,66 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         
     time_start = time.time()
     
-    labels = _get_labels_region_growing(
-            pcd, residuals, k, k_retest, cos_thr, min_points, debug)
-    
-    pcds_segmented, num_ungroupped = _separate_with_labels(pcd, labels)
+    if cores == 1:
+        labels = _get_labels_region_growing(
+                pcd, residuals, k, k_retest, cos_thr, min_points, debug)
+        
+        pcds_segmented, num_ungroupped = _separate_with_labels(pcd, labels)
+        
+    else:
+        # shape = [int(cores ** (1/3))] * 3
+        a = int(np.ceil(cores ** (1/3)))
+        b = int(np.sqrt(cores / a))
+        c = int(cores / (a * b))
+        if a * b * c > cores:
+            raise RuntimeError('Recomputed number of cores bigger than the '
+                               'required number, this should never happen')
+            
+        cores = a * b * c
+        
+        pcds = segment_by_position(pcd, [a, b, c], min_points=min_points)
+        cores = len(pcds)
+        
+        if debug:
+            print(f'Starting parallel with {cores} cores.')
+        
+        data = {i: [] for i in range(cores)}
+        queue = multiprocessing.Queue()
+        queue.put(data)
+        
+        # for i in range(cores):
+        #     _get_labels_region_growing(
+        #             pcds[i], residuals, k, k_retest, cos_thr, min_points, debug, i, queue)
+        
+        # Create processes and queues
+        processes = [multiprocessing.Process(
+            target=_get_labels_region_growing,
+            args=(pcds[i], None, k, k_retest, cos_thr, min_points, debug, i, queue)) for i in range(cores)]
+        
+        # Start all processes
+        for process in processes:
+            print(f'Starting process...')
+            process.start()
+            print(f'Joining process...')
+            process.join()
+            print(f'Process joined...')
+        if debug:
+            print(f'All {cores} processes created, initializing...')
+            
+        # Wait until all processes are finished
+        # for process in processes:
+            # process.join()
+            
+        if debug:
+            print(f'All {cores} processes finished!')
+            
+        data = queue.get()
+        pcds_segmented = []
+        num_ungroupped = 0
+        for i in data:
+            ret = _separate_with_labels(pcds[i], data[i])
+            pcds_segmented += ret[0]
+            num_ungroupped += ret[1]
     
     if debug:
         m, s = divmod(time.time() - time_start, 60)
