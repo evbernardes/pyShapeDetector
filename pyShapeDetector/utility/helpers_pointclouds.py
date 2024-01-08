@@ -200,7 +200,7 @@ def segment_by_position(pcd, shape, min_points=1):
 
 def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
                                 threshold_angle=np.radians(10), min_points=10,
-                                cores=1, debug=False, seedlist_max=200):
+                                cores=1, seeds_max = 150, debug=False):
     """ Segment point cloud into multiple sub clouds according to their 
     curvature by analying normals of neighboring points.
     
@@ -222,6 +222,8 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         Minimum of points necessary for each grouping. If bigger than 0, then
         every grouping smaller than the given value will be degrouped and added
         a last grouping.
+    seeds_max : positive int, optional
+        Max number of seeds in seedlist. Default: 150.
     cores : positive int, optional
         Number of cores. Default: 1.
     debug : boolean, optional
