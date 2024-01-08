@@ -119,6 +119,10 @@ class RANSAC_Base(ABC):
         _ = self._limits.pop(idx)
         self._num_primitives -= 1
         
+    def remove_all(self):
+        while(len(self.primitives) > 0):
+            self.remove(0)
+        
     @property
     def primitives(self):
         return self._primitives
