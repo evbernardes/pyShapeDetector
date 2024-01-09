@@ -347,12 +347,16 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     time_start = time.time()
     
     if cores == 1:
+        if debug == 1:
+            print('For verbose debug, set debug = 2.')
         labels = _get_labels_region_growing(
-                pcd, residuals, k, k_retest, cos_thr, min_points, debug)
+                pcd, residuals, k, k_retest, cos_thr, min_points, debug=debug > 2)
         
         pcds_segmented, num_ungroupped = _separate_with_labels(pcd, labels)
         
-    else:
+    else: 
+        if debug == 1:
+            print('For verbose debug, set debug = 2.')
         # shape = [int(cores ** (1/3))] * 3
         a = int(np.ceil(cores ** (1/3)))
         b = int(np.sqrt(cores / a))
@@ -370,7 +374,7 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
             print(f'Starting parallel with {cores} cores.')
         
         # data = {i: [] for i in range(cores)}
-        queue = multiprocessing.Queue()
+        # queue = multiprocessing.Queue()
         # queue.put(data)
         
         # for i in range(cores):
@@ -382,7 +386,7 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         data = manager.dict()
         processes = [multiprocessing.Process(
             target=_get_labels_region_growing,
-            args=(pcds[i], None, k, k_retest, cos_thr, min_points, False, i, data)) for i in range(cores)]
+            args=(pcds[i], None, k, k_retest, cos_thr, min_points, debug > 2, i, data)) for i in range(cores)]
         
         # Start all processes
         # for process in [processes[1], processes[2], processes[3]]:
@@ -408,8 +412,8 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
         #     except Empty:
         #         break
             
-        if debug:
-            print(f'Dict assembled!')
+        # if debug:
+            # print(f'Dict assembled!')
         
         pcds_segmented = []
         num_ungroupped = 0
