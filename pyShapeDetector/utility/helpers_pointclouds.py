@@ -23,6 +23,25 @@ from sklearn.neighbors import KDTree
 import multiprocessing
 from queue import Empty
 
+def fuse_pointclouds(pcds):
+    """ Fuses list of pointclouds into a single open3d.geometry.PointCloud 
+    instance.
+    
+    Parameters
+    ----------
+    pcds : list
+        Input pointclouds.
+    
+    Returns
+    -------
+    PointCloud
+        Fused point cloud.
+    """
+    pcd_full = PointCloud()
+    for pcd in pcds:
+        pcd_full += pcd
+    return pcd_full
+
 def average_nearest_dist(points, k=15, leaf_size=40):
     """ Calculates the K nearest neighbors and returns the average distance 
     between them.

@@ -12,7 +12,8 @@ from .detector_options import DetectorOptions
 
 from .helpers_pointclouds import (
     read_point_cloud, paint_random, segment_dbscan, average_nearest_dist,
-    segment_with_region_growing, segment_dbscan, segment_by_position)
+    segment_with_region_growing, segment_dbscan, segment_by_position, 
+    fuse_pointclouds)
 
 from .helpers_primitives import (
     get_rotation_from_axis, group_similar_shapes, fuse_shape_groups, 
