@@ -160,18 +160,22 @@ def segment_dbscan(pcd, eps, min_points=1, print_progress=False, colors=False):
 
     labels = np.array(labels)
     # max_label = labels.max()
-    pcd_segmented = copy.copy(pcd)
+    # pcd_segmented = copy.copy(pcd)
     # print(f"\nPoint cloud has {len(set(labels))} clusters!\n")
     if colors:
-        # colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
+        pcd = copy.copy(pcd)
+        max_label = max(labels)
+        colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
         colors[labels < 0] = 0
-        pcd_segmented.colors = Vector3dVector(colors[:, :3])
+        pcd.colors = Vector3dVector(colors[:, :3])
     # o3d.visualization.draw_geometries([pcd_segmented])
 
     pcds_segmented = []
-    for label in set(labels):
+    for label in set(labels) - {-1}:
         idx = np.where(labels == label)[0]
-        pcds_segmented.append(pcd.select_by_index(idx))
+        pcd_ = pcd.select_by_index(idx)
+        # if len(pcd_.points) >= min_points:
+        pcds_segmented.append(pcd_)
         
     return pcds_segmented
 

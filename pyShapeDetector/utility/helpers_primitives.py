@@ -10,7 +10,7 @@ Created on Tue Dec  5 15:48:31 2023
 import numpy as np
 from itertools import combinations, product
 from scipy.spatial.transform import Rotation
-# from pyShapeDetector.primitives import Plane, Cylinder
+from pyShapeDetector.primitives import Plane, PlaneBounded
 
 def get_rotation_from_axis(axis_origin, axis):
     """ Rotation matrix that transforms `axis_origin` in `axis`.
@@ -102,11 +102,18 @@ def fuse_shape_groups(shapes_lists, detector=None):
         fitness = [s.metrics['fitness'] for s in sublist]
         model = np.vstack([s.model for s in sublist])
         model = np.average(model, axis=0, weights=fitness)
-        shape = type(sublist[0])(model)
+        primitive = type(sublist[0])
+        if primitive == PlaneBounded:
+            bounds = np.vstack([s.bounds for s in sublist])
+            shape = Plane(model)
+            shape = shape.get_bounded_plane(bounds)
+        else:
+            shape = primitive(model)
         
         points = np.vstack([s.inlier_points for s in sublist])
         normals = np.vstack([s.inlier_normals for s in sublist])
-        shape.add_inliers(points, normals)
+        colors = np.vstack([s.inlier_colors for s in sublist])
+        shape.add_inliers(points, normals, colors)
         
         if detector is not None:
             num_points = sum([s.metrics['num_points'] for s in sublist])
