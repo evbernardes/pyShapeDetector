@@ -218,9 +218,10 @@ def segment_by_position(pcd, shape, min_points=1):
             pcds.append(pcd_sub)
     return pcds
 
-def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
-                                threshold_angle=np.radians(10), min_points=10,
-                                cores=1, seeds_max = 150, debug=False):
+def segment_with_region_growing(pcd, residuals=None, mode='knn', k=20, radius=0,
+                                k_retest=10, threshold_angle=np.radians(10), 
+                                min_points=10, cores=1, seeds_max = 150, 
+                                debug=False):
     """ Segment point cloud into multiple sub clouds according to their 
     curvature by analying normals of neighboring points.
     
@@ -231,8 +232,15 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     residuals : array, optional
         Array of residuals used to find the next random region, by selecting
         the unlabeled point with the least residual.
+    mode : string, optional
+        Decides mode of search. If 'knn', calculates the K nearest neighbors
+        for testing. If 'radius', calculates points under a radius. Default:
+        'knn'.
     k : int, optional
-        Number of neighbors points to be tested at each time. Default: 20.
+        Number of neighbors points to be tested at each time, if mode == 'knn'.
+        Default: 20.
+    radius : float, optional
+        Radius to find neighbors, if mode == 'radius'.
     k_retest : int, optional
         Number of points after test to be added to seedlist. Default: 10.
     threshold_angle : float, optional
@@ -254,6 +262,17 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
     list
         Segmented pointclouds
     """
+    if mode.lower() not in ['knn', 'radius']:
+        raise ValueError(f"mode can be 'knn' or 'radius', got {mode}.")
+    mode = mode.lower()
+    
+    if mode == 'knn' and (k < 1 or not isinstance(k, int)):
+        raise ValueError("When mode == 'knn', k must be a positive int. "
+                         f"Got {k}.")
+                         
+    if mode == 'radius' and radius <= 0:
+        raise ValueError("When mode == 'radius', radius must be positive. "
+                         f"Got {radius}.")
     
     def _get_labels_region_growing(
             pcd, residuals, k, k_retest, cos_thr, min_points, debug, i=None, data=None):
@@ -291,8 +310,14 @@ def segment_with_region_growing(pcd, residuals=None, k=20, k_retest=10,
             point = pcd.points[seed]
             normal = pcd.normals[seed]
             usedseeds.add(seed)
+            
+            if mode == 'knn':
+                _, idx, b = pcd_tree.search_knn_vector_3d(point, k)
+            elif mode == 'radius':
+                _, idx, b = pcd_tree.search_radius_vector_3d(point, radius)
+            else:
+                raise RuntimeError("This should never happen.")
                 
-            _, idx, b = pcd_tree.search_knn_vector_3d(point, k)
             idx = np.array(idx)
             normals_neighbors = normals[idx]
             is_neighbor = np.abs(normals_neighbors.dot(normal)) > cos_thr
