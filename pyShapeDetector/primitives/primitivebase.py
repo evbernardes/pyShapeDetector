@@ -117,6 +117,7 @@ class Primitive(ABC):
     """
     _inlier_points = np.asarray([])
     _inlier_normals = np.asarray([])
+    _inlier_colors = np.asarray([])
     # _inlier_indices = np.asarray([])
     _metrics = {}
     
@@ -129,7 +130,7 @@ class Primitive(ABC):
         params = list(map(round_, self.model))
         return type(self).__name__+'('+str(params)+')'
     
-    def add_inliers(self, points, normals=None):
+    def add_inliers(self, points, normals=None, colors=None):
         points = np.asarray(points)
         if points.shape == (3, ):
             points = np.reshape(points, (1,3))
@@ -140,7 +141,6 @@ class Primitive(ABC):
         self._inlier_points = points
         
         if normals is not None:
-        
             normals = np.asarray(normals)
             if normals.shape == (3, ):
                 normals = np.reshape(normals, (1,3))
@@ -149,6 +149,16 @@ class Primitive(ABC):
                                  ' point or an array of shape (N, 3), got '
                                  f'{normals.shape}')
             self._inlier_normals = normals
+        
+        if colors is not None:
+            colors = np.asarray(colors)
+            if colors.shape == (3, ):
+                colors = np.reshape(colors, (1,3))
+            elif normals.shape[1] != 3:
+                raise ValueError('Invalid shape for input colors, must be a single'
+                                 ' point or an array of shape (N, 3), got '
+                                 f'{colors.shape}')
+            self._inlier_colors = colors
     
     @property
     def color(self):
@@ -163,8 +173,13 @@ class Primitive(ABC):
         
     @property
     def inlier_normals(self):
-        """ Convenience attribute that can be set to save inlier points """
+        """ Convenience attribute that can be set to save inlier normals """
         return self._inlier_normals
+        
+    @property
+    def inlier_colors(self):
+        """ Convenience attribute that can be set to save inlier colors """
+        return self._inlier_colors
         
     @property
     def metrics(self):
@@ -538,6 +553,7 @@ class Primitive(ABC):
         shape = type(self)(self.model.copy())
         shape._inlier_points = self._inlier_points.copy()
         shape._inlier_normals = self._inlier_normals.copy()
+        shape._inlier_colors = self._inlier_colors.copy()
         shape._metrics = self._metrics.copy()
         return shape
     
@@ -586,7 +602,6 @@ class Primitive(ABC):
             self._inlier_points = rotation.apply(self._inlier_points)
         if len(self._inlier_normals) > 0:
             self._inlier_normals = rotation.apply(self._inlier_normals)
-        
         
     def rotate(self, rotation):
         """ Rotate the shape.

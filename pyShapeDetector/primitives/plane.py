@@ -178,6 +178,7 @@ class Plane(Primitive):
         shape = Plane(self.model.copy())
         shape._inlier_points = self._inlier_points.copy()
         shape._inlier_normals = self._inlier_normals.copy()
+        shape._inlier_colors = self._inlier_colors.copy()
         shape._metrics = self._metrics.copy()
         if copy_holes:
             holes = [h.copy(copy_holes=False) for h in self._holes]
@@ -738,6 +739,7 @@ class PlaneBounded(Plane):
         shape = PlaneBounded(self.model.copy(), self.bounds.copy())
         shape._inlier_points = self._inlier_points.copy()
         shape._inlier_normals = self._inlier_normals.copy()
+        shape._inlier_colors = self._inlier_colors.copy()
         shape._metrics = self._metrics.copy()
         if copy_holes:
             holes = [h.copy(copy_holes=False) for h in self._holes]
