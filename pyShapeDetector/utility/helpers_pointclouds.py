@@ -179,6 +179,34 @@ def segment_dbscan(pcd, eps, min_points=1, print_progress=False, colors=False):
         
     return pcds_segmented
 
+def separate_pointcloud_in_two(pcd):
+    """ Divide pointcloud in two sub clouds, each one occupying the same 
+    volume.
+    
+    Parameters
+    ----------
+    pcd : instance of Pointcloud
+        Point cloud to be divided
+        
+    Returns
+    -------
+    tuple
+        Subdivided pointclouds
+    """
+    bbox = pcd.get_axis_aligned_bounding_box()
+    min_bound = bbox.min_bound
+    max_bound = bbox.max_bound
+    delta = (max_bound - min_bound)
+    # i = np.where(delta == max(delta))[0][0]
+    
+    delta[np.where(delta != max(delta))[0]] = 0
+    pcd_sub_1 = pcd.crop(
+        AxisAlignedBoundingBox(min_bound, max_bound - delta/2))
+    pcd_sub_2 = pcd.crop(
+        AxisAlignedBoundingBox(min_bound + delta/2, max_bound))
+
+    return pcd_sub_1, pcd_sub_2
+
 def segment_by_position(pcd, shape, min_points=1):
     """ Uniformly divide pcd into different subsets based purely on position.
     
@@ -371,7 +399,6 @@ def segment_with_region_growing(pcd, residuals=None, mode='knn', k=20, radius=0,
             pcds_segmented.append(pcd_rest)
             
         return pcds_segmented, num_ungroupped
-    
     
     if min_points < 0 or not isinstance(min_points, int):
         raise ValueError('min_points must be a non-negative int, got '
