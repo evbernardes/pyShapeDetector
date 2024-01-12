@@ -10,7 +10,7 @@ Created on Tue Dec  5 15:48:31 2023
 import numpy as np
 from itertools import combinations, product
 from scipy.spatial.transform import Rotation
-from pyShapeDetector.primitives import Plane, PlaneBounded
+# from pyShapeDetector.primitives import Plane, PlaneBounded
 
 def get_rotation_from_axis(axis_origin, axis):
     """ Rotation matrix that transforms `axis_origin` in `axis`.
@@ -103,10 +103,10 @@ def fuse_shape_groups(shapes_lists, detector=None):
         model = np.vstack([s.model for s in sublist])
         model = np.average(model, axis=0, weights=fitness)
         primitive = type(sublist[0])
-        if primitive == PlaneBounded:
+        if primitive.name == 'bounded plane':
             bounds = np.vstack([s.bounds for s in sublist])
-            shape = Plane(model)
-            shape = shape.get_bounded_plane(bounds)
+            shape = primitive(model, bounds)
+            # shape = shape.get_bounded_plane(bounds)
         else:
             shape = primitive(model)
         
