@@ -253,7 +253,7 @@ def segment_by_position(pcd, shape, min_points=1):
 def segment_with_region_growing(pcd, residuals=None, mode='knn', k=20, radius=0,
                                 k_retest=10, threshold_angle=np.radians(10), 
                                 min_points=10, cores=1, seeds_max = 150, 
-                                debug=False):
+                                debug=False, old_divide=False):
     """ Segment point cloud into multiple sub clouds according to their 
     curvature by analying normals of neighboring points.
     
@@ -429,32 +429,31 @@ def segment_with_region_growing(pcd, residuals=None, mode='knn', k=20, radius=0,
         
         pcds_segmented, num_ungroupped = _separate_with_labels(pcd, labels)
         
-    else: 
+    else:
+            
         if debug == 1:
             print('For verbose debug, set debug = 2.')
-        # shape = [int(cores ** (1/3))] * 3
-        a = int(np.ceil(cores ** (1/3)))
-        b = int(np.sqrt(cores / a))
-        c = int(cores / (a * b))
-        if a * b * c > cores:
-            raise RuntimeError('Recomputed number of cores bigger than the '
-                               'required number, this should never happen')
             
-        cores = a * b * c
+        if old_divide:
+            a = int(np.ceil(cores ** (1/3)))
+            b = int(np.sqrt(cores / a))
+            c = int(cores / (a * b))
+            if a * b * c > cores:
+                raise RuntimeError('Recomputed number of cores bigger than the '
+                                    'required number, this should never happen')
+            cores = a * b * c
+            pcds = segment_by_position(pcd, [a, b, c], min_points=min_points)
+            cores = len(pcds)
         
-        pcds = segment_by_position(pcd, [a, b, c], min_points=min_points)
-        cores = len(pcds)
-        
+        else:
+            pcds = [pcd]
+            while len(pcds) < cores:
+                lengths = np.array([len(p.points) for p in pcds])
+                i = np.where(lengths == max(lengths))[0][0]
+                pcds += list(separate_pointcloud_in_two(pcds.pop(i)))
+            
         if debug:
             print(f'Starting parallel with {cores} cores.')
-        
-        # data = {i: [] for i in range(cores)}
-        # queue = multiprocessing.Queue()
-        # queue.put(data)
-        
-        # for i in range(cores):
-        #     _get_labels_region_growing(
-        #             pcds[i], residuals, k, k_retest, cos_thr, min_points, debug, i, queue)
         
         # Create processes and queues
         manager = multiprocessing.Manager()
