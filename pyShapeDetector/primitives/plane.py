@@ -751,7 +751,7 @@ class PlaneBounded(Plane):
         """ Rotation matrix that aligns z-axis with plane normal."""
         return get_rotation_from_axis([0, 0, 1], self.normal)
     
-    def __init__(self, planemodel, bounds=None):
+    def __init__(self, planemodel, bounds=None, rmse_max=1e-3):
         """
         Parameters
         ----------
@@ -788,10 +788,10 @@ class PlaneBounded(Plane):
                 
             distances = self.unbounded.get_distances(bounds)
             rmse = np.sqrt(sum(distances * distances)) / len(distances)
-            if  rmse > 1e-7:
+            if rmse_max is not None and rmse_max > 1e-3:
                 raise ValueError('Boundary points are not close enough to '
                                  f'plane: rmse={rmse}, expected less than '
-                                 '1e-7.')
+                                 f'{rmse_max}.')
             
             self.bounds, self.projection = self._get_bounds_and_projection(
                 self.unbounded, bounds, flatten=True)

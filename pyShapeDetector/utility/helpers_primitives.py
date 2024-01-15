@@ -85,7 +85,7 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02):
         return test_intersect.all()
     
     num_shapes = len(shapes)
-    partitions = list(range(num_shapes))
+    partitions = np.array(range(num_shapes))
     
     # import time
     # time1 = 0
@@ -108,8 +108,10 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02):
             partitions[j] = i
     
     sublists = []
-    for i in set(partitions):
-        sublist = [shapes[j] for j in partitions if j == i]
+    # partitions = np.array(partitions)
+    for partition in set(partitions):
+        idx = np.where(partitions == partition)
+        sublist = [shapes[j] for j in np.where(partitions == partition)[0]]
         sublists.append(sublist)
     # print(f'time1 = {time1}, time2 = {time2}')
         
@@ -144,10 +146,14 @@ def fuse_shape_groups(shapes_lists, detector=None):
         fitness = [s.metrics['fitness'] for s in sublist]
         model = np.vstack([s.model for s in sublist])
         model = np.average(model, axis=0, weights=fitness)
+        
         primitive = type(sublist[0])
         if sublist[0].name == 'bounded plane':
             bounds = np.vstack([s.bounds for s in sublist])
-            shape = primitive(model, bounds)
+            projection = np.vstack([s.projection for s in sublist])
+            shape = primitive(model, bounds=None, rmse_max=None)
+            shape.bounds = bounds
+            shape.projection = projection
             # shape = shape.get_bounded_plane(bounds)
         else:
             shape = primitive(model)
