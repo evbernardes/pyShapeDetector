@@ -59,19 +59,60 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02):
         Grouped shapes.
     
     """
+    
+    def _check_bboxes(shape1, shape2):
+        
+        bb1 = [
+            np.min(shape1.inlier_points, axis=0) - atol,
+            np.max(shape1.inlier_points, axis=0) + atol]
+        bb2 = [
+            np.min(shape2.inlier_points, axis=0) - atol,
+            np.max(shape2.inlier_points, axis=0) + atol]
+        
+        # bb1 = shape1.get_axis_aligned_bounding_box()
+        # bb2 = shape2.get_axis_aligned_bounding_box()
+        # test_order = (bb2.max_bound + atol) - (bb1.min_bound - atol) >= 0
+        test_order = bb2[1] - bb1[0] >= 0
+        if test_order.all():
+            pass
+        elif (~test_order).all():
+            bb1, bb2 = bb2, bb1
+        else:
+            return False
+        
+        # test_intersect = (bb1.max_bound + atol) - (bb2.min_bound - atol) >= 0
+        test_intersect = bb1[1] - bb2[0] >= 0
+        return test_intersect.all()
+    
     num_shapes = len(shapes)
     partitions = list(range(num_shapes))
+    
+    # import time
+    # time1 = 0
+    # time2 = 0
     
     for i, j in combinations(partitions, 2):
         if partitions[j] != j:
             continue
-        if shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
+        
+        # start = time.time()
+        # test1 = _check_bboxes(shapes[i], shapes[j])
+        # time1 += time.time() - start
+    
+        # start = time.time()
+        # test2 = shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol)
+        # time2 += time.time() - start
+        
+        if _check_bboxes(shapes[i], shapes[j]) and shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
+        # if test1 and test2:
             partitions[j] = i
     
     sublists = []
     for i in set(partitions):
         sublist = [shapes[j] for j in partitions if j == i]
         sublists.append(sublist)
+    # print(f'time1 = {time1}, time2 = {time2}')
+        
         
     return sublists
 
@@ -96,6 +137,7 @@ def fuse_shape_groups(shapes_lists, detector=None):
     list
         Average shapes.    
     """
+    
     # num_partitions = len(shapes_lists):
     new_list = []
     for sublist in shapes_lists:
@@ -103,7 +145,7 @@ def fuse_shape_groups(shapes_lists, detector=None):
         model = np.vstack([s.model for s in sublist])
         model = np.average(model, axis=0, weights=fitness)
         primitive = type(sublist[0])
-        if primitive.name == 'bounded plane':
+        if sublist[0].name == 'bounded plane':
             bounds = np.vstack([s.bounds for s in sublist])
             shape = primitive(model, bounds)
             # shape = shape.get_bounded_plane(bounds)
