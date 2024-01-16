@@ -518,7 +518,9 @@ class Cone(Primitive):
         # mesh.translate()
         
         # mesh.translate(self.center)
-        
+
+        if len(self.inlier_colors) > 0:
+            mesh.paint_uniform_color(np.mean(self.inlier_colors, axis=0))
         return mesh
     
     @staticmethod

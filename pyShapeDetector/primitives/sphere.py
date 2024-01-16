@@ -185,6 +185,9 @@ class Sphere(Primitive):
         """
         mesh = TriangleMesh.create_sphere(radius=self.model[3], resolution=resolution)
         mesh.translate(self.model[:3])
+
+        if len(self.inlier_colors) > 0:
+            mesh.paint_uniform_color(np.mean(self.inlier_colors, axis=0))
         return mesh
    
     @staticmethod

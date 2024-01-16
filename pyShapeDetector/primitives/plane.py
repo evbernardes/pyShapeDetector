@@ -436,7 +436,10 @@ class Plane(Primitive):
         
         bounded_plane = PlaneBounded(self, bounds)
         bounded_plane._holes = self._holes
-        return bounded_plane.get_mesh()
+        mesh = bounded_plane.get_mesh()
+        if len(self.inlier_colors) > 0:
+            mesh.paint_uniform_color(np.mean(self.inlier_colors, axis=0))
+        return mesh
     
     def get_square_plane(self, length=1):
         """ Gives square plane defined by four points.
@@ -906,6 +909,8 @@ class PlaneBounded(Plane):
         mesh.vertices = Vector3dVector(points)
         mesh.triangles = Vector3iVector(triangles)
         
+        if len(self.inlier_colors) > 0:
+            mesh.paint_uniform_color(np.mean(self.inlier_colors, axis=0))
         return mesh
     
     @classmethod
