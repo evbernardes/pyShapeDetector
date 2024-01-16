@@ -471,6 +471,11 @@ class Primitive(ABC):
         """
         return self.get_distances(points), \
             self.get_angles(points, normals)
+            
+    def _get_mesh(self, resolution):
+        raise NotImplementedError('The mesh generating function for '
+                                  f'primitives of type {self.name} has not '
+                                  'been implemented.')
     
     def get_mesh(self, resolution=30):
         """ Creates mesh of the shape.
@@ -485,9 +490,12 @@ class Primitive(ABC):
         TriangleMesh
             Mesh corresponding to the shape.
         """
-        raise NotImplementedError('The mesh generating function for '
-                                  f'primitives of type {self.name} has not '
-                                  'been implemented.')
+        mesh = self._get_mesh(resolution)
+        if len(self.inlier_colors) > 0:
+            print('painted!')
+            mesh.paint_uniform_color(np.mean(self.inlier_colors, axis=0))
+        return mesh
+
         
     def get_cropped_mesh(self, points=None, eps=1E-3):
         """ Creates mesh of the shape and crops it according to points.

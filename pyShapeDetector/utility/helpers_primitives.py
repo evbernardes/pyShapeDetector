@@ -227,7 +227,7 @@ def cut_planes_with_cylinders(shapes, radius_min, total_cut=False, eps=0):
         if c.cuts(p, total_cut=total_cut, eps=eps):
             p.add_holes(c.project_to_plane(p))
                 
-def get_meshes(shapes, crop_types=['sphere', 'cone']):
+def get_meshes(shapes, crop_types=['sphere', 'cone'], paint_random=False):
     """ Returns meshes from shapes.
     
     Parameters

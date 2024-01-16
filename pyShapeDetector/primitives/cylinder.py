@@ -395,7 +395,6 @@ class Cylinder(Primitive):
             mesh.paint_uniform_color(np.mean(self.inlier_colors, axis=0))
         return mesh
         
-    
     def project_to_plane(self, plane, resolution=30):
         """ Projects cylinder into a plane, creating an elliptical plane.
         

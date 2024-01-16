@@ -419,7 +419,7 @@ class Plane(Primitive):
         """
         return np.tile(self.normal, (len(points), 1))
     
-    def get_mesh(self, resolution=1):
+    def _get_mesh(self, resolution=1):
         """ Flatten points and creates a simplified mesh of the plane. If the
         shape has pre-defined inlier points, use them to find borders.
         Otherwise, return square mesh.
@@ -436,10 +436,7 @@ class Plane(Primitive):
         
         bounded_plane = PlaneBounded(self, bounds)
         bounded_plane._holes = self._holes
-        mesh = bounded_plane.get_mesh()
-        if len(self.inlier_colors) > 0:
-            mesh.paint_uniform_color(np.mean(self.inlier_colors, axis=0))
-        return mesh
+        return bounded_plane.get_mesh()   
     
     def get_square_plane(self, length=1):
         """ Gives square plane defined by four points.
@@ -856,7 +853,7 @@ class PlaneBounded(Plane):
             return None, None
             
     
-    def get_mesh(self, resolution=None):
+    def _get_mesh(self, resolution=None):
         """ Flatten points and creates a simplified mesh of the plane defined
         by the points at the borders.
     
@@ -909,8 +906,6 @@ class PlaneBounded(Plane):
         mesh.vertices = Vector3dVector(points)
         mesh.triangles = Vector3iVector(triangles)
         
-        if len(self.inlier_colors) > 0:
-            mesh.paint_uniform_color(np.mean(self.inlier_colors, axis=0))
         return mesh
     
     @classmethod
