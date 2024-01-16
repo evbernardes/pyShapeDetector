@@ -39,7 +39,7 @@ def get_rotation_from_axis(axis_origin, axis):
         orthogonal_axis /= np.linalg.norm(orthogonal_axis)
         return Rotation.from_quat(list(orthogonal_axis)+[0]).as_matrix()
 
-def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02):
+def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, bbox_intersection=None):
     """ Detect shapes with similar model and group.
     
     See: fuse_shape_groups
@@ -63,11 +63,11 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02):
     def _check_bboxes(shape1, shape2):
         
         bb1 = [
-            np.min(shape1.inlier_points, axis=0) - atol,
-            np.max(shape1.inlier_points, axis=0) + atol]
+            np.min(shape1.inlier_points, axis=0) - bbox_intersection,
+            np.max(shape1.inlier_points, axis=0) + bbox_intersection]
         bb2 = [
-            np.min(shape2.inlier_points, axis=0) - atol,
-            np.max(shape2.inlier_points, axis=0) + atol]
+            np.min(shape2.inlier_points, axis=0) - bbox_intersection,
+            np.max(shape2.inlier_points, axis=0) + bbox_intersection]
         
         # bb1 = shape1.get_axis_aligned_bounding_box()
         # bb2 = shape2.get_axis_aligned_bounding_box()
@@ -102,8 +102,8 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02):
         # start = time.time()
         # test2 = shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol)
         # time2 += time.time() - start
-        
-        if _check_bboxes(shapes[i], shapes[j]) and shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
+        test1 = True if bbox_intersection is None else _check_bboxes(shapes[i], shapes[j])
+        if test1 and shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
         # if test1 and test2:
             partitions[j] = i
     
@@ -114,7 +114,6 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02):
         sublist = [shapes[j] for j in np.where(partitions == partition)[0]]
         sublists.append(sublist)
     # print(f'time1 = {time1}, time2 = {time2}')
-        
         
     return sublists
 
@@ -173,6 +172,36 @@ def fuse_shape_groups(shapes_lists, detector=None):
         new_list.append(shape)
         
     return new_list
+
+
+def fuse_similar_shapes(shapes, detector=None, 
+                        rtol=1e-02, atol=1e-02, bbox_intersection=None):
+    """ Detect shapes with similar model and fuse them.
+    
+    If a detector is given, use it to compute the metrics of the resulting
+    average shapes.
+    
+    See: group_shape_groups, fuse_shape_groups
+    
+    Parameters
+    ----------
+    shapes : list of shapes
+        List containing all shapes.  
+    detector : instance of some Detector, optional
+        Used to recompute metrics.  
+    rtol : float, optional
+        The relative tolerance parameter. Default: 1e-02.
+    atol : float, optional
+        The absolute tolerance parameter. Default: 1e-02.
+    
+    Returns
+    -------
+    list
+        Average shapes.
+    """
+    shapes_groupped = group_similar_shapes(shapes, rtol=rtol, atol=atol, 
+                                           bbox_intersection=bbox_intersection)
+    return fuse_shape_groups(shapes_groupped, detector)
 
 def cut_planes_with_cylinders(shapes, radius_min, total_cut=False, eps=0):
     """ Isolates planes and cylinders. For every plane and cylinder 
