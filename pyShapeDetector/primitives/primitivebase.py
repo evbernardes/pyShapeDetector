@@ -472,7 +472,6 @@ class Primitive(ABC):
         return self.get_distances(points), \
             self.get_angles(points, normals)
     
-    @staticmethod
     def get_mesh(self, resolution=30):
         """ Creates mesh of the shape.
         
