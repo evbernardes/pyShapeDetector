@@ -235,6 +235,8 @@ def get_meshes(shapes, crop_types=['sphere', 'cone'], paint_random=False):
     crop_types : list of strings, optional
         Define type of primitives that should be cropped according to their
         inlier points. Default: ['sphere', 'cone']
+    paint_random: boolean, optional
+        When positive, paint each mesh with a different random color.
     
     Returns
     -------
