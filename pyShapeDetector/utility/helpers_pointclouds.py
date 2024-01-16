@@ -425,7 +425,7 @@ def segment_with_region_growing(pcd, residuals=None, mode='knn', k=20, radius=0,
         if debug == 1:
             print('For verbose debug, set debug = 2.')
         labels = _get_labels_region_growing(
-                pcd, residuals, k, k_retest, cos_thr, min_points, debug=debug > 2)
+                pcd, residuals, k, k_retest, cos_thr, min_points, debug=debug >= 2)
         
         pcds_segmented, num_ungroupped = _separate_with_labels(pcd, labels)
         
@@ -460,7 +460,7 @@ def segment_with_region_growing(pcd, residuals=None, mode='knn', k=20, radius=0,
         data = manager.dict()
         processes = [multiprocessing.Process(
             target=_get_labels_region_growing,
-            args=(pcds[i], None, k, k_retest, cos_thr, min_points, debug > 2, i, data)) for i in range(cores)]
+            args=(pcds[i], None, k, k_retest, cos_thr, min_points, debug >= 2, i, data)) for i in range(cores)]
         
         # Start all processes
         # for process in [processes[1], processes[2], processes[3]]:
