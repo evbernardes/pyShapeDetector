@@ -492,7 +492,6 @@ class Primitive(ABC):
         """
         mesh = self._get_mesh(resolution)
         if len(self.inlier_colors) > 0:
-            print('painted!')
             mesh.paint_uniform_color(np.mean(self.inlier_colors, axis=0))
         return mesh
 

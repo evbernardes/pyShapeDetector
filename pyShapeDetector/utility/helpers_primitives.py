@@ -247,7 +247,8 @@ def get_meshes(shapes, crop_types=['sphere', 'cone'], paint_random=False):
             mesh = shape.get_cropped_mesh()
         else:
             mesh = shape.get_mesh()
-        mesh.paint_uniform_color(np.random.random(3))
+        if paint_random:
+            mesh.paint_uniform_color(np.random.random(3))
         # mesh.paint_uniform_color(np.random.random(3))
         meshes.append(mesh)
 
