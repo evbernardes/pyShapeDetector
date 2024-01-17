@@ -151,8 +151,8 @@ def fuse_shape_groups(shapes_lists, detector=None):
             bounds = np.vstack([s.bounds for s in sublist])
             projection = np.vstack([s.projection for s in sublist])
             shape = primitive(model, bounds=None, rmse_max=None)
-            shape.bounds = bounds
-            shape.projection = projection
+            shape._bounds = bounds
+            shape._projection = projection
             # shape = shape.get_bounded_plane(bounds)
         else:
             shape = primitive(model)

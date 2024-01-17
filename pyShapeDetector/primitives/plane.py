@@ -228,8 +228,8 @@ class Plane(Primitive):
                     continue
                 inside2 = hole.contains_points(self.projection)
                 hole = PlaneBounded(model, hole.bounds[inside1])
-                self.bounds = self.bounds[~inside2]
-                self.projection = self.projection[~inside2]
+                self._bounds = self._bounds[~inside2]
+                self._projection = self._projection[~inside2]
             else: 
                 hole = PlaneBounded(model, hole.bounds)
             fixed_holes.append(hole)
@@ -678,6 +678,16 @@ class PlaneBounded(Plane):
     """
     
     _name = 'bounded plane'
+    _bounds = np.array([])
+    _projections = np.array([])
+    
+    @property
+    def bounds(self):
+        return self._bounds
+    
+    @property
+    def projection(self):
+        return self._projection
     
     def translate(self, translation):
         """ Translate the shape.
@@ -688,7 +698,7 @@ class PlaneBounded(Plane):
             Translation vector.
         """
         Plane.translate(self.unbounded, translation)
-        self.bounds = self.bounds + translation
+        self._bounds = self._bounds + translation
     
     def rotate(self, rotation, is_hole=False):
         """ Rotate the shape.
@@ -707,8 +717,8 @@ class PlaneBounded(Plane):
         
         self._rotate_points_normals(rotation)
         
-        bounds = rotation.apply(self.bounds)
-        self.bounds, self.projection = self._get_bounds_and_projection(
+        bounds = rotation.apply(self._bounds)
+        self._bounds, self._projection = self._get_bounds_and_projection(
             self.unbounded, bounds, flatten=True)
         
         if not is_hole and len(self.holes) > 0:
@@ -740,7 +750,7 @@ class PlaneBounded(Plane):
         Primitive
             Copied primitive
         """
-        shape = PlaneBounded(self.model.copy(), self.bounds.copy())
+        shape = PlaneBounded(self.model.copy(), self._bounds.copy())
         shape._inlier_points = self._inlier_points.copy()
         shape._inlier_normals = self._inlier_normals.copy()
         shape._inlier_colors = self._inlier_colors.copy()
@@ -797,10 +807,10 @@ class PlaneBounded(Plane):
                                  f'plane: rmse={rmse}, expected less than '
                                  f'{rmse_max}.')
             
-            self.bounds, self.projection = self._get_bounds_and_projection(
+            self._bounds, self._projection = self._get_bounds_and_projection(
                 self.unbounded, bounds, flatten=True)
             
-            if self.bounds is None:
+            if self._bounds is None:
                 self = None
                 
         self._holes = []
