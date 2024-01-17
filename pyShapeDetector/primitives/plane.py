@@ -920,9 +920,13 @@ class PlaneBounded(Plane):
         mesh.triangles = Vector3iVector(triangles)
         
         if len(self.inlier_colors) > 0:
+            # vertex_colors = []
+            # for p in self.bounds:
+            #     diff = np.linalg.norm(self.inlier_points - p, axis=1)
+            #     i = np.where(diff == min(diff))[0][0]
+            #     vertex_colors.append(self.inlier_colors[i])
+            # mesh.vertex_colors = Vector3dVector(vertex_colors)
             mesh.paint_uniform_color(np.median(self.inlier_colors, axis=0))
-        return mesh
-        
         return mesh
     
     @classmethod

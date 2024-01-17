@@ -39,6 +39,31 @@ def get_rotation_from_axis(axis_origin, axis):
         orthogonal_axis /= np.linalg.norm(orthogonal_axis)
         return Rotation.from_quat(list(orthogonal_axis)+[0]).as_matrix()
 
+
+def check_bbox_intersection(shape1, shape2, distance):
+    
+    bb1 = [
+        np.min(shape1.inlier_points, axis=0) - distance,
+        np.max(shape1.inlier_points, axis=0) + distance]
+    bb2 = [
+        np.min(shape2.inlier_points, axis=0) - distance,
+        np.max(shape2.inlier_points, axis=0) + distance]
+    
+    # bb1 = shape1.get_axis_aligned_bounding_box()
+    # bb2 = shape2.get_axis_aligned_bounding_box()
+    # test_order = (bb2.max_bound + atol) - (bb1.min_bound - atol) >= 0
+    test_order = bb2[1] - bb1[0] >= 0
+    if test_order.all():
+        pass
+    elif (~test_order).all():
+        bb1, bb2 = bb2, bb1
+    else:
+        return False
+    
+    # test_intersect = (bb1.max_bound + atol) - (bb2.min_bound - atol) >= 0
+    test_intersect = bb1[1] - bb2[0] >= 0
+    return test_intersect.all()
+
 def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, bbox_intersection=None):
     """ Detect shapes with similar model and group.
     
@@ -60,30 +85,6 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, bbox_intersection=None)
     
     """
     
-    def _check_bboxes(shape1, shape2):
-        
-        bb1 = [
-            np.min(shape1.inlier_points, axis=0) - bbox_intersection,
-            np.max(shape1.inlier_points, axis=0) + bbox_intersection]
-        bb2 = [
-            np.min(shape2.inlier_points, axis=0) - bbox_intersection,
-            np.max(shape2.inlier_points, axis=0) + bbox_intersection]
-        
-        # bb1 = shape1.get_axis_aligned_bounding_box()
-        # bb2 = shape2.get_axis_aligned_bounding_box()
-        # test_order = (bb2.max_bound + atol) - (bb1.min_bound - atol) >= 0
-        test_order = bb2[1] - bb1[0] >= 0
-        if test_order.all():
-            pass
-        elif (~test_order).all():
-            bb1, bb2 = bb2, bb1
-        else:
-            return False
-        
-        # test_intersect = (bb1.max_bound + atol) - (bb2.min_bound - atol) >= 0
-        test_intersect = bb1[1] - bb2[0] >= 0
-        return test_intersect.all()
-    
     num_shapes = len(shapes)
     partitions = np.array(range(num_shapes))
     
@@ -102,7 +103,10 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, bbox_intersection=None)
         # start = time.time()
         # test2 = shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol)
         # time2 += time.time() - start
-        test1 = True if bbox_intersection is None else _check_bboxes(shapes[i], shapes[j])
+        if bbox_intersection is None:
+            test1 = True
+        else:
+            test1 = check_bbox_intersection(shapes[i], shapes[j], bbox_intersection)
         if test1 and shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
         # if test1 and test2:
             partitions[j] = i
