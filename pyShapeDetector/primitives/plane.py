@@ -718,8 +718,7 @@ class PlaneBounded(Plane):
         self._rotate_points_normals(rotation)
         
         bounds = rotation.apply(self._bounds)
-        self._bounds, self._bounds_projections = self._get_bounds_and_bounds_projections(
-            self.unbounded, bounds, flatten=True)
+        self._get_bounds(bounds, flatten=True)
         
         if not is_hole and len(self.holes) > 0:
             for hole in self.holes:
@@ -807,8 +806,7 @@ class PlaneBounded(Plane):
                                  f'plane: rmse={rmse}, expected less than '
                                  f'{rmse_max}.')
             
-            self._bounds, self._bounds_projections = self._get_bounds_and_bounds_projections(
-                self.unbounded, bounds, flatten=True)
+            self._get_bounds(bounds, flatten=True)
             
             if self._bounds is None:
                 self = None
@@ -830,8 +828,7 @@ class PlaneBounded(Plane):
         canonical_plane._holes = self._holes
         return canonical_plane
         
-    @staticmethod
-    def _get_bounds_and_bounds_projections(plane, points, flatten=True):
+    def _get_bounds(self, points, flatten=True):
         """ Flatten points according to plane model, get projections of 
         flattened points in the model and compute its convex hull to give 
         boundary points.
@@ -854,18 +851,20 @@ class PlaneBounded(Plane):
             equal to N.
         """
         if flatten:
-            points = plane.flatten_points(points)
+            points = self.flatten_points(points)
         if np.any(np.isnan(points)):
             raise ValueError('NaN found in points')
         # points_flat = self.flatten_points(points)
-        rot = get_rotation_from_axis([0, 0, 1], plane.normal)
+        rot = get_rotation_from_axis([0, 0, 1], self.normal)
         projections = (rot @ points.T).T[:, :2]
-        try:
-            chull = ConvexHull(projections)
-            return points[chull.vertices], projections[chull.vertices]
-        except ValueError:
-            return None, None
-            
+        # try:
+        #     chull = ConvexHull(projections)
+        #     return points[chull.vertices], projections[chull.vertices]
+        # except ValueError:
+        #     return None, None
+        chull = ConvexHull(projections)
+        self._bounds = points[chull.vertices]
+        self._bounds_projections = projections[chull.vertices]
     
     def get_mesh(self, resolution=None):
         """ Flatten points and creates a simplified mesh of the plane defined
