@@ -47,7 +47,11 @@ def draw_two_colomns(objs_left, objs_right, dist=5,
         objs_right = [objs_right]
     objs_right = copy.deepcopy(objs_right)
     
-    translate = 0.5 * dist * np.cross(up, front)
+    try:
+        translate = 0.5 * dist * np.cross(up, front)
+    except:
+        translate = np.array([0, 0.5 * dist, 0])
+        
     for i in range(len(objs_left)):
         objs_left[i].translate(-translate)
     for i in range(len(objs_right)):
