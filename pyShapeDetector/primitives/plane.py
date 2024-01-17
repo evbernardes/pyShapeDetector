@@ -223,13 +223,13 @@ class Plane(Primitive):
                 model = -model
             
             if remove_points:
-                inside1 = self.contains_points(hole.projection)
+                inside1 = self.contains_points(hole.projections)
                 if sum(inside1) < 3:
                     continue
-                inside2 = hole.contains_points(self.projection)
+                inside2 = hole.contains_points(self.bounds_projections)
                 hole = PlaneBounded(model, hole.bounds[inside1])
                 self._bounds = self._bounds[~inside2]
-                self._projection = self._projection[~inside2]
+                self._bounds_projections = self._bounds_projections[~inside2]
             else: 
                 hole = PlaneBounded(model, hole.bounds)
             fixed_holes.append(hole)
@@ -679,15 +679,15 @@ class PlaneBounded(Plane):
     
     _name = 'bounded plane'
     _bounds = np.array([])
-    _projections = np.array([])
+    _bounds_projections = np.array([])
     
     @property
     def bounds(self):
         return self._bounds
     
     @property
-    def projection(self):
-        return self._projection
+    def bounds_projections(self):
+        return self._bounds_projections
     
     def translate(self, translation):
         """ Translate the shape.
@@ -718,7 +718,7 @@ class PlaneBounded(Plane):
         self._rotate_points_normals(rotation)
         
         bounds = rotation.apply(self._bounds)
-        self._bounds, self._projection = self._get_bounds_and_projection(
+        self._bounds, self._bounds_projections = self._get_bounds_and_bounds_projections(
             self.unbounded, bounds, flatten=True)
         
         if not is_hole and len(self.holes) > 0:
@@ -729,9 +729,9 @@ class PlaneBounded(Plane):
         inside = np.array([True] * len(points))
         for i in range(len(points)):
             point = points[i]
-            for j in range(1, len(self.projection)):
-                p1 = self.projection[j-1]
-                p2 = self.projection[j]
+            for j in range(1, len(self.bounds_projections)):
+                p1 = self.bounds_projections[j-1]
+                p2 = self.bounds_projections[j]
                 if (point[0] - p1[0]) * (p2[1] - p1[1]) - (point[1] - p1[1]) * (p2[0] - p1[0]) > 0:
                     inside[i] = False
                     continue
@@ -807,7 +807,7 @@ class PlaneBounded(Plane):
                                  f'plane: rmse={rmse}, expected less than '
                                  f'{rmse_max}.')
             
-            self._bounds, self._projection = self._get_bounds_and_projection(
+            self._bounds, self._bounds_projections = self._get_bounds_and_bounds_projections(
                 self.unbounded, bounds, flatten=True)
             
             if self._bounds is None:
@@ -831,8 +831,8 @@ class PlaneBounded(Plane):
         return canonical_plane
         
     @staticmethod
-    def _get_bounds_and_projection(plane, points, flatten=True):
-        """ Flatten points according to plane model, get projection of 
+    def _get_bounds_and_bounds_projections(plane, points, flatten=True):
+        """ Flatten points according to plane model, get projections of 
         flattened points in the model and compute its convex hull to give 
         boundary points.
 
@@ -849,8 +849,8 @@ class PlaneBounded(Plane):
         -------
         bounds : array_like, shape (M, 3)
             Boundary points in plane, where M is lower or equal to N.
-        projection : array_like, shape (M, 2)
-            Projection of boundary points in plane, where M is lower or 
+        projections : array_like, shape (M, 2)
+            projections of boundary points in plane, where M is lower or 
             equal to N.
         """
         if flatten:
@@ -859,10 +859,10 @@ class PlaneBounded(Plane):
             raise ValueError('NaN found in points')
         # points_flat = self.flatten_points(points)
         rot = get_rotation_from_axis([0, 0, 1], plane.normal)
-        projection = (rot @ points.T).T[:, :2]
+        projections = (rot @ points.T).T[:, :2]
         try:
-            chull = ConvexHull(projection)
-            return points[chull.vertices], projection[chull.vertices]
+            chull = ConvexHull(projections)
+            return points[chull.vertices], projections[chull.vertices]
         except ValueError:
             return None, None
             
@@ -884,30 +884,30 @@ class PlaneBounded(Plane):
 
         
         points = self.bounds
-        projection = self.projection
+        projections = self.bounds_projections
         
         holes = self._holes
         has_holes = len(holes) != 0
         if has_holes:
             labels = []
-            projection_holes = []
+            projections_holes = []
             points_holes = []
             labels_holes = []
             for i in range(len(holes)):
                 hole = holes[i]
-                projection_holes.append(hole.projection)
+                projections_holes.append(hole.projections)
                 points_holes.append(self.flatten_points(
                     hole.bounds))
-                labels += [i+1] * len(hole.projection)                
+                labels += [i+1] * len(hole.projections)                
             labels = np.array(
-                [0] * len(projection) + labels)
-            projection = np.vstack([projection]+projection_holes)
+                [0] * len(projections) + labels)
+            projections = np.vstack([projections]+projections_holes)
             points = np.vstack([points]+points_holes)
             
         # is_points = np.asarray(is_points)
-        # A = dict(vertices=plane.projection, holes=[circle.projection])
+        # A = dict(vertices=plane.projections, holes=[circle.projections])
         # triangles = tr.triangulate(A)
-        triangles = Delaunay(projection).simplices
+        triangles = Delaunay(projections).simplices
         if has_holes:
             for i in range(len(holes)):
                 triangles = triangles[
