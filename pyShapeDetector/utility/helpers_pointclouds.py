@@ -378,7 +378,7 @@ def segment_with_region_growing(pcd, residuals=None, mode='knn', k=20, radius=0,
             if debug:
                 print(f'Process {i+1} finished!')
 
-        if debug:
+        if debug and i is not None:
             print(f'Process {i+1} returning, {len(labels)} points labeled...')
         return labels
     
