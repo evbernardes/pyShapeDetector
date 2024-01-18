@@ -11,6 +11,7 @@ import numpy as np
 from itertools import combinations, product
 from scipy.spatial.transform import Rotation
 # from pyShapeDetector.primitives import Plane, PlaneBounded
+# from pyShapeDetector.primitives import Line
 
 def get_rotation_from_axis(axis_origin, axis):
     """ Rotation matrix that transforms `axis_origin` in `axis`.
@@ -114,7 +115,7 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, bbox_intersection=None)
     sublists = []
     # partitions = np.array(partitions)
     for partition in set(partitions):
-        idx = np.where(partitions == partition)
+        # idx = np.where(partitions == partition)
         sublist = [shapes[j] for j in np.where(partitions == partition)[0]]
         sublists.append(sublist)
     # print(f'time1 = {time1}, time2 = {time2}')
@@ -206,6 +207,69 @@ def fuse_similar_shapes(shapes, detector=None,
     shapes_groupped = group_similar_shapes(shapes, rtol=rtol, atol=atol, 
                                            bbox_intersection=bbox_intersection)
     return fuse_shape_groups(shapes_groupped, detector)
+
+def glue_nearby_planes(shapes, bbox_intersection, length_max=None, ignore=None):
+    """ For every possible pair of neighboring bounded planes, calculate their
+    intersection and then glue them to this intersection.
+    
+    Also returns list of all intersection lines.
+    
+    See: group_shape_groups, fuse_shape_groups
+    
+    Parameters
+    ----------
+    shapes : list of shapes
+        List containing all shapes.  
+    bbox_intersection : float
+        Max distance between planes.
+    length_max : float, optional
+        If a value is given, . Default: None.
+    ignore : list of booleans, optional
+        If a list of booleans is given, ignore every ith plane in shapes if
+        the ith value of 'ignore' is True.
+    
+    Returns
+    -------
+    list
+        List of intersections.
+    """
+    
+    from pyShapeDetector.primitives import Line
+    
+    if length_max is not None and length_max <= 0:
+        raise ValueError(f"'length_max' must be a positive float, got {length_max}." )    
+    
+    if ignore is None:
+        ignore = [False] * len(shapes)
+    if len(ignore) != len(shapes):
+        raise ValueError("'ignore' must be a list of booleans the size of 'shapes'.")
+    
+    lines = []
+
+    for i, j in combinations(range(len(shapes)), 2):
+        
+        if shapes[i].name != 'bounded plane' or shapes[j].name != 'bounded plane':
+            continue
+        
+        if ignore[i] or ignore[j]:
+            continue
+        
+        if not check_bbox_intersection(shapes[i], shapes[j], bbox_intersection):
+            continue
+        
+        line = Line.intersection(shapes[i], shapes[j])
+        if line is None:
+            continue
+        
+        if length_max is not None and line.length > length_max:
+            continue
+        
+        lines.append(line)
+        new_points = [line.beginning, line.ending]
+        shapes[i]._get_bounds(np.vstack([shapes[i].bounds] + new_points))
+        shapes[j]._get_bounds(np.vstack([shapes[j].bounds] + new_points))
+            
+    return lines
 
 def cut_planes_with_cylinders(shapes, radius_min, total_cut=False, eps=0):
     """ Isolates planes and cylinders. For every plane and cylinder 

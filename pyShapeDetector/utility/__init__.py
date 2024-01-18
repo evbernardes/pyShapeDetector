@@ -17,6 +17,7 @@ from .helpers_pointclouds import (
 
 from .helpers_primitives import (
     get_rotation_from_axis, group_similar_shapes, fuse_shape_groups, 
-    cut_planes_with_cylinders, get_meshes, fuse_similar_shapes)
+    cut_planes_with_cylinders, get_meshes, fuse_similar_shapes, 
+    glue_nearby_planes)
 
 from .helpers_meshes import clean_crop, paint_by_type
