@@ -11,7 +11,8 @@ from .plane import Plane, PlaneBounded
 from .sphere import Sphere
 from .cylinder import Cylinder
 from .cone import Cone
+from .line import Line
 
 list_primitives=[
-    Plane, Sphere, Cylinder, PlaneBounded, Cone,
+    Plane, Sphere, Cylinder, PlaneBounded, Cone, Line,
 ]
