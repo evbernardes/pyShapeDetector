@@ -258,9 +258,14 @@ class Cylinder(Primitive):
         return np.array(self.model[3:6])
     
     @property
-    def height(self):
-        """ Height of cylinder. """
+    def length(self):
+        """ Height/length of cylinder. """
         return np.linalg.norm(self.vector)
+    
+    @property
+    def height(self):
+        """ Height/length of cylinder. """
+        return self.length
     
     @property
     def axis(self):
