@@ -185,11 +185,6 @@ class Plane(Primitive):
             shape._holes = holes
         return shape
     
-    @property
-    def surface_area(self):
-        """ Surface area of bounded plane. """
-        return self.get_mesh().get_surface_area()
-    
     def add_holes(self, holes, remove_points=True):
         """ Add one or more holes to plane.
         
@@ -758,6 +753,11 @@ class PlaneBounded(Plane):
             holes = [h.copy(copy_holes=False) for h in self._holes]
             shape._holes = holes
         return shape
+    
+    @property
+    def surface_area(self):
+        """ Surface area of bounded plane. """
+        return self.get_mesh().get_surface_area()
     
     @property
     def rotation_from_axis(self):
