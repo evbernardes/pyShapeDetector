@@ -53,6 +53,10 @@ class Cone(Primitive):
         
     Methods
     ------- 
+    inliers_bounding_box(slack=0):
+        If the shape includes inlier points, returns the minimum and 
+        maximum bounds of their bounding box.
+        
     from_appex_vector_radius(appex, vector, radius)
         Creates cone from appex, vector and radius as separated arguments.
     

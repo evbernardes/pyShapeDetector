@@ -37,6 +37,9 @@ class Sphere(Primitive):
     
     Methods
     -------
+    inliers_bounding_box(slack=0):
+        If the shape includes inlier points, returns the minimum and 
+        maximum bounds of their bounding box.
     
     from_center_radius(center, radius):
         Creates sphere from center and radius as separated arguments.

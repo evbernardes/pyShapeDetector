@@ -47,6 +47,10 @@ class Plane(Primitive):
     
     Methods
     ------- 
+    inliers_bounding_box(slack=0):
+        If the shape includes inlier points, returns the minimum and 
+        maximum bounds of their bounding box.
+        
     from_normal_dist(normal, dist):
         Creates plane from normal vector and distance to origin.
     

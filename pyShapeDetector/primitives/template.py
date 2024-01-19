@@ -40,6 +40,14 @@ class Template(Primitive):
     
     Methods
     -------
+    inliers_bounding_box(slack=0):
+        If the shape includes inlier points, returns the minimum and 
+        maximum bounds of their bounding box.
+    
+    get_signed_distances():
+        If the shape includes inlier points, returns the minimum and 
+        maximum bounds of their bounding box.
+        
     get_distances(points)
         Gives the minimum distance between each point to the model. 
         

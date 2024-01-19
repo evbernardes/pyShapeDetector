@@ -51,10 +51,14 @@ class Primitive(ABC):
     volume : float
         Volume of primitive.
     inlier_points : N x 3 array
-        Convenience attribute that can be set to save inlier points
+        
         
     Methods
     -------    
+    inliers_bounding_box(slack=0):
+        If the shape includes inlier points, returns the minimum and 
+        maximum bounds of their bounding box.
+    
     get_signed_distances(points):
         Gives the minimum distance between each point to the model. 
     
@@ -124,6 +128,27 @@ class Primitive(ABC):
     @property
     def model(self):
         return self._model
+    
+    def inliers_bounding_box(self, slack=0):
+        """ If the shape includes inlier points, returns the minimum and 
+        maximum bounds of their bounding box.
+        
+        If 'slack' parameter is given, use it expand bounding box in all
+        directions (useful for testing purposes).
+        
+        Returns
+        -------
+        tuple of two 3 x 1 arrays
+            Minimum and maximum bounds of inlier points bounding box.
+        """
+        if len(self.inlier_points) == 0:
+            return None, None
+        
+        slack = abs(slack)
+        min_bound = np.min(self.inlier_points, axis=0)
+        max_bound = np.max(self.inlier_points, axis=0)
+        return np.vstack([min_bound - slack, max_bound + slack])
+        
     
     def __repr__(self):
         round_ = lambda x:round(x, 5)

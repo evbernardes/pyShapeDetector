@@ -43,16 +43,9 @@ def get_rotation_from_axis(axis_origin, axis):
 
 def check_bbox_intersection(shape1, shape2, distance):
     
-    bb1 = [
-        np.min(shape1.inlier_points, axis=0) - distance/2,
-        np.max(shape1.inlier_points, axis=0) + distance/2]
-    bb2 = [
-        np.min(shape2.inlier_points, axis=0) - distance/2,
-        np.max(shape2.inlier_points, axis=0) + distance/2]
+    bb1 = shape1.inliers_bounding_box(distance/2)
+    bb2 = shape2.inliers_bounding_box(distance/2)
     
-    # bb1 = shape1.get_axis_aligned_bounding_box()
-    # bb2 = shape2.get_axis_aligned_bounding_box()
-    # test_order = (bb2.max_bound + atol) - (bb1.min_bound - atol) >= 0
     test_order = bb2[1] - bb1[0] >= 0
     if test_order.all():
         pass
