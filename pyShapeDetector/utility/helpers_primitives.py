@@ -44,11 +44,11 @@ def get_rotation_from_axis(axis_origin, axis):
 def check_bbox_intersection(shape1, shape2, distance):
     
     bb1 = [
-        np.min(shape1.inlier_points, axis=0) - distance,
-        np.max(shape1.inlier_points, axis=0) + distance]
+        np.min(shape1.inlier_points, axis=0) - distance/2,
+        np.max(shape1.inlier_points, axis=0) + distance/2]
     bb2 = [
-        np.min(shape2.inlier_points, axis=0) - distance,
-        np.max(shape2.inlier_points, axis=0) + distance]
+        np.min(shape2.inlier_points, axis=0) - distance/2,
+        np.max(shape2.inlier_points, axis=0) + distance/2]
     
     # bb1 = shape1.get_axis_aligned_bounding_box()
     # bb2 = shape2.get_axis_aligned_bounding_box()
@@ -208,7 +208,8 @@ def fuse_similar_shapes(shapes, detector=None,
                                            bbox_intersection=bbox_intersection)
     return fuse_shape_groups(shapes_groupped, detector)
 
-def glue_nearby_planes(shapes, bbox_intersection, length_max=None, ignore=None):
+def glue_nearby_planes(shapes, bbox_intersection, length_max=None, 
+                       distance_max=None, ignore=None):
     """ For every possible pair of neighboring bounded planes, calculate their
     intersection and then glue them to this intersection.
     
@@ -223,7 +224,11 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None, ignore=None):
     bbox_intersection : float
         Max distance between planes.
     length_max : float, optional
-        If a value is given, . Default: None.
+        If a value is given, limits lenghts of intersection lines. 
+        Default: None.
+    distance_max : float, optional
+        If a value is given, limits the distance of intersections. 
+        Default: None.
     ignore : list of booleans, optional
         If a list of booleans is given, ignore every ith plane in shapes if
         the ith value of 'ignore' is True.
@@ -263,6 +268,12 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None, ignore=None):
         
         if length_max is not None and line.length > length_max:
             continue
+        
+        if distance_max is not None:
+            if min(line.get_distances(shapes[i].bounds)) > distance_max:
+                continue
+            if min(line.get_distances(shapes[j].bounds)) > distance_max:
+                continue
         
         lines.append(line)
         new_points = [line.beginning, line.ending]
