@@ -459,21 +459,21 @@ class Plane(Primitive):
         # bb = pcd.get_axis_aligned_bounding_box()
         # half_length = max(bb.max_bound - bb.min_bound) / 2
         
-        if np.isclose(self.normal[2], 1, atol=1e-7): 
-            v1 = np.cross([0, 1, 0], self.normal)
+        normalized = lambda x : x / np.linalg.norm(x)
+        
+        if np.isclose(self.normal[1], 1, atol=1e-7): 
+            v1 = normalized(np.cross(self.normal, [0, 0, 1]))
+            v2 = normalized(np.cross(v1, self.normal))
         else:
-            v1 = np.cross([0, 0, 1], self.normal)
-            
-        v2 = np.cross(v1, self.normal)
-        v1 /= np.linalg.norm(v1)
-        v2 /= np.linalg.norm(v2)
+            v1 = normalized(np.cross([0, 1, 0], self.normal))
+            v2 = normalized(np.cross(self.normal, v1))
 
         centroid = self.centroid
         vertices = np.vstack([
-            centroid + v1 * length / 2,
-            centroid + v2 * length / 2,
-            centroid - v1 * length / 2,
-            centroid - v2 * length / 2])
+            centroid + (+ v1 + v2) * length / 2,
+            centroid + (+ v1 - v2) * length / 2,
+            centroid + (- v1 + v2) * length / 2,
+            centroid + (- v1 - v2) * length / 2])
         
         plane_bounded = PlaneBounded(self, vertices)
         plane_bounded._holes = self._holes
