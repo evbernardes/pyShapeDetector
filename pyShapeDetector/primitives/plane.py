@@ -923,7 +923,7 @@ class PlaneBounded(Plane):
         
         # points = self.bounds
         # projections = self.bounds_projections
-        print(f'has {len(self._fusion_intersections)} intersections')
+        # print(f'has {len(self._fusion_intersections)} intersections')
         if len(self._fusion_intersections) == 0:
             points = self.bounds
             projections = self.bounds_projections
@@ -983,7 +983,7 @@ class PlaneBounded(Plane):
         
         # needed to make plane visible from both sides
         triangles = np.vstack([triangles, triangles[:, ::-1]])
-        print(len(triangles))
+        # print(len(triangles))
         
         mesh = TriangleMesh()
         mesh.vertices = Vector3dVector(points)
@@ -1189,7 +1189,11 @@ class PlaneBounded(Plane):
             p = l1.point_from_intersection(l2, within_segment=within_segment, eps=eps)
             if p is not None:
                 points.append(p)
-        return np.vstack(points)
+                
+        if len(points) == 0:
+            return np.array([])
+        else:
+            return np.vstack(points)
             
             
             
