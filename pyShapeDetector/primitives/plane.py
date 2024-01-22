@@ -975,11 +975,10 @@ class PlaneBounded(Plane):
         for i in idx_intersections_sorted:
             select = []
             for triangle in triangles:
-                test1 = i-1 in triangle
-                test2 = i in triangle
-                test3 = (i+1) % len(points) in triangle
-                select.append(test1 and test2 and test3)
-            triangles = triangles[~np.array(select)]
+                test = {i-1, i, (i+1) % len(points)}.intersection(triangle)
+                select.append(len(test) == 3)
+            select = np.array(np.array(select))
+            triangles = triangles[~select]
         
         # needed to make plane visible from both sides
         triangles = np.vstack([triangles, triangles[:, ::-1]])

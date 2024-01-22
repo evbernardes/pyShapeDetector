@@ -115,7 +115,7 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, bbox_intersection=None)
         
     return sublists
 
-def fuse_shape_groups(shapes_lists, detector=None):
+def fuse_shape_groups(shapes_lists, detector=None, line_intersection_eps=1e-3):
     """ Find weigthed average of shapes, where the weight is the fitness
     metric.
     
@@ -158,10 +158,13 @@ def fuse_shape_groups(shapes_lists, detector=None):
             
             intersections = []
             for plane1, plane2 in combinations(sublist, 2):
-                intersections.append(plane1.intersection_bounds(plane2, True))
+                points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
+                if len(points) > 0:
+                    intersections.append(points)
             
             # temporary hack, saving intersections for mesh generation
-            shape._fusion_intersections = np.vstack(intersections)
+            if len(intersections) > 0:
+                shape._fusion_intersections = np.vstack(intersections)
             
         else:
             shape = primitive(model)
@@ -190,7 +193,8 @@ def fuse_shape_groups(shapes_lists, detector=None):
 
 
 def fuse_similar_shapes(shapes, detector=None, 
-                        rtol=1e-02, atol=1e-02, bbox_intersection=None):
+                        rtol=1e-02, atol=1e-02, bbox_intersection=None,
+                        line_intersection_eps=1e-3):
     """ Detect shapes with similar model and fuse them.
     
     If a detector is given, use it to compute the metrics of the resulting
@@ -216,7 +220,7 @@ def fuse_similar_shapes(shapes, detector=None,
     """
     shapes_groupped = group_similar_shapes(shapes, rtol=rtol, atol=atol, 
                                            bbox_intersection=bbox_intersection)
-    return fuse_shape_groups(shapes_groupped, detector)
+    return fuse_shape_groups(shapes_groupped, detector, line_intersection_eps=line_intersection_eps)
 
 def glue_nearby_planes(shapes, bbox_intersection, length_max=None, 
                        distance_max=None, ignore=None):
