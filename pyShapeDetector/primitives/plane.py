@@ -977,7 +977,7 @@ class PlaneBounded(Plane):
             for triangle in triangles:
                 test = {i-1, i, (i+1) % len(points)}.intersection(triangle)
                 select.append(len(test) == 3)
-            select = np.array(np.array(select))
+            select = np.array(select)
             triangles = triangles[~select]
         
         # needed to make plane visible from both sides
