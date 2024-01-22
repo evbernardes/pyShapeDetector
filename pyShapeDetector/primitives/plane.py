@@ -15,6 +15,7 @@ from open3d.utility import Vector3iVector, Vector3dVector
 
 from pyShapeDetector.utility import get_rotation_from_axis
 from .primitivebase import Primitive
+# from .line import Line
     
 class Plane(Primitive):
     """
@@ -44,6 +45,9 @@ class Plane(Primitive):
         Volume of plane, which is zero.
     holes : list
         List of holes in plane.
+    bound_lines : list of Line instances
+        Lines defining bounds.
+        
     
     Methods
     ------- 
@@ -248,6 +252,16 @@ class Plane(Primitive):
     def holes(self):
         """ Existing holes in plane. """
         return self._holes
+    
+    @property
+    def bound_lines(self):
+        """ Lines defining bounds. """
+        from .line import Line
+        
+        bounds = self.bounds
+        num_lines = len(bounds)
+        lines = [Line.from_two_points(bounds[i-1], bounds[i]) for i in range(num_lines)]
+        return lines
     
     @classmethod
     def from_normal_dist(cls, normal, dist):
@@ -1012,8 +1026,6 @@ class PlaneBounded(Plane):
         plane = Plane.from_normal_point(normal, center)
         return plane.get_bounded_plane(points)
     
-    
-    
     @staticmethod
     def create_ellipse(center, vx, vy, resolution=30):
         """ Creates elliptical plane from two vectors. The input vectors are 
@@ -1092,6 +1104,25 @@ class PlaneBounded(Plane):
             planes.append(plane.get_bounded_plane(points))
             
         return planes
+    
+    # def intersection_bounds(self, other):
+    # """ Calculates intersection point between bounding lines.
+    
+    # Parameters
+    # ----------
+    # other : instance of Line
+    #     Other line to instersect.
+    # within_segment : boolean, optional
+    #     If set to False, will suppose lines are infinite. Default: True.
+    # eps : float, optional
+    #     Acceptable slack added to intervals in order to check if point
+    #     lies on both lines, if 'within_segment' is True. Default: 1e-3.
+    
+    # Returns
+    # -------
+    # point or None
+    #     1x3 array containing point.
+    # """
             
             
         

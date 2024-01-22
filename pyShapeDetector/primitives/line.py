@@ -85,6 +85,9 @@ class Line(Primitive):
         
     from_plane_intersection(plane1, plane2):
         Calculate the line defining the intersection between two planes.
+        
+    point_from_intersection(other, within_segment=True, eps=1e-3):
+        Calculates intersection point between two lines.
     
     get_angles_cos(points, normals):
         Gives the absolute value of cosines of the angles between the input 
@@ -312,12 +315,19 @@ class Line(Primitive):
             Other line to instersect.
         within_segment : boolean, optional
             If set to False, will suppose lines are infinite. Default: True.
+        eps : float, optional
+            Acceptable slack added to intervals in order to check if point
+            lies on both lines, if 'within_segment' is True. Default: 1e-3.
         
         Returns
         -------
         point or None
             1x3 array containing point.
         """
+        if eps <= 0:
+            raise ValueError("'eps' must be a sufficiently small, "
+                             "positive value.")
+        
         if not isinstance(other, Line):
             raise ValueError("'other' must be an instance of Line.")
             
