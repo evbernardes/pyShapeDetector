@@ -83,7 +83,7 @@ class Line(Primitive):
     point_from_projection(projection):
         Gives point in line whose projection is equal to the input value.
         
-    intersection(plane1, plane2):
+    from_plane_intersection(plane1, plane2):
         Calculate the line defining the intersection between two planes.
     
     get_angles_cos(points, normals):
@@ -303,8 +303,52 @@ class Line(Primitive):
         """
         return self.beginning + self.axis * projection
     
+    def point_from_intersection(self, other, within_segment=True, eps=1e-3):
+        """ Calculates intersection point between two lines.
+        
+        Parameters
+        ----------
+        other : instance of Line
+            Other line to instersect.
+        within_segment : boolean, optional
+            If set to False, will suppose lines are infinite. Default: True.
+        
+        Returns
+        -------
+        point or None
+            1x3 array containing point.
+        """
+        if not isinstance(other, Line):
+            raise ValueError("'other' must be an instance of Line.")
+            
+        # dot_vectors = np.dot(self.vector, other.vector)
+        
+        if abs(abs(np.dot(self.axis, other.axis)) - 1) < 1e-7:
+            return None
+        
+        dot_vectors = np.dot(self.vector, other.vector)
+        diff = self.beginning - other.beginning
+        
+        A = np.array([
+            [-self.length ** 2, dot_vectors],
+            [dot_vectors, -other.length ** 2]])
+        
+        B = np.array([-self.vector.dot(diff), other.vector.dot(diff)])
+        
+        ta, tb = np.linalg.lstsq(A, B, rcond=None)[0]
+        
+        # not sure about including this "-1" there:
+        if within_segment:
+            if not (-1 - eps < ta < 1 + eps) or not (-1 -eps < tb < 1 + eps):
+                return None
+            
+        pa = self.beginning + self.vector * ta
+        pb = other.beginning + other.vector * tb
+        return (pa + pb) / 2
+        
+    
     @staticmethod
-    def intersection(plane1, plane2):
+    def from_plane_intersection(plane1, plane2):
         """ Calculate the line defining the intersection between two planes.
         
         If the planes are not bounded, give a line of length 1.

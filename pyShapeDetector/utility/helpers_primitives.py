@@ -43,8 +43,8 @@ def get_rotation_from_axis(axis_origin, axis):
 
 def check_bbox_intersection(shape1, shape2, distance):
     
-    bb1 = shape1.inliers_bounding_box(distance/2)
-    bb2 = shape2.inliers_bounding_box(distance/2)
+    bb1 = shape1.inliers_bounding_box(slack=distance/2)
+    bb2 = shape2.inliers_bounding_box(slack=distance/2)
     
     test_order = bb2[1] - bb1[0] >= 0
     if test_order.all():
@@ -140,17 +140,22 @@ def fuse_shape_groups(shapes_lists, detector=None):
     # num_partitions = len(shapes_lists):
     new_list = []
     for sublist in shapes_lists:
-        fitness = [s.metrics['fitness'] for s in sublist]
+        try:
+            fitness = [s.metrics['fitness'] for s in sublist]
+        except:
+            fitness = [1] * len(sublist)
+        
         model = np.vstack([s.model for s in sublist])
         model = np.average(model, axis=0, weights=fitness)
         
         primitive = type(sublist[0])
         if sublist[0].name == 'bounded plane':
             bounds = np.vstack([s.bounds for s in sublist])
-            bounds_projections = np.vstack([s.bounds_projections for s in sublist])
-            shape = primitive(model, bounds=None, rmse_max=None)
-            shape._bounds = bounds
-            shape._bounds_projections = bounds_projections
+            # bounds_projections = np.vstack([s.bounds_projections for s in sublist])
+            # shape = primitive(model, bounds=None, rmse_max=None)
+            # shape._bounds = bounds
+            # shape._bounds_projections = bounds_projections
+            shape = primitive(model, bounds=bounds, rmse_max=None)
             # shape = shape.get_bounded_plane(bounds)
         else:
             shape = primitive(model)
@@ -158,6 +163,12 @@ def fuse_shape_groups(shapes_lists, detector=None):
         points = np.vstack([s.inlier_points for s in sublist])
         normals = np.vstack([s.inlier_normals for s in sublist])
         colors = np.vstack([s.inlier_colors for s in sublist])
+        if points.shape[1] == 0:
+            points = None
+        if normals.shape[1] == 0:
+            normals = None
+        if colors.shape[1] == 0:
+            colors = None
         shape.add_inliers(points, normals, colors)
         
         if detector is not None:
@@ -255,7 +266,7 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None,
         if not check_bbox_intersection(shapes[i], shapes[j], bbox_intersection):
             continue
         
-        line = Line.intersection(shapes[i], shapes[j])
+        line = Line.from_plane_intersection(shapes[i], shapes[j])
         if line is None:
             continue
         
