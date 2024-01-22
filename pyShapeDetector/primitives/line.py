@@ -326,7 +326,7 @@ class Line(Primitive):
         """
         if eps <= 0:
             raise ValueError("'eps' must be a sufficiently small, "
-                             "positive value.")
+                              "positive value.")
         
         if not isinstance(other, Line):
             raise ValueError("'other' must be an instance of Line.")
@@ -340,8 +340,8 @@ class Line(Primitive):
         diff = self.beginning - other.beginning
         
         A = np.array([
-            [-self.length ** 2, dot_vectors],
-            [dot_vectors, -other.length ** 2]])
+            [self.length ** 2, -dot_vectors],
+            [-dot_vectors, other.length ** 2]])
         
         B = np.array([-self.vector.dot(diff), other.vector.dot(diff)])
         
@@ -349,13 +349,15 @@ class Line(Primitive):
         
         # not sure about including this "-1" there:
         if within_segment:
-            if not (-1 - eps < ta < 1 + eps) or not (-1 -eps < tb < 1 + eps):
+            if not (-eps < ta < 1 + eps) or not (-eps < tb < 1 + eps):
                 return None
             
         pa = self.beginning + self.vector * ta
         pb = other.beginning + other.vector * tb
-        return (pa + pb) / 2
+        if np.linalg.norm(pa - pb) > eps:
+            return None
         
+        return (pa + pb) / 2        
     
     @staticmethod
     def from_plane_intersection(plane1, plane2):
