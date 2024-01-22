@@ -6,7 +6,7 @@ Created on Mon Sep 25 15:42:59 2023
 @author: ebernardes
 """
 from warnings import warn
-from itertools import permutations
+from itertools import permutations, product
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
 from scipy.spatial.transform import Rotation
@@ -47,7 +47,6 @@ class Plane(Primitive):
         List of holes in plane.
     bound_lines : list of Line instances
         Lines defining bounds.
-        
     
     Methods
     ------- 
@@ -135,6 +134,7 @@ class Plane(Primitive):
     _name = 'plane'
     _holes = []
     _rotatable = [0, 1, 2]
+    _fusion_intersections = []
     
     def translate(self, translation):
         """ Translate the shape.
@@ -149,6 +149,8 @@ class Plane(Primitive):
             self.normal, centroid).model
         
         self._translate_points(translation)
+        for hole in self.holes:
+            hole._translate_points(translation)
     
     def rotate(self, rotation):
         """ Rotate the shape.
@@ -187,6 +189,7 @@ class Plane(Primitive):
         shape._inlier_points = self._inlier_points.copy()
         shape._inlier_normals = self._inlier_normals.copy()
         shape._inlier_colors = self._inlier_colors.copy()
+        shape._fusion_intersections = self._fusion_intersections.copy()
         shape._metrics = self._metrics.copy()
         if copy_holes:
             holes = [h.copy(copy_holes=False) for h in self._holes]
@@ -226,10 +229,17 @@ class Plane(Primitive):
                 model = -model
             
             if remove_points:
-                inside1 = self.contains_points(hole.projections)
+                inside1 = self.contains_points(hole.bounds_projections)
                 if sum(inside1) < 3:
+                    print('shape does not contain hole')
                     continue
+                
+                # if sum(inside1) < 1:
+                    # print('shape does not contain hole')
+                    # continue
+                
                 inside2 = hole.contains_points(self.bounds_projections)
+                print(inside2)
                 hole = PlaneBounded(model, hole.bounds[inside1])
                 self._bounds = self._bounds[~inside2]
                 self._bounds_projections = self._bounds_projections[~inside2]
@@ -262,6 +272,12 @@ class Plane(Primitive):
         num_lines = len(bounds)
         lines = [Line.from_two_points(bounds[i-1], bounds[i]) for i in range(num_lines)]
         return lines
+    
+    def bound_lines_meshes(self, radius_ratio=0.001, color=(0, 0, 0)):
+        lines = self.bound_lines
+        meshes =  [line.get_mesh(radius_ratio=radius_ratio) for line in lines]
+        [mesh.paint_uniform_color(color) for mesh in meshes]
+        return meshes
     
     @classmethod
     def from_normal_dist(cls, normal, dist):
@@ -712,6 +728,8 @@ class PlaneBounded(Plane):
         """
         Plane.translate(self.unbounded, translation)
         self._bounds = self._bounds + translation
+        for hole in self.holes:
+            hole._translate_points(translation)
     
     def rotate(self, rotation, is_hole=False):
         """ Rotate the shape.
@@ -762,10 +780,13 @@ class PlaneBounded(Plane):
         Primitive
             Copied primitive
         """
-        shape = PlaneBounded(self.model.copy(), self._bounds.copy())
+        shape = PlaneBounded(self.model.copy(), bounds=None)
+        shape._bounds = self._bounds.copy()
+        shape._bounds_projections = self._bounds_projections.copy()
         shape._inlier_points = self._inlier_points.copy()
         shape._inlier_normals = self._inlier_normals.copy()
         shape._inlier_colors = self._inlier_colors.copy()
+        shape._fusion_intersections = self._fusion_intersections.copy()
         shape._metrics = self._metrics.copy()
         if copy_holes:
             holes = [h.copy(copy_holes=False) for h in self._holes]
@@ -900,8 +921,28 @@ class PlaneBounded(Plane):
         """
 
         
-        points = self.bounds
-        projections = self.bounds_projections
+        # points = self.bounds
+        # projections = self.bounds_projections
+        print(f'has {len(self._fusion_intersections)} intersections')
+        if len(self._fusion_intersections) == 0:
+            points = self.bounds
+            projections = self.bounds_projections
+            idx_intersections_sorted = []
+        else:
+            points = np.vstack([self.bounds, self._fusion_intersections])
+            rot = self.rotation_from_axis
+            projections = (rot @ points.T).T[:, :2]
+        
+            angles = projections - projections.mean(axis=0)
+            angles = np.arctan2(*angles.T) + np.pi
+            idx = np.argsort(angles)
+            
+            points = points[idx]
+            projections = projections[idx]
+            
+            idx_intersections = list(range(len(points) - len(self._fusion_intersections), len(points)))
+            idx_intersections_sorted = [np.where(i == idx)[0][0] for i in idx_intersections]
+            # print(idx_intersections)
         
         holes = self._holes
         has_holes = len(holes) != 0
@@ -912,10 +953,10 @@ class PlaneBounded(Plane):
             labels_holes = []
             for i in range(len(holes)):
                 hole = holes[i]
-                projections_holes.append(hole.projections)
+                projections_holes.append(hole.bounds_projections)
                 points_holes.append(self.flatten_points(
                     hole.bounds))
-                labels += [i+1] * len(hole.projections)                
+                labels += [i+1] * len(hole.bounds_projections)                
             labels = np.array(
                 [0] * len(projections) + labels)
             projections = np.vstack([projections]+projections_holes)
@@ -929,9 +970,20 @@ class PlaneBounded(Plane):
             for i in range(len(holes)):
                 triangles = triangles[
                     ~np.all(labels[triangles] == i+1, axis=1)]
+                
+        # print(len(triangles))
+        for i in idx_intersections_sorted:
+            select = []
+            for triangle in triangles:
+                test1 = i-1 in triangle
+                test2 = i in triangle
+                test3 = (i+1) % len(points) in triangle
+                select.append(test1 and test2 and test3)
+            triangles = triangles[~np.array(select)]
         
         # needed to make plane visible from both sides
         triangles = np.vstack([triangles, triangles[:, ::-1]])
+        print(len(triangles))
         
         mesh = TriangleMesh()
         mesh.vertices = Vector3dVector(points)
@@ -1105,24 +1157,40 @@ class PlaneBounded(Plane):
             
         return planes
     
-    # def intersection_bounds(self, other):
-    # """ Calculates intersection point between bounding lines.
-    
-    # Parameters
-    # ----------
-    # other : instance of Line
-    #     Other line to instersect.
-    # within_segment : boolean, optional
-    #     If set to False, will suppose lines are infinite. Default: True.
-    # eps : float, optional
-    #     Acceptable slack added to intervals in order to check if point
-    #     lies on both lines, if 'within_segment' is True. Default: 1e-3.
-    
-    # Returns
-    # -------
-    # point or None
-    #     1x3 array containing point.
-    # """
+    def intersection_bounds(self, other, within_segment=True, eps=1e-3):
+        """ Calculates intersection point between bounding lines.
+        
+        Parameters
+        ----------
+        other : instance of PlaneBoundeds
+            Other line to instersect.
+        within_segment : boolean, optional
+            If set to False, will suppose lines are infinite. Default: True.
+        eps : float, optional
+            Acceptable slack added to intervals in order to check if point
+            lies on both lines, if 'within_segment' is True. Default: 1e-3.
+        
+        Returns
+        -------
+        point or None
+            1x3 array containing point.
+        """
+        if not isinstance(other, PlaneBounded):
+            raise ValueError("'other' must be an instance of PlaneBounded.")
+            
+        if len(self.bounds) == 0 or len(other.bounds) == 0:
+            raise ValueError("Both planes must have bounds.")
+            
+        lines = self.bound_lines
+        lines_other = other.bound_lines
+        
+        points = []
+        for l1, l2 in product(lines, lines_other):
+            p = l1.point_from_intersection(l2, within_segment=within_segment, eps=eps)
+            if p is not None:
+                points.append(p)
+        return np.vstack(points)
+            
             
             
         

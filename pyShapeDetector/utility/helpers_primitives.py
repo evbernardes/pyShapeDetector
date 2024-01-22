@@ -138,6 +138,8 @@ def fuse_shape_groups(shapes_lists, detector=None):
     """
     
     # num_partitions = len(shapes_lists):
+    # from pyShapeDetector.primitives import PlaneBounded
+        
     new_list = []
     for sublist in shapes_lists:
         try:
@@ -150,13 +152,17 @@ def fuse_shape_groups(shapes_lists, detector=None):
         
         primitive = type(sublist[0])
         if sublist[0].name == 'bounded plane':
+        # if isinstance(primitive, PlaneBounded):
             bounds = np.vstack([s.bounds for s in sublist])
-            # bounds_projections = np.vstack([s.bounds_projections for s in sublist])
-            # shape = primitive(model, bounds=None, rmse_max=None)
-            # shape._bounds = bounds
-            # shape._bounds_projections = bounds_projections
             shape = primitive(model, bounds=bounds, rmse_max=None)
-            # shape = shape.get_bounded_plane(bounds)
+            
+            intersections = []
+            for plane1, plane2 in combinations(sublist, 2):
+                intersections.append(plane1.intersection_bounds(plane2, True))
+            
+            # temporary hack, saving intersections for mesh generation
+            shape._fusion_intersections = np.vstack(intersections)
+            
         else:
             shape = primitive(model)
         
