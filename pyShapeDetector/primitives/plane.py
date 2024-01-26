@@ -830,7 +830,8 @@ class PlaneBounded(Plane):
         """ Rotation matrix that aligns z-axis with plane normal."""
         return get_rotation_from_axis([0, 0, 1], self.normal)
     
-    def __init__(self, planemodel, bounds=None, rmse_max=1e-3):
+    def __init__(self, planemodel, bounds=None, rmse_max=1e-3, 
+                 method='convex', alpha=None):
         """
         Parameters
         ----------
@@ -838,6 +839,12 @@ class PlaneBounded(Plane):
             Shape defining plane
         bounds : array_like, shape (N, 3)
             Points defining bounds
+        method : string, optional
+            "convex" for convex hull, or "alpha" for alpha shapes.
+            Default: "convex"
+        alpha : float, optional
+            Alpha parameter for alpha shapes algorithm. If equal to None,
+            calculates the optimal alpha. Default: None
                         
         Raises
         ------
@@ -894,10 +901,10 @@ class PlaneBounded(Plane):
         canonical_plane._holes = self._holes
         return canonical_plane        
     
-    def _get_bounds(self, points, flatten=True):
+    def _get_bounds(self, points, flatten=True, method='convex', alpha=None):
         """ Flatten points according to plane model, get projections of 
-        flattened points in the model and compute its convex hull to give 
-        boundary points.
+        flattened points in the model and compute its boundary using either 
+        the convex hull or alpha shapes.
 
         Parameters
         ----------
@@ -907,6 +914,12 @@ class PlaneBounded(Plane):
             Points corresponding to the fitted shape.
         flatten : bool, optional
             If False, does not flatten points
+        method : string, optional
+            "convex" for convex hull, or "alpha" for alpha shapes.
+            Default: "convex"
+        alpha : float, optional
+            Alpha parameter for alpha shapes algorithm. If equal to None,
+            calculates the optimal alpha. Default: None
         
         Returns
         -------
@@ -916,6 +929,14 @@ class PlaneBounded(Plane):
             projections of boundary points in plane, where M is lower or 
             equal to N.
         """
+        method = method.lower()
+        if method == 'convex':
+            pass
+        elif method == 'alpha':
+            raise NotImplementedError("Alpha shapes not implemented yet.")
+        else:
+            raise ValueError(f"method can be 'convex' or 'alpha', got {method}.")
+        
         if flatten:
             points = self.flatten_points(points)
         if np.any(np.isnan(points)):
