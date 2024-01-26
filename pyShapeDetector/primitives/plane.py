@@ -15,6 +15,7 @@ from open3d.utility import Vector3iVector, Vector3dVector
 
 from pyShapeDetector.utility import get_rotation_from_axis
 from .primitivebase import Primitive
+from alphashape import alphashape
 # from .line import Line
     
 class Plane(Primitive):
@@ -727,8 +728,13 @@ class PlaneBounded(Plane):
     """
     
     _name = 'bounded plane'
+    _bounds_indices = np.array([])
     _bounds = np.array([])
     _bounds_projections = np.array([])
+    
+    @property
+    def bounds_indices(self):
+        return self._bounds_indices
     
     @property
     def bounds(self):
@@ -801,6 +807,7 @@ class PlaneBounded(Plane):
             Copied primitive
         """
         shape = PlaneBounded(self.model.copy(), bounds=None)
+        shape._bounds_indices = self._bounds_indices.copy()
         shape._bounds = self._bounds.copy()
         shape._bounds_projections = self._bounds_projections.copy()
         shape._inlier_points = self._inlier_points.copy()
@@ -916,6 +923,7 @@ class PlaneBounded(Plane):
             
         projections = self.get_projections(points)
         chull = ConvexHull(projections)
+        self._bounds_indices = chull.vertices
         self._bounds = points[chull.vertices]
         self._bounds_projections = projections[chull.vertices]
     
