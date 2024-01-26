@@ -86,6 +86,9 @@ class Plane(Primitive):
         Gives, for each input point, the normal vector of the point closest 
         to the primitive. 
         
+    get_projections(points):
+        Get 2D projections of points in plane.
+        
     random(scale):
         Generates a random shape.
         
@@ -447,6 +450,23 @@ class Plane(Primitive):
             Nx3 array containing normal vectors.
         """
         return np.tile(self.normal, (len(points), 1))
+    
+    def get_projections(self, points):
+        """ Get 2D projections of points in plane.
+
+        Parameters
+        ----------
+        points : array_like, shape (N, 3)
+            Points corresponding to the fitted shape.
+        
+        Returns
+        -------
+        projections : array_like, shape (N, 2)
+            2D projections of boundary points in plane
+        """
+        points = np.asarray(points)
+        rot = get_rotation_from_axis([0, 0, 1], self.normal)
+        return (rot @ points.T).T[:, :2]
     
     def get_mesh(self, resolution=1):
         """ Flatten points and creates a simplified mesh of the plane. If the
@@ -865,8 +885,8 @@ class PlaneBounded(Plane):
             model = -model
         canonical_plane = PlaneBounded(list(-self.model), self.bounds)
         canonical_plane._holes = self._holes
-        return canonical_plane
-        
+        return canonical_plane        
+    
     def _get_bounds(self, points, flatten=True):
         """ Flatten points according to plane model, get projections of 
         flattened points in the model and compute its convex hull to give 
@@ -893,14 +913,8 @@ class PlaneBounded(Plane):
             points = self.flatten_points(points)
         if np.any(np.isnan(points)):
             raise ValueError('NaN found in points')
-        # points_flat = self.flatten_points(points)
-        rot = get_rotation_from_axis([0, 0, 1], self.normal)
-        projections = (rot @ points.T).T[:, :2]
-        # try:
-        #     chull = ConvexHull(projections)
-        #     return points[chull.vertices], projections[chull.vertices]
-        # except ValueError:
-        #     return None, None
+            
+        projections = self.get_projections(points)
         chull = ConvexHull(projections)
         self._bounds = points[chull.vertices]
         self._bounds_projections = projections[chull.vertices]
