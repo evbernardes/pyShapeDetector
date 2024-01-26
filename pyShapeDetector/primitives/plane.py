@@ -943,10 +943,12 @@ class PlaneBounded(Plane):
             raise ValueError('NaN found in points')
             
         projections = self.get_projections(points)
-        chull = ConvexHull(projections)
-        self._bounds_indices = chull.vertices
-        self._bounds = points[chull.vertices]
-        self._bounds_projections = projections[chull.vertices]
+        
+        if method == 'convex':
+            chull = ConvexHull(projections)
+            self._bounds_indices = chull.vertices
+            self._bounds = points[chull.vertices]
+            self._bounds_projections = projections[chull.vertices]
     
     def get_mesh(self, resolution=None):
         """ Flatten points and creates a simplified mesh of the plane defined
