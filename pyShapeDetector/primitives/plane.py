@@ -775,7 +775,7 @@ class PlaneBounded(Plane):
         self._rotate_points_normals(rotation)
         
         bounds = rotation.apply(self._bounds)
-        self._get_bounds(bounds, flatten=True)
+        self._set_bounds(bounds, flatten=True)
         
         if not is_hole and len(self.holes) > 0:
             for hole in self.holes:
@@ -879,7 +879,7 @@ class PlaneBounded(Plane):
                                  f'plane: rmse={rmse}, expected less than '
                                  f'{rmse_max}.')
             
-            self._get_bounds(bounds, flatten=True)
+            self._set_bounds(bounds, flatten=True)
             
             if self._bounds is None:
                 self = None
@@ -901,7 +901,7 @@ class PlaneBounded(Plane):
         canonical_plane._holes = self._holes
         return canonical_plane        
     
-    def _get_bounds(self, points, flatten=True, method='convex', alpha=None):
+    def _set_bounds(self, points, flatten=True, method='convex', alpha=None):
         """ Flatten points according to plane model, get projections of 
         flattened points in the model and compute its boundary using either 
         the convex hull or alpha shapes.
