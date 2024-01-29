@@ -237,7 +237,7 @@ class Plane(Primitive):
                 if sum(inside1) < 3:
                     print('shape does not contain hole')
                     continue
-                elif sum(~inside1) >= 2:
+                elif sum(~inside1) > 0:
                     intersections = []
                     for l1, l2 in product(hole.bound_lines, self.bound_lines):
                         if (point := l1.point_from_intersection(l2)) is not None:
@@ -1016,28 +1016,16 @@ class PlaneBounded(Plane):
             points = np.vstack([points]+points_holes)
             projections = self.get_projections(points)
             
-        # is_points = np.asarray(is_points)
-        # A = dict(vertices=plane.projections, holes=[circle.projections])
-        # triangles = tr.triangulate(A)
         triangles = Delaunay(projections).simplices
-        triangle_medians = np.median(points[triangles], axis=2)
         # if has_holes:
         #     for i in range(len(holes)):
         #         triangles = triangles[
         #             ~np.all(labels[triangles] == i+1, axis=1)]
         
-        # has_holes = len(holes) != 0
-        # if has_holes:
-        # triangles_in_holes = np.tile(False, len(triangles))
         for hole in self._holes:
             inside_hole = np.array(
                 [hole.contains_projections(p).all() for p in points[triangles]])
-            # inside_hole = inside_hole.any(axis=1)
-            # inside_hole = hole.contains_projections(triangle_medians)
-            # triangles = triangles[~inside_hole.any(axis=1)]
-            triangles = triangles[~inside_hole]
-            # pass
-            
+            triangles = triangles[~inside_hole]     
                 
         # print(len(triangles))
         for i in idx_intersections_sorted:
