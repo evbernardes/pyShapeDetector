@@ -1029,7 +1029,7 @@ class PlaneBounded(Plane):
             # inside_hole = inside_hole.any(axis=1)
             # inside_hole = hole.contains_projections(triangle_medians)
             # triangles = triangles[~inside_hole.any(axis=1)]
-            triangles = triangles[~inside_hole]
+            # triangles = triangles[~inside_hole]
             # pass
             
                 
