@@ -291,8 +291,8 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None,
         
         lines.append(line)
         new_points = [line.beginning, line.ending]
-        shapes[i]._get_bounds(np.vstack([shapes[i].bounds] + new_points))
-        shapes[j]._get_bounds(np.vstack([shapes[j].bounds] + new_points))
+        shapes[i]._set_bounds(np.vstack([shapes[i].bounds] + new_points))
+        shapes[j]._set_bounds(np.vstack([shapes[j].bounds] + new_points))
             
     return lines
 
