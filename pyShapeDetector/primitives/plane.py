@@ -1129,7 +1129,7 @@ class PlaneBounded(Plane):
         ex = normalize(np.cross(random_axis, normal))
         ey = normalize(np.cross(normal, ex))
         
-        theta = np.linspace(-np.pi, np.pi, resolution)[None].T
+        theta = np.linspace(-np.pi, np.pi, resolution + 1)[None].T
         points = center + (np.cos(theta) * ex + np.sin(theta) * ey) * radius
         
         plane = Plane.from_normal_point(normal, center)
