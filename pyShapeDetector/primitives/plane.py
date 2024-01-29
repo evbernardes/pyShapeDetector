@@ -989,32 +989,41 @@ class PlaneBounded(Plane):
             idx_intersections_sorted = [np.where(i == idx)[0][0] for i in idx_intersections]
             # print(idx_intersections)
         
-        holes = self._holes
-        has_holes = len(holes) != 0
-        if has_holes:
-            labels = []
-            projections_holes = []
-            points_holes = []
-            labels_holes = []
-            for i in range(len(holes)):
-                hole = holes[i]
-                projections_holes.append(hole.bounds_projections)
-                points_holes.append(self.flatten_points(
-                    hole.bounds))
-                labels += [i+1] * len(hole.bounds_projections)                
-            labels = np.array(
-                [0] * len(projections) + labels)
-            projections = np.vstack([projections]+projections_holes)
-            points = np.vstack([points]+points_holes)
+        # holes = self._holes
+        # has_holes = len(holes) != 0
+        # has_holes = False
+        # if has_holes:
+        #     labels = []
+        #     projections_holes = []
+        #     points_holes = []
+        #     labels_holes = []
+        #     for i in range(len(holes)):
+        #         hole = holes[i]
+        #         projections_holes.append(hole.bounds_projections)
+        #         points_holes.append(self.flatten_points(
+        #             hole.bounds))
+        #         labels += [i+1] * len(hole.bounds_projections)                
+        #     labels = np.array(
+        #         [0] * len(projections) + labels)
+        #     projections = np.vstack([projections]+projections_holes)
+        #     points = np.vstack([points]+points_holes)
             
         # is_points = np.asarray(is_points)
         # A = dict(vertices=plane.projections, holes=[circle.projections])
         # triangles = tr.triangulate(A)
         triangles = Delaunay(projections).simplices
-        if has_holes:
-            for i in range(len(holes)):
-                triangles = triangles[
-                    ~np.all(labels[triangles] == i+1, axis=1)]
+        triangle_medians = np.median(points[triangles], axis=2)
+        # if has_holes:
+        #     for i in range(len(holes)):
+        #         triangles = triangles[
+        #             ~np.all(labels[triangles] == i+1, axis=1)]
+        
+        # has_holes = len(holes) != 0
+        # if has_holes:
+        triangles_in_holes = np.tile(False, len(triangles))
+        for hole in self._holes:
+            pass
+            
                 
         # print(len(triangles))
         for i in idx_intersections_sorted:
