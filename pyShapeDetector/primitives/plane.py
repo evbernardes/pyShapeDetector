@@ -233,7 +233,7 @@ class Plane(Primitive):
                 model = -model
             
             if remove_points:
-                inside1 = self.contains_points(hole.bounds_projections)
+                inside1 = self.contains_projections(hole.bounds)
                 if sum(inside1) < 3:
                     print('shape does not contain hole')
                     continue
@@ -242,8 +242,8 @@ class Plane(Primitive):
                     # print('shape does not contain hole')
                     # continue
                 
-                inside2 = hole.contains_points(self.bounds_projections)
-                print(inside2)
+                inside2 = hole.contains_projections(self.bounds)
+                # print(inside2)
                 hole = PlaneBounded(model, hole.bounds[inside1])
                 self._bounds = self._bounds[~inside2]
                 self._bounds_projections = self._bounds_projections[~inside2]
@@ -781,10 +781,24 @@ class PlaneBounded(Plane):
             for hole in self.holes:
                 hole.rotate(rotation, is_hole=True)
     
-    def contains_points(self, points):
+    def contains_projections(self, points):
+        """ For each point in points, check if its projection on the plane lies
+        inside of the plane's bounds. 
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+        
+        Returns
+        -------
+        array of booleans
+            True for points whose projection lies in plane's bounds
+        """
         inside = np.array([True] * len(points))
+        projections = self.get_projections(points)
         for i in range(len(points)):
-            point = points[i]
+            point = projections[i]
             for j in range(1, len(self.bounds_projections)):
                 p1 = self.bounds_projections[j-1]
                 p2 = self.bounds_projections[j]
