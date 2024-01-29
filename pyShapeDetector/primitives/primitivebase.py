@@ -724,4 +724,66 @@ class Primitive(ABC):
             
     def __eq__(self, other_shape):
         return self.is_similar_to(other_shape, rtol=1e-05, atol=1e-08)
+    
+    def save(self, path):
+        import json
+        from pathlib import Path
+        path = Path(path)
+        if path.exists():
+            path.unlink()
+        
+        f = open(path, 'x')
+        data = {
+            'name': self.name,
+            'model': self.model.tolist(),
+            'inlier_points': self.inlier_points.tolist(),
+            'inlier_normals': self.inlier_normals.tolist(),
+            'inlier_colors': self.inlier_colors.tolist()}
+        if self.name == 'bounded plane':
+            data['bounds'] = self.bounds.tolist()
+            data['_fusion_intersections'] = self._fusion_intersections.tolist()
+            data['hole_bounds'] = [h.bounds.tolist() for h in self.holes]
+        json.dump(data, f)
+        f.close()
+    
+    @staticmethod
+    def load(path):
+        import json
+        from pyShapeDetector.primitives import dict_primitives
+        
+        f = open(path, 'r')
+        data = json.load(f)
+        name = data['name']
+        model = data['model']
+        primitive = dict_primitives[name]
+        if name == 'bounded plane':
+            shape = primitive(model, np.array(data['bounds']))
+            shape._fusion_intersections = np.array(data['_fusion_intersections'])
+            
+            hole_bounds = data['hole_bounds']
+            holes = [primitive(shape.model, bounds) for bounds in hole_bounds]
+            shape.add_holes(holes)
+            
+        else:
+            shape = primitive(model)
+
+        shape._inlier_points = np.array(data['inlier_points'])
+        shape._inlier_normals = np.array(data['inlier_normals'])
+        shape._inlier_colors = np.array(data['inlier_colors'])
+
+        f.close()
+        return shape
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         

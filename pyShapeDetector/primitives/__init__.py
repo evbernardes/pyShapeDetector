@@ -16,3 +16,5 @@ from .line import Line
 list_primitives=[
     Plane, Sphere, Cylinder, PlaneBounded, Cone, Line,
 ]
+
+dict_primitives = {p._name: p for p in list_primitives}
