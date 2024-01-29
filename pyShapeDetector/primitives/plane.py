@@ -234,7 +234,7 @@ class Plane(Primitive):
             
             if remove_points:
                 inside1 = self.contains_projections(hole.bounds)
-                if sum(inside1) < 3:
+                if sum(inside1) < 1:
                     print('shape does not contain hole')
                     continue
                 elif sum(~inside1) > 0:
@@ -243,6 +243,8 @@ class Plane(Primitive):
                         if (point := l1.point_from_intersection(l2)) is not None:
                             intersections.append(point)
                     bounds = np.vstack([hole.bounds[inside1]]+intersections)
+                else:
+                    bounds = hole.bounds
                 # if sum(inside1) < 1:
                     # print('shape does not contain hole')
                     # continue
@@ -1017,10 +1019,6 @@ class PlaneBounded(Plane):
             projections = self.get_projections(points)
             
         triangles = Delaunay(projections).simplices
-        # if has_holes:
-        #     for i in range(len(holes)):
-        #         triangles = triangles[
-        #             ~np.all(labels[triangles] == i+1, axis=1)]
         
         for hole in self._holes:
             inside_hole = np.array(
