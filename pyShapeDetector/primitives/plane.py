@@ -1006,20 +1006,9 @@ class PlaneBounded(Plane):
         has_holes = len(holes) != 0
         # has_holes = False
         if has_holes:
-            labels = []
-            projections_holes = []
-            points_holes = []
-            labels_holes = []
-            for i in range(len(holes)):
-                hole = holes[i]
-                projections_holes.append(hole.bounds_projections)
-                points_holes.append(self.flatten_points(
-                    hole.bounds))
-                labels += [i+1] * len(hole.bounds_projections)                
-            labels = np.array(
-                [0] * len(projections) + labels)
-            projections = np.vstack([projections]+projections_holes)
+            points_holes = [self.flatten_points(hole.bounds) for hole in holes]
             points = np.vstack([points]+points_holes)
+            projections = self.get_projections(points)
             
         # is_points = np.asarray(is_points)
         # A = dict(vertices=plane.projections, holes=[circle.projections])
@@ -1036,7 +1025,7 @@ class PlaneBounded(Plane):
         # triangles_in_holes = np.tile(False, len(triangles))
         for hole in self._holes:
             inside_hole = np.array(
-                [hole.contains_projections(p).any() for p in points[triangles]])
+                [hole.contains_projections(p).all() for p in points[triangles]])
             # inside_hole = inside_hole.any(axis=1)
             # inside_hole = hole.contains_projections(triangle_medians)
             # triangles = triangles[~inside_hole.any(axis=1)]
