@@ -1003,24 +1003,24 @@ class PlaneBounded(Plane):
             idx_intersections_sorted = [np.where(i == idx)[0][0] for i in idx_intersections]
             # print(idx_intersections)
         
-        # holes = self._holes
-        # has_holes = len(holes) != 0
+        holes = self._holes
+        has_holes = len(holes) != 0
         # has_holes = False
-        # if has_holes:
-        #     labels = []
-        #     projections_holes = []
-        #     points_holes = []
-        #     labels_holes = []
-        #     for i in range(len(holes)):
-        #         hole = holes[i]
-        #         projections_holes.append(hole.bounds_projections)
-        #         points_holes.append(self.flatten_points(
-        #             hole.bounds))
-        #         labels += [i+1] * len(hole.bounds_projections)                
-        #     labels = np.array(
-        #         [0] * len(projections) + labels)
-        #     projections = np.vstack([projections]+projections_holes)
-        #     points = np.vstack([points]+points_holes)
+        if has_holes:
+            labels = []
+            projections_holes = []
+            points_holes = []
+            labels_holes = []
+            for i in range(len(holes)):
+                hole = holes[i]
+                projections_holes.append(hole.bounds_projections)
+                points_holes.append(self.flatten_points(
+                    hole.bounds))
+                labels += [i+1] * len(hole.bounds_projections)                
+            labels = np.array(
+                [0] * len(projections) + labels)
+            projections = np.vstack([projections]+projections_holes)
+            points = np.vstack([points]+points_holes)
             
         # is_points = np.asarray(is_points)
         # A = dict(vertices=plane.projections, holes=[circle.projections])
@@ -1034,9 +1034,15 @@ class PlaneBounded(Plane):
         
         # has_holes = len(holes) != 0
         # if has_holes:
-        triangles_in_holes = np.tile(False, len(triangles))
+        # triangles_in_holes = np.tile(False, len(triangles))
         for hole in self._holes:
-            pass
+            inside_hole = np.array(
+                [hole.contains_projections(p).any() for p in points[triangles]])
+            # inside_hole = inside_hole.any(axis=1)
+            # inside_hole = hole.contains_projections(triangle_medians)
+            # triangles = triangles[~inside_hole.any(axis=1)]
+            triangles = triangles[~inside_hole]
+            # pass
             
                 
         # print(len(triangles))
