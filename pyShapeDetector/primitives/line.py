@@ -360,6 +360,17 @@ class Line(Primitive):
         return (pa + pb) / 2        
     
     @staticmethod
+    def from_bounds(bounds):
+        num_points = len(bounds)
+        if num_points < 2:
+            raise ValueError("More than one point needed.")
+        lines = []
+        for i in range(num_points):
+            lines.append(
+                Line.from_two_points(bounds[i], bounds[(i + 1) % num_points]))
+        return lines
+    
+    @staticmethod
     def from_plane_intersection(plane1, plane2):
         """ Calculate the line defining the intersection between two planes.
         

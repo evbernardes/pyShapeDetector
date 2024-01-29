@@ -271,11 +271,11 @@ class Plane(Primitive):
     def bound_lines(self):
         """ Lines defining bounds. """
         from .line import Line
-        
-        bounds = self.bounds
-        num_lines = len(bounds)
-        lines = [Line.from_two_points(bounds[i-1], bounds[i]) for i in range(num_lines)]
-        return lines
+        return Line.from_bounds(self.bounds)
+        # bounds = self.bounds
+        # num_lines = len(bounds)
+        # lines = [Line.from_two_points(bounds[i-1], bounds[i]) for i in range(num_lines)]
+        # return lines
     
     def bound_lines_meshes(self, radius_ratio=0.001, color=(0, 0, 0)):
         lines = self.bound_lines
