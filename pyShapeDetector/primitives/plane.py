@@ -783,8 +783,9 @@ class PlaneBounded(Plane):
     
     def contains_points(self, points):
         inside = np.array([True] * len(points))
+        projections = self.get_projections(points)
         for i in range(len(points)):
-            point = points[i]
+            point = projections[i]
             for j in range(1, len(self.bounds_projections)):
                 p1 = self.bounds_projections[j-1]
                 p2 = self.bounds_projections[j]
