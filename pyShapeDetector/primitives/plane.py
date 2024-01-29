@@ -989,8 +989,7 @@ class PlaneBounded(Plane):
             idx_intersections_sorted = []
         else:
             points = np.vstack([self.bounds, self._fusion_intersections])
-            rot = self.rotation_from_axis
-            projections = (rot @ points.T).T[:, :2]
+            projections = self.get_projections(points)
         
             angles = projections - projections.mean(axis=0)
             angles = np.arctan2(*angles.T) + np.pi
