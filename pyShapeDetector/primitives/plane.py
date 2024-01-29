@@ -237,14 +237,20 @@ class Plane(Primitive):
                 if sum(inside1) < 3:
                     print('shape does not contain hole')
                     continue
-                
+                elif sum(~inside1) >= 2:
+                    intersections = []
+                    for l1, l2 in product(hole.bound_lines, self.bound_lines):
+                        if (point := l1.point_from_intersection(l2)) is not None:
+                            intersections.append(point)
+                    bounds = np.vstack([hole.bounds[inside1]]+intersections)
                 # if sum(inside1) < 1:
                     # print('shape does not contain hole')
                     # continue
                 
                 inside2 = hole.contains_projections(self.bounds)
                 # print(inside2)
-                hole = PlaneBounded(model, hole.bounds[inside1])
+                # hole = PlaneBounded(model, hole.bounds[inside1])
+                hole = PlaneBounded(model, bounds)
                 self._bounds = self._bounds[~inside2]
                 self._bounds_projections = self._bounds_projections[~inside2]
             else: 
@@ -1029,7 +1035,7 @@ class PlaneBounded(Plane):
             # inside_hole = inside_hole.any(axis=1)
             # inside_hole = hole.contains_projections(triangle_medians)
             # triangles = triangles[~inside_hole.any(axis=1)]
-            # triangles = triangles[~inside_hole]
+            triangles = triangles[~inside_hole]
             # pass
             
                 
