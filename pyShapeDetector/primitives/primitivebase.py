@@ -133,6 +133,33 @@ class Primitive(ABC):
     # _inlier_indices = np.asarray([])
     _metrics = {}
     
+    def _get_axis_or_vector_or_normal(self):
+        if hasattr(self, 'axis'):
+            return self.axis
+        if hasattr(self, 'vector'):
+            return self.vector
+        if hasattr(self, 'normal'):
+            return self.normal
+        raise RuntimeError(f'Primitives of type {self.name} do not have an '
+                           'axis.')
+    
+    @property
+    def axis_spherical(self):
+        """ Get axis in spherical coordinates, if the primitive has an axis. """
+        x, y, z = self._get_axis_or_vector_or_normal()
+        r = np.sqrt(x**2 + y**2 + z**2)
+        theta = np.arctan2(y, x)
+        phi = np.arccos(z/r)
+        return np.array([r, theta, phi])
+    
+    @property
+    def axis_cylindrical(self):
+        """ Get axis in cylindrical coordinates, if the primitive has an axis. """
+        x, y, z = self._get_axis_or_vector_or_normal()
+        rho = np.sqrt(x**2 + y**2)
+        theta = np.arctan2(y, x)
+        return np.array([rho, theta, z])
+    
     @property
     def model(self):
         return self._model
