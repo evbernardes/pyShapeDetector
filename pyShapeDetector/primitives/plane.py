@@ -298,6 +298,17 @@ class Plane(Primitive):
         from .line import Line
         return Line.from_plane_intersection(self, other_plane)
     
+    def closest_bounds(self, other_plane):
+        if not isinstance(other_plane, PlaneBounded):
+            raise ValueError("Only implemented with other instances of "
+                             "PlaneBounded.")
+        from scipy.spatial.distance import cdist
+        distances = cdist(self.bounds, other_plane.bounds)
+        min_distance_index = np.unravel_index(np.argmin(distances), distances.shape)
+        closest_points = (self.bounds[min_distance_index[0]], 
+                          other_plane.bounds[min_distance_index[1]])
+        return closest_points
+    
     @classmethod
     def from_normal_dist(cls, normal, dist):
         """ Creates plane from normal vector and distance to origin.
