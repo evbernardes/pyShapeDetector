@@ -291,6 +291,13 @@ class Plane(Primitive):
         [mesh.paint_uniform_color(color) for mesh in meshes]
         return meshes
     
+    def intersect(self, other_plane):
+        if not isinstance(other_plane, PlaneBounded):
+            raise ValueError("Only intersection with other instances of "
+                             "PlaneBounded is implemented.")
+        from .line import Line
+        return Line.from_plane_intersection(self, other_plane)
+    
     @classmethod
     def from_normal_dist(cls, normal, dist):
         """ Creates plane from normal vector and distance to origin.
