@@ -759,7 +759,7 @@ class Primitive(ABC):
         if path.exists():
             path.unlink()
         
-        f = open(path, 'x')
+        f = open(path, 'w')
         data = {
             'name': self.name,
             'model': self.model.tolist(),
