@@ -22,6 +22,7 @@ from open3d.utility import Vector3dVector
 from sklearn.neighbors import KDTree
 import multiprocessing
 from queue import Empty
+from scipy.spatial.distance import cdist
 
 def fuse_pointclouds(pcds):
     """ Fuses list of pointclouds into a single open3d.geometry.PointCloud 
@@ -504,3 +505,44 @@ def segment_with_region_growing(pcd, residuals=None, mode='knn', k=20, radius=0,
         print(f'{num_ungroupped} ungroupped points')
         
     return pcds_segmented
+
+def find_closest_points(points1, points2, n=1):
+    """ Fuses list of pointclouds into a single open3d.geometry.PointCloud 
+    instance.
+    
+    Parameters
+    ----------
+    points1 : N x 3 array or instance of PointCloud
+        First pointcloud.
+    points2 : N x 3 array or instance of PointCloud
+        First pointcloud.
+    n : int, optional
+        Number of pairs. Default=1.
+    
+    Returns
+    -------
+    list of n tuples of 2 points
+        Pairs of close points.
+    np.array
+        Distances for each pair.
+    """
+    if isinstance(points1, PointCloud):
+        points1 = points1.points
+    if isinstance(points2, PointCloud):
+        points2 = points2.points
+    points1 = np.asarray(points1)
+    points2 = np.asarray(points2)
+    
+    distances = cdist(points1, points2)
+    min_distance_indices = np.unravel_index(
+        np.argpartition(distances, n, axis=None)[:n], distances.shape)
+    
+    closest_points = []
+    min_distances = []
+    for i in range(n):
+        closest_points.append(
+            (points1[min_distance_indices[0][i]], points2[min_distance_indices[1][i]]))
+        min_distances.append(
+            distances[min_distance_indices[0][i], min_distance_indices[1][i]])
+    
+    return closest_points, min_distances

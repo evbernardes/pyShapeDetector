@@ -339,15 +339,33 @@ class Plane(Primitive):
         return line1, line2
         
     
-    def closest_bounds(self, other_plane):
+    def closest_bounds(self, other_plane, n=1):
+        """ Creates plane from normal vector and distance to origin.
+        
+        Parameters
+        ----------            
+        normal : 3 x 1 array
+            Normal vector defining plane.
+        radius : float
+            Distance to origin.
+        n : int, optional
+            Number of pairs. Default=1.
+
+        Returns
+        -------
+        Cone
+            Generated shape.
+        """
         if not isinstance(other_plane, PlaneBounded):
             raise ValueError("Only implemented with other instances of "
                              "PlaneBounded.")
-        from scipy.spatial.distance import cdist
-        distances = cdist(self.bounds, other_plane.bounds)
-        min_distance_index = np.unravel_index(np.argmin(distances), distances.shape)
-        closest_points = (self.bounds[min_distance_index[0]], 
-                          other_plane.bounds[min_distance_index[1]])
+            
+        from pyShapeDetector.utility import find_closest_points
+        
+        closest_points, _ = find_closest_points(self.bounds, 
+                                                other_plane.bounds,
+                                                n)
+        
         return closest_points
     
     @classmethod
