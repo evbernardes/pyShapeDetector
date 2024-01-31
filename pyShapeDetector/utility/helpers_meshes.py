@@ -11,6 +11,35 @@ Created on Wed Dec  6 14:59:38 2023
 import copy
 import open3d as o3d
 import numpy as np
+from open3d.geometry import TriangleMesh
+from open3d.utility import Vector3dVector, Vector3iVector
+
+def fuse_meshes(meshes):
+    """ Fuse TriangleMesh instances into single mesh.
+    
+    Parameters
+    ----------
+    meshes : list of meshes
+        TriangleMesh instances to be fused
+        
+    Returns
+    -------
+    TriangleMesh
+        Single triangle mesh
+    """
+    mesh = TriangleMesh()
+
+    mesh.vertices = Vector3dVector(
+        np.vstack([mesh.vertices for mesh in meshes]))
+
+    triangles = [np.vstack(meshes[0].triangles)]
+    for i in range(1, len(meshes)):
+        triangles.append(
+            np.array(meshes[i].triangles) + len(meshes[i-1].vertices) - 1
+            )
+        
+    mesh.triangles = Vector3iVector(np.vstack(triangles))
+    return mesh
             
 def paint_by_type(elements, shapes):
     """ Paint each pointcloud/mesh with a color according to shape type.

@@ -20,4 +20,4 @@ from .helpers_primitives import (
     cut_planes_with_cylinders, get_meshes, fuse_similar_shapes, 
     glue_nearby_planes)
 
-from .helpers_meshes import clean_crop, paint_by_type
+from .helpers_meshes import clean_crop, paint_by_type, fuse_meshes
