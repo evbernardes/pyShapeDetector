@@ -174,9 +174,9 @@ def fuse_shape_groups(shapes_lists, detector=None, line_intersection_eps=1e-3):
         colors = np.vstack([s.inlier_colors for s in sublist])
         if points.shape[1] == 0:
             points = None
-        if normals.shape[1] == 0:
+        if normals.shape[1] == 0 or len(normals) < len(points):
             normals = None
-        if colors.shape[1] == 0:
+        if colors.shape[1] == 0 or len(colors) < len(points):
             colors = None
         shape.add_inliers(points, normals, colors)
         
