@@ -989,7 +989,11 @@ class PlaneBounded(Plane):
             self._bounds_indices = chull.vertices
             self._bounds = points[chull.vertices]
             self._bounds_projections = projections[chull.vertices]
-    
+            
+    def add_bound_points(self, new_bound_points, flatten=True, method='convex', alpha=None):
+        points = np.vstack([self.bounds, new_bound_points])
+        self._set_bounds(self, points, flatten, method, alpha)
+        
     def get_mesh(self, resolution=None):
         """ Flatten points and creates a simplified mesh of the plane defined
         by the points at the borders.
