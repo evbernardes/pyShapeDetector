@@ -138,7 +138,7 @@ class Plane(Primitive):
     _name = 'plane'
     _holes = []
     _rotatable = [0, 1, 2]
-    _fusion_intersections = []
+    _fusion_intersections = np.array([])
     
     def translate(self, translation):
         """ Translate the shape.
