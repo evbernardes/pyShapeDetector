@@ -291,12 +291,21 @@ class Plane(Primitive):
         [mesh.paint_uniform_color(color) for mesh in meshes]
         return meshes
     
-    def intersect(self, other_plane, eps=1e-5):
+    def intersect(self, other_plane, separated=False, eps=1e-5):
         if not isinstance(other_plane, PlaneBounded):
             raise ValueError("Only intersection with other instances of "
                              "PlaneBounded is implemented.")
         from .line import Line
-        return Line.from_plane_intersection(self, other_plane, eps=eps)
+        
+        if not separated:
+            return Line.from_plane_intersection(self, other_plane, eps=eps)
+
+        line = Line.from_plane_intersection(self, other_plane, fit_bounds=False, eps=eps)
+        line1 = line.get_line_fitted_to_projections(self.bounds)
+        line2 = line.get_line_fitted_to_projections(other_plane.bounds)
+        
+        return line1, line2
+        
     
     def closest_bounds(self, other_plane):
         if not isinstance(other_plane, PlaneBounded):
@@ -992,7 +1001,7 @@ class PlaneBounded(Plane):
             
     def add_bound_points(self, new_bound_points, flatten=True, method='convex', alpha=None):
         points = np.vstack([self.bounds, new_bound_points])
-        self._set_bounds(self, points, flatten, method, alpha)
+        self._set_bounds(points, flatten, method, alpha)
         
     def get_mesh(self, resolution=None):
         """ Flatten points and creates a simplified mesh of the plane defined

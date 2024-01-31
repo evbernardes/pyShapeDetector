@@ -199,6 +199,26 @@ class Line(Primitive):
         vector = np.array(ending) - np.array(beginning)
         return cls.from_point_vector(beginning, vector)
     
+    def get_line_fitted_to_projections(self, points):
+        """ Creates a new line with beginning and end points fitted to 
+        projections of points.
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+
+        Returns
+        -------
+        Line
+            Generated shape.
+        """
+        projections = np.dot(points - self.beginning, self.axis)
+        new_line = self.from_two_points(
+            self.point_from_projection(min(projections)), 
+            self.point_from_projection(max(projections)))
+        return new_line
+    
     def closest_to_line(self, points):
         """ Returns points in line that are the closest to the input
         points.
@@ -371,7 +391,7 @@ class Line(Primitive):
         return lines
     
     @staticmethod
-    def from_plane_intersection(plane1, plane2, eps=1e-5):
+    def from_plane_intersection(plane1, plane2, fit_bounds=True, eps=1e-5):
         """ Calculate the line defining the intersection between two planes.
         
         If the planes are not bounded, give a line of length 1.
@@ -390,6 +410,10 @@ class Line(Primitive):
         axis = np.cross(plane1.normal, plane2.normal)
         norm = np.linalg.norm(axis)
         if norm < eps:
+            dot1 = np.dot(plane1.centroid, plane1.normal)
+            dot2 = np.dot(plane2.centroid, plane2.normal)
+            if abs(dot1 - dot2) > 100 * eps:
+                return None
             axis = np.cross(plane1.bounds.mean(axis=0) - plane2.bounds.mean(axis=0), plane1.normal + plane2.normal)
             closest_points = plane1.closest_bounds(plane2)
             point = (closest_points[0] + closest_points[1]) / 2
@@ -401,16 +425,10 @@ class Line(Primitive):
         axis /= norm
         line = Line.from_point_vector(point, axis)
         
-        projections = []
-        if hasattr(plane1, 'bounds'):
-            projections += list(np.dot(plane1.bounds - line.beginning, axis))
-        if hasattr(plane2, 'bounds'):
-            projections += list(np.dot(plane2.bounds - line.beginning, axis))
-        if len(projections) > 0:
-            line = Line.from_two_points(
-                line.point_from_projection(min(projections)), 
-                line.point_from_projection(max(projections)))
-        
+        if fit_bounds:
+            points = np.vstack([plane1.bounds, plane2.bounds])
+            line = line.get_line_fitted_to_projections(points)
+            projections = []        
         return line
     
     @staticmethod

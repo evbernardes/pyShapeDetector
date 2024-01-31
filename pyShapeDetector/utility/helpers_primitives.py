@@ -223,7 +223,7 @@ def fuse_similar_shapes(shapes, detector=None,
     return fuse_shape_groups(shapes_groupped, detector, line_intersection_eps=line_intersection_eps)
 
 def glue_nearby_planes(shapes, bbox_intersection, length_max=None, 
-                       distance_max=None, ignore=None):
+                       distance_max=None, ignore=None, eps=1e-2):
     """ For every possible pair of neighboring bounded planes, calculate their
     intersection and then glue them to this intersection.
     
@@ -246,6 +246,8 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None,
     ignore : list of booleans, optional
         If a list of booleans is given, ignore every ith plane in shapes if
         the ith value of 'ignore' is True.
+    eps: float, optional
+        Used to test if pĺanes are parallel. Default: 1e-5.
     
     Returns
     -------
@@ -276,7 +278,7 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None,
         if not check_bbox_intersection(shapes[i], shapes[j], bbox_intersection):
             continue
         
-        line = Line.from_plane_intersection(shapes[i], shapes[j])
+        line = Line.from_plane_intersection(shapes[i], shapes[j], eps=eps)
         if line is None:
             continue
         
@@ -290,9 +292,14 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None,
                 continue
         
         lines.append(line)
-        new_points = [line.beginning, line.ending]
-        shapes[i]._set_bounds(np.vstack([shapes[i].bounds] + new_points))
-        shapes[j]._set_bounds(np.vstack([shapes[j].bounds] + new_points))
+        for shape in [shapes[i], shapes[j]]:
+            line_ = line.get_line_fitted_to_projections(shape.bounds)
+            shape.add_bound_points([line_.beginning, line_.ending])
+            new_points = [line.beginning, line.ending]
+            # # shapes[i]._set_bounds(np.vstack([shapes[i].bounds] + new_points))
+            # # shapes[j]._set_bounds(np.vstack([shapes[j].bounds] + new_points))
+            # shapes[i].add_bound_points(new_points)
+            # shapes[j].add_bound_points(new_points)
             
     return lines
 
