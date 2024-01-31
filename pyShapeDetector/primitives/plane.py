@@ -328,10 +328,10 @@ class Plane(Primitive):
         
         if not separated:
             return Line.from_plane_intersection(
-            self, other_plane, glue_parallel=glue_parallel, eps_angle=eps_angle, eps_distance=eps_distance)
+            self, other_plane, intersect_parallel=intersect_parallel, eps_angle=eps_angle, eps_distance=eps_distance)
 
         line = Line.from_plane_intersection(
-            self, other_plane, glue_parallel=glue_parallel, eps_angle=eps_angle, eps_distance=eps_distance, fit_bounds=False)
+            self, other_plane, intersect_parallel=intersect_parallel, eps_angle=eps_angle, eps_distance=eps_distance, fit_bounds=False)
         
         line1 = line.get_line_fitted_to_projections(self.bounds)
         line2 = line.get_line_fitted_to_projections(other_plane.bounds)

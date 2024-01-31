@@ -224,6 +224,15 @@ class Primitive(ABC):
         seed = int(str(abs(hash(self.name)))[:9])
         np.random.seed(seed)
         return np.random.random(3)
+    
+    @property
+    def inlier_pointcloud(self):
+        """ Creates Open3D.geometry.PointCloud object from inlier points. """
+        pcd = PointCloud()
+        pcd.points = Vector3dVector(self.inlier_points)
+        pcd.normals = Vector3dVector(self.inlier_normals)
+        pcd.colors = Vector3dVector(self.inlier_colors)
+        return pcd
         
     @property
     def inlier_points(self):
