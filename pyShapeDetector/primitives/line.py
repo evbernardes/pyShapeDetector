@@ -271,7 +271,7 @@ class Line(Primitive):
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
     
-    def get_mesh(self, resolution=5, radius_ratio=0.001):
+    def get_mesh(self, resolution=5, radius=0.01):
         """ Creates mesh of the shape.      
         
         Parameters
@@ -287,8 +287,8 @@ class Line(Primitive):
             Mesh corresponding to the shape.
         """
         cylinder = Cylinder.from_base_vector_radius(
-            self.beginning, self.vector, self.length * radius_ratio)
-            # self.beginning, self.vector, radius_ratio)
+            # self.beginning, self.vector, self.length * radius_ratio)
+            self.beginning, self.vector, radius)
         return cylinder.get_mesh(resolution=resolution, closed=True)
     
     def point_from_projection(self, projection):

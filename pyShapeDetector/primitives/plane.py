@@ -285,9 +285,9 @@ class Plane(Primitive):
         # lines = [Line.from_two_points(bounds[i-1], bounds[i]) for i in range(num_lines)]
         # return lines
     
-    def bound_lines_meshes(self, radius_ratio=0.001, color=(0, 0, 0)):
+    def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
         lines = self.bound_lines
-        meshes =  [line.get_mesh(radius_ratio=radius_ratio) for line in lines]
+        meshes =  [line.get_mesh(radius=radius) for line in lines]
         [mesh.paint_uniform_color(color) for mesh in meshes]
         return meshes
     
