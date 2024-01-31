@@ -183,7 +183,6 @@ class Primitive(ABC):
         min_bound = np.min(self.inlier_points, axis=0)
         max_bound = np.max(self.inlier_points, axis=0)
         return np.vstack([min_bound - slack, max_bound + slack])
-        
     
     def __repr__(self):
         round_ = lambda x:round(x, 5)

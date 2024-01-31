@@ -291,12 +291,12 @@ class Plane(Primitive):
         [mesh.paint_uniform_color(color) for mesh in meshes]
         return meshes
     
-    def intersect(self, other_plane):
+    def intersect(self, other_plane, eps=1e-5):
         if not isinstance(other_plane, PlaneBounded):
             raise ValueError("Only intersection with other instances of "
                              "PlaneBounded is implemented.")
         from .line import Line
-        return Line.from_plane_intersection(self, other_plane)
+        return Line.from_plane_intersection(self, other_plane, eps=eps)
     
     def closest_bounds(self, other_plane):
         if not isinstance(other_plane, PlaneBounded):

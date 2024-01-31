@@ -371,7 +371,7 @@ class Line(Primitive):
         return lines
     
     @staticmethod
-    def from_plane_intersection(plane1, plane2):
+    def from_plane_intersection(plane1, plane2, eps=1e-5):
         """ Calculate the line defining the intersection between two planes.
         
         If the planes are not bounded, give a line of length 1.
@@ -389,21 +389,23 @@ class Line(Primitive):
         """
         axis = np.cross(plane1.normal, plane2.normal)
         norm = np.linalg.norm(axis)
-        if norm < 1e-5:
-            return None
+        if norm < eps:
+            axis = np.cross(plane1.bounds.mean(axis=0) - plane2.bounds.mean(axis=0), plane1.normal + plane2.normal)
+            closest_points = plane1.closest_bounds(plane2)
+            point = (closest_points[0] + closest_points[1]) / 2
+            norm = np.linalg.norm(axis)
+        else:
+            A = np.vstack([plane1.normal, plane2.normal])
+            B = -np.vstack([plane1.dist, plane2.dist])
+            point = np.linalg.lstsq(A, B, rcond=None)[0].T[0]
         axis /= norm
-        
-        A = np.vstack([plane1.normal, plane2.normal])
-        B = -np.vstack([plane1.dist, plane2.dist])
-        point = np.linalg.lstsq(A, B, rcond=None)[0].T[0]
-        
         line = Line.from_point_vector(point, axis)
         
         projections = []
         if hasattr(plane1, 'bounds'):
-            projections += list(np.dot(plane1.bounds, axis))
+            projections += list(np.dot(plane1.bounds - line.beginning, axis))
         if hasattr(plane2, 'bounds'):
-            projections += list(np.dot(plane2.bounds, axis))
+            projections += list(np.dot(plane2.bounds - line.beginning, axis))
         if len(projections) > 0:
             line = Line.from_two_points(
                 line.point_from_projection(min(projections)), 
