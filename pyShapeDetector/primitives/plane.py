@@ -291,16 +291,48 @@ class Plane(Primitive):
         [mesh.paint_uniform_color(color) for mesh in meshes]
         return meshes
     
-    def intersect(self, other_plane, separated=False, eps=1e-5):
+    def intersect(self, other_plane, separated=False, intersect_parallel=False,
+                  eps_angle=np.deg2rad(0.9), eps_distance=1e-2):
+        """ Calculate the line defining the intersection with another planes.
+        
+        If separated is True, give two colinear lines, each one fitting the
+        projection of one of the planes.
+        
+        Parameters
+        ----------
+        other_plane : instance of Plane of PlaneBounded
+            Second plane
+        separated : boolean, optional
+            If separated is True, give two colinear lines, each one fitting the
+            projection of one of the planes.
+            Default: False.
+        intersect_parallel : boolean, optional
+            If True, try to intersect parallel planes too. Default: False.
+        eps_angle : float, optional
+            Minimal angle (in radians) between normals necessary for detecting
+            whether planes are parallel. Default: 0.0017453292519943296
+        eps_distance : float, optional
+            When planes are parallel, eps_distance is used to detect if the 
+            planes are close enough to each other in the dimension aligned
+            with their axes. Default: 1e-2.
+        
+        Returns
+        -------
+        Line or None
+        """
+        
         if not isinstance(other_plane, PlaneBounded):
             raise ValueError("Only intersection with other instances of "
                              "PlaneBounded is implemented.")
         from .line import Line
         
         if not separated:
-            return Line.from_plane_intersection(self, other_plane, eps=eps)
+            return Line.from_plane_intersection(
+            self, other_plane, glue_parallel=glue_parallel, eps_angle=eps_angle, eps_distance=eps_distance)
 
-        line = Line.from_plane_intersection(self, other_plane, fit_bounds=False, eps=eps)
+        line = Line.from_plane_intersection(
+            self, other_plane, glue_parallel=glue_parallel, eps_angle=eps_angle, eps_distance=eps_distance, fit_bounds=False)
+        
         line1 = line.get_line_fitted_to_projections(self.bounds)
         line2 = line.get_line_fitted_to_projections(other_plane.bounds)
         
@@ -769,6 +801,8 @@ class PlaneBounded(Plane):
     
     @property
     def bounds_indices(self):
+        """ Indices of points corresponding to bounds. """
+        # TODO: should take into consideration added bounds
         return self._bounds_indices
     
     @property
@@ -999,7 +1033,8 @@ class PlaneBounded(Plane):
             self._bounds = points[chull.vertices]
             self._bounds_projections = projections[chull.vertices]
             
-    def add_bound_points(self, new_bound_points, flatten=True, method='convex', alpha=None):
+    def add_bound_points(self, new_bound_points, flatten=True, method='convex', 
+                         alpha=None):
         points = np.vstack([self.bounds, new_bound_points])
         self._set_bounds(points, flatten, method, alpha)
         
@@ -1016,9 +1051,7 @@ class PlaneBounded(Plane):
         -------
         TriangleMesh
             Mesh corresponding to the plane.
-        """
-
-        
+        """        
         # points = self.bounds
         # projections = self.bounds_projections
         # print(f'has {len(self._fusion_intersections)} intersections')

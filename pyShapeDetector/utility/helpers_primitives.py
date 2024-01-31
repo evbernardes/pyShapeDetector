@@ -223,7 +223,8 @@ def fuse_similar_shapes(shapes, detector=None,
     return fuse_shape_groups(shapes_groupped, detector, line_intersection_eps=line_intersection_eps)
 
 def glue_nearby_planes(shapes, bbox_intersection, length_max=None, 
-                       distance_max=None, ignore=None, eps=1e-2):
+                       distance_max=None, ignore=None, intersect_parallel=False,
+                       eps_angle=np.deg2rad(0.9), eps_distance=1e-2):
     """ For every possible pair of neighboring bounded planes, calculate their
     intersection and then glue them to this intersection.
     
@@ -246,8 +247,15 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None,
     ignore : list of booleans, optional
         If a list of booleans is given, ignore every ith plane in shapes if
         the ith value of 'ignore' is True.
-    eps: float, optional
-        Used to test if pĺanes are parallel. Default: 1e-5.
+    intersect_parallel : boolean, optional
+        If True, try to intersect parallel planes too. Default: False.
+    eps_angle : float, optional
+        Minimal angle (in radians) between normals necessary for detecting
+        whether planes are parallel. Default: 0.0017453292519943296
+    eps_distance : float, optional
+        When planes are parallel, eps_distance is used to detect if the 
+        planes are close enough to each other in the dimension aligned
+        with their axes. Default: 1e-2.
     
     Returns
     -------
@@ -278,7 +286,8 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None,
         if not check_bbox_intersection(shapes[i], shapes[j], bbox_intersection):
             continue
         
-        line = Line.from_plane_intersection(shapes[i], shapes[j], eps=eps)
+        line = Line.from_plane_intersection(shapes[i], shapes[j], intersect_parallel=intersect_parallel,
+                                            eps_angle=eps_angle, eps_distance=eps_distance)
         if line is None:
             continue
         

@@ -73,6 +73,18 @@ class Line(Primitive):
         Creates cylinder from center base point, vector and radius as 
         separated arguments.
         
+    from_bounds(bounds):
+        Gives list of lines from input boundary points. Supposes the points
+        are ordered in a closed loop.
+        
+    from_plane_intersection(plane1, plane2, fit_bounds=True, glue_parallel=False, 
+                            eps_angle=np.deg2rad(0.9), eps_distance=1e-2):
+        Calculate the line defining the intersection between two planes.
+        
+    get_line_fitted_to_projections(points):
+        Creates a new line with beginning and end points fitted to 
+        projections of points.
+        
     closest_to_line(points):
         Returns points in line that are the closest to the input
         points.
@@ -198,6 +210,89 @@ class Line(Primitive):
         """
         vector = np.array(ending) - np.array(beginning)
         return cls.from_point_vector(beginning, vector)
+    
+    @staticmethod
+    def from_bounds(bounds):
+        """ Gives list of lines from input boundary points. Supposes the points
+        are ordered in a closed loop.
+        
+        bounds : N x 3 array
+            N input points
+        
+        Returns
+        -------
+        list of Line instances
+            N-1 lines
+        """
+        num_points = len(bounds)
+        if num_points < 2:
+            raise ValueError("More than one point needed.")
+        lines = []
+        for i in range(num_points):
+            lines.append(
+                Line.from_two_points(bounds[i], bounds[(i + 1) % num_points]))
+        return lines
+    
+    @staticmethod
+    def from_plane_intersection(plane1, plane2, fit_bounds=True, 
+                                intersect_parallel=False, eps_angle=np.deg2rad(0.9), 
+                                eps_distance=1e-2):
+        """ Calculate the line defining the intersection between two planes.
+        
+        If the planes are not bounded, give a line of length 1.
+        
+        Parameters
+        ----------
+        plane1 : instance of Plane of PlaneBounded
+            First plane
+        plane2 : instance of Plane of PlaneBounded
+            Second plane
+        fit_bounds : boolean, optional
+            If True, fits points of line so that it the projections of both
+            planes lie within the line. If False, returns a line with length 1.
+            Default: True.
+        intersect_parallel : boolean, optional
+            If True, try to intersect parallel planes too. Default: False.
+        eps_angle : float, optional
+            Minimal angle (in radians) between normals necessary for detecting
+            whether planes are parallel. Default: 0.0017453292519943296
+        eps_distance : float, optional
+            When planes are parallel, eps_distance is used to detect if the 
+            planes are close enough to each other in the dimension aligned
+            with their axes. Default: 1e-2.
+        
+        Returns
+        -------
+        Line or None
+        """
+        axis = np.cross(plane1.normal, plane2.normal)
+        norm = np.linalg.norm(axis)
+        if abs(np.arcsin(norm)) < eps_angle:
+            if not intersect_parallel:
+                return None
+            
+            dot1 = np.dot(plane1.centroid, plane1.normal)
+            dot2 = np.dot(plane2.centroid, plane2.normal)
+            if abs(dot1 - dot2) > eps_distance:
+                return None
+            
+            closest_points = plane1.closest_bounds(plane2)
+            point = (closest_points[0] + closest_points[1]) / 2
+            # axis = np.cross(plane1.bounds.mean(axis=0) - plane2.bounds.mean(axis=0), plane1.normal + plane2.normal)
+            axis = np.cross(closest_points[1] - closest_points[0], plane1.normal + plane2.normal)
+            norm = np.linalg.norm(axis)
+        else:
+            A = np.vstack([plane1.normal, plane2.normal])
+            B = -np.vstack([plane1.dist, plane2.dist])
+            point = np.linalg.lstsq(A, B, rcond=None)[0].T[0]
+        axis /= norm
+        line = Line.from_point_vector(point, axis)
+        
+        if fit_bounds:
+            points = np.vstack([plane1.bounds, plane2.bounds])
+            line = line.get_line_fitted_to_projections(points)
+            projections = []        
+        return line
     
     def get_line_fitted_to_projections(self, points):
         """ Creates a new line with beginning and end points fitted to 
@@ -378,58 +473,6 @@ class Line(Primitive):
             return None
         
         return (pa + pb) / 2        
-    
-    @staticmethod
-    def from_bounds(bounds):
-        num_points = len(bounds)
-        if num_points < 2:
-            raise ValueError("More than one point needed.")
-        lines = []
-        for i in range(num_points):
-            lines.append(
-                Line.from_two_points(bounds[i], bounds[(i + 1) % num_points]))
-        return lines
-    
-    @staticmethod
-    def from_plane_intersection(plane1, plane2, fit_bounds=True, eps=1e-5):
-        """ Calculate the line defining the intersection between two planes.
-        
-        If the planes are not bounded, give a line of length 1.
-        
-        Parameters
-        ----------
-        plane1 : instance of Plane of PlaneBounded
-            First plane
-        plane2 : instance of Plane of PlaneBounded
-            Second plane
-        
-        Returns
-        -------
-        Line or None
-        """
-        axis = np.cross(plane1.normal, plane2.normal)
-        norm = np.linalg.norm(axis)
-        if norm < eps:
-            dot1 = np.dot(plane1.centroid, plane1.normal)
-            dot2 = np.dot(plane2.centroid, plane2.normal)
-            if abs(dot1 - dot2) > 100 * eps:
-                return None
-            axis = np.cross(plane1.bounds.mean(axis=0) - plane2.bounds.mean(axis=0), plane1.normal + plane2.normal)
-            closest_points = plane1.closest_bounds(plane2)
-            point = (closest_points[0] + closest_points[1]) / 2
-            norm = np.linalg.norm(axis)
-        else:
-            A = np.vstack([plane1.normal, plane2.normal])
-            B = -np.vstack([plane1.dist, plane2.dist])
-            point = np.linalg.lstsq(A, B, rcond=None)[0].T[0]
-        axis /= norm
-        line = Line.from_point_vector(point, axis)
-        
-        if fit_bounds:
-            points = np.vstack([plane1.bounds, plane2.bounds])
-            line = line.get_line_fitted_to_projections(points)
-            projections = []        
-        return line
     
     @staticmethod
     def fit(points, normals=None):
