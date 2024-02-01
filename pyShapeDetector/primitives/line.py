@@ -276,10 +276,25 @@ class Line(Primitive):
             if abs(dot1 - dot2) > eps_distance:
                 return None
             
-            closest_points = plane1.closest_bounds(plane2, 1)[0]
-            point = (closest_points[0] + closest_points[1]) / 2
+            # closest_points = plane1.closest_bounds(plane2)[0]
+            # point = (closest_points[0] + closest_points[1]) / 2
             # axis = np.cross(plane1.bounds.mean(axis=0) - plane2.bounds.mean(axis=0), plane1.normal + plane2.normal)
-            axis = np.cross(closest_points[1] - closest_points[0], plane1.normal + plane2.normal)
+            # # axis = np.cross(closest_points[1] - closest_points[0], plane1.normal + plane2.normal)
+            
+            p1, p2 = np.array(plane1.closest_bounds(plane2, 2)).sum(axis=1) / 2
+            # closest_points = plane1.closest_bounds(plane2, 10)
+            # pair1 = closest_points[0]
+            # pair2 = closest_points[-1]
+            # p1 = (pair1[0] + pair1[1]) / 2
+            # p2 = (pair2[0] + pair2[1]) / 2
+
+            point = (p1 + p2) / 2
+            # point = pair1[0]
+            # axis = np.cross(p2 - p1, plane1.normal + plane2.normal)
+            axis = np.cross(plane1.bounds.mean(axis=0) - plane2.bounds.mean(axis=0), plane1.normal + plane2.normal)
+            
+            
+            
             norm = np.linalg.norm(axis)
         else:
             A = np.vstack([plane1.normal, plane2.normal])
