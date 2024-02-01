@@ -90,6 +90,9 @@ class Plane(Primitive):
     get_projections(points):
         Get 2D projections of points in plane.
         
+    get_points_from_projections(projections):
+        Get 3D points from 2D projections in plane.
+        
     random(scale):
         Generates a random shape.
         
@@ -539,6 +542,8 @@ class Plane(Primitive):
     
     def get_projections(self, points):
         """ Get 2D projections of points in plane.
+        
+        See: get_points_from_projections
 
         Parameters
         ----------
@@ -551,8 +556,36 @@ class Plane(Primitive):
             2D projections of boundary points in plane
         """
         points = np.asarray(points)
+        if points.shape[1] != 3:
+            raise ValueError("Input points must be 3D.")
         rot = get_rotation_from_axis([0, 0, 1], self.normal)
         return (rot @ points.T).T[:, :2]
+    
+    def get_points_from_projections(self, projections):
+        """ Get 3D points from 2D projections in plane.
+        
+        See: get_projections
+
+        Parameters
+        ----------
+        projections : array_like, shape (N, 2)
+            2D projections of boundary points in plane
+        
+        Returns
+        -------
+        projections : array_like, shape (N, 3)
+            Points corresponding to the fitted shape.
+        """
+        projections = np.asarray(projections)
+        if projections.shape[1] != 2:
+            raise ValueError("Input points must be 2D.")
+        N = len(projections)
+        
+        rot = get_rotation_from_axis([0, 0, 1], self.normal)
+        proj_z = (rot @ self.centroid)[2]
+        projections = np.vstack([projections.T, np.repeat(proj_z, N)]).T
+        
+        return (rot.T @ projections.T).T
     
     def get_mesh(self, resolution=1):
         """ Flatten points and creates a simplified mesh of the plane. If the

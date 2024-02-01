@@ -37,6 +37,14 @@ def get_shape_and_pcd(primitive, num_points, canonical=False):
     return shape, pcd
 
 
+def test_plane_projections():
+    plane = Plane.random()
+    points = plane.flatten_points(np.random.random((100, 3)))
+    projections = plane.get_projections(points)
+    points_recovered = plane.get_points_from_projections(projections)
+    assert_allclose(points_recovered, points)
+
+
 def test_primitive_init():
     for primitive in [Plane, Sphere, Cylinder]:
         model = np.random.rand(primitive._model_args_n)
