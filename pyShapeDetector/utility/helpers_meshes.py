@@ -14,6 +14,12 @@ import numpy as np
 from open3d.geometry import TriangleMesh
 from open3d.utility import Vector3dVector, Vector3iVector
 
+def new_TriangleMesh(vertices, triangles):
+    mesh = TriangleMesh()
+    mesh.vertices = Vector3dVector(vertices)
+    mesh.triangles = Vector3iVector(triangles)
+    return mesh
+
 def fuse_meshes(meshes):
     """ Fuse TriangleMesh instances into single mesh.
     
