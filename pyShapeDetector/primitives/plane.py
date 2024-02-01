@@ -583,9 +583,9 @@ class Plane(Primitive):
         
         rot = get_rotation_from_axis([0, 0, 1], self.normal)
         proj_z = (rot @ self.centroid)[2]
-        projections = np.vstack([projections.T, np.repeat(proj_z, N)]).T
+        projections_3D = np.vstack([projections.T, np.repeat(proj_z, N)]).T
         
-        return (rot.T @ projections.T).T
+        return (rot.T @ projections_3D.T).T
     
     def get_mesh(self, resolution=1):
         """ Flatten points and creates a simplified mesh of the plane. If the
