@@ -276,7 +276,7 @@ class Line(Primitive):
             if abs(dot1 - dot2) > eps_distance:
                 return None
             
-            closest_points = plane1.closest_bounds(plane2)
+            closest_points = plane1.closest_bounds(plane2, 1)[0]
             point = (closest_points[0] + closest_points[1]) / 2
             # axis = np.cross(plane1.bounds.mean(axis=0) - plane2.bounds.mean(axis=0), plane1.normal + plane2.normal)
             axis = np.cross(closest_points[1] - closest_points[0], plane1.normal + plane2.normal)
