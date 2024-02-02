@@ -21,9 +21,10 @@ def _get_vertices_triangles(mesh_or_vertices, triangles=None):
             raise ValueError("Input is either a single mesh, or an array of "
                              "vertices and one array of triangles.")
         vertices = np.asarray(mesh_or_vertices.vertices)
-        triangles = mesh_or_vertices.triangles
+        triangles = np.asarray(mesh_or_vertices.triangles)
     else:
         vertices = np.asarray(mesh_or_vertices)
+        triangles = np.asarray(triangles)
     return vertices, triangles
 
 def get_triangle_perimeters(mesh_or_vertices, triangles=None):
