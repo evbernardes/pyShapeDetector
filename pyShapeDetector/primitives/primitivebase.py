@@ -55,6 +55,10 @@ class Primitive(ABC):
         
     Methods
     -------    
+    inliers_average_dist(k=15, leaf_size=40):
+        Calculates the K nearest neighbors of the inlier points and returns 
+        the average distance between them.
+    
     inliers_bounding_box(slack=0):
         If the shape includes inlier points, returns the minimum and 
         maximum bounds of their bounding box.
@@ -163,6 +167,33 @@ class Primitive(ABC):
     @property
     def model(self):
         return self._model
+    
+    def inliers_average_dist(self, k=15, leaf_size=40):
+        """ Calculates the K nearest neighbors of the inlier points and returns 
+        the average distance between them.
+        
+        Parameters
+        ----------
+        k : positive int, default = 15
+            Number of neighbors.
+        
+        leaf_size : positive int, default=40
+            Number of points at which to switch to brute-force. Changing
+            leaf_size will not affect the results of a query, but can
+            significantly impact the speed of a query and the memory required
+            to store the constructed tree.  The amount of memory needed to
+            store the tree scales as approximately n_samples / leaf_size.
+            For a specified ``leaf_size``, a leaf node is guaranteed to
+            satisfy ``leaf_size <= n_points <= 2 * leaf_size``, except in
+            the case that ``n_samples < leaf_size``.
+        
+        Returns
+        -------
+        float
+            Average nearest dist.
+        """        
+        from pyShapeDetector.utility import average_nearest_dist
+        return average_nearest_dist(self.inlier_points, k, leaf_size)
     
     def inliers_bounding_box(self, slack=0):
         """ If the shape includes inlier points, returns the minimum and 

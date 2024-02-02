@@ -68,8 +68,8 @@ def average_nearest_dist(points, k=15, leaf_size=40):
     
     Returns
     -------
-    PointCloud
-        Loaded point cloud.
+    float
+        Average nearest dist.
     """
     tree = KDTree(points, leaf_size=leaf_size)
     nearest_dist, nearest_ind = tree.query(points, k=k)
