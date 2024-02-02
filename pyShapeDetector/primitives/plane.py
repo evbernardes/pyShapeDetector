@@ -588,7 +588,7 @@ class Plane(Primitive):
         return (rot.T @ projections_3D.T).T
     
     def get_mesh(self, resolution=1):
-        """ Flatten points and creates a simplified mesh of the plane. If the
+        """ Flatten inliers points and creates a simplified mesh of the plane. If the
         shape has pre-defined inlier points, use them to find borders.
         Otherwise, return square mesh.
         
@@ -609,6 +609,22 @@ class Plane(Primitive):
         if len(self.inlier_colors) > 0:
             mesh.paint_uniform_color(np.median(self.inlier_colors, axis=0))
         return mesh
+    
+    def get_mesh_alphashape(self, points, alpha=None):
+        """ Flatten input points and creates a simplified mesh of the plane 
+        using alpha shapes. 
+        
+        Returns
+        -------
+        TriangleMesh
+            Mesh corresponding to the plane.
+        """
+        from pyShapeDetector.utility import alphashape_2d, new_TriangleMesh
+        projections = self.get_projections(points)
+        vertices_2d, triangles = alphashape_2d(projections, alpha)
+        vertices = self.get_points_from_projections(vertices_2d)
+        triangles = np.vstack([triangles, triangles[:, ::-1]])
+        return new_TriangleMesh(vertices, triangles)
     
     def get_square_plane(self, length=1):
         """ Gives square plane defined by four points.
