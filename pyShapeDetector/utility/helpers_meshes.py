@@ -14,8 +14,8 @@ import numpy as np
 from open3d.geometry import TriangleMesh
 from open3d.utility import Vector3dVector, Vector3iVector
 
-def get_triangle_perimeters(mesh_or_vertices,  triangles=None):
-    
+def _get_vertices_triangles(mesh_or_vertices, triangles=None):
+    """ Helper function to deal with inputs. """
     if isinstance(mesh_or_vertices, TriangleMesh):
         if triangles is not None:
             raise ValueError("Input is either a single mesh, or an array of "
@@ -24,13 +24,48 @@ def get_triangle_perimeters(mesh_or_vertices,  triangles=None):
         triangles = mesh_or_vertices.triangles
     else:
         vertices = np.asarray(mesh_or_vertices)
+    return vertices, triangles
+
+def get_triangle_perimeters(mesh_or_vertices, triangles=None):
+    """ Fuse TriangleMesh instances into single mesh.
     
+    Parameters
+    ----------
+    mesh_or_vertices : instance of Open3D.geometry.TriangleMesh or numpy.array
+        If mesh_or_vertices is TriangleMesh, use it to get both vertices and
+        triangles.
+    triangles : np.array, optional
+        If mesh_or_vertices is an array of vertices, triangles is the array
+        of triangles. Should be set to None if mesh_or_vertices is a 
+        TriangleMesh. Default: None.
+        
+    Returns
+    -------
+    np.array
+        Perimeters defined by triangles.
+    """
+    
+    vertices, triangles = _get_vertices_triangles(mesh_or_vertices, triangles)
     triangle_points = vertices[triangles]
     triangle_points_diff = np.diff(triangle_points[:, [0,1,2,0]], axis=1)
     perimeters = np.linalg.norm(triangle_points_diff, axis=2).sum(axis=1)
     return perimeters
 
 def new_TriangleMesh(vertices, triangles):
+    """ Fuse TriangleMesh instances into single mesh.
+    
+    Parameters
+    ----------
+    vertices : numpy.array
+        Vertices of the mesh.
+    triangles : np.array
+        Array containing indices defining the triangles of the mesh.
+        
+    Returns
+    -------
+    Open3d.geometry.TriangleMesh
+        Mesh defined by the inputs.
+    """
     mesh = TriangleMesh()
     mesh.vertices = Vector3dVector(vertices)
     mesh.triangles = Vector3iVector(triangles)
