@@ -600,9 +600,8 @@ class Plane(Primitive):
         if len(self.inlier_points) == 0:
             warn('No inlier points, returning square plane...')
             return self.get_square_mesh()
-        bounds = self.flatten_points(self.inlier_points)
         
-        bounded_plane = PlaneBounded(self, bounds)
+        bounded_plane = PlaneBounded(self.model, self.inlier_points_flattened)
         bounded_plane._holes = self._holes
         mesh = bounded_plane.get_mesh()
         

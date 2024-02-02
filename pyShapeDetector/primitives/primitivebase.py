@@ -282,7 +282,7 @@ class Primitive(ABC):
     @property
     def inlier_points_flattened(self):
         """ Convenience attribute that can be set to save inlier points """
-        return self.flatten_points(self._inlier_points)
+        return self.flatten_points(self.inlier_points)
         
     @property
     def inlier_normals(self):
