@@ -14,6 +14,22 @@ import numpy as np
 from open3d.geometry import TriangleMesh
 from open3d.utility import Vector3dVector, Vector3iVector
 
+def get_triangle_perimeters(mesh_or_vertices,  triangles=None):
+    
+    if isinstance(mesh_or_vertices, TriangleMesh):
+        if triangles is not None:
+            raise ValueError("Input is either a single mesh, or an array of "
+                             "vertices and one array of triangles.")
+        vertices = np.asarray(mesh_or_vertices.vertices)
+        triangles = mesh_or_vertices.triangles
+    else:
+        vertices = np.asarray(mesh_or_vertices)
+    
+    triangle_points = vertices[triangles]
+    triangle_points_diff = np.diff(triangle_points[:, [0,1,2,0]], axis=1)
+    perimeters = np.linalg.norm(triangle_points_diff, axis=2).sum(axis=1)
+    return perimeters
+
 def new_TriangleMesh(vertices, triangles):
     mesh = TriangleMesh()
     mesh.vertices = Vector3dVector(vertices)

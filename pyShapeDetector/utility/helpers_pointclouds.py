@@ -25,6 +25,8 @@ from queue import Empty
 from scipy.spatial.distance import cdist
 from scipy.spatial import ConvexHull
 from alphashape import alphasimplices
+from shapely.geometry import MultiPoint, MultiLineString
+from shapely.ops import unary_union, polygonize
 
 def fuse_pointclouds(pcds):
     """ Fuses list of pointclouds into a single open3d.geometry.PointCloud 
@@ -624,3 +626,16 @@ def alphashape_2d(projections, alpha):
     
     triangles = np.array(list(perimeter_edges))
     return vertices, triangles
+
+
+def polygonize_alpha_shape(vertices, edges):
+    # Create the resulting polygon from the edge points
+    m = MultiLineString([vertices[np.array(edge)] for edge in edges])
+    triangles = list(polygonize(m))
+    result = unary_union(triangles)
+    return result   
+    
+    
+    
+    
+    

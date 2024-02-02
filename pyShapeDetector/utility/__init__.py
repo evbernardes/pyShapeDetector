@@ -21,7 +21,8 @@ from .helpers_pointclouds import (
     fuse_pointclouds, 
     separate_pointcloud_in_two, 
     find_closest_points,
-    alphashape_2d
+    alphashape_2d,
+    polygonize_alpha_shape
     )
 
 from .helpers_primitives import (
@@ -35,8 +36,9 @@ from .helpers_primitives import (
     )
 
 from .helpers_meshes import (
+    get_triangle_perimeters,
+    new_TriangleMesh,
     clean_crop, 
     paint_by_type, 
-    fuse_meshes, 
-    new_TriangleMesh
+    fuse_meshes
     )

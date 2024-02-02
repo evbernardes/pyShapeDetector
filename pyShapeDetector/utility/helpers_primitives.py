@@ -274,6 +274,7 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None,
         raise ValueError("'ignore' must be a list of booleans the size of 'shapes'.")
     
     lines = []
+    a = {}
 
     for i, j in combinations(range(len(shapes)), 2):
         
@@ -289,18 +290,30 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None,
         line = Line.from_plane_intersection(shapes[i], shapes[j], intersect_parallel=intersect_parallel,
                                             eps_angle=eps_angle, eps_distance=eps_distance)
         if line is None:
-            continue
+            line = None
+            # continue
         
         if length_max is not None and line.length > length_max:
-            continue
+            line = None
+            # continue
         
         if distance_max is not None:
             if min(line.get_distances(shapes[i].bounds)) > distance_max:
-                continue
+                line = None
+                # continue
             if min(line.get_distances(shapes[j].bounds)) > distance_max:
-                continue
+                line = None
+                # continue
         
-        lines.append(line)
+        if line is not None:
+            lines.append(line)
+        a[i, j] = line
+        
+    for i, j in combinations(range(len(shapes)), 2):
+        line = a[i, j]
+        if line is None:
+            continue
+
         for shape in [shapes[i], shapes[j]]:
             line_ = line.get_line_fitted_to_projections(shape.bounds)
             shape.add_bound_points([line_.beginning, line_.ending])
