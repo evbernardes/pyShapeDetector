@@ -264,11 +264,25 @@ class Primitive(ABC):
         pcd.normals = Vector3dVector(self.inlier_normals)
         pcd.colors = Vector3dVector(self.inlier_colors)
         return pcd
+    
+    @property
+    def inlier_pointcloud_flattened(self):
+        """ Creates Open3D.geometry.PointCloud object from inlier points. """
+        pcd = PointCloud()
+        pcd.points = Vector3dVector(self.inlier_points_flattened)
+        pcd.normals = Vector3dVector(self.inlier_normals)
+        pcd.colors = Vector3dVector(self.inlier_colors)
+        return pcd
         
     @property
     def inlier_points(self):
         """ Convenience attribute that can be set to save inlier points """
         return self._inlier_points
+        
+    @property
+    def inlier_points_flattened(self):
+        """ Convenience attribute that can be set to save inlier points """
+        return self.flatten_points(self._inlier_points)
         
     @property
     def inlier_normals(self):
