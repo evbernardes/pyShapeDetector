@@ -23,9 +23,20 @@ def _get_vertices_triangles(mesh_or_vertices, triangles=None):
         vertices = np.asarray(mesh_or_vertices.vertices)
         triangles = np.asarray(mesh_or_vertices.triangles)
     else:
+        if triangles is None:
+            raise ValueError("If vertices are given as first input instead of "
+                             "a mesh, then triangles must be given.")
         vertices = np.asarray(mesh_or_vertices)
         triangles = np.asarray(triangles)
     return vertices, triangles
+
+def _get_triangle_sides(mesh_or_vertices, triangles=None):
+    vertices, triangles = _get_vertices_triangles(mesh_or_vertices, triangles)
+    triangle_points = vertices[triangles]
+    triangle_points_wrap = np.concatenate([triangle_points, 
+                                           triangle_points[:, 0:1, :]], axis=1)
+    triangle_points_diff = np.diff(triangle_points_wrap, axis=1)
+    return np.linalg.norm(triangle_points_diff, axis=2)
 
 def get_triangle_perimeters(mesh_or_vertices, triangles=None):
     """ Fuse TriangleMesh instances into single mesh.
@@ -46,11 +57,32 @@ def get_triangle_perimeters(mesh_or_vertices, triangles=None):
         Perimeters defined by triangles.
     """
     
-    vertices, triangles = _get_vertices_triangles(mesh_or_vertices, triangles)
-    triangle_points = vertices[triangles]
-    triangle_points_diff = np.diff(triangle_points[:, [0,1,2,0]], axis=1)
-    perimeters = np.linalg.norm(triangle_points_diff, axis=2).sum(axis=1)
-    return perimeters
+    sides = _get_triangle_sides(mesh_or_vertices, triangles)
+    return sides.sum(axis=1)
+
+def get_triangle_circumradius(mesh_or_vertices, triangles=None):
+    """ Fuse TriangleMesh instances into single mesh.
+    
+    Parameters
+    ----------
+    mesh_or_vertices : instance of Open3D.geometry.TriangleMesh or numpy.array
+        If mesh_or_vertices is TriangleMesh, use it to get both vertices and
+        triangles.
+    triangles : np.array, optional
+        If mesh_or_vertices is an array of vertices, triangles is the array
+        of triangles. Should be set to None if mesh_or_vertices is a 
+        TriangleMesh. Default: None.
+        
+    Returns
+    -------
+    np.array
+        Perimeters defined by triangles.
+    """
+    
+    sides = _get_triangle_sides(mesh_or_vertices, triangles)
+    perimeters = sides.sum(axis=1)
+    return sides.prod(axis=1) / np.sqrt(
+        perimeters * (perimeters[:, np.newaxis] - 2 * sides).prod(axis=1))
 
 def new_TriangleMesh(vertices, triangles):
     """ Fuse TriangleMesh instances into single mesh.

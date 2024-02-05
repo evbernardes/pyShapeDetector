@@ -37,6 +37,7 @@ from .helpers_primitives import (
 
 from .helpers_meshes import (
     get_triangle_perimeters,
+    get_triangle_circumradius,
     new_TriangleMesh,
     clean_crop, 
     paint_by_type, 

@@ -999,8 +999,6 @@ class PlaneBounded(Plane):
         ------
         ValueError
             If number of parameters is incompatible with the model of the 
-        -------
-            primitive.
         """
         
         if isinstance(planemodel, PlaneBounded):
