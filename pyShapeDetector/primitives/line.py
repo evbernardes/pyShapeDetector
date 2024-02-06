@@ -485,6 +485,11 @@ class Line(Primitive):
             return None
         
         return (pa + pb) / 2
+    
+    def get_LineSet(self):
+        return LineSet(
+            Vector3dVector([self.beginning, self.ending]),
+            Vector2iVector([[0, 1]]))
 
     @staticmethod
     def get_LineSet_from_list(lines):
