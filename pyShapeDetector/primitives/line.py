@@ -10,8 +10,8 @@ import random
 import copy
 import numpy as np
 import open3d as o3d
-from open3d.geometry import TriangleMesh, PointCloud
-from open3d.utility import Vector3iVector, Vector3dVector
+from open3d.geometry import LineSet, TriangleMesh, PointCloud
+from open3d.utility import Vector2iVector, Vector3iVector, Vector3dVector
 
 from .primitivebase import Primitive
 from .cylinder import Cylinder
@@ -484,7 +484,26 @@ class Line(Primitive):
         if np.linalg.norm(pa - pb) > eps:
             return None
         
-        return (pa + pb) / 2        
+        return (pa + pb) / 2
+
+    @staticmethod
+    def get_LineSet_from_list(lines):
+        if isinstance(lines, Line):
+            lines = [lines]
+        
+        points = []
+        lines_indices = []
+        N = 0
+        for line in lines:
+            points.append(line.beginning)
+            points.append(line.ending)
+            lines_indices.append([N, N+1])
+            N += 2
+
+        lineset = LineSet()
+        lineset.points = Vector3dVector(points)
+        lineset.lines = Vector2iVector(lines_indices)
+        return lineset
     
     @staticmethod
     def fit(points, normals=None):
