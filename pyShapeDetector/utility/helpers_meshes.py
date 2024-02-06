@@ -84,7 +84,7 @@ def get_triangle_circumradius(mesh_or_vertices, triangles=None):
     return sides.prod(axis=1) / np.sqrt(
         perimeters * (perimeters[:, np.newaxis] - 2 * sides).prod(axis=1))
 
-def new_TriangleMesh(vertices, triangles):
+def new_TriangleMesh(vertices, triangles, double_triangles=False):
     """ Fuse TriangleMesh instances into single mesh.
     
     Parameters
@@ -93,6 +93,9 @@ def new_TriangleMesh(vertices, triangles):
         Vertices of the mesh.
     triangles : np.array
         Array containing indices defining the triangles of the mesh.
+    double_triangles : boolean, optional
+        If True, double the amount of triangles to get a visible mesh from
+        both sides. Default: False.
         
     Returns
     -------
@@ -101,7 +104,10 @@ def new_TriangleMesh(vertices, triangles):
     """
     mesh = TriangleMesh()
     mesh.vertices = Vector3dVector(vertices)
-    mesh.triangles = Vector3iVector(triangles)
+    if double_triangles:
+        mesh.triangles = Vector3iVector(np.vstack([triangles, triangles[:, ::-1]]))
+    else:
+        mesh.triangles = Vector3iVector(triangles)
     return mesh
 
 def fuse_meshes(meshes):
