@@ -38,6 +38,64 @@ def _get_triangle_sides(mesh_or_vertices, triangles=None):
     triangle_points_diff = np.diff(triangle_points_wrap, axis=1)
     return np.linalg.norm(triangle_points_diff, axis=2)
 
+def get_triangle_lines(mesh_or_vertices, triangles=None):
+    """ Get pyShapeDetector.primitives.Line instances for every line in every 
+    triangle.
+    
+    Parameters
+    ----------
+    mesh_or_vertices : instance of Open3D.geometry.TriangleMesh or numpy.array
+        If mesh_or_vertices is TriangleMesh, use it to get both vertices and
+        triangles.
+    triangles : np.array, optional
+        If mesh_or_vertices is an array of vertices, triangles is the array
+        of triangles. Should be set to None if mesh_or_vertices is a 
+        TriangleMesh. Default: None.
+        
+    Returns
+    -------
+    np.array
+        Perimeters defined by triangles.
+    """
+    from pyShapeDetector.primitives import Line
+    vertices, triangles = _get_vertices_triangles(mesh_or_vertices, triangles)
+    triangle_points = vertices[triangles]
+    lines = []
+    for p1, p2, p3 in triangle_points:
+        lines.append(Line.from_two_points(p1, p2))
+        lines.append(Line.from_two_points(p2, p3))
+        lines.append(Line.from_two_points(p3, p1))
+    return lines
+
+def get_triangle_LineSet(mesh_or_vertices, triangles=None):
+    """ Get a Open3D.geomery.LineSet instance containing every line in every 
+    triangle.
+    
+    Parameters
+    ----------
+    mesh_or_vertices : instance of Open3D.geometry.TriangleMesh or numpy.array
+        If mesh_or_vertices is TriangleMesh, use it to get both vertices and
+        triangles.
+    triangles : np.array, optional
+        If mesh_or_vertices is an array of vertices, triangles is the array
+        of triangles. Should be set to None if mesh_or_vertices is a 
+        TriangleMesh. Default: None.
+        
+    Returns
+    -------
+    np.array
+        Perimeters defined by triangles.
+    """
+    # from pyShapeDetector.primitives import Line
+    from open3d.geometry import LineSet
+    from open3d.utility import Vector2iVector
+    vertices, triangles = _get_vertices_triangles(mesh_or_vertices, triangles) 
+    lineset = LineSet()
+    lineset.points = Vector3dVector(vertices)
+    lineset.lines = Vector2iVector(
+        triangles[:, [0, 1, 1, 2, 2, 0]].reshape((len(triangles) * 3, 2)))
+    return lineset
+
 def get_triangle_perimeters(mesh_or_vertices, triangles=None):
     """ Fuse TriangleMesh instances into single mesh.
     

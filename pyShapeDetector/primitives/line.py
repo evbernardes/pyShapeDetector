@@ -292,9 +292,6 @@ class Line(Primitive):
             # point = pair1[0]
             # axis = np.cross(p2 - p1, plane1.normal + plane2.normal)
             axis = np.cross(plane1.bounds.mean(axis=0) - plane2.bounds.mean(axis=0), plane1.normal + plane2.normal)
-            
-            
-            
             norm = np.linalg.norm(axis)
         else:
             A = np.vstack([plane1.normal, plane2.normal])
