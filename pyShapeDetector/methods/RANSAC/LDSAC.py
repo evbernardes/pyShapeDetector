@@ -21,47 +21,33 @@ class LDSAC(RANSAC_Base):
     
     Attributes
     ----------
-    _type : str
-        Name of method.
+    _type
+    num_samples
+    max_weight
+    primitives
+    limits
+    num_primitives
+    options
     
     Methods
     -------
-    compare_metrics(metrics, metrics_best):
-        Gives the absolute value of cosines of the angles between the input 
-        normal vectors and the calculated normal vectors from the input points.
-
-    termination_criterion(metrics):
-        Gives number of max needed iterations, depending on current metrics.
-        
-    get_metrics(num_points=None, num_inliers=None, distances=None, 
-    angles=None):
-        Gives a dictionary with metrics that can be used to compared fits.
-        
-    get_model(points, normals, samples):
-        Fits shape, then test if its model parameters respect input
-        max and min values. If it does, return shape, otherwise, return None.
-        
-    get_samples(points):
-        Sample points and return indices of sampled points.
-
-    get_inliers_from_residuals(distances, angles):
-        Return indices of inliers: points whose distance to shape and
-        angle with normal vector are below the given thresholds.
-        
-    fit(points, normals=None, debug=False):#, filter_model=True):
-        Main loop implementing RANSAC algorithm.
-               
-    get_residuals(points, normals):
-        Convenience function returning both distances and angles.
-
-    weight_distances(distances, threshold_distances):
-        Gives weights for each point based on the distances.
-
-    weight_angles(angles, threshold_angles):
-        Gives weights for each point based on the distances.
-
-    get_total_weight(distances, angles):
-        Total weight of shape.
+    __init__
+    __repr__
+    add
+    remove
+    remove_all  
+    copy_options
+    weight_distances
+    weight_angles
+    get_total_weight
+    compare_metrics
+    termination_criterion
+    get_metrics
+    get_model
+    get_samples
+    get_biggest_connected_component
+    get_inliers
+    fit
     """
     
     _type = "LDSAC"
