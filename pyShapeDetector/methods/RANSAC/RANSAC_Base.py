@@ -27,63 +27,39 @@ class RANSAC_Base(ABC):
 
     Attributes
     ----------
-    _type : str
-        Name of method.
+    _type
+    num_samples
+    max_weight
+    primitives
+    limits
+    num_primitives
+    options
     
     Methods
     -------
-    compare_metrics(metrics, metrics_best):
-        Gives the absolute value of cosines of the angles between the input 
-        normal vectors and the calculated normal vectors from the input points.
-
-    termination_criterion(metrics):
-        Gives number of max needed iterations, depending on current metrics.
-        
-    weight_distances(distances, threshold_distances):
-        Gives weights for each point based on the distances.
-
-    weight_angles(angles, threshold_angles):
-        Gives weights for each point based on the distances.
-
-    get_total_weight(distances, angles):
-        Total weight of shape.
-        
-    get_metrics(num_points=None, num_inliers=None, distances=None, 
-    angles=None):
-        Gives a dictionary with metrics that can be used to compared fits.
-        
-    get_model(points, normals, samples):
-        Fits shape, then test if its model parameters respect input
-        max and min values. If it does, return shape, otherwise, return None.
-        
-    get_samples(points), num_samples:
-        Sample points and return indices of sampled points.
-
-    get_inliers(distances, angles, distances, angles):
-        Return indices of inliers: points whose distance to shape and
-        angle with normal vector are below the given thresholds.
-        
-    fit(points, normals=None, debug=False):#, filter_model=True):
-        Main loop implementing RANSAC algorithm.
-               
-    get_residuals(points, normals):
-        Convenience function returning both distances and angles.
-        
-    copy_options(value):
-        Copies options instead of pointing to the same options.
-        
+    __init__
+    __repr__
+    add
+    remove
+    remove_all  
+    copy_options
+    weight_distances
+    weight_angles
+    get_total_weight
+    compare_metrics
+    termination_criterion
+    get_metrics
+    get_model
+    get_samples
+    get_biggest_connected_component
+    get_inliers
+    fit
     """
-    def __init__(self, options=DetectorOptions()):
-        
-        self._opt = options
-        self._num_primitives = 0
-        self._primitives = []
-        self._limits = []
-        
-    def __repr__(self):
-        primitives = str([s.__name__ for s in self.primitives])
-        primitives = primitives[1:-1].replace("'","")
-        return type(self).__name__+'('+primitives+')'
+    @property
+    @abstractmethod
+    def _type(self):
+        """ Name of method."""
+        pass
     
     @property
     def num_samples(self):
@@ -96,33 +72,6 @@ class RANSAC_Base(ABC):
     def max_weight(self):
         return self.weight_distances(np.zeros(1), 100)[0]
     
-    def add(self, primitive, limit=None):
-        
-        limit = PrimitiveLimits(limit)
-        
-        if self._opt._num_samples and primitive.fit_n_min:
-            raise ValueError(f'{primitive.name}s need a minimum of '
-                             f'{primitive.fit_n_min} for fitting, but current'
-                             f'num_samples option is set to {self._opt._num_samples}'
-                             '. Either raise the value on the options, or set '
-                             'it to None.')
-            
-        limit.check_compatibility(primitive)
-        self._primitives.append(primitive)
-        self._limits.append(limit)
-        self._num_primitives += 1
-        
-    def remove(self, idx):
-        if idx < 0 or idx > self._num_primitives - 1:
-            raise ValueError('invalid index')
-        _ = self._primitives.pop(idx)
-        _ = self._limits.pop(idx)
-        self._num_primitives -= 1
-        
-    def remove_all(self):
-        while(len(self.primitives) > 0):
-            self.remove(0)
-        
     @property
     def primitives(self):
         return self._primitives
@@ -161,6 +110,45 @@ class RANSAC_Base(ABC):
         # self._opt = copy.copy(value)
         self._opt = value
     
+    def __init__(self, options=DetectorOptions()):
+        
+        self._opt = options
+        self._num_primitives = 0
+        self._primitives = []
+        self._limits = []
+        
+    def __repr__(self):
+        primitives = str([s.__name__ for s in self.primitives])
+        primitives = primitives[1:-1].replace("'","")
+        return type(self).__name__+'('+primitives+')'
+    
+    def add(self, primitive, limit=None):
+        
+        limit = PrimitiveLimits(limit)
+        
+        if self._opt._num_samples and primitive.fit_n_min:
+            raise ValueError(f'{primitive.name}s need a minimum of '
+                             f'{primitive.fit_n_min} for fitting, but current'
+                             f'num_samples option is set to {self._opt._num_samples}'
+                             '. Either raise the value on the options, or set '
+                             'it to None.')
+            
+        limit.check_compatibility(primitive)
+        self._primitives.append(primitive)
+        self._limits.append(limit)
+        self._num_primitives += 1
+        
+    def remove(self, idx):
+        if idx < 0 or idx > self._num_primitives - 1:
+            raise ValueError('invalid index')
+        _ = self._primitives.pop(idx)
+        _ = self._limits.pop(idx)
+        self._num_primitives -= 1
+        
+    def remove_all(self):
+        while(len(self.primitives) > 0):
+            self.remove(0)
+    
     def copy_options(self, value):
         """ Copies options instead of pointing to the same options.
 
@@ -178,12 +166,6 @@ class RANSAC_Base(ABC):
                              'or RANSAC method.')
         self.options = copy.copy(value)
         # self._opt = value
-            
-    @property
-    @abstractmethod
-    def _type(self):
-        """ Name of method."""
-        pass
     
     @abstractmethod
     def weight_distances(self, distances, threshold_distances):
