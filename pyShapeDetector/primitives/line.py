@@ -18,116 +18,82 @@ from .cylinder import Cylinder
     
 class Line(Primitive):
     """
-    Template primitive.
+    Line primitive.
     
-    Use this as a base to implement your own primitives.
+    Does not define a surface, but implement useful methods for Plane 
+    intersection.
     
     Attributes
     ----------
-    fit_n_min : int
-        Minimum number of points necessary to fit a model.
-    model_args_n : str
-        Number of parameters in the model.
-    name : str
-        Name of primitive.
-    equation : str
-        Equation that defines the primitive.
-    canonical : Line
-        Return canonical form for testing.
-    surface_area : float
-        Surface area of primitive
-    volume : float
-        Volume of primitive.
-    beginning : 3 x 1 float
-        Start point of line
-    ending : 3 x 1 float
-        End point of line
-    vector : 3 x 1 array
-        Vector from beginning point to end point.
-    axis : 3 x 1 array
-        Unit vector defining axis of line.
-    length : float
-        Length of line.
-         
+    fit_n_min 
+    model_args_n
+    name
+    model
+    equation
+    surface_area 
+    volume
+    canonical
+    color
+    inlier_points
+    inlier_points_flattened
+    inlier_normals
+    inlier_colors
+    inlier_PointCloud
+    inlier_PointCloud_flattened
+    metrics
+    axis_spherical
+    axis_cylindrical
+    
+    beginning
+    ending
+    vector
+    axis
+    length
+        
     Methods
     -------
-    inliers_bounding_box(slack=0):
-        If the shape includes inlier points, returns the minimum and 
-        maximum bounds of their bounding box.
-        
-    get_distances(points)
-        Gives the minimum distance between each point to the model. 
-        
-    get_normals(points)
-        Gives, for each input point, the normal vector of the point closest 
-        to the primitive. 
-        
-    random(scale):
-        Generates a random shape.
-        
-    from_point_vector(beginning, vector):
-        Creates cylinder from center base point, vector and radius as 
-        separated arguments.
-        
-    from_two_points(beginning, ending):
-        Creates cylinder from center base point, vector and radius as 
-        separated arguments.
-        
-    from_bounds(bounds):
-        Gives list of lines from input boundary points. Supposes the points
-        are ordered in a closed loop.
-        
-    from_plane_intersection(plane1, plane2, fit_bounds=True, glue_parallel=False, 
-                            eps_angle=np.deg2rad(0.9), eps_distance=1e-2):
-        Calculate the line defining the intersection between two planes.
-        
-    get_line_fitted_to_projections(points):
-        Creates a new line with beginning and end points fitted to 
-        projections of points.
-        
-    closest_to_line(points):
-        Returns points in line that are the __ to the input
-        points.
-        
-    get_orthogonal_component(points):
-        Removes the axis-aligned components of points.
-        
-    point_from_projection(projection):
-        Gives point in line whose projection is equal to the input value.
-        
-    from_plane_intersection(plane1, plane2):
-        Calculate the line defining the intersection between two planes.
-        
-    point_from_intersection(other, within_segment=True, eps=1e-3):
-        Calculates intersection point between two lines.
+    __init__
+    __repr__
+    __eq__
+    random
+    fit
+    get_signed_distances
+    get_distances
+    get_normals
+    get_angles_cos
+    get_angles
+    get_residuals
+    flatten_points
+    flatten_PointCloud
+    add_inliers
+    closest_inliers
+    inliers_average_dist
+    inliers_bounding_box
+    sample_points_uniformly
+    sample_points_density
+    get_mesh
+    get_cropped_mesh
+    is_similar_to
+    copy
+    translate
+    rotate
+    align
+    save
+    load
+    check_bbox_intersection
+    check_inlier_distance 
     
-    get_angles_cos(points, normals):
-        Gives the absolute value of cosines of the angles between the input 
-        normal vectors and the calculated normal vectors from the input points.
-    
-    get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
-        Rotation matrix that transforms `axis_origin` in `axis`.
-        
-    flatten_points(points):
-        Stick each point in input to the closest point in shape's surface.
-        
-    get_angles_cos(points, normals):
-        Gives the absolute value of cosines of the angles between the input 
-        normal vectors and the calculated normal vectors from the input points.
-        
-    get_angles(points, normals):
-        Gives the angles between the input normal vectors and the 
-        calculated normal vectors from the input points.
-        
-    get_residuals(points, normals):
-        Convenience function returning both distances and angles.
-        
-    create_limits(args_n, idx, value):
-        Create a list of length `args_n` that stores `value` at index `idx`
-        and `None` elsewhere.
-        
-    get_mesh(resolution=5, radius_ratio=0.001):
-        Creates mesh of the shape.    
+    from_point_vector
+    from_two_points
+    from_bounds
+    from_plane_intersection
+    get_line_fitted_to_projections
+    closest_to_line
+    get_orthogonal_component
+    point_from_projection
+    point_from_intersection
+    get_LineSet
+    get_LineSet_from_list
     """
     
     _fit_n_min = 2
@@ -135,6 +101,16 @@ class Line(Primitive):
     _name = 'line' 
     _translatable = [0, 1, 2]
     _rotatable = [3, 4, 5]
+    
+    @property
+    def surface_area(self):
+        """ Surface area of primitive """
+        return 0
+    
+    @property
+    def volume(self):
+        """ Volume of primitive. """
+        return 0
     
     @property
     def beginning(self):
@@ -161,15 +137,79 @@ class Line(Primitive):
         """ Length of line. """
         return np.linalg.norm(self.vector)
     
-    @property
-    def surface_area(self):
-        """ Surface area of primitive """
-        return 0
+    @staticmethod
+    def fit(points, normals=None):
+        """ Not defined for lines.
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+        normals : N x 3 array
+            N normal vectors
+        
+        Returns
+        -------
+        None
+        """
+        raise RuntimeError('Fitting is not defined for lines.')
     
-    @property
-    def volume(self):
-        """ Volume of primitive. """
-        return 0
+    def get_signed_distances(self, points):
+        """ Gives the minimum distance between each point to the line. 
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+        
+        Returns
+        -------
+        distances
+            Nx1 array distances.
+        """
+        points = np.asarray(points)             
+        distances = np.linalg.norm(
+            np.cross(self.axis, points - self.beginning), axis=1)
+        
+        return distances
+    
+    def get_normals(self, points):
+        """ Gives, for each input point, the normal vector of the point closest 
+        to the cylinder.
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+        
+        Returns
+        -------
+        normals
+            Nx3 array containing normal vectors.
+        """
+        normals = self.get_orthogonal_component(points)
+        normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
+        return normals
+    
+    def get_mesh(self, resolution=5, radius=0.01):
+        """ Creates mesh of the shape.      
+        
+        Parameters
+        ----------
+        resolution : int, optional
+            Mesh resolution. Default: 5.
+        radius_ratio : float, optional
+            Ratio between line thickness and line length. Default: 0.001.
+        
+        Returns
+        -------
+        TriangleMesh
+            Mesh corresponding to the shape.
+        """
+        cylinder = Cylinder.from_base_vector_radius(
+            # self.beginning, self.vector, self.length * radius_ratio)
+            self.beginning, self.vector, radius)
+        return cylinder.get_mesh(resolution=resolution, closed=True)
     
     @classmethod
     def from_point_vector(cls, beginning, vector):
@@ -344,25 +384,6 @@ class Line(Primitive):
         projection = (points - self.beginning).dot(self.axis)
         return self.beginning + projection[..., np.newaxis] * self.axis
     
-    def get_signed_distances(self, points):
-        """ Gives the minimum distance between each point to the line. 
-        
-        Parameters
-        ----------
-        points : N x 3 array
-            N input points 
-        
-        Returns
-        -------
-        distances
-            Nx1 array distances.
-        """
-        points = np.asarray(points)             
-        distances = np.linalg.norm(
-            np.cross(self.axis, points - self.beginning), axis=1)
-        
-        return distances
-    
     def get_orthogonal_component(self, points):
         """ Removes the axis-aligned components of points.
         
@@ -379,44 +400,6 @@ class Line(Primitive):
         points = np.asarray(points)
         delta = points - self.beginning
         return -np.cross(self.axis, np.cross(self.axis, delta))
-    
-    def get_normals(self, points):
-        """ Gives, for each input point, the normal vector of the point closest 
-        to the cylinder.
-        
-        Parameters
-        ----------
-        points : N x 3 array
-            N input points 
-        
-        Returns
-        -------
-        normals
-            Nx3 array containing normal vectors.
-        """
-        normals = self.get_orthogonal_component(points)
-        normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
-        return normals
-    
-    def get_mesh(self, resolution=5, radius=0.01):
-        """ Creates mesh of the shape.      
-        
-        Parameters
-        ----------
-        resolution : int, optional
-            Mesh resolution. Default: 5.
-        radius_ratio : float, optional
-            Ratio between line thickness and line length. Default: 0.001.
-        
-        Returns
-        -------
-        TriangleMesh
-            Mesh corresponding to the shape.
-        """
-        cylinder = Cylinder.from_base_vector_radius(
-            # self.beginning, self.vector, self.length * radius_ratio)
-            self.beginning, self.vector, radius)
-        return cylinder.get_mesh(resolution=resolution, closed=True)
     
     def point_from_projection(self, projection):
         """ Gives point in line whose projection is equal to the input value.
@@ -510,20 +493,5 @@ class Line(Primitive):
         lineset.lines = Vector2iVector(lines_indices)
         return lineset
     
-    @staticmethod
-    def fit(points, normals=None):
-        """ Not defined for lines.
-        
-        Parameters
-        ----------
-        points : N x 3 array
-            N input points 
-        normals : N x 3 array
-            N normal vectors
-        
-        Returns
-        -------
-        None
-        """
-        raise RuntimeError('Fitting is not defined for lines.')
+
         
