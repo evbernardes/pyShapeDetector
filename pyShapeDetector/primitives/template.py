@@ -23,73 +23,55 @@ class Template(Primitive):
     
     Attributes
     ----------
-    fit_n_min : int
-        Minimum number of points necessary to fit a model.
-    model_args_n : str
-        Number of parameters in the model.
-    name : str
-        Name of primitive.
-    equation : str
-        Equation that defines the primitive.
-    canonical : Template
-        Return canonical form for testing.
-    surface_area : float
-        Surface area of primitive
-    volume : float
-        Volume of primitive.
-    
+    fit_n_min 
+    model_args_n
+    name
+    model
+    equation
+    surface_area 
+    volume
+    canonical
+    color
+    inlier_points
+    inlier_points_flattened
+    inlier_normals
+    inlier_colors
+    inlier_PointCloud
+    inlier_PointCloud_flattened
+    metrics
+    axis_spherical
+    axis_cylindrical
+        
     Methods
     -------
-    inliers_bounding_box(slack=0):
-        If the shape includes inlier points, returns the minimum and 
-        maximum bounds of their bounding box.
-    
-    get_signed_distances():
-        If the shape includes inlier points, returns the minimum and 
-        maximum bounds of their bounding box.
-        
-    get_distances(points)
-        Gives the minimum distance between each point to the model. 
-        
-    get_normals(points)
-        Gives, for each input point, the normal vector of the point closest 
-        to the primitive. 
-        
-    random(scale):
-        Generates a random shape.
-        
-    fit(points, normals=None):
-        Gives shape that fits the input points. If the number of points is
-        higher than the `_fit_n_min`, the fitted shape will return some kind of
-        estimation. 
-    
-    get_angles_cos(points, normals):
-        Gives the absolute value of cosines of the angles between the input 
-        normal vectors and the calculated normal vectors from the input points.
-    
-    get_rotation_from_axis(axis, axis_origin=[0, 0, 1])
-        Rotation matrix that transforms `axis_origin` in `axis`.
-        
-    flatten_points(points):
-        Stick each point in input to the closest point in shape's surface.
-        
-    get_angles_cos(points, normals):
-        Gives the absolute value of cosines of the angles between the input 
-        normal vectors and the calculated normal vectors from the input points.
-        
-    get_angles(points, normals):
-        Gives the angles between the input normal vectors and the 
-        calculated normal vectors from the input points.
-        
-    get_residuals(points, normals):
-        Convenience function returning both distances and angles.
-        
-    create_limits(args_n, idx, value):
-        Create a list of length `args_n` that stores `value` at index `idx`
-        and `None` elsewhere.
-        
-    get_mesh(points=None):
-        Creates mesh of the shape.    
+    __init__
+    __repr__
+    __eq__
+    random
+    fit
+    get_signed_distances
+    get_distances
+    get_normals
+    get_angles_cos
+    get_angles
+    get_residuals
+    flatten_points
+    flatten_PointCloud
+    add_inliers
+    closest_inliers
+    inliers_average_dist
+    inliers_bounding_box
+    sample_points_uniformly
+    sample_points_density
+    get_mesh
+    get_cropped_mesh
+    is_similar_to
+    copy
+    translate
+    rotate
+    align
+    save
+    load
     """
     
     _fit_n_min = 0
@@ -105,42 +87,6 @@ class Template(Primitive):
     def volume(self):
         """ Volume of primitive. """
         return 0
-    
-    def get_signed_distances(self, points):
-        """ Gives the minimum distance between each point to the model.
-        
-        Parameters
-        ----------
-        points : N x 3 array
-            N input points 
-        
-        Returns
-        -------
-        distances
-            Nx1 array distances.
-        """
-        return np.zeros(len(points))
-    
-    def get_normals(self):
-        """ Gives, for each input point, the normal vector of the point closest 
-        to the primitive.
-        
-        Returns
-        -------
-        normals
-            Nx3 array containing normal vectors.
-        """
-        return points
-    
-    def get_mesh(self, points=None):
-        """ Creates mesh of the shape.      
-        
-        Returns
-        -------
-        TriangleMesh
-            Mesh corresponding to the shape.
-        """
-        return TriangleMesh()
     
     @staticmethod
     def fit(points, normals=None):
@@ -169,3 +115,40 @@ class Template(Primitive):
                              'template')
         
         return Template([]) 
+    
+    def get_signed_distances(self, points):
+        """ Gives the minimum distance between each point to the model.
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+        
+        Returns
+        -------
+        distances
+            Nx1 array distances.
+        """
+        return np.zeros(len(points))
+    
+    def get_normals(self, points):
+        """ Gives, for each input point, the normal vector of the point closest 
+        to the primitive.
+        
+        Returns
+        -------
+        normals
+            Nx3 array containing normal vectors.
+        """
+        return points
+    
+    def get_mesh(self, points=None):
+        """ Creates mesh of the shape.      
+        
+        Returns
+        -------
+        TriangleMesh
+            Mesh corresponding to the shape.
+        """
+        return TriangleMesh()
+    
