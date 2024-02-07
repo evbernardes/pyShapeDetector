@@ -78,6 +78,8 @@ class Plane(Primitive):
     align
     save
     load
+    check_bbox_intersection
+    check_inlier_distance
     
     from_normal_dist
     from_normal_point
@@ -771,6 +773,8 @@ class PlaneBounded(Plane):
     align
     save
     load
+    check_bbox_intersection
+    check_inlier_distance
     
     from_normal_dist
     from_normal_point

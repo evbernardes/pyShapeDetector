@@ -40,25 +40,8 @@ def get_rotation_from_axis(axis_origin, axis):
         orthogonal_axis /= np.linalg.norm(orthogonal_axis)
         return Rotation.from_quat(list(orthogonal_axis)+[0]).as_matrix()
 
-
-def check_bbox_intersection(shape1, shape2, distance):
-    
-    bb1 = shape1.inliers_bounding_box(slack=distance/2)
-    bb2 = shape2.inliers_bounding_box(slack=distance/2)
-    
-    test_order = bb2[1] - bb1[0] >= 0
-    if test_order.all():
-        pass
-    elif (~test_order).all():
-        bb1, bb2 = bb2, bb1
-    else:
-        return False
-    
-    # test_intersect = (bb1.max_bound + atol) - (bb2.min_bound - atol) >= 0
-    test_intersect = bb1[1] - bb2[0] >= 0
-    return test_intersect.all()
-
-def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, bbox_intersection=None):
+def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, 
+                         bbox_intersection=None, inlier_max_distance=None):
     """ Detect shapes with similar model and group.
     
     See: fuse_shape_groups
@@ -71,6 +54,12 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, bbox_intersection=None)
         The relative tolerance parameter. Default: 1e-02.
     atol : float, optional
         The absolute tolerance parameter. Default: 1e-02.
+    bbox_intersection : float, optional
+        Max distance between inlier bounding boxes. If None, ignore this test.
+        Default: None.
+    inlier_max_distance : float, optional
+        Max distance between points in shapes. If None, ignore this test.
+        Default: None.
         
     Returns
     -------
@@ -89,19 +78,12 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, bbox_intersection=None)
     for i, j in combinations(partitions, 2):
         if partitions[j] != j:
             continue
-        
-        # start = time.time()
-        # test1 = _check_bboxes(shapes[i], shapes[j])
-        # time1 += time.time() - start
-    
-        # start = time.time()
-        # test2 = shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol)
-        # time2 += time.time() - start
-        if bbox_intersection is None:
-            test1 = True
-        else:
-            test1 = check_bbox_intersection(shapes[i], shapes[j], bbox_intersection)
-        if test1 and shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
+            
+        test = shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol)
+        test = test and shapes[i].check_bbox_intersection(shapes[j], bbox_intersection)
+        test = test and shapes[i].check_inlier_distance(shapes[j], bbox_intersection)
+            
+        if test:
         # if test1 and test2:
             partitions[j] = i
     
@@ -192,8 +174,8 @@ def fuse_shape_groups(shapes_lists, detector=None, line_intersection_eps=1e-3):
     return new_list
 
 
-def fuse_similar_shapes(shapes, detector=None, 
-                        rtol=1e-02, atol=1e-02, bbox_intersection=None,
+def fuse_similar_shapes(shapes, detector=None,  rtol=1e-02, atol=1e-02, 
+                        bbox_intersection=None, inlier_max_distance=None,
                         line_intersection_eps=1e-3):
     """ Detect shapes with similar model and fuse them.
     
@@ -212,6 +194,12 @@ def fuse_similar_shapes(shapes, detector=None,
         The relative tolerance parameter. Default: 1e-02.
     atol : float, optional
         The absolute tolerance parameter. Default: 1e-02.
+    bbox_intersection : float, optional
+        Max distance between inlier bounding boxes. If None, ignore this test.
+        Default: None.
+    inlier_max_distance : float, optional
+        Max distance between points in shapes. If None, ignore this test.
+        Default: None.
     
     Returns
     -------
@@ -219,11 +207,12 @@ def fuse_similar_shapes(shapes, detector=None,
         Average shapes.
     """
     shapes_groupped = group_similar_shapes(shapes, rtol=rtol, atol=atol, 
-                                           bbox_intersection=bbox_intersection)
+                                           bbox_intersection=bbox_intersection,
+                                           inlier_max_distance=inlier_max_distance)
     return fuse_shape_groups(shapes_groupped, detector, line_intersection_eps=line_intersection_eps)
 
-def glue_nearby_planes(shapes, bbox_intersection, length_max=None, 
-                       distance_max=None, ignore=None, intersect_parallel=False,
+def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
+                       length_max=None, distance_max=None, ignore=None, intersect_parallel=False,
                        eps_angle=np.deg2rad(0.9), eps_distance=1e-2):
     """ For every possible pair of neighboring bounded planes, calculate their
     intersection and then glue them to this intersection.
@@ -236,8 +225,11 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None,
     ----------
     shapes : list of shapes
         List containing all shapes.  
-    bbox_intersection : float
+    bbox_intersection : float, optional
         Max distance between planes.
+    inlier_max_distance : float, optional
+        Max distance between points in shapes. If None, ignore this test.
+        Default: None.
     length_max : float, optional
         If a value is given, limits lenghts of intersection lines. 
         Default: None.
@@ -263,6 +255,10 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None,
         List of intersections.
     """
     
+    if bbox_intersection is None and inlier_max_distance is None:
+        raise ValueError("bbox_intersection and inlier_max_distance cannot "
+                         "both be equal to None.")
+    
     from pyShapeDetector.primitives import Line
     
     if length_max is not None and length_max <= 0:
@@ -284,7 +280,10 @@ def glue_nearby_planes(shapes, bbox_intersection, length_max=None,
         if ignore[i] or ignore[j]:
             continue
         
-        if not check_bbox_intersection(shapes[i], shapes[j], bbox_intersection):
+        if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
+            continue
+        
+        if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
             continue
         
         line = Line.from_plane_intersection(shapes[i], shapes[j], intersect_parallel=intersect_parallel,

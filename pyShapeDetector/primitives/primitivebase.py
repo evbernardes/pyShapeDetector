@@ -95,6 +95,8 @@ class Primitive(ABC):
     align
     save
     load
+    check_bbox_intersection
+    check_inlier_distance
     
     from_appex_top_radius
     from_appex_vector_radius
@@ -885,4 +887,36 @@ class Primitive(ABC):
         f.close()
         return shape
     
+    def check_bbox_intersection(self, other_shape, distance):
         
+        if distance is None:
+            return True
+        
+        if distance <= 0:
+            raise ValueError("Distance must be positive.")
+        
+        bb1 = self.inliers_bounding_box(slack=distance/2)
+        bb2 = other_shape.inliers_bounding_box(slack=distance/2)
+        
+        test_order = bb2[1] - bb1[0] >= 0
+        if test_order.all():
+            pass
+        elif (~test_order).all():
+            bb1, bb2 = bb2, bb1
+        else:
+            return False
+        
+        # test_intersect = (bb1.max_bound + atol) - (bb2.min_bound - atol) >= 0
+        test_intersect = bb1[1] - bb2[0] >= 0
+        return test_intersect.all()
+    
+    def check_inlier_distance(self, other_shape, distance):
+        
+        if distance is None:
+            return True
+        
+        if distance <= 0:
+            raise ValueError("Distance must be positive.")
+        
+        _, dist = self.closest_inliers(other_shape)
+        return dist[0] <= distance

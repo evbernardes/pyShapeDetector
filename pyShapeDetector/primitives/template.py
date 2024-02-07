@@ -72,6 +72,8 @@ class Template(Primitive):
     align
     save
     load
+    check_bbox_intersection
+    check_inlier_distance
     """
     
     _fit_n_min = 0

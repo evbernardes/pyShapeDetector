@@ -81,6 +81,8 @@ class Cylinder(Primitive):
     align
     save
     load
+    check_bbox_intersection
+    check_inlier_distance
     
     from_base_vector_radius
     from_center_half_vector_radius
