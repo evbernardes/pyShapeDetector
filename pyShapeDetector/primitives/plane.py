@@ -24,126 +24,75 @@ class Plane(Primitive):
     
     Attributes
     ----------
-    _fit_n_min : int
-        Minimum number of points necessary to fit a model.
-    _model_args_n : str
-        Number of parameters in the model.
-    name : str
-        Name of primitive.
-    equation : str
-        Equation that defines the primitive.
-    canonical : Plane
-        Return canonical form for testing.
-    surface_area : float
-        For unbounded plane, returns NaN and gives warning
-    volume : float
-        Volume of plane, which is zero.
-    inlier_points : N x 3 array
-        Inlier points.
-    inlier_normals : N x 3 array
-        Normals for each inlier point.
-    inlier_colors : N x 3 array
-        Colors for each inlier point.
-    normal : 3 x 1 array
-        Normal vector defining plane.
-    dist : float
-        Distance to origin.
-    centroid : 3 x 1 array
-        A point in the plane.
-    holes : list
-        List of holes in plane.
-    bound_lines : list of Line instances
-        Lines defining bounds.
+    fit_n_min 
+    model_args_n
+    name
+    model
+    equation
+    surface_area 
+    volume
+    canonical
+    color
+    inlier_points
+    inlier_points_flattened
+    inlier_normals
+    inlier_colors
+    inlier_PointCloud
+    inlier_PointCloud_flattened
+    metrics
+    axis_spherical
+    axis_cylindrical
+    
+    normal
+    dist
+    centroid
+    holes
+    bound_lines
     
     Methods
     ------- 
-    inliers_average_dist(k=15, leaf_size=40):
-        Calculates the K nearest neighbors of the inlier points and returns 
-        the average distance between them.
-        
-    inliers_bounding_box(slack=0):
-        If the shape includes inlier points, returns the minimum and 
-        maximum bounds of their bounding box.
-        
-    from_normal_dist(normal, dist):
-        Creates plane from normal vector and distance to origin.
+    __init__
+    __repr__
+    __eq__
+    random
+    fit
+    get_signed_distances
+    get_distances
+    get_normals
+    get_angles_cos
+    get_angles
+    get_residuals
+    flatten_points
+    flatten_PointCloud
+    add_inliers
+    closest_inliers
+    inliers_average_dist
+    inliers_bounding_box
+    sample_points_uniformly
+    sample_points_density
+    get_mesh
+    get_cropped_mesh
+    is_similar_to
+    copy
+    translate
+    rotate
+    align
+    save
+    load
     
-    from_normal_point(normal, point):
-        Creates plane from normal vector and point in plane.
-        
-    get_bounded_plane(points):
-        Gives bounded version of plane, using input points to define 
-        border.
-        
-    get_square_plane(length=1):
-        Gives four points defining boundary of square plane.
-        
-    get_square_mesh(length=1):
-        Gives square plane defined by four points.
-        
-    add_holes(holes):
-        Add one or more holes to plane.
-        
-    remove_hole(idx):
-        Remove hole according to index.
-    
-    get_signed_distances(points):
-        Gives the minimum distance between each point to the model. 
-    
-    get_distances(points)
-        Gives the minimum distance between each point to the model.
-        
-    get_normals(points)
-        Gives, for each input point, the normal vector of the point closest 
-        to the primitive. 
-        
-    get_projections(points):
-        Get 2D projections of points in plane.
-        
-    get_points_from_projections(projections):
-        Get 3D points from 2D projections in plane.
-        
-    random(scale):
-        Generates a random shape.
-        
-    fit(points, normals=None):
-        Gives plane that fits the input points.
-    
-    get_angles_cos(self, points, normals):
-        Gives the absolute value of cosines of the angles between the input 
-        normal vectors and the calculated normal vectors from the input points.
-        
-    flatten_points(points):
-        Stick each point in input to the closest point in shape's surface.
-        
-    get_angles_cos(points, normals):
-        Gives the absolute value of cosines of the angles between the input 
-        normal vectors and the calculated normal vectors from the input points.
-        
-    get_angles(points, normals):
-        Gives the angles between the input normal vectors and the 
-        calculated normal vectors from the input points.
-        
-    get_residuals(points, normals):
-        Convenience function returning both distances and angles.
-    
-    get_mesh(): TriangleMesh
-        Flatten points and creates a simplified mesh of the plane. If the
-        shape has pre-defined inlier points, use them to find borders.
-        Otherwise, return square mesh.
-        
-    get_cropped_mesh(points=None, eps=1E-3):
-        Creates mesh of the shape and crops it according to points.
-        
-    is_similar_to(other_shape, rtol=1e-02, atol=1e-02):
-        Check if shapes represent same model.
-        
-    copy(copy_holes):
-        Returns copy of plane
-    
-    align(axis):
-        Returns aligned 
-    
+    from_normal_dist
+    from_normal_point
+    bound_lines_meshes
+    add_holes
+    remove_hole
+    intersect
+    closest_bounds
+    get_bounded_plane
+    get_projections
+    get_points_from_projections
+    get_mesh_alphashape
+    get_square_plane
+    get_square_mesh
     """
     
     _fit_n_min = 3
@@ -152,10 +101,6 @@ class Plane(Primitive):
     _holes = []
     _rotatable = [0, 1, 2]
     _fusion_intersections = np.array([])
-    
-    @property
-    def color(self):
-        return np.array([0, 0, 1])
     
     @property
     def equation(self):
@@ -170,7 +115,18 @@ class Plane(Primitive):
         equation += '-' if d < 0 else '+'
         equation += f' {abs(d)} = 0'
         
-        return equation  
+        return equation
+    
+    @property
+    def surface_area(self):
+        """ For unbounded plane, returns NaN and gives warning """
+        warn('For unbounded planes, the surface area is undefined')
+        return float('nan')
+    
+    @property
+    def volume(self):
+        """ Volume of plane, which is zero. """
+        return 0 
     
     @property
     def canonical(self):
@@ -183,15 +139,8 @@ class Plane(Primitive):
         return plane
     
     @property
-    def surface_area(self):
-        """ For unbounded plane, returns NaN and gives warning """
-        warn('For unbounded planes, the surface area is undefined')
-        return float('nan')
-    
-    @property
-    def volume(self):
-        """ Volume of plane, which is zero. """
-        return 0 
+    def color(self):
+        return np.array([0, 0, 1])
     
     @property
     def normal(self):
@@ -222,6 +171,155 @@ class Plane(Primitive):
         # num_lines = len(bounds)
         # lines = [Line.from_two_points(bounds[i-1], bounds[i]) for i in range(num_lines)]
         # return lines
+        
+    def __init__(self, model):
+        """
+        Parameters
+        ----------
+        model : list or tuple
+            Parameters defining the shape model
+                        
+        Raises
+        ------
+        ValueError
+            If number of parameters is incompatible with the model of the 
+            primitive.
+        """
+        model = np.array(model)
+        norm = np.linalg.norm(model[:3])
+        model = model / norm
+        Primitive.__init__(self, model)
+        self._holes = []
+        
+    @staticmethod
+    def fit(points, normals=None):
+        """ Gives plane that fits the input points. If the number of points is
+        higher than the `3`, the fitted shape will return a least squares 
+        estimation.
+        
+        Reference:
+            https://www.ilikebigbits.com/2015_03_04_plane_from_points.html
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+        normals : N x 3 array
+            N normal vectors
+        
+        Returns
+        -------
+        Plane
+            Fitted plane.
+        """
+        points = np.asarray(points)        
+        num_points = len(points)
+        
+        if num_points < 3:
+            raise ValueError('A minimun of 3 points are needed to fit a '
+                             'plane')
+        
+        # if simplest case, the result is direct
+        elif num_points == 3:
+            p0, p1, p2 = points
+            
+            e1 = p1 - p0
+            e2 = p2 - p0
+            abc = np.cross(e1, e2)
+            centroid = p0
+        
+        # for more points, find the plane such that the summed squared distance 
+        # from the plane to all points is minimized.
+        else:
+            centroid = sum(points) / num_points
+            x, y, z = np.asarray(points - centroid).T
+            xx = x.dot(x)
+            yy = y.dot(y)
+            zz = z.dot(z)
+            xy = x.dot(y)
+            yz = y.dot(z)
+            xz = z.dot(x)
+                
+            det_x = yy * zz - yz * yz
+            det_y = xx * zz - xz * xz
+            det_z = xx * yy - xy * xy
+            
+            if (det_x > det_y and det_x > det_z):
+                abc = np.array([det_x, 
+                                xz * yz - xy * zz, 
+                                xy * yz - xz * yy])
+            elif (det_y > det_z):
+                abc = np.array([xz * yz - xy * zz, 
+                                det_y, 
+                                xy * xz - yz * xx])
+            else:
+                abc = np.array([xy * yz - xz * yy, 
+                                xy * xz - yz * xx, 
+                                det_z])
+        
+        norm = np.linalg.norm(abc)
+        if norm == 0.0:
+            return None
+
+        return Plane.from_normal_point(abc / norm, centroid)
+    
+    def get_signed_distances(self, points):
+        """ Gives the minimum distance between each point to the model. 
+        
+        Actual implementation depends on the type of primitive.
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+        
+        Returns
+        -------
+        distances
+            Nx1 array distances.
+        """
+        points = np.asarray(points)
+        return points.dot(self.normal) + self.dist
+    
+    def get_normals(self, points):
+        """ Gives, for each input point, the normal vector of the point closest 
+        to the primitive. 
+        
+        Actual implementation depends on the type of primitive.
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+        
+        Returns
+        -------
+        normals
+            Nx3 array containing normal vectors.
+        """
+        return np.tile(self.normal, (len(points), 1))
+    
+    def get_mesh(self, resolution=1):
+        """ Flatten inliers points and creates a simplified mesh of the plane. If the
+        shape has pre-defined inlier points, use them to find borders.
+        Otherwise, return square mesh.
+        
+        Returns
+        -------
+        TriangleMesh
+            Mesh corresponding to the plane.
+        """
+        if len(self.inlier_points) == 0:
+            warn('No inlier points, returning square plane...')
+            return self.get_square_mesh()
+        
+        bounded_plane = PlaneBounded(self.model, self.inlier_points_flattened)
+        bounded_plane._holes = self._holes
+        mesh = bounded_plane.get_mesh()
+        
+        if len(self.inlier_colors) > 0:
+            mesh.paint_uniform_color(np.median(self.inlier_colors, axis=0))
+        return mesh
         
     def translate(self, translation):
         """ Translate the shape.
@@ -258,12 +356,6 @@ class Plane(Primitive):
         normal = rotation.apply(self.normal)
         self._model = Plane.from_normal_point(normal, centroid).model
         self._rotate_points_normals(rotation)
-    
-    def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
-        lines = self.bound_lines
-        meshes =  [line.get_mesh(radius=radius) for line in lines]
-        [mesh.paint_uniform_color(color) for mesh in meshes]
-        return meshes
         
     def copy(self, copy_holes=True):
         """ Returns copy of plane
@@ -288,6 +380,48 @@ class Plane(Primitive):
             holes = [h.copy(copy_holes=False) for h in self._holes]
             shape._holes = holes
         return shape
+    
+    def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
+        lines = self.bound_lines
+        meshes =  [line.get_mesh(radius=radius) for line in lines]
+        [mesh.paint_uniform_color(color) for mesh in meshes]
+        return meshes
+    
+    @classmethod
+    def from_normal_dist(cls, normal, dist):
+        """ Creates plane from normal vector and distance to origin.
+        
+        Parameters
+        ----------            
+        normal : 3 x 1 array
+            Normal vector defining plane.
+        radius : float
+            Distance to origin.
+
+        Returns
+        -------
+        Cone
+            Generated shape.
+        """
+        return cls(list(normal)+[dist])
+    
+    @classmethod
+    def from_normal_point(cls, normal, point):
+        """ Creates plane from normal vector and point in plane.
+        
+        Parameters
+        ----------            
+        normal : 3 x 1 array
+            Normal vector defining plane.
+        point : 3 x 1 array
+            Point in plane.
+
+        Returns Creates plane from normal vector and point in plane.
+        -------
+        Cone
+            Generated shape.
+        """
+        return cls.from_normal_dist(normal, -np.dot(normal, point))
     
     def add_holes(self, holes, remove_points=True):
         """ Add one or more holes to plane.
@@ -434,61 +568,6 @@ class Plane(Primitive):
         
         return closest_points, distances
     
-    @classmethod
-    def from_normal_dist(cls, normal, dist):
-        """ Creates plane from normal vector and distance to origin.
-        
-        Parameters
-        ----------            
-        normal : 3 x 1 array
-            Normal vector defining plane.
-        radius : float
-            Distance to origin.
-
-        Returns
-        -------
-        Cone
-            Generated shape.
-        """
-        return cls(list(normal)+[dist])
-    
-    @classmethod
-    def from_normal_point(cls, normal, point):
-        """ Creates plane from normal vector and point in plane.
-        
-        Parameters
-        ----------            
-        normal : 3 x 1 array
-            Normal vector defining plane.
-        point : 3 x 1 array
-            Point in plane.
-
-        Returns Creates plane from normal vector and point in plane.
-        -------
-        Cone
-            Generated shape.
-        """
-        return cls.from_normal_dist(normal, -np.dot(normal, point))
-    
-    def __init__(self, model):
-        """
-        Parameters
-        ----------
-        model : list or tuple
-            Parameters defining the shape model
-                        
-        Raises
-        ------
-        ValueError
-            If number of parameters is incompatible with the model of the 
-            primitive.
-        """
-        model = np.array(model)
-        norm = np.linalg.norm(model[:3])
-        model = model / norm
-        Primitive.__init__(self, model)
-        self._holes = []
-        
     def get_bounded_plane(self, points=None):
         """ Gives bounded version of plane, using input points to define 
         border.
@@ -511,42 +590,6 @@ class Plane(Primitive):
         bounded_plane = PlaneBounded(self, bounds)
         bounded_plane._holes = self._holes
         return bounded_plane 
-    
-    def get_signed_distances(self, points):
-        """ Gives the minimum distance between each point to the model. 
-        
-        Actual implementation depends on the type of primitive.
-        
-        Parameters
-        ----------
-        points : N x 3 array
-            N input points 
-        
-        Returns
-        -------
-        distances
-            Nx1 array distances.
-        """
-        points = np.asarray(points)
-        return points.dot(self.normal) + self.dist
-    
-    def get_normals(self, points):
-        """ Gives, for each input point, the normal vector of the point closest 
-        to the primitive. 
-        
-        Actual implementation depends on the type of primitive.
-        
-        Parameters
-        ----------
-        points : N x 3 array
-            N input points 
-        
-        Returns
-        -------
-        normals
-            Nx3 array containing normal vectors.
-        """
-        return np.tile(self.normal, (len(points), 1))
     
     def get_projections(self, points):
         """ Get 2D projections of points in plane.
@@ -594,28 +637,6 @@ class Plane(Primitive):
         projections_3D = np.vstack([projections.T, np.repeat(proj_z, N)]).T
         
         return (rot.T @ projections_3D.T).T
-    
-    def get_mesh(self, resolution=1):
-        """ Flatten inliers points and creates a simplified mesh of the plane. If the
-        shape has pre-defined inlier points, use them to find borders.
-        Otherwise, return square mesh.
-        
-        Returns
-        -------
-        TriangleMesh
-            Mesh corresponding to the plane.
-        """
-        if len(self.inlier_points) == 0:
-            warn('No inlier points, returning square plane...')
-            return self.get_square_mesh()
-        
-        bounded_plane = PlaneBounded(self.model, self.inlier_points_flattened)
-        bounded_plane._holes = self._holes
-        mesh = bounded_plane.get_mesh()
-        
-        if len(self.inlier_colors) > 0:
-            mesh.paint_uniform_color(np.median(self.inlier_colors, axis=0))
-        return mesh
     
     def get_mesh_alphashape(self, points, alpha=None):
         """ Flatten input points and creates a simplified mesh of the plane 
@@ -694,177 +715,91 @@ class Plane(Primitive):
             Mesh corresponding to the plane.
         """
         return self.get_square_plane(length).get_mesh()
-    
-    @staticmethod
-    def fit(points, normals=None):
-        """ Gives plane that fits the input points. If the number of points is
-        higher than the `3`, the fitted shape will return a least squares 
-        estimation.
-        
-        Reference:
-            https://www.ilikebigbits.com/2015_03_04_plane_from_points.html
-        
-        Parameters
-        ----------
-        points : N x 3 array
-            N input points 
-        normals : N x 3 array
-            N normal vectors
-        
-        Returns
-        -------
-        Plane
-            Fitted plane.
-        """
-        points = np.asarray(points)        
-        num_points = len(points)
-        
-        if num_points < 3:
-            raise ValueError('A minimun of 3 points are needed to fit a '
-                             'plane')
-        
-        # if simplest case, the result is direct
-        elif num_points == 3:
-            p0, p1, p2 = points
-            
-            e1 = p1 - p0
-            e2 = p2 - p0
-            abc = np.cross(e1, e2)
-            centroid = p0
-        
-        # for more points, find the plane such that the summed squared distance 
-        # from the plane to all points is minimized.
-        else:
-            centroid = sum(points) / num_points
-            x, y, z = np.asarray(points - centroid).T
-            xx = x.dot(x)
-            yy = y.dot(y)
-            zz = z.dot(z)
-            xy = x.dot(y)
-            yz = y.dot(z)
-            xz = z.dot(x)
-                
-            det_x = yy * zz - yz * yz
-            det_y = xx * zz - xz * xz
-            det_z = xx * yy - xy * xy
-            
-            if (det_x > det_y and det_x > det_z):
-                abc = np.array([det_x, 
-                                xz * yz - xy * zz, 
-                                xy * yz - xz * yy])
-            elif (det_y > det_z):
-                abc = np.array([xz * yz - xy * zz, 
-                                det_y, 
-                                xy * xz - yz * xx])
-            else:
-                abc = np.array([xy * yz - xz * yy, 
-                                xy * xz - yz * xx, 
-                                det_z])
-        
-        norm = np.linalg.norm(abc)
-        if norm == 0.0:
-            return None
-
-        return Plane.from_normal_point(abc / norm, centroid)
         
     
 class PlaneBounded(Plane):
     """
-    Plane primitive.
+    PlaneBounded primitive.
     
     Attributes
     ----------
-    fit_n_min : int
-        Minimum number of points necessary to fit a model.
-    model_args_n : str
-        Number of parameters in the model.
-    name : str
-        Name of primitive.
-    equation : str
-        Equation that defines the primitive.
-    normal : 3 x 1 array
-        Normal vector defining plane.
-    canonical : Plane
-        Return canonical form for testing.
-    unbounded : Plane
-        Unbounded version of plane.
-    surface_area : float
-        Surface area of bounded plane.
-    volume : float
-        Volume of plane, which is zero.
-    holes : list
-        List of holes in plane.
-    rotation_from_axis : 3 x 3 array
-        Rotation matrix that aligns z-axis with plane normal.
+    fit_n_min 
+    model_args_n
+    name
+    model
+    equation
+    surface_area 
+    volume
+    canonical
+    color
+    inlier_points
+    inlier_points_flattened
+    inlier_normals
+    inlier_colors
+    inlier_PointCloud
+    inlier_PointCloud_flattened
+    metrics
+    axis_spherical
+    axis_cylindrical
+    
+    normal
+    dist
+    centroid
+    holes
+    bound_lines
     
     Methods
     ------- 
+    __init__
+    __repr__
+    __eq__
+    random
+    fit
+    get_signed_distances
+    get_distances
+    get_normals
+    get_angles_cos
+    get_angles
+    get_residuals
+    flatten_points
+    flatten_PointCloud
+    add_inliers
+    closest_inliers
+    inliers_average_dist
+    inliers_bounding_box
+    sample_points_uniformly
+    sample_points_density
+    get_mesh
+    get_cropped_mesh
+    is_similar_to
+    copy
+    translate
+    rotate
+    align
+    save
+    load
     
-    get_bounded_plane(points):
-        Gives bounded version of plane, using input points to define 
-        border.
+    from_normal_dist
+    from_normal_point
+    bound_lines_meshes
+    add_holes
+    remove_hole
+    intersect
+    closest_bounds
+    get_bounded_plane
+    get_projections
+    get_points_from_projections
+    get_mesh_alphashape
+    get_square_plane
+    get_square_mesh
     
-    get_signed_distances(points):
-        Gives the minimum distance between each point to the model. 
+    contains_projections
+    add_bound_points
+    create_circle
+    create_ellipse
+    create_box
+    intersection_bounds
     
-    get_distances(points)
-        Gives the minimum distance between each point to the model. 
-        
-    get_normals(points)
-        Gives, for each input point, the normal vector of the point closest 
-        to the primitive. 
-    
-    get_angles_cos(self, points, normals):
-        Gives the absolute value of cosines of the angles between the input 
-        normal vectors and the calculated normal vectors from the input points.
-        
-    flatten_points(points):
-        Stick each point in input to the closest point in shape's surface.
-        
-    get_angles_cos(points, normals):
-        Gives the absolute value of cosines of the angles between the input 
-        normal vectors and the calculated normal vectors from the input points.
-        
-    get_angles(points, normals):
-        Gives the angles between the input normal vectors and the 
-        calculated normal vectors from the input points.
-        
-    get_residuals(points, normals):
-        Convenience function returning both distances and angles.
-    
-    get_mesh(points): TriangleMesh
-        Flatten points and creates a simplified mesh of the plane defined
-        by the points at the borders.
-        
-    get_square_mesh(length=1):
-        Gives a square mesh that fits the plane model.
-        
-    add_holes(holes):
-        Add one or more holes to plane.
-        
-    remove_hole(idx):
-        Remove hole according to index.
-        
-    fit(points, normals=None):
-        Gives plane that fits the input points.
-        
-    create_box(center=[0,0,0], dimensions=[1, 1, 1]):
-        Gives list of planes that create, together, a closed box.
-        
-    create_circle(center, normal, radius, resolution=30):
-        Creates circular plane.
-        
-    get_cropped_mesh(points=None, eps=1E-3):
-        Creates mesh of the shape and crops it according to points.
-        
-    is_similar_to(other_shape, rtol=1e-02, atol=1e-02):
-        Check if shapes represent same model.
-        
-    copy(copy_holes):
-        Returns copy of plane
-    
-    align(axis):
-        Returns aligned 
     
     """
     
@@ -872,6 +807,26 @@ class PlaneBounded(Plane):
     _bounds_indices = np.array([])
     _bounds = np.array([])
     _bounds_projections = np.array([])
+    
+    @property
+    def model(self):
+        """ Return model. """
+        return self.unbounded.model
+    
+    @property
+    def surface_area(self):
+        """ Surface area of bounded plane. """
+        return self.get_mesh().get_surface_area()
+    
+    @property
+    def canonical(self):
+        """ Return canonical form for testing. """
+        model = self.model
+        if self.dist >= 0:
+            model = -model
+        canonical_plane = PlaneBounded(list(-self.model), self.bounds)
+        canonical_plane._holes = self._holes
+        return canonical_plane    
     
     @property
     def bounds_indices(self):
@@ -886,106 +841,6 @@ class PlaneBounded(Plane):
     @property
     def bounds_projections(self):
         return self._bounds_projections
-    
-    def translate(self, translation):
-        """ Translate the shape.
-        
-        Parameters
-        ----------
-        translation : 1 x 3 array
-            Translation vector.
-        """
-        Plane.translate(self.unbounded, translation)
-        self._bounds = self._bounds + translation
-        for hole in self.holes:
-            hole._translate_points(translation)
-    
-    def rotate(self, rotation, is_hole=False):
-        """ Rotate the shape.
-        
-        Parameters
-        ----------
-        rotation : 3 x 3 rotation matrix or scipy.spatial.transform.Rotation
-            Rotation matrix.
-        """
-        if not hasattr(self, '_rotatable'):
-            raise NotImplementedError('Shapes of type {shape.name} do not '
-                                      'have an implemented _rotatable '
-                                      'attribute')
-        rotation = self._parse_rotation(rotation)
-        Plane.rotate(self.unbounded, rotation)
-        
-        self._rotate_points_normals(rotation)
-        
-        bounds = rotation.apply(self._bounds)
-        self._set_bounds(bounds, flatten=True)
-        
-        if not is_hole and len(self.holes) > 0:
-            for hole in self.holes:
-                hole.rotate(rotation, is_hole=True)
-    
-    def contains_projections(self, points):
-        """ For each point in points, check if its projection on the plane lies
-        inside of the plane's bounds. 
-        
-        Parameters
-        ----------
-        points : N x 3 array
-            N input points 
-        
-        Returns
-        -------
-        array of booleans
-            True for points whose projection lies in plane's bounds
-        """
-        inside = np.array([True] * len(points))
-        projections = self.get_projections(points)
-        for i in range(len(points)):
-            point = projections[i]
-            for j in range(1, len(self.bounds_projections)):
-                p1 = self.bounds_projections[j-1]
-                p2 = self.bounds_projections[j]
-                if (point[0] - p1[0]) * (p2[1] - p1[1]) - (point[1] - p1[1]) * (p2[0] - p1[0]) > 0:
-                    inside[i] = False
-                    continue
-        return inside
-    
-    def copy(self, copy_holes=True):
-        """ Returns copy of plane
-        
-        Parameters
-        ----------
-        copy_holes: boolean, optional
-            If True, also copy holes. Default: True.
-        
-        Returns
-        -------
-        Primitive
-            Copied primitive
-        """
-        shape = PlaneBounded(self.model.copy(), bounds=None)
-        shape._bounds_indices = self._bounds_indices.copy()
-        shape._bounds = self._bounds.copy()
-        shape._bounds_projections = self._bounds_projections.copy()
-        shape._inlier_points = self._inlier_points.copy()
-        shape._inlier_normals = self._inlier_normals.copy()
-        shape._inlier_colors = self._inlier_colors.copy()
-        shape._fusion_intersections = self._fusion_intersections.copy()
-        shape._metrics = self._metrics.copy()
-        if copy_holes:
-            holes = [h.copy(copy_holes=False) for h in self._holes]
-            shape._holes = holes
-        return shape
-    
-    @property
-    def surface_area(self):
-        """ Surface area of bounded plane. """
-        return self.get_mesh().get_surface_area()
-    
-    @property
-    def rotation_from_axis(self):
-        """ Rotation matrix that aligns z-axis with plane normal."""
-        return get_rotation_from_axis([0, 0, 1], self.normal)
     
     def __init__(self, planemodel, bounds=None, rmse_max=1e-3, 
                  method='convex', alpha=None):
@@ -1041,75 +896,49 @@ class PlaneBounded(Plane):
                 
         self._holes = []
         
-    @property
-    def model(self):
-        """ Return model. """
-        return self.unbounded.model
-    
-    @property
-    def canonical(self):
-        """ Return canonical form for testing. """
-        model = self.model
-        if self.dist >= 0:
-            model = -model
-        canonical_plane = PlaneBounded(list(-self.model), self.bounds)
-        canonical_plane._holes = self._holes
-        return canonical_plane        
-    
-    def _set_bounds(self, points, flatten=True, method='convex', alpha=None):
-        """ Flatten points according to plane model, get projections of 
-        flattened points in the model and compute its boundary using either 
-        the convex hull or alpha shapes.
-
+    @classmethod
+    def random(cls, scale=1):
+        """ Generates a random shape.
+        
         Parameters
         ----------
-        plane : Plane
-            Plane model
-        points : array_like, shape (N, 3)
-            Points corresponding to the fitted shape.
-        flatten : bool, optional
-            If False, does not flatten points
-        method : string, optional
-            "convex" for convex hull, or "alpha" for alpha shapes.
-            Default: "convex"
-        alpha : float, optional
-            Alpha parameter for alpha shapes algorithm. If equal to None,
-            calculates the optimal alpha. Default: None
+        scale : float, optional
+            scaling factor for random model values.
+
+        Returns
+        -------
+        Primitive
+            Random shape.
+        """
+        plane = Plane(np.random.random(4) * scale)
+        return plane.get_square_plane(np.random.random() * scale)
+    
+    @staticmethod
+    def fit(points, normals=None):
+        """ Gives plane that fits the input points. If the numb
+        points : N x 3 arrayer of points is
+        higher than the `3`, the fitted shape will return a least squares 
+        estimation.
+        
+        Reference:
+            https://www.ilikebigbits.com/2015_03_04_plane_from_points.html
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+        normals : N x 3 array
+            N normal vectors
         
         Returns
         -------
-        bounds : array_like, shape (M, 3)
-            Boundary points in plane, where M is lower or equal to N.
-        projections : array_like, shape (M, 2)
-            projections of boundary points in plane, where M is lower or 
-            equal to N.
+        PlaneBounded
+            Fitted plane.
         """
-        method = method.lower()
-        if method == 'convex':
-            pass
-        elif method == 'alpha':
-            raise NotImplementedError("Alpha shapes not implemented yet.")
-        else:
-            raise ValueError(f"method can be 'convex' or 'alpha', got {method}.")
         
-        if flatten:
-            points = self.flatten_points(points)
-        if np.any(np.isnan(points)):
-            raise ValueError('NaN found in points')
-            
-        projections = self.get_projections(points)
-        
-        if method == 'convex':
-            chull = ConvexHull(projections)
-            self._bounds_indices = chull.vertices
-            self._bounds = points[chull.vertices]
-            self._bounds_projections = projections[chull.vertices]
-            
-    def add_bound_points(self, new_bound_points, flatten=True, method='convex', 
-                         alpha=None):
-        points = np.vstack([self.bounds, new_bound_points])
-        self._set_bounds(points, flatten, method, alpha)
-        
+        plane = Plane.fit(points, normals)
+        return plane.get_bounded_plane(points)
+    
     def get_mesh(self, resolution=None):
         """ Flatten points and creates a simplified mesh of the plane defined
         by the points at the borders.
@@ -1215,48 +1044,165 @@ class PlaneBounded(Plane):
             mesh.paint_uniform_color(np.median(self.inlier_colors, axis=0))
         return mesh
     
-    @classmethod
-    def random(cls, scale=1):
-        """ Generates a random shape.
+    def copy(self, copy_holes=True):
+        """ Returns copy of plane
         
         Parameters
         ----------
-        scale : float, optional
-            scaling factor for random model values.
-
+        copy_holes: boolean, optional
+            If True, also copy holes. Default: True.
+        
         Returns
         -------
         Primitive
-            Random shape.
+            Copied primitive
         """
-        plane = Plane(np.random.random(4) * scale)
-        return plane.get_square_plane(np.random.random() * scale)
+        shape = PlaneBounded(self.model.copy(), bounds=None)
+        shape._bounds_indices = self._bounds_indices.copy()
+        shape._bounds = self._bounds.copy()
+        shape._bounds_projections = self._bounds_projections.copy()
+        shape._inlier_points = self._inlier_points.copy()
+        shape._inlier_normals = self._inlier_normals.copy()
+        shape._inlier_colors = self._inlier_colors.copy()
+        shape._fusion_intersections = self._fusion_intersections.copy()
+        shape._metrics = self._metrics.copy()
+        if copy_holes:
+            holes = [h.copy(copy_holes=False) for h in self._holes]
+            shape._holes = holes
+        return shape
     
-    @staticmethod
-    def fit(points, normals=None):
-        """ Gives plane that fits the input points. If the numb
-        points : N x 3 arrayer of points is
-        higher than the `3`, the fitted shape will return a least squares 
-        estimation.
+    def translate(self, translation):
+        """ Translate the shape.
         
-        Reference:
-            https://www.ilikebigbits.com/2015_03_04_plane_from_points.html
+        Parameters
+        ----------
+        translation : 1 x 3 array
+            Translation vector.
+        """
+        Plane.translate(self.unbounded, translation)
+        self._bounds = self._bounds + translation
+        for hole in self.holes:
+            hole._translate_points(translation)
+    
+    def rotate(self, rotation, is_hole=False):
+        """ Rotate the shape.
+        
+        Parameters
+        ----------
+        rotation : 3 x 3 rotation matrix or scipy.spatial.transform.Rotation
+            Rotation matrix.
+        """
+        if not hasattr(self, '_rotatable'):
+            raise NotImplementedError('Shapes of type {shape.name} do not '
+                                      'have an implemented _rotatable '
+                                      'attribute')
+        rotation = self._parse_rotation(rotation)
+        Plane.rotate(self.unbounded, rotation)
+        
+        self._rotate_points_normals(rotation)
+        
+        bounds = rotation.apply(self._bounds)
+        self._set_bounds(bounds, flatten=True)
+        
+        if not is_hole and len(self.holes) > 0:
+            for hole in self.holes:
+                hole.rotate(rotation, is_hole=True)
+    
+    def contains_projections(self, points):
+        """ For each point in points, check if its projection on the plane lies
+        inside of the plane's bounds. 
         
         Parameters
         ----------
         points : N x 3 array
             N input points 
-        normals : N x 3 array
-            N normal vectors
         
         Returns
         -------
-        PlaneBounded
-            Fitted plane.
+        array of booleans
+            True for points whose projection lies in plane's bounds
         """
+        inside = np.array([True] * len(points))
+        projections = self.get_projections(points)
+        for i in range(len(points)):
+            point = projections[i]
+            for j in range(1, len(self.bounds_projections)):
+                p1 = self.bounds_projections[j-1]
+                p2 = self.bounds_projections[j]
+                if (point[0] - p1[0]) * (p2[1] - p1[1]) - (point[1] - p1[1]) * (p2[0] - p1[0]) > 0:
+                    inside[i] = False
+                    continue
+        return inside
+    
+    def _set_bounds(self, points, flatten=True, method='convex', alpha=None):
+        """ Flatten points according to plane model, get projections of 
+        flattened points in the model and compute its boundary using either 
+        the convex hull or alpha shapes.
+
+        Parameters
+        ----------
+        plane : Plane
+            Plane model
+        points : array_like, shape (N, 3)
+            Points corresponding to the fitted shape.
+        flatten : bool, optional
+            If False, does not flatten points
+        method : string, optional
+            "convex" for convex hull, or "alpha" for alpha shapes.
+            Default: "convex"
+        alpha : float, optional
+            Alpha parameter for alpha shapes algorithm. If equal to None,
+            calculates the optimal alpha. Default: None
         
-        plane = Plane.fit(points, normals)
-        return plane.get_bounded_plane(points)
+        Returns
+        -------
+        bounds : array_like, shape (M, 3)
+            Boundary points in plane, where M is lower or equal to N.
+        projections : array_like, shape (M, 2)
+            projections of boundary points in plane, where M is lower or 
+            equal to N.
+        """
+        method = method.lower()
+        if method == 'convex':
+            pass
+        elif method == 'alpha':
+            raise NotImplementedError("Alpha shapes not implemented yet.")
+        else:
+            raise ValueError(f"method can be 'convex' or 'alpha', got {method}.")
+        
+        if flatten:
+            points = self.flatten_points(points)
+        if np.any(np.isnan(points)):
+            raise ValueError('NaN found in points')
+            
+        projections = self.get_projections(points)
+        
+        if method == 'convex':
+            chull = ConvexHull(projections)
+            self._bounds_indices = chull.vertices
+            self._bounds = points[chull.vertices]
+            self._bounds_projections = projections[chull.vertices]
+            
+    def add_bound_points(self, new_bound_points, flatten=True, method='convex', 
+                         alpha=None):
+        """ Add points to current bounds.
+        
+        Parameters
+        ----------
+        new_bound_points : N x 3 np.array
+            New points to be added.
+        flatten : bool, optional
+            If False, does not flatten points
+        method : string, optional
+            "convex" for convex hull, or "alpha" for alpha shapes.
+            Default: "convex"
+        alpha : float, optional
+            Alpha parameter for alpha shapes algorithm. If equal to None,
+            calculates the optimal alpha. Default: None
+        
+        """
+        points = np.vstack([self.bounds, new_bound_points])
+        self._set_bounds(points, flatten, method, alpha)
     
     @staticmethod
     def create_circle(center, normal, radius, resolution=30):
@@ -1411,9 +1357,3 @@ class PlaneBounded(Plane):
         else:
             return np.vstack(points)
             
-            
-            
-        
-        
-        
-    
