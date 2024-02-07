@@ -86,7 +86,7 @@ class Line(Primitive):
         projections of points.
         
     closest_to_line(points):
-        Returns points in line that are the closest to the input
+        Returns points in line that are the __ to the input
         points.
         
     get_orthogonal_component(points):
@@ -280,8 +280,8 @@ class Line(Primitive):
             # point = (closest_points[0] + closest_points[1]) / 2
             # axis = np.cross(plane1.bounds.mean(axis=0) - plane2.bounds.mean(axis=0), plane1.normal + plane2.normal)
             # # axis = np.cross(closest_points[1] - closest_points[0], plane1.normal + plane2.normal)
-            
-            p1, p2 = np.array(plane1.closest_bounds(plane2, 2)).sum(axis=1) / 2
+            pairs, _ = plane1.closest_bounds(plane2, 2)
+            p1, p2 = np.array(pairs).sum(axis=1) / 2
             # closest_points = plane1.closest_bounds(plane2, 10)
             # pair1 = closest_points[0]
             # pair2 = closest_points[-1]

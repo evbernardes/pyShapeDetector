@@ -32,18 +32,24 @@ class Plane(Primitive):
         Name of primitive.
     equation : str
         Equation that defines the primitive.
-    normal : 3 x 1 array
-        Normal vector defining plane.
-    dist : float
-        Distance to origin.
-    centroid : 3 x 1 array
-        A point in the plane.
     canonical : Plane
         Return canonical form for testing.
     surface_area : float
         For unbounded plane, returns NaN and gives warning
     volume : float
         Volume of plane, which is zero.
+    inlier_points : N x 3 array
+        Inlier points.
+    inlier_normals : N x 3 array
+        Normals for each inlier point.
+    inlier_colors : N x 3 array
+        Colors for each inlier point.
+    normal : 3 x 1 array
+        Normal vector defining plane.
+    dist : float
+        Distance to origin.
+    centroid : 3 x 1 array
+        A point in the plane.
     holes : list
         List of holes in plane.
     bound_lines : list of Line instances
@@ -51,6 +57,10 @@ class Plane(Primitive):
     
     Methods
     ------- 
+    inliers_average_dist(k=15, leaf_size=40):
+        Calculates the K nearest neighbors of the inlier points and returns 
+        the average distance between them.
+        
     inliers_bounding_box(slack=0):
         If the shape includes inlier points, returns the minimum and 
         maximum bounds of their bounding box.
@@ -143,6 +153,76 @@ class Plane(Primitive):
     _rotatable = [0, 1, 2]
     _fusion_intersections = np.array([])
     
+    @property
+    def color(self):
+        return np.array([0, 0, 1])
+    
+    @property
+    def equation(self):
+        n = self.normal
+        d = self.dist
+        equation = ''
+        equation += f'{n[0]} * x '
+        equation += '-' if n[1] < 0 else '+'
+        equation += f' {abs(n[1])} * y '
+        equation += '-' if n[2] < 0 else '+'
+        equation += f' {abs(n[2])} * z '
+        equation += '-' if d < 0 else '+'
+        equation += f' {abs(d)} = 0'
+        
+        return equation  
+    
+    @property
+    def canonical(self):
+        """ Return canonical form for testing. """
+        model = self.model
+        if np.sign(self.dist) < 0:
+            model = -model
+        plane = Plane(list(self.model))
+        plane._holes = self._holes
+        return plane
+    
+    @property
+    def surface_area(self):
+        """ For unbounded plane, returns NaN and gives warning """
+        warn('For unbounded planes, the surface area is undefined')
+        return float('nan')
+    
+    @property
+    def volume(self):
+        """ Volume of plane, which is zero. """
+        return 0 
+    
+    @property
+    def normal(self):
+        """ Normal vector defining point. """
+        return np.array(self.model[:3])
+    
+    @property
+    def dist(self):
+        """ Distance to origin. """
+        return self.model[3]
+    
+    @property
+    def centroid(self):
+        """ A point in the plane. """
+        return -self.normal * self.dist
+    
+    @property
+    def holes(self):
+        """ Existing holes in plane. """
+        return self._holes
+    
+    @property
+    def bound_lines(self):
+        """ Lines defining bounds. """
+        from .line import Line
+        return Line.from_bounds(self.bounds)
+        # bounds = self.bounds
+        # num_lines = len(bounds)
+        # lines = [Line.from_two_points(bounds[i-1], bounds[i]) for i in range(num_lines)]
+        # return lines
+        
     def translate(self, translation):
         """ Translate the shape.
         
@@ -178,6 +258,12 @@ class Plane(Primitive):
         normal = rotation.apply(self.normal)
         self._model = Plane.from_normal_point(normal, centroid).model
         self._rotate_points_normals(rotation)
+    
+    def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
+        lines = self.bound_lines
+        meshes =  [line.get_mesh(radius=radius) for line in lines]
+        [mesh.paint_uniform_color(color) for mesh in meshes]
+        return meshes
         
     def copy(self, copy_holes=True):
         """ Returns copy of plane
@@ -273,27 +359,6 @@ class Plane(Primitive):
         """
         self._holes.pop(idx)
     
-    @property
-    def holes(self):
-        """ Existing holes in plane. """
-        return self._holes
-    
-    @property
-    def bound_lines(self):
-        """ Lines defining bounds. """
-        from .line import Line
-        return Line.from_bounds(self.bounds)
-        # bounds = self.bounds
-        # num_lines = len(bounds)
-        # lines = [Line.from_two_points(bounds[i-1], bounds[i]) for i in range(num_lines)]
-        # return lines
-    
-    def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
-        lines = self.bound_lines
-        meshes =  [line.get_mesh(radius=radius) for line in lines]
-        [mesh.paint_uniform_color(color) for mesh in meshes]
-        return meshes
-    
     def intersect(self, other_plane, separated=False, intersect_parallel=False,
                   eps_angle=np.deg2rad(0.9), eps_distance=1e-2):
         """ Calculate the line defining the intersection with another planes.
@@ -341,23 +406,23 @@ class Plane(Primitive):
         
         return line1, line2
         
-    
     def closest_bounds(self, other_plane, n=1):
-        """ Creates plane from normal vector and distance to origin.
+        """ Returns n pairs of closest bound points with a second plane.
+        
         
         Parameters
         ----------            
-        normal : 3 x 1 array
-            Normal vector defining plane.
-        radius : float
-            Distance to origin.
+        other_plane : Plane
+            Another plane.
         n : int, optional
             Number of pairs. Default=1.
 
         Returns
         -------
-        Cone
-            Generated shape.
+        closest_points : np.array
+            Pairs of points.
+        distances : np.array
+            Distances for each pair.
         """
         if not isinstance(other_plane, PlaneBounded):
             raise ValueError("Only implemented with other instances of "
@@ -365,11 +430,11 @@ class Plane(Primitive):
             
         from pyShapeDetector.utility import find_closest_points
         
-        closest_points, _ = find_closest_points(self.bounds, 
+        closest_points, distances = find_closest_points(self.bounds, 
                                                 other_plane.bounds,
                                                 n)
         
-        return closest_points
+        return closest_points, distances
     
     @classmethod
     def from_normal_dist(cls, normal, dist):
@@ -406,10 +471,6 @@ class Plane(Primitive):
             Generated shape.
         """
         return cls.from_normal_dist(normal, -np.dot(normal, point))
-    
-    @property
-    def color(self):
-        return np.array([0, 0, 1])
     
     def __init__(self, model):
         """
@@ -451,58 +512,7 @@ class Plane(Primitive):
         bounds = self.flatten_points(points)
         bounded_plane = PlaneBounded(self, bounds)
         bounded_plane._holes = self._holes
-        return bounded_plane
-    
-    @property
-    def canonical(self):
-        """ Return canonical form for testing. """
-        model = self.model
-        if np.sign(self.dist) < 0:
-            model = -model
-        plane = Plane(list(self.model))
-        plane._holes = self._holes
-        return plane
-    
-    @property
-    def equation(self):
-        n = self.normal
-        d = self.dist
-        equation = ''
-        equation += f'{n[0]} * x '
-        equation += '-' if n[1] < 0 else '+'
-        equation += f' {abs(n[1])} * y '
-        equation += '-' if n[2] < 0 else '+'
-        equation += f' {abs(n[2])} * z '
-        equation += '-' if d < 0 else '+'
-        equation += f' {abs(d)} = 0'
-        
-        return equation
-    
-    @property
-    def normal(self):
-        """ Normal vector defining point. """
-        return np.array(self.model[:3])
-    
-    @property
-    def dist(self):
-        """ Distance to origin. """
-        return self.model[3]
-    
-    @property
-    def centroid(self):
-        """ A point in the plane. """
-        return -self.normal * self.dist
-    
-    @property
-    def surface_area(self):
-        """ For unbounded plane, returns NaN and gives warning """
-        warn('For unbounded planes, the surface area is undefined')
-        return float('nan')
-    
-    @property
-    def volume(self):
-        """ Volume of plane, which is zero. """
-        return 0    
+        return bounded_plane 
     
     def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the model. 
