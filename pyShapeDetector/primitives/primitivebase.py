@@ -71,6 +71,7 @@ class Primitive(ABC):
     flatten_points
     flatten_PointCloud
     add_inliers
+    closest_inliers
     inliers_average_dist
     inliers_bounding_box
     sample_points_uniformly
@@ -506,6 +507,33 @@ class Primitive(ABC):
                                  ' point or an array of shape (N, 3), got '
                                  f'{colors.shape}')
             self._inlier_colors = colors
+            
+    def closest_inliers(self, other_shape, n=1):
+        """ Returns n pairs of closest inlier points with a second shape.
+        
+        Parameters
+        ----------            
+        other_plane : Plane
+            Another plane.
+        n : int, optional
+            Number of pairs. Default=1.
+
+        Returns
+        -------
+        closest_points : np.array
+            Pairs of points.
+        distances : np.array
+            Distances for each pair.
+        """
+        if not isinstance(other_shape, Primitive):
+            raise ValueError("other_shape must be a Primitive.")
+            
+        from pyShapeDetector.utility import find_closest_points
+        
+        closest_points, distances = find_closest_points(
+            self.inlier_points, other_shape.inlier_points, n)
+        
+        return closest_points, distances
     
     def inliers_average_dist(self, k=15, leaf_size=40):
         """ Calculates the K nearest neighbors of the inlier points and returns 
