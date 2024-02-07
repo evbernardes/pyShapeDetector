@@ -409,7 +409,6 @@ class Plane(Primitive):
     def closest_bounds(self, other_plane, n=1):
         """ Returns n pairs of closest bound points with a second plane.
         
-        
         Parameters
         ----------            
         other_plane : Plane
@@ -430,9 +429,8 @@ class Plane(Primitive):
             
         from pyShapeDetector.utility import find_closest_points
         
-        closest_points, distances = find_closest_points(self.bounds, 
-                                                other_plane.bounds,
-                                                n)
+        closest_points, distances = find_closest_points(
+            self.bounds, other_plane.bounds, n)
         
         return closest_points, distances
     
