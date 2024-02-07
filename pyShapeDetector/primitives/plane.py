@@ -47,7 +47,6 @@ class Plane(Primitive):
     dist
     centroid
     holes
-    bound_lines
     
     Methods
     ------- 
@@ -161,16 +160,6 @@ class Plane(Primitive):
     def holes(self):
         """ Existing holes in plane. """
         return self._holes
-    
-    @property
-    def bound_lines(self):
-        """ Lines defining bounds. """
-        from .line import Line
-        return Line.from_bounds(self.bounds)
-        # bounds = self.bounds
-        # num_lines = len(bounds)
-        # lines = [Line.from_two_points(bounds[i-1], bounds[i]) for i in range(num_lines)]
-        # return lines
         
     def __init__(self, model):
         """
@@ -746,6 +735,10 @@ class PlaneBounded(Plane):
     dist
     centroid
     holes
+    
+    bounds
+    bounds_indices
+    bounds_projections
     bound_lines
     
     Methods
@@ -829,18 +822,24 @@ class PlaneBounded(Plane):
         return canonical_plane    
     
     @property
+    def bounds(self):
+        return self._bounds
+    
+    @property
     def bounds_indices(self):
         """ Indices of points corresponding to bounds. """
         # TODO: should take into consideration added bounds
         return self._bounds_indices
     
     @property
-    def bounds(self):
-        return self._bounds
-    
-    @property
     def bounds_projections(self):
         return self._bounds_projections
+    
+    @property
+    def bound_lines(self):
+        """ Lines defining bounds. """
+        from .line import Line
+        return Line.from_bounds(self.bounds)
     
     def __init__(self, planemodel, bounds=None, rmse_max=1e-3, 
                  method='convex', alpha=None):
