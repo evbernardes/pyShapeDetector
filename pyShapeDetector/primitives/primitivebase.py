@@ -54,6 +54,16 @@ class Primitive(ABC):
     metrics
     axis_spherical
     axis_cylindrical
+    
+    appex
+    top
+    center
+    vector
+    height
+    axis
+    radius
+    half_angle
+    rotation_from_axis
         
     Methods
     -------
@@ -85,6 +95,14 @@ class Primitive(ABC):
     align
     save
     load
+    
+    from_appex_top_radius
+    from_appex_vector_radius
+    from_appex_vector_half_angle
+    closest_to_line
+    get_closest_axes
+    get_angle_diff
+    get_point_angle
     """
     _inlier_points = np.asarray([])
     _inlier_normals = np.asarray([])
