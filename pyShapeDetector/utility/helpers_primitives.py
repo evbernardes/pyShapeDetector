@@ -81,7 +81,7 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
             
         test = shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol)
         test = test and shapes[i].check_bbox_intersection(shapes[j], bbox_intersection)
-        test = test and shapes[i].check_inlier_distance(shapes[j], bbox_intersection)
+        test = test and shapes[i].check_inlier_distance(shapes[j], inlier_max_distance)
             
         if test:
         # if test1 and test2:
