@@ -16,97 +16,65 @@ class Sphere(Primitive):
     
     Attributes
     ----------
-    fit_n_min : int
-        Minimum number of points necessary to fit a model.
-    model_args_n : str
-        Number of parameters in the model.
-    name : str
-        Name of primitive.
-    equation : str
-        Equation that defines the primitive.
-    radius : float
-        Radius of the sphere.
-    center : 3 x 1 array
-        Center point of the sphere.
-    canonical : Sphere
-        Return canonical form for testing.  
-    surface_area : float: 3 x 3 array
-        Surface area of primitive
-    volume : float
-        Volume of primitive.  
+    fit_n_min 
+    model_args_n
+    name
+    model
+    equation
+    surface_area 
+    volume
+    canonical
+    color
+    inlier_points
+    inlier_points_flattened
+    inlier_normals
+    inlier_colors
+    inlier_PointCloud
+    inlier_PointCloud_flattened
+    metrics
+    axis_spherical
+    axis_cylindrical
     
+    radius
+    center
+        
     Methods
     -------
-    inliers_bounding_box(slack=0):
-        If the shape includes inlier points, returns the minimum and 
-        maximum bounds of their bounding box.
+    __init__
+    __repr__
+    __eq__
+    random
+    fit
+    get_signed_distances
+    get_distances
+    get_normals
+    get_angles_cos
+    get_angles
+    get_residuals
+    flatten_points
+    flatten_PointCloud
+    add_inliers
+    closest_inliers
+    inliers_average_dist
+    inliers_bounding_box
+    sample_points_uniformly
+    sample_points_density
+    get_mesh
+    get_cropped_mesh
+    is_similar_to
+    copy
+    translate
+    rotate
+    align
+    save
+    load
     
-    from_center_radius(center, radius):
-        Creates sphere from center and radius as separated arguments.
-    
-    get_signed_distances(points):
-        Gives the minimum distance between each point to the model. 
-    
-    get_distances(points)
-        Gives the minimum distance between each point to the sphere. 
-        
-    get_normals(points)
-        Gives, for each input point, the normal vector of the point closest 
-        to the sphere. 
-        
-    random(scale):
-        Generates a random shape.
-        
-    fit(points, normals=None):
-        Gives sphere that fits the input points.
-    
-    get_angles_cos(points, normals):
-        Gives the absolute value of cosines of the angles between the input 
-        normal vectors and the calculated normal vectors from the input points.
-        
-    flatten_points(points):
-        Stick each point in input to the closest point in shape's surface.
-        
-    get_angles_cos(points, normals):
-        Gives the absolute value of cosines of the angles between the input 
-        normal vectors and the calculated normal vectors from the input points.
-        
-    get_angles(points, normals):
-        Gives the angles between the input normal vectors and the 
-        calculated normal vectors from the input points.
-        
-    get_residuals(points, normals):
-        Convenience function returning both distances and angles.
-    
-    get_mesh(): TriangleMesh
-        Returns mesh defined by the sphere model. 
+    from_center_radius
     """
     
     _fit_n_min = 4
     _model_args_n = 4
     _name = 'sphere'
-    
-    @classmethod
-    def from_center_radius(cls, center, radius):
-        """ Creates sphere from center and radius as separated arguments.
-        
-        Parameters
-        ----------            
-        center : 3 x 1 array
-            Center point.
-        radius : float
-            Radius of the sphere.
-
-        Returns
-        -------
-        Cone
-            Generated shape.
-        """
-        return cls(list(center)+[radius])
-    
-    @property
-    def color(self):
-        return np.array([0, 1, 0])
     
     @property
     def equation(self):
@@ -118,16 +86,6 @@ class Sphere(Primitive):
         return equation + f" = {self.radius ** 2}"
     
     @property
-    def radius(self):
-        """ Radius of the sphere."""
-        return self.model[-1]
-    
-    @property
-    def center(self):
-        """ Center point of the sphere."""
-        return np.array(self.model[:3])
-    
-    @property
     def surface_area(self):
         """ Surface area of primitive """
         return 4 * np.pi * (self.radius ** 2)
@@ -137,62 +95,20 @@ class Sphere(Primitive):
         """ Volume of primitive. """
         return (4/3) * np.pi * (self.radius ** 3)
     
-    def get_signed_distances(self, points):
-        """ Gives the minimum distance between each point to the sphere.
-        
-        Parameters
-        ----------
-        points : N x 3 array
-            N input points 
-        
-        Returns
-        -------
-        distances
-            Nx1 array distances.
-        """
-        points = np.asarray(points)
-        model = self.model
-        return np.linalg.norm(points - model[:3], axis=1) - model[3]
+    @property
+    def color(self):
+        return np.array([0, 1, 0])
     
-    def get_normals(self, points):
-        """ Gives, for each input point, the normal vector of the point closest 
-        to the sphere.
-        
-        Parameters
-        ----------
-        points : N x 3 array
-            N input points 
-        
-        Returns
-        -------
-        normals
-            Nx3 array containing normal vectors.
-        """
-        points = np.asarray(points)
-        dist_vec = points - self.model[:3]
-        normals = dist_vec / np.linalg.norm(dist_vec, axis=1)[..., np.newaxis]
-        return normals        
-
-    def get_mesh(self, resolution=30):
-        """ Returns mesh defined by the sphere model.   
-        
-        Parameters
-        ----------
-        resolution : int, optional
-            Resolution parameter for mesh. Default: 30   
-        
-        Returns
-        -------
-        TriangleMesh
-            Mesh corresponding to the plane.
-        """
-        mesh = TriangleMesh.create_sphere(radius=self.model[3], resolution=resolution)
-        mesh.translate(self.model[:3])
-        
-        if len(self.inlier_colors) > 0:
-            mesh.paint_uniform_color(np.median(self.inlier_colors, axis=0))
-        return mesh
-   
+    @property
+    def radius(self):
+        """ Radius of the sphere."""
+        return self.model[-1]
+    
+    @property
+    def center(self):
+        """ Center point of the sphere."""
+        return np.array(self.model[:3])
+    
     @staticmethod
     def fit(points, normals=None):
         """ Gives sphere that fits the input points. If the number of points is
@@ -256,30 +172,78 @@ class Sphere(Primitive):
             return None
 
         return Sphere([center[0], center[1], center[2], radius]) 
+    
+    def get_signed_distances(self, points):
+        """ Gives the minimum distance between each point to the sphere.
         
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+        
+        Returns
+        -------
+        distances
+            Nx1 array distances.
+        """
+        points = np.asarray(points)
+        model = self.model
+        return np.linalg.norm(points - model[:3], axis=1) - model[3]
+    
+    def get_normals(self, points):
+        """ Gives, for each input point, the normal vector of the point closest 
+        to the sphere.
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points 
+        
+        Returns
+        -------
+        normals
+            Nx3 array containing normal vectors.
+        """
+        points = np.asarray(points)
+        dist_vec = points - self.model[:3]
+        normals = dist_vec / np.linalg.norm(dist_vec, axis=1)[..., np.newaxis]
+        return normals        
 
-            
+    def get_mesh(self, resolution=30):
+        """ Returns mesh defined by the sphere model.   
         
+        Parameters
+        ----------
+        resolution : int, optional
+            Resolution parameter for mesh. Default: 30   
         
+        Returns
+        -------
+        TriangleMesh
+            Mesh corresponding to the plane.
+        """
+        mesh = TriangleMesh.create_sphere(radius=self.model[3], resolution=resolution)
+        mesh.translate(self.model[:3])
+        
+        if len(self.inlier_colors) > 0:
+            mesh.paint_uniform_color(np.median(self.inlier_colors, axis=0))
+        return mesh
     
-            
+    @classmethod
+    def from_center_radius(cls, center, radius):
+        """ Creates sphere from center and radius as separated arguments.
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-    
-    
+        Parameters
+        ----------            
+        center : 3 x 1 array
+            Center point.
+        radius : float
+            Radius of the sphere.
+
+        Returns
+        -------
+        Cone
+            Generated shape.
+        """
+        return cls(list(center)+[radius])
     
