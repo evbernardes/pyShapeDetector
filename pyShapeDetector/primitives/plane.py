@@ -13,7 +13,7 @@ from scipy.spatial.transform import Rotation
 from open3d.geometry import TriangleMesh
 from open3d.utility import Vector3iVector, Vector3dVector
 
-from pyShapeDetector.utility import get_rotation_from_axis
+from pyShapeDetector.utility import get_rotation_from_axis, get_triangle_surface_areas
 from .primitivebase import Primitive
 from alphashape import alphashape
 # from .line import Line
@@ -1028,6 +1028,9 @@ class PlaneBounded(Plane):
         #         select.append(len(test) == 3)
         #     select = np.array(select)
         #     triangles = triangles[~select]
+        
+        areas = get_triangle_surface_areas(points, triangles)
+        triangles = triangles[areas > 0]
         
         # needed to make plane visible from both sides
         triangles = np.vstack([triangles, triangles[:, ::-1]])
