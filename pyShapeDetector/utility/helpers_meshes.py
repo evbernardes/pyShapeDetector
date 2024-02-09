@@ -30,7 +30,45 @@ def _get_vertices_triangles(mesh_or_vertices, triangles=None):
         triangles = np.asarray(triangles)
     return vertices, triangles
 
-def _get_triangle_sides(mesh_or_vertices, triangles=None):
+def get_triangle_points(mesh_or_vertices, triangles=None):
+    """ Get positions of each triangle poits..
+    
+    Parameters
+    ----------
+    mesh_or_vertices : instance of Open3D.geometry.TriangleMesh or numpy.array
+        If mesh_or_vertices is TriangleMesh, use it to get both vertices and
+        triangles.
+    triangles : np.array, optional
+        If mesh_or_vertices is an array of vertices, triangles is the array
+        of triangles. Should be set to None if mesh_or_vertices is a 
+        TriangleMesh. Default: None.
+        
+    Returns
+    -------
+    np.array
+        Points.
+    """
+    vertices, triangles = _get_vertices_triangles(mesh_or_vertices, triangles)
+    return vertices[triangles]
+
+def get_triangle_sides(mesh_or_vertices, triangles=None):
+    """ Get side lengths of each triangle.
+    
+    Parameters
+    ----------
+    mesh_or_vertices : instance of Open3D.geometry.TriangleMesh or numpy.array
+        If mesh_or_vertices is TriangleMesh, use it to get both vertices and
+        triangles.
+    triangles : np.array, optional
+        If mesh_or_vertices is an array of vertices, triangles is the array
+        of triangles. Should be set to None if mesh_or_vertices is a 
+        TriangleMesh. Default: None.
+        
+    Returns
+    -------
+    np.array
+        Side lenghts of each triangle.
+    """
     vertices, triangles = _get_vertices_triangles(mesh_or_vertices, triangles)
     triangle_points = vertices[triangles]
     triangle_points_wrap = np.concatenate([triangle_points, 
@@ -54,8 +92,8 @@ def get_triangle_lines(mesh_or_vertices, triangles=None):
         
     Returns
     -------
-    np.array
-        Perimeters defined by triangles.
+    list of Line instances
+        Three lines for each triangle.
     """
     from pyShapeDetector.primitives import Line
     vertices, triangles = _get_vertices_triangles(mesh_or_vertices, triangles)
@@ -83,8 +121,8 @@ def get_triangle_LineSet(mesh_or_vertices, triangles=None):
         
     Returns
     -------
-    np.array
-        Perimeters defined by triangles.
+    Open3d.geometry.LineSet
+        Three lines for each triangle.
     """
     # from pyShapeDetector.primitives import Line
     from open3d.geometry import LineSet
@@ -97,7 +135,7 @@ def get_triangle_LineSet(mesh_or_vertices, triangles=None):
     return lineset
 
 def get_triangle_perimeters(mesh_or_vertices, triangles=None):
-    """ Fuse TriangleMesh instances into single mesh.
+    """ Get perimeter of each triangle.
     
     Parameters
     ----------
@@ -114,9 +152,31 @@ def get_triangle_perimeters(mesh_or_vertices, triangles=None):
     np.array
         Perimeters defined by triangles.
     """
-    
-    sides = _get_triangle_sides(mesh_or_vertices, triangles)
+    sides = get_triangle_sides(mesh_or_vertices, triangles)
     return sides.sum(axis=1)
+
+def get_triangle_surface_areas(mesh_or_vertices, triangles=None):
+    """ Get surface area of each triangle.
+    
+    Parameters
+    ----------
+    mesh_or_vertices : instance of Open3D.geometry.TriangleMesh or numpy.array
+        If mesh_or_vertices is TriangleMesh, use it to get both vertices and
+        triangles.
+    triangles : np.array, optional
+        If mesh_or_vertices is an array of vertices, triangles is the array
+        of triangles. Should be set to None if mesh_or_vertices is a 
+        TriangleMesh. Default: None.
+        
+    Returns
+    -------
+    np.array
+        Surface areas defined by triangles.
+    """
+    
+    sides = get_triangle_sides(mesh_or_vertices, triangles)
+    s = sides.sum(axis=1) / 2
+    return np.sqrt(s * np.prod(s[:, np.newaxis] - sides, axis=1))
 
 def get_triangle_circumradius(mesh_or_vertices, triangles=None):
     """ Fuse TriangleMesh instances into single mesh.
@@ -137,7 +197,7 @@ def get_triangle_circumradius(mesh_or_vertices, triangles=None):
         Perimeters defined by triangles.
     """
     
-    sides = _get_triangle_sides(mesh_or_vertices, triangles)
+    sides = get_triangle_sides(mesh_or_vertices, triangles)
     perimeters = sides.sum(axis=1)
     return sides.prod(axis=1) / np.sqrt(
         perimeters * (perimeters[:, np.newaxis] - 2 * sides).prod(axis=1))

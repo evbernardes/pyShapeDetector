@@ -38,7 +38,10 @@ from .helpers_primitives import (
 from .helpers_meshes import (
     get_triangle_lines,
     get_triangle_LineSet,
+    get_triangle_points,
+    get_triangle_sides,
     get_triangle_perimeters,
+    get_triangle_surface_areas,
     get_triangle_circumradius,
     new_TriangleMesh,
     clean_crop, 
