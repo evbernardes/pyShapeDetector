@@ -709,7 +709,6 @@ class Plane(Primitive):
         """
         return self.get_square_plane(length).get_mesh()
 
-
 class PlaneBounded(Plane):
     """
     PlaneBounded primitive.
@@ -1368,3 +1367,35 @@ class PlaneBounded(Plane):
             return np.array([])
         else:
             return np.vstack(points)
+        
+    def triangulate_ressample(self, radius, density):
+        number_of_points = int(self.surface_area * density)
+        points = 
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
