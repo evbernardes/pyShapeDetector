@@ -97,7 +97,8 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
         
     return sublists
 
-def fuse_shape_groups(shapes_lists, detector=None, line_intersection_eps=1e-3):
+def fuse_shape_groups(shapes_lists, detector=None, 
+                      line_intersection_eps=1e-3, ignore_extra_data=False):
     """ Find weigthed average of shapes, where the weight is the fitness
     metric.
     
@@ -112,6 +113,8 @@ def fuse_shape_groups(shapes_lists, detector=None, line_intersection_eps=1e-3):
         Grouped shapes.
     detector : instance of some Detector, optional
         Used to recompute metrics.
+    ignore_extra_data : boolean, optional
+        If True, ignore everything and only fuse model. Default: False.
         
     Returns
     -------
@@ -132,42 +135,43 @@ def fuse_shape_groups(shapes_lists, detector=None, line_intersection_eps=1e-3):
         model = np.vstack([s.model for s in sublist])
         model = np.average(model, axis=0, weights=fitness)
         
-        primitive = type(sublist[0])
-        if sublist[0].name == 'bounded plane':
-        # if isinstance(primitive, PlaneBounded):
-            bounds = np.vstack([s.bounds for s in sublist])
-            shape = primitive(model, bounds=bounds, rmse_max=None)
+        if ignore_extra_data:
+            primitive = type(sublist[0])
+            if sublist[0].name == 'bounded plane':
+            # if isinstance(primitive, PlaneBounded):
+                bounds = np.vstack([s.bounds for s in sublist])
+                shape = primitive(model, bounds=bounds, rmse_max=None)
+                
+                intersections = []
+                for plane1, plane2 in combinations(sublist, 2):
+                    points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
+                    if len(points) > 0:
+                        intersections.append(points)
+                
+                # temporary hack, saving intersections for mesh generation
+                if len(intersections) > 0:
+                    shape._fusion_intersections = np.vstack(intersections)
+                
+            else:
+                shape = primitive(model)
             
-            intersections = []
-            for plane1, plane2 in combinations(sublist, 2):
-                points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
-                if len(points) > 0:
-                    intersections.append(points)
+            points = np.vstack([s.inlier_points for s in sublist])
+            normals = np.vstack([s.inlier_normals for s in sublist])
+            colors = np.vstack([s.inlier_colors for s in sublist])
+            if points.shape[1] == 0:
+                points = None
+            if normals.shape[1] == 0 or len(normals) < len(points):
+                normals = None
+            if colors.shape[1] == 0 or len(colors) < len(points):
+                colors = None
+            shape.add_inliers(points, normals, colors)
             
-            # temporary hack, saving intersections for mesh generation
-            if len(intersections) > 0:
-                shape._fusion_intersections = np.vstack(intersections)
-            
-        else:
-            shape = primitive(model)
-        
-        points = np.vstack([s.inlier_points for s in sublist])
-        normals = np.vstack([s.inlier_normals for s in sublist])
-        colors = np.vstack([s.inlier_colors for s in sublist])
-        if points.shape[1] == 0:
-            points = None
-        if normals.shape[1] == 0 or len(normals) < len(points):
-            normals = None
-        if colors.shape[1] == 0 or len(colors) < len(points):
-            colors = None
-        shape.add_inliers(points, normals, colors)
-        
-        if detector is not None:
-            num_points = sum([s.metrics['num_points'] for s in sublist])
-            num_inliers = len(points)
-            distances, angles = shape.get_residuals(points, normals)
-            shape.metrics = detector.get_metrics(
-                num_points, num_inliers, distances, angles)
+            if detector is not None:
+                num_points = sum([s.metrics['num_points'] for s in sublist])
+                num_inliers = len(points)
+                distances, angles = shape.get_residuals(points, normals)
+                shape.metrics = detector.get_metrics(
+                    num_points, num_inliers, distances, angles)
             
         new_list.append(shape)
         
