@@ -514,7 +514,7 @@ class Plane(Primitive):
         -------
         Line or None
         """
-
+        from .planebounded import PlaneBounded
         if not isinstance(other_plane, PlaneBounded):
             raise ValueError("Only intersection with other instances of "
                              "PlaneBounded is implemented.")
@@ -549,6 +549,7 @@ class Plane(Primitive):
         distances : np.array
             Distances for each pair.
         """
+        from .planebounded import PlaneBounded
         if not isinstance(other_plane, PlaneBounded):
             raise ValueError("Only implemented with other instances of "
                              "PlaneBounded.")
@@ -574,6 +575,7 @@ class Plane(Primitive):
         PlaneBounded
             Bounded version of plane.
         """
+        from .planebounded import PlaneBounded
         if points is None:
             points = self.inlier_points
         if len(points) == 0:
