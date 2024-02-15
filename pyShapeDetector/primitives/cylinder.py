@@ -7,13 +7,14 @@ Created on Fri Oct  6 15:57:08 2023
 """
 import warnings
 import numpy as np
-from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
+from open3d.geometry import TriangleMesh#, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector
 # from skspatial.objects.cylinder import Cylinder as skcylinder
 
 from pyShapeDetector.utility import get_rotation_from_axis
 from .primitivebase import Primitive
-from .plane import Plane, PlaneBounded
+from .plane import Plane
+from .planebounded import PlaneBounded
     
 class Cylinder(Primitive):
     """
