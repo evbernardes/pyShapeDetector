@@ -674,8 +674,6 @@ class PlaneBounded(Plane):
         if len(points) == 0:
             return np.array([])
         else:
-            return np.vstack(points)
+            return np.vstack(points)      
         
-    # def triangulate_ressample(self, radius, density):
-    #     number_of_points = int(self.surface_area * density)
-    #     points = 
+        
