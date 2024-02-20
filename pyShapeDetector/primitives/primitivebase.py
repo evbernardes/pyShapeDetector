@@ -625,9 +625,9 @@ class Primitive(ABC):
         open3d.geometry.PointCloud
             Sampled pointcloud from shape.
         """
-        mesh = self.get_mesh()
+        # mesh = self.get_mesh()
         number_of_points = int(density * self.surface_area)
-        return mesh.sample_points_uniformly(number_of_points, use_triangle_normal)
+        return self.sample_points_uniformly(number_of_points, use_triangle_normal)
     
     def get_mesh(self, resolution=30):
         """ Creates mesh of the shape.
