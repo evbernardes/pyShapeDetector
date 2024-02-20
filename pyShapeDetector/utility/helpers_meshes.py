@@ -11,6 +11,7 @@ Created on Wed Dec  6 14:59:38 2023
 import copy
 import open3d as o3d
 import numpy as np
+from scipy.spatial import Delaunay
 from open3d.geometry import TriangleMesh
 from open3d.utility import Vector3dVector, Vector3iVector
 
@@ -401,3 +402,48 @@ def clean_crop(mesh, axis_aligned_bounding_box):
         mesh_sliced = _sliceplane(mesh_sliced, i, max_, True)
         mesh_sliced = _sliceplane(mesh_sliced, i, min_, False)
     return mesh_sliced
+
+def remove_big_triangles(vertices, triangles, radius_ratio):
+    vertices = np.asarray(vertices)
+    triangles = np.asarray(triangles)
+    
+    from pyShapeDetector.utility import get_triangle_circumradius
+    
+    circumradiuses = get_triangle_circumradius(vertices, triangles)
+    mean_circumradiuses = np.mean(circumradiuses)
+    return triangles[circumradiuses < radius_ratio * mean_circumradiuses]
+
+def planes_ressample_and_triangulate(planes, density, radius_ratio=None):
+    from pyShapeDetector.primitives import PlaneBounded
+    
+    if isinstance(planes, PlaneBounded):
+        planes = [planes]
+    else:
+        for plane in planes:
+            if not isinstance(plane, PlaneBounded):
+                raise ValueError("Input must one or more instances of "
+                                 "PlaneBounded.")
+                
+                
+    vertices = []
+    for p in planes:
+        N = int(np.ceil(density * len(p.inlier_points)))
+    #     print(N)
+        vertices.append(p.sample_points_uniformly(N).points)
+    vertices = np.vstack(vertices)
+    
+    # number_of_points = int(self.surface_area * density)
+    # vertices = [p.sample_points_uniformly(int(len(p.inlier_points) * density)).points for p in planes]
+    # vertices = [p.sample_points_density(density).points for p in planes]
+    # vertices = np.vstack(vertices)
+    
+    from pyShapeDetector.utility import fuse_shape_groups
+    plane_fused = fuse_shape_groups([planes], ignore_extra_data=True)[0]
+
+    projections = plane_fused.get_projections(vertices)
+    triangles = Delaunay(projections).simplices
+    
+    if radius_ratio is not None:
+        triangles = remove_big_triangles(vertices, triangles, radius_ratio)
+
+    return vertices, triangles

@@ -46,5 +46,7 @@ from .helpers_meshes import (
     new_TriangleMesh,
     clean_crop, 
     paint_by_type, 
-    fuse_meshes
+    fuse_meshes,
+    remove_big_triangles,
+    planes_ressample_and_triangulate
     )
