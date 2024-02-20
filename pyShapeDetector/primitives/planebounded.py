@@ -47,6 +47,7 @@ class PlaneBounded(Plane):
     centroid
     holes
 
+    plane
     bounds
     bounds_indices
     bounds_projections
@@ -117,7 +118,7 @@ class PlaneBounded(Plane):
     @property
     def model(self):
         """ Return model. """
-        return self.unbounded.model
+        return self._plane.model
 
     @property
     def surface_area(self):
@@ -133,6 +134,11 @@ class PlaneBounded(Plane):
         canonical_plane = PlaneBounded(list(-self.model), self.bounds)
         canonical_plane._holes = self._holes
         return canonical_plane
+    
+    @property
+    def plane(self):
+        """ Return internal plane without bounds. """
+        return self._plane
 
     @property
     def bounds(self):
@@ -177,16 +183,16 @@ class PlaneBounded(Plane):
         """
 
         if isinstance(planemodel, PlaneBounded):
-            self.unbounded = planemodel.unbounded
+            self._plane = planemodel.unbounded
         elif isinstance(planemodel, Plane):
-            self.unbounded = planemodel
+            self._plane = planemodel
         else:
-            self.unbounded = Plane(planemodel)
-        # self._model = self.unbounded.model
+            self._plane = Plane(planemodel)
+        # self._model = self._plane.model
 
         if bounds is None:
             warn('No input bounds, returning square plane')
-            self = self.unbounded.get_square_plane(1)
+            self = self._plane.get_square_plane(1)
 
         else:
             bounds = np.asarray(bounds)
@@ -194,7 +200,7 @@ class PlaneBounded(Plane):
                 raise ValueError('Expected shape of bounds is (N, 3), got '
                                  f'{bounds.shape}')
 
-            distances = self.unbounded.get_distances(bounds)
+            distances = self._plane.get_distances(bounds)
             rmse = np.sqrt(sum(distances * distances)) / len(distances)
             if rmse_max is not None and rmse_max > 1e-3:
                 raise ValueError('Boundary points are not close enough to '
@@ -396,7 +402,7 @@ class PlaneBounded(Plane):
         translation : 1 x 3 array
             Translation vector.
         """
-        Plane.translate(self.unbounded, translation)
+        Plane.translate(self._plane, translation)
         self._bounds = self._bounds + translation
         for hole in self.holes:
             hole._translate_points(translation)
@@ -414,7 +420,7 @@ class PlaneBounded(Plane):
                                       'have an implemented _rotatable '
                                       'attribute')
         rotation = self._parse_rotation(rotation)
-        Plane.rotate(self.unbounded, rotation)
+        Plane.rotate(self._plane, rotation)
 
         self._rotate_points_normals(rotation)
 
