@@ -135,8 +135,11 @@ def fuse_shape_groups(shapes_lists, detector=None,
         model = np.vstack([s.model for s in sublist])
         model = np.average(model, axis=0, weights=fitness)
         
+        primitive = type(sublist[0])
+        
         if ignore_extra_data:
-            primitive = type(sublist[0])
+            shape = primitive(model)
+        else:
             if sublist[0].name == 'bounded plane':
             # if isinstance(primitive, PlaneBounded):
                 bounds = np.vstack([s.bounds for s in sublist])
