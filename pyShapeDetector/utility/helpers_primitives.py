@@ -143,7 +143,8 @@ def fuse_shape_groups(shapes_lists, detector=None,
             if sublist[0].name == 'bounded plane':
             # if isinstance(primitive, PlaneBounded):
                 bounds = np.vstack([s.bounds for s in sublist])
-                shape = primitive(model, bounds=bounds, rmse_max=None)
+                # shape = primitive(model, bounds=bounds, rmse_max=None)
+                shape = primitive(model, bounds=bounds)
                 
                 intersections = []
                 for plane1, plane2 in combinations(sublist, 2):

@@ -450,7 +450,8 @@ def planes_ressample_and_triangulate(planes, density, radius_ratio=None):
 
     return vertices, triangles
 
-def planes_ressample_and_triangulate_gui(planes, translation_ratio = 0.055):
+def planes_ressample_and_triangulate_gui(planes, translation_ratio = 0.055,
+                                         double_triangles=False):
     
     meshes = [plane.get_mesh() for plane in planes]
 
@@ -502,19 +503,13 @@ def planes_ressample_and_triangulate_gui(planes, translation_ratio = 0.055):
     data['current'].translate(data['translation'])
     data['lines'] = get_triangle_LineSet(data['vertices']+data['translation'], data['triangles'])
     
-    
-    # lines.translate(['trdata['anslation'])
-    
     def update_geometries(vis):
         global data
         print(f"density: {data['density']}, radius_ratio: {data['radius_ratio']}")
-        # viss = vis
-        # geometry_new = 
-        # print(vis.get_window_name())
-        limit = data['radius_ratio'] * data['mean_circumradius']
         
         triangles = data['triangles'][
-            data['circumradius'] < limit]
+            data['circumradius'] < data['radius_ratio'] * data['mean_circumradius']]
+        
         data['old'] = data['current']
         data['current'] = new_TriangleMesh(data['vertices'], triangles, True)
         data['current'].paint_uniform_color(data['color'])
@@ -548,7 +543,8 @@ def planes_ressample_and_triangulate_gui(planes, translation_ratio = 0.055):
             data['vertices'], data['triangles'] = planes_ressample_and_triangulate(
                 planes, data['density'])
             
-        data['circumradius'] = get_triangle_circumradius(data['vertices'], data['triangles'])
+        data['circumradius'] = get_triangle_circumradius(
+            data['vertices'], data['triangles'])
         data['mean_circumradius'] = np.mean(circumradius)
         
         vis.remove_geometry(data['lines'])
@@ -586,10 +582,16 @@ def planes_ressample_and_triangulate_gui(planes, translation_ratio = 0.055):
         # mesh_show_wireframe=True
         )
     
+    triangles = data['triangles'][
+        data['circumradius'] < data['radius_ratio'] * data['mean_circumradius']]
+    
+    if double_triangles:
+        triangles = np.vstack([triangles, triangles[:, ::-1]])
+    
     out_data = {
         'density': data['density'],
         'radius_ratio': data['radius_ratio'],
         'vertices': data['vertices'],
-        'triangles': data['triangles']}
+        'triangles': triangles}
     
     return out_data
