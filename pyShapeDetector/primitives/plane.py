@@ -666,6 +666,8 @@ class Plane(Primitive):
         # center = np.mean(np.asarray(pcd.points), axis=0)
         # bb = pcd.get_axis_aligned_bounding_box()
         # half_length = max(bb.max_bound - bb.min_bound) / 2
+        
+        from .planebounded import PlaneBounded
 
         def normalized(x): return x / np.linalg.norm(x)
 
