@@ -48,5 +48,6 @@ from .helpers_meshes import (
     paint_by_type, 
     fuse_meshes,
     remove_big_triangles,
-    planes_ressample_and_triangulate
+    planes_ressample_and_triangulate,
+    planes_ressample_and_triangulate_gui
     )
