@@ -935,7 +935,7 @@ class Primitive(ABC):
         try:
             fitness = [shape.metrics['fitness'] for shape in shapes]
         except:
-            fitness = [1] * len(shape)
+            fitness = [1] * len(shapes)
             
         model = np.vstack([shape.model for shape in shapes])
         model = np.average(model, axis=0, weights=fitness)

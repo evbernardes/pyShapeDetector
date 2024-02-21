@@ -123,65 +123,66 @@ def fuse_shape_groups(shapes_lists, detector=None,
     list
         Average shapes.    
     """
+    return [type(sublist[0]).fuse(sublist) for sublist in shapes_lists]
     
     # num_partitions = len(shapes_lists):
     # from pyShapeDetector.primitives import PlaneBounded
         
-    new_list = []
-    for sublist in shapes_lists:
-        try:
-            fitness = [s.metrics['fitness'] for s in sublist]
-        except:
-            fitness = [1] * len(sublist)
+    # new_list = []
+    # for sublist in shapes_lists:
+    #     try:
+    #         fitness = [s.metrics['fitness'] for s in sublist]
+    #     except:
+    #         fitness = [1] * len(sublist)
         
-        model = np.vstack([s.model for s in sublist])
-        model = np.average(model, axis=0, weights=fitness)
+    #     model = np.vstack([s.model for s in sublist])
+    #     model = np.average(model, axis=0, weights=fitness)
         
-        primitive = type(sublist[0])
+    #     primitive = type(sublist[0])
         
-        if ignore_extra_data:
-            shape = primitive(model)
-        else:
-            if sublist[0].name == 'bounded plane':
-            # if isinstance(primitive, PlaneBounded):
-                bounds = np.vstack([s.bounds for s in sublist])
-                # shape = primitive(model, bounds=bounds, rmse_max=None)
-                shape = primitive(model, bounds=bounds)
+    #     if ignore_extra_data:
+    #         shape = primitive(model)
+    #     else:
+    #         if sublist[0].name == 'bounded plane':
+    #         # if isinstance(primitive, PlaneBounded):
+    #             bounds = np.vstack([s.bounds for s in sublist])
+    #             # shape = primitive(model, bounds=bounds, rmse_max=None)
+    #             shape = primitive(model, bounds=bounds)
                 
-                intersections = []
-                for plane1, plane2 in combinations(sublist, 2):
-                    points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
-                    if len(points) > 0:
-                        intersections.append(points)
+    #             intersections = []
+    #             for plane1, plane2 in combinations(sublist, 2):
+    #                 points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
+    #                 if len(points) > 0:
+    #                     intersections.append(points)
                 
-                # temporary hack, saving intersections for mesh generation
-                if len(intersections) > 0:
-                    shape._fusion_intersections = np.vstack(intersections)
+    #             # temporary hack, saving intersections for mesh generation
+    #             if len(intersections) > 0:
+    #                 shape._fusion_intersections = np.vstack(intersections)
                 
-            else:
-                shape = primitive(model)
+    #         else:
+    #             shape = primitive(model)
             
-            points = np.vstack([s.inlier_points for s in sublist])
-            normals = np.vstack([s.inlier_normals for s in sublist])
-            colors = np.vstack([s.inlier_colors for s in sublist])
-            if points.shape[1] == 0:
-                points = None
-            if normals.shape[1] == 0 or len(normals) < len(points):
-                normals = None
-            if colors.shape[1] == 0 or len(colors) < len(points):
-                colors = None
-            shape.add_inliers(points, normals, colors)
+    #         points = np.vstack([s.inlier_points for s in sublist])
+    #         normals = np.vstack([s.inlier_normals for s in sublist])
+    #         colors = np.vstack([s.inlier_colors for s in sublist])
+    #         if points.shape[1] == 0:
+    #             points = None
+    #         if normals.shape[1] == 0 or len(normals) < len(points):
+    #             normals = None
+    #         if colors.shape[1] == 0 or len(colors) < len(points):
+    #             colors = None
+    #         shape.add_inliers(points, normals, colors)
             
-            if detector is not None:
-                num_points = sum([s.metrics['num_points'] for s in sublist])
-                num_inliers = len(points)
-                distances, angles = shape.get_residuals(points, normals)
-                shape.metrics = detector.get_metrics(
-                    num_points, num_inliers, distances, angles)
+    #         if detector is not None:
+    #             num_points = sum([s.metrics['num_points'] for s in sublist])
+    #             num_inliers = len(points)
+    #             distances, angles = shape.get_residuals(points, normals)
+    #             shape.metrics = detector.get_metrics(
+    #                 num_points, num_inliers, distances, angles)
             
-        new_list.append(shape)
+    #     new_list.append(shape)
         
-    return new_list
+    # return new_list
 
 
 def fuse_similar_shapes(shapes, detector=None,  rtol=1e-02, atol=1e-02, 

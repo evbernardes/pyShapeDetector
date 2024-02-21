@@ -468,7 +468,7 @@ class PlaneBounded(Plane):
         PlaneBounded
             Averaged PlaneBounded instance.    
         """
-        shape = super().fuse(shapes, detector, ignore_extra_data)
+        shape = Plane.fuse(shapes, detector, ignore_extra_data)
         
         if not ignore_extra_data:
             bounds = np.vstack([shape.bounds for shape in shapes])
