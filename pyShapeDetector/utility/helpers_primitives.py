@@ -98,7 +98,7 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
     return sublists
 
 def fuse_shape_groups(shapes_lists, detector=None, 
-                      line_intersection_eps=1e-3, ignore_extra_data=False):
+                      ignore_extra_data=False, line_intersection_eps=1e-3):
     """ Find weigthed average of shapes, where the weight is the fitness
     metric.
     
@@ -115,6 +115,8 @@ def fuse_shape_groups(shapes_lists, detector=None,
         Used to recompute metrics.
     ignore_extra_data : boolean, optional
         If True, ignore everything and only fuse model. Default: False.
+    line_intersection_eps : float, optional
+        Distance for detection of intersection between planes. Default: 0.001.
         
     Returns
     -------
