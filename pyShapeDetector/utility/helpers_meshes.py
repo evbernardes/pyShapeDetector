@@ -231,6 +231,20 @@ def new_TriangleMesh(vertices, triangles, double_triangles=False):
         mesh.triangles = Vector3iVector(triangles)
     return mesh
 
+def fuse_vertices_triangles(vertices_list, triangles_list):
+    if len(vertices_list) != len(triangles_list):
+        raise ValueError(f"{len(vertices_list)} vertices lists and "
+                         f"{len(triangles_list)} triangles lists, should be equal.")
+        
+    vertices = np.vstack(vertices_list)
+    triangles = []
+    L = 0
+    # for i in range(1, len(vertices_list)):
+    for i in range(len(vertices_list)):
+        triangles.append(np.array(triangles_list[i]) + L)
+        L += len(vertices_list[i])
+    return vertices, np.vstack(triangles)
+
 def fuse_meshes(meshes):
     """ Fuse TriangleMesh instances into single mesh.
     
@@ -244,20 +258,11 @@ def fuse_meshes(meshes):
     TriangleMesh
         Single triangle mesh
     """
-    mesh = TriangleMesh()
+    vertices_list = [np.array(mesh.vertices) for mesh in meshes]
+    triangles_list = [np.array(mesh.triangles) for mesh in meshes]
+    vertices, triangles = fuse_vertices_triangles(vertices_list, triangles_list)
+    return new_TriangleMesh(vertices, triangles)
 
-    mesh.vertices = Vector3dVector(
-        np.vstack([mesh.vertices for mesh in meshes]))
-
-    triangles = [np.vstack(meshes[0].triangles)]
-    for i in range(1, len(meshes)):
-        triangles.append(
-            np.array(meshes[i].triangles) + len(meshes[i-1].vertices) - 1
-            )
-        
-    mesh.triangles = Vector3iVector(np.vstack(triangles))
-    return mesh
-            
 def paint_by_type(elements, shapes):
     """ Paint each pointcloud/mesh with a color according to shape type.
     
