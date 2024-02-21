@@ -6,7 +6,7 @@ Created on Thu Feb 15 10:15:09 2024
 @author: ebernardes
 """
 from warnings import warn
-from itertools import permutations, product
+from itertools import permutations, product, combinations
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
 # from scipy.spatial.transform import Rotation
@@ -443,6 +443,48 @@ class PlaneBounded(Plane):
         if not is_hole and len(self.holes) > 0:
             for hole in self.holes:
                 hole.rotate(rotation, is_hole=True)
+                
+    @staticmethod
+    def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=1e-3):
+        """ Find weigthed average of shapes, where the weight is the fitness
+        metric.
+        
+        If a detector is given, use it to compute the metrics of the resulting
+        average shapes.
+        
+        Parameters
+        ----------
+        shapes : list
+            Grouped shapes. All shapes must be of the same type.
+        detector : instance of some Detector, optional
+            Used to recompute metrics. Default: None.
+        ignore_extra_data : boolean, optional
+            If True, ignore everything and only fuse model. Default: False.
+        line_intersection_eps : float, optional
+            Distance for detection of intersection between planes. Default: 0.001.
+            
+        Returns
+        -------
+        PlaneBounded
+            Averaged PlaneBounded instance.    
+        """
+        shape = super().fuse(shapes, detector, ignore_extra_data)
+        
+        if not ignore_extra_data:
+            bounds = np.vstack([shape.bounds for shape in shapes])
+            shape.set_bounds(bounds)
+            
+            intersections = []
+            for plane1, plane2 in combinations(shapes, 2):
+                points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
+                if len(points) > 0:
+                    intersections.append(points)
+            
+            # temporary hack, saving intersections for mesh generation
+            if len(intersections) > 0:
+                shape._fusion_intersections = np.vstack(intersections)
+                
+        return shape
 
     def contains_projections(self, points):
         """ For each point in points, check if its projection on the plane lies
@@ -738,6 +780,6 @@ class PlaneBounded(Plane):
         if len(points) == 0:
             return np.array([])
         else:
-            return np.vstack(points)      
+            return np.vstack(points)
         
         

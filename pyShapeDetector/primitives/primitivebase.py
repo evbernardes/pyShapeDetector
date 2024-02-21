@@ -906,7 +906,7 @@ class Primitive(ABC):
         return dist[0] <= distance
     
     @staticmethod
-    def fuse(shapes, detector=None, ignore_extra_data=False):
+    def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=None):
         """ Find weigthed average of shapes, where the weight is the fitness
         metric.
         
