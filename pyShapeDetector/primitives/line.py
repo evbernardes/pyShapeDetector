@@ -81,7 +81,8 @@ class Line(Primitive):
     save
     load
     check_bbox_intersection
-    check_inlier_distance 
+    check_inlier_distance
+    fuse 
     
     from_point_vector
     from_two_points

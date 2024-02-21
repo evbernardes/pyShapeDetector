@@ -5,6 +5,7 @@ Created on Mon Sep 25 15:42:59 2023
 
 @author: ebernardes
 """
+import warnings
 from abc import ABC, abstractmethod
 import numpy as np
 from open3d.geometry import PointCloud, AxisAlignedBoundingBox
@@ -87,6 +88,7 @@ class Primitive(ABC):
     load
     check_bbox_intersection
     check_inlier_distance
+    fuse
     """
     _inlier_points = np.asarray([])
     _inlier_normals = np.asarray([])
@@ -902,3 +904,70 @@ class Primitive(ABC):
         
         _, dist = self.closest_inliers(other_shape)
         return dist[0] <= distance
+    
+    @staticmethod
+    def fuse(shapes, detector=None, ignore_extra_data=False):
+        """ Find weigthed average of shapes, where the weight is the fitness
+        metric.
+        
+        If a detector is given, use it to compute the metrics of the resulting
+        average shapes.
+        
+        Parameters
+        ----------
+        shapes : list
+            Grouped shapes. All shapes must be of the same type.
+        detector : instance of some Detector, optional
+            Used to recompute metrics. Default: None.
+        ignore_extra_data : boolean, optional
+            If True, ignore everything and only fuse model. Default: False.
+            
+        Returns
+        -------
+        Primitive
+            Averaged shape.    
+        """
+        primitive = type(shapes[0])
+        for shape in shapes[1:]:
+            if not isinstance(shape, primitive):
+                raise ValueError('Shapes in input must all have the same type.')
+                
+        try:
+            fitness = [shape.metrics['fitness'] for shape in shapes]
+        except:
+            fitness = [1] * len(shape)
+            
+        model = np.vstack([shape.model for shape in shapes])
+        model = np.average(model, axis=0, weights=fitness)
+        
+        # Catch warning in case shape is a PlaneBounded
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            shape = primitive(model)
+        
+        if not ignore_extra_data:
+            points = np.vstack([shape.inlier_points for shape in shapes])
+            normals = np.vstack([shape.inlier_normals for shape in shapes])
+            colors = np.vstack([shape.inlier_colors for shape in shapes])
+            if points.shape[1] == 0:
+                points = None
+            if normals.shape[1] == 0 or len(normals) < len(points):
+                normals = None
+            if colors.shape[1] == 0 or len(colors) < len(points):
+                colors = None
+            shape.add_inliers(points, normals, colors)
+            
+            if detector is not None:
+                num_points = sum([shape.metrics['num_points'] for shape in shapes])
+                num_inliers = len(points)
+                distances, angles = shape.get_residuals(points, normals)
+                shape.metrics = detector.get_metrics(
+                    num_points, num_inliers, distances, angles)
+                
+        return shape
+        
+        
+        
+        
+        
+        

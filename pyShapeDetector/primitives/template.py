@@ -74,6 +74,7 @@ class Template(Primitive):
     load
     check_bbox_intersection
     check_inlier_distance
+    fuse
     """
     
     _fit_n_min = 0

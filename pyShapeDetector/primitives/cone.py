@@ -83,6 +83,7 @@ class Cone(Primitive):
     load
     check_bbox_intersection
     check_inlier_distance
+    fuse
     
     from_appex_top_radius
     from_appex_vector_radius

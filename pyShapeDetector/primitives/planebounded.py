@@ -88,6 +88,7 @@ class PlaneBounded(Plane):
     load
     check_bbox_intersection
     check_inlier_distance
+    fuse
 
     from_normal_dist
     from_normal_point

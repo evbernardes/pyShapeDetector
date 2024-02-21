@@ -70,6 +70,7 @@ class Sphere(Primitive):
     load
     check_bbox_intersection
     check_inlier_distance
+    fuse
     
     from_center_radius
     """

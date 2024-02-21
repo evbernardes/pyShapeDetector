@@ -84,6 +84,7 @@ class Cylinder(Primitive):
     load
     check_bbox_intersection
     check_inlier_distance
+    fuse
     
     from_base_vector_radius
     from_center_half_vector_radius
