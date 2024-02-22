@@ -58,6 +58,7 @@ class PlaneBounded(Plane):
     bound_lines
     vertices
     triangles
+    bounds_or_vertices
 
     Methods
     ------- 
@@ -182,6 +183,13 @@ class PlaneBounded(Plane):
     @property
     def triangles(self):
         return self._triangles
+    
+    @property
+    def bounds_or_vertices(self):
+        if self.is_convex:
+            return self.bounds
+        else:
+            return self.vertices        
 
     def __init__(self, planemodel, bounds=None, vertices=None, triangles=None):
         """
@@ -396,6 +404,9 @@ class PlaneBounded(Plane):
             Copied primitive
         """
         shape = PlaneBounded(self.model.copy(), bounds=None)
+        shape._convex = self._convex
+        shape._vertices = self._vertices.copy()
+        shape._triangles = self._triangles.copy()
         shape._bounds_indices = self._bounds_indices.copy()
         shape._bounds = self._bounds.copy()
         shape._bounds_projections = self._bounds_projections.copy()
@@ -653,11 +664,14 @@ class PlaneBounded(Plane):
             If False, does not flatten points
 
         """
-        if flatten:
-            new_bound_points = self.flatten_points(new_bound_points)
-        bounds = np.vstack([self.bounds, new_bound_points])
-        self.set_bounds(bounds, flatten=False)
-        # self.set_bounds(points, flatten, method, alpha)
+        if not self.is_convex:
+            warn("Cannot add bounds to concave plane.")
+        else:
+            if flatten:
+                new_bound_points = self.flatten_points(new_bound_points)
+            bounds = np.vstack([self.bounds, new_bound_points])
+            self.set_bounds(bounds, flatten=False)
+            # self.set_bounds(points, flatten, method, alpha)
 
     @staticmethod
     def create_circle(center, normal, radius, resolution=30):

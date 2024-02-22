@@ -294,6 +294,8 @@ def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
         if shapes[i].name != 'bounded plane' or shapes[j].name != 'bounded plane':
             continue
         
+        if not shapes[i].is_convex or not shapes[j].is_convex:
+        
         if ignore[i] or ignore[j]:
             continue
         
@@ -316,11 +318,9 @@ def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
                 # continue
             
             elif distance_max is not None:
-                if shapes[i].is_convex:
-                    points = shapes[i].bounds
-                else:
-                    points = shapes[i].vertices
-                
+                # points = shapes[i].bounds_or_vertices
+                points = shapes[i].bounds
+
                 if min(line.get_distances(points)) > distance_max:
                     line = None
                     # continue

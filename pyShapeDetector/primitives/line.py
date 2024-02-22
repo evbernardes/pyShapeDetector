@@ -341,7 +341,7 @@ class Line(Primitive):
         axis /= norm
         line = Line.from_point_vector(point, axis)
         
-        if fit_bounds:
+        if fit_bounds and plane1.is_convex and plane1.is_convex:
             points = np.vstack([plane1.bounds, plane2.bounds])
             line = line.get_line_fitted_to_projections(points)
             projections = []        
