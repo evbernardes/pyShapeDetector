@@ -420,7 +420,7 @@ def remove_big_triangles(vertices, triangles, radius_ratio):
     mean_circumradiuses = np.mean(circumradiuses)
     return triangles[circumradiuses < radius_ratio * mean_circumradiuses]
 
-def planes_ressample_and_triangulate(planes, density, radius_ratio=None):
+def planes_ressample_and_triangulate(planes, density, radius_ratio=None, double_triangles=False):
     from pyShapeDetector.primitives import PlaneBounded
     
     if isinstance(planes, PlaneBounded):
@@ -444,14 +444,17 @@ def planes_ressample_and_triangulate(planes, density, radius_ratio=None):
     # vertices = [p.sample_points_density(density).points for p in planes]
     # vertices = np.vstack(vertices)
     
-    from pyShapeDetector.utility import fuse_shape_groups
-    plane_fused = fuse_shape_groups([planes], ignore_extra_data=True)[0]
+    # from pyShapeDetector.utility import fuse_shape_groups
+    plane_fused = PlaneBounded.fuse(planes, ignore_extra_data=True, force_concave=False)
 
     projections = plane_fused.get_projections(vertices)
     triangles = Delaunay(projections).simplices
     
     if radius_ratio is not None:
         triangles = remove_big_triangles(vertices, triangles, radius_ratio)
+        
+    if double_triangles:
+        triangles = np.vstack([triangles, triangles[:, ::-1]])
 
     return vertices, triangles
 
