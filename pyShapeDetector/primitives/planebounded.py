@@ -13,7 +13,10 @@ from scipy.spatial import ConvexHull, Delaunay
 from open3d.geometry import TriangleMesh
 from open3d.utility import Vector3iVector, Vector3dVector
 
-from pyShapeDetector.utility import get_triangle_surface_areas
+from pyShapeDetector.utility import (
+    get_triangle_surface_areas, 
+    fuse_vertices_triangles, 
+    planes_ressample_and_triangulate)
 from .plane import Plane
 # from alphashape import alphashape
 
@@ -445,7 +448,8 @@ class PlaneBounded(Plane):
                 hole.rotate(rotation, is_hole=True)
                 
     @staticmethod
-    def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=1e-3):
+    def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=1e-3,
+             force_concave=True, ressample_density=1.5, ressample_radius_ratio=1.2):
         """ Find weigthed average of shapes, where the weight is the fitness
         metric.
         
@@ -462,6 +466,9 @@ class PlaneBounded(Plane):
             If True, ignore everything and only fuse model. Default: False.
         line_intersection_eps : float, optional
             Distance for detection of intersection between planes. Default: 0.001.
+        force_concave : boolean, optional.
+            If True, the fused plane will be concave regardless of inputs.
+            Default: True.
             
         Returns
         -------
@@ -470,20 +477,40 @@ class PlaneBounded(Plane):
         """
         shape = Plane.fuse(shapes, detector, ignore_extra_data)
         
+        is_convex = np.array([shape.is_convex for shape in shapes])
+        all_convex = is_convex.all()
+        if not all_convex and is_convex.any():
+            force_concave = True
+            # raise ValueError("If 'force_concave' is False, PlaneBounded "
+            #                  "instances should either all be convex or "
+            #                  "all non convex.")
+        
         if not ignore_extra_data:
-            bounds = np.vstack([shape.bounds for shape in shapes])
-            shape.set_bounds(bounds)
-            
-            intersections = []
-            for plane1, plane2 in combinations(shapes, 2):
-                points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
-                if len(points) > 0:
-                    intersections.append(points)
-            
-            # temporary hack, saving intersections for mesh generation
-            if len(intersections) > 0:
-                shape._fusion_intersections = np.vstack(intersections)
+            if force_concave:
+                vertices, triangles = planes_ressample_and_triangulate(
+                    shapes, ressample_density, ressample_radius_ratio, double_triangles=True)
+                shape.set_vertices_triangles(vertices, triangles)
                 
+            elif not all_convex:
+                vertices = [shape.vertices for shape in shapes]
+                triangles = [shape.triangles for shape in shapes]
+                vertices, triangles = fuse_vertices_triangles(vertices, triangles)                                       
+                shape.set_vertices_triangles(vertices, triangles)
+                
+            else:
+                bounds = np.vstack([shape.bounds for shape in shapes])
+                shape.set_bounds(bounds)
+            
+                intersections = []
+                for plane1, plane2 in combinations(shapes, 2):
+                    points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
+                    if len(points) > 0:
+                        intersections.append(points)
+                
+                # temporary hack, saving intersections for mesh generation
+                if len(intersections) > 0:
+                    shape._fusion_intersections = np.vstack(intersections)
+        
         return shape
 
     def contains_projections(self, points):
