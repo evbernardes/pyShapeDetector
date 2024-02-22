@@ -927,6 +927,11 @@ class Primitive(ABC):
         Primitive
             Averaged shape.    
         """
+        if len(shapes) == 1:
+            return shapes[0]
+        elif isinstance(shapes, Primitive):
+            return shapes
+        
         primitive = type(shapes[0])
         for shape in shapes[1:]:
             if not isinstance(shape, primitive):

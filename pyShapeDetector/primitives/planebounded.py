@@ -17,6 +17,7 @@ from pyShapeDetector.utility import (
     get_triangle_surface_areas, 
     fuse_vertices_triangles, 
     planes_ressample_and_triangulate)
+from .primitive import Primitive
 from .plane import Plane
 # from alphashape import alphashape
 
@@ -485,6 +486,11 @@ class PlaneBounded(Plane):
         PlaneBounded
             Averaged PlaneBounded instance.    
         """
+        if len(shapes) == 1:
+            return shapes[0]
+        elif isinstance(shapes, Primitive):
+            return shapes
+        
         shape = Plane.fuse(shapes, detector, ignore_extra_data)
         
         is_convex = np.array([shape.is_convex for shape in shapes])
