@@ -686,7 +686,7 @@ class Plane(Primitive):
             centroid + (- v1 + v2) * length / 2,
             centroid + (- v1 - v2) * length / 2])
 
-        plane_bounded = PlaneBounded(self, vertices)
+        plane_bounded = PlaneBounded(self.model, vertices)
         plane_bounded._holes = self._holes
         return plane_bounded
 

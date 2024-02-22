@@ -17,7 +17,7 @@ from pyShapeDetector.utility import (
     get_triangle_surface_areas, 
     fuse_vertices_triangles, 
     planes_ressample_and_triangulate)
-from .primitive import Primitive
+from .primitivebase import Primitive
 from .plane import Plane
 # from alphashape import alphashape
 
