@@ -297,31 +297,42 @@ def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
         if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
             continue
         
-        line = Line.from_plane_intersection(shapes[i], shapes[j], intersect_parallel=intersect_parallel,
-                                            eps_angle=eps_angle, eps_distance=eps_distance)
-        if line is None:
-            line = None
-            # continue
-        
-        if length_max is not None and line.length > length_max:
-            line = None
-            # continue
-        
-        if distance_max is not None:
-            if min(line.get_distances(shapes[i].bounds)) > distance_max:
-                line = None
-                # continue
-            if min(line.get_distances(shapes[j].bounds)) > distance_max:
-                line = None
-                # continue
+        line = Line.from_plane_intersection(
+            shapes[i], shapes[j], intersect_parallel=intersect_parallel,
+            eps_angle=eps_angle, eps_distance=eps_distance)
         
         if line is not None:
-            lines.append(line)
+            # line = None
+            # continue
+        
+            if length_max is not None and line.length > length_max:
+                line = None
+                # continue
+            
+            elif distance_max is not None:
+                if shapes[i].is_convex:
+                    points = shapes[i].bounds
+                else:
+                    points = shapes[i].vertices
+                
+                if min(line.get_distances(points)) > distance_max:
+                    line = None
+                    # continue
+                elif min(line.get_distances(points)) > distance_max:
+                    line = None
+                    # continue
+            
+            if line is not None:
+                lines.append(line)
+                
+        print(i,j)
         a[i, j] = line
         
     for i, j in combinations(range(len(shapes)), 2):
-        line = a[i, j]
-        if line is None:
+        if (i, j) not in a:
+            continue
+        
+        if (line := a[i, j]) is None:
             continue
 
         for shape in [shapes[i], shapes[j]]:
