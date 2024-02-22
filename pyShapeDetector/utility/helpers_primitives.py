@@ -295,6 +295,7 @@ def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
             continue
         
         if not shapes[i].is_convex or not shapes[j].is_convex:
+            continue
         
         if ignore[i] or ignore[j]:
             continue
