@@ -634,8 +634,15 @@ class PlaneBounded(Plane):
         self._triangles = triangles
         self._convex = False
 
-    def add_bound_points(self, new_bound_points, flatten=True, method='convex',
-                         alpha=None):
+    # def add_bound_points(self, new_bound_points, flatten=True, method='convex',
+                         # alpha=None):
+    # method : string, optional
+    #     "convex" for convex hull, or "alpha" for alpha shapes.
+    #     Default: "convex"
+    # alpha : float, optional
+    #     Alpha parameter for alpha shapes algorithm. If equal to None,
+    #     calculates the optimal alpha. Default: None
+    def add_bound_points(self, new_bound_points, flatten=True):
         """ Add points to current bounds.
 
         Parameters
@@ -644,16 +651,13 @@ class PlaneBounded(Plane):
             New points to be added.
         flatten : bool, optional
             If False, does not flatten points
-        method : string, optional
-            "convex" for convex hull, or "alpha" for alpha shapes.
-            Default: "convex"
-        alpha : float, optional
-            Alpha parameter for alpha shapes algorithm. If equal to None,
-            calculates the optimal alpha. Default: None
 
         """
-        points = np.vstack([self.bounds, new_bound_points])
-        self.set_bounds(points, flatten, method, alpha)
+        if flatten:
+            new_bound_points = self.flatten_points(new_bound_points)
+        bounds = np.vstack([self.bounds, new_bound_points])
+        self.set_bounds(bounds, flatten=False)
+        # self.set_bounds(points, flatten, method, alpha)
 
     @staticmethod
     def create_circle(center, normal, radius, resolution=30):
