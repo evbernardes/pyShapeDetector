@@ -120,10 +120,10 @@ class PlaneBounded(Plane):
 
     _name = 'bounded plane'
     _bounds_indices = np.array([])
-    _bounds = None
-    _vertices = None
-    _triangles = None
-    _bounds_projections = None
+    _bounds = np.array([])
+    _bounds_projections = np.array([])
+    _vertices = np.array([])
+    _triangles = np.array([])
     _convex = True
 
     @property
@@ -315,7 +315,6 @@ class PlaneBounded(Plane):
                     range(len(points) - len(self._fusion_intersections), len(points)))
                 idx_intersections_sorted = [
                     np.where(i == idx)[0][0] for i in idx_intersections]
-                # print(idx_intersections)
     
             # holes = self._holes
             # has_holes = len(holes) != 0
@@ -351,7 +350,7 @@ class PlaneBounded(Plane):
                 points_holes = [self.flatten_points(hole.bounds) for hole in holes]
                 points = np.vstack([points]+points_holes)
                 projections = self.get_projections(points)
-    
+            
             triangles = Delaunay(projections).simplices
     
             for hole in self._holes:
@@ -572,8 +571,8 @@ class PlaneBounded(Plane):
         if np.any(np.isnan(bounds)):
             raise ValueError('NaN found in points')
             
-        self._vertices = None
-        self._triangles = None
+        self._vertices = np.array([])
+        self._triangles = np.array([])
         self._convex = True
 
         projections = self.get_projections(bounds)
@@ -629,7 +628,8 @@ class PlaneBounded(Plane):
         if np.any(np.isnan(vertices)):
             raise ValueError('NaN found in points')
             
-        self._bounds = None
+        self._bounds = np.array([])
+        self._bounds_indices = np.array([])
         self._vertices = vertices
         self._triangles = triangles
         self._convex = False
