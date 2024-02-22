@@ -123,7 +123,13 @@ def fuse_shape_groups(shapes_lists, detector=None,
     list
         Average shapes.    
     """
-    return [type(sublist[0]).fuse(sublist) for sublist in shapes_lists]
+    fused_shapes = []
+    for sublist in shapes_lists:
+        primitive = type(sublist[0])
+        fused_shapes.append(
+            primitive.fuse(sublist, detector, ignore_extra_data, line_intersection_eps))
+        
+    return fused_shapes
     
     # num_partitions = len(shapes_lists):
     # from pyShapeDetector.primitives import PlaneBounded
@@ -325,7 +331,6 @@ def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
             if line is not None:
                 lines.append(line)
                 
-        print(i,j)
         a[i, j] = line
         
     for i, j in combinations(range(len(shapes)), 2):
