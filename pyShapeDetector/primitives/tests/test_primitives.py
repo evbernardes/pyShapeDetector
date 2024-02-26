@@ -9,6 +9,7 @@ Created on Tue Oct 24 14:51:40 2023
 import pytest
 import numpy as np
 from numpy.testing import assert_allclose
+import warnings
 
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
@@ -23,18 +24,20 @@ def rmse(x):
     return np.sqrt(sum(x * x)) / len(x)
 
 def get_shape_and_pcd(primitive, num_points, canonical=False):
-    
-    if primitive._name == 'bounded plane':
-        shape = Plane(np.random.rand(4)).get_square_plane(np.random.rand())
-    else:
-        model = np.random.rand(primitive._model_args_n)
-        shape = primitive(model)
-    mesh = shape.get_mesh()
-    pcd = mesh.sample_points_uniformly(num_points)
-    pcd.estimate_normals()
-    if canonical:
-        shape = shape.canonical
-    return shape, pcd
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        if primitive._name == 'bounded plane':
+            shape = Plane(np.random.rand(4)).get_square_plane(np.random.rand())
+        else:
+            model = np.random.rand(primitive._model_args_n)
+            shape = primitive(model)
+
+        mesh = shape.get_mesh()
+        pcd = mesh.sample_points_uniformly(num_points)
+        pcd.estimate_normals()
+        if canonical:
+            shape = shape.canonical
+        return shape, pcd
 
 
 def test_plane_projections():
@@ -95,6 +98,7 @@ def test_fit():
     #     # assert_allclose(shape.radius, shape_fit.radius, rtol=1e-2, atol=1e-2)
 
     for primitive in [Plane, Sphere]:
+    # for primitive in [Sphere]:
         for i in range(5):
             shape, pcd = get_shape_and_pcd(primitive, 100, canonical=True)
             shape_fit = primitive.fit(pcd.points, normals=pcd.normals).canonical
