@@ -153,7 +153,6 @@ class PlaneBounded(Plane):
             areas = [shoelace(self.get_projections(points)) for points in triangle_points]
             surface_area = sum(areas)
             
-        
         return surface_area
 
     @property

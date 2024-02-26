@@ -563,7 +563,8 @@ class Cone(Primitive):
         alpha = self.get_point_angle(points)
         # the clipping prevents distances to be calculated from the closets
         # point in the symmetric inverted cone
-        return np.clip(alpha - self.half_angle, 0, np.pi/2)
+        # return np.clip(alpha - self.half_angle, 0, np.pi/2)
+        return np.clip(alpha - self.half_angle, -np.pi/2, np.pi/2)
     
     def get_point_angle(self, points):
         delta = points - self.appex
