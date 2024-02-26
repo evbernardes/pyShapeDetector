@@ -42,7 +42,7 @@ class PlaneBounded(Plane):
     inlier_colors
     inlier_PointCloud
     inlier_PointCloud_flattened
-    metrics
+    metricsd
     axis_spherical
     axis_cylindrical
 
@@ -136,7 +136,25 @@ class PlaneBounded(Plane):
     @property
     def surface_area(self):
         """ Surface area of bounded plane. """
-        return self.get_mesh().get_surface_area()
+        
+        def shoelace(projections):
+            # Reference:
+            # https://en.wikipedia.org/wiki/Shoelace_formula
+            i = np.arange(len(projections))
+            x, y = projections.T
+            return np.abs(np.sum(x[i-1] * y[i] - x[i] * y[i-1]) * 0.5)
+        
+        if self.is_convex:
+            surface_area = shoelace(self.bounds_projections)
+            for hole in self.holes:
+                surface_area -= shoelace(hole.bounds_projections)
+        else:
+            triangle_points = self.vertices[self.triangles]
+            areas = [shoelace(self.get_projections(points)) for points in triangle_points]
+            surface_area = sum(areas)
+            
+        
+        return surface_area
 
     @property
     def canonical(self):
