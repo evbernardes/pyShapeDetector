@@ -26,6 +26,7 @@ from .helpers_pointclouds import (
     )
 
 from .helpers_primitives import (
+    draw_geometries,
     get_rotation_from_axis, 
     group_similar_shapes, 
     fuse_shape_groups, 

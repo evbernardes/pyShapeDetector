@@ -10,8 +10,24 @@ Created on Tue Dec  5 15:48:31 2023
 import numpy as np
 from itertools import combinations, product
 from scipy.spatial.transform import Rotation
+# from open3d.geometry import LineSet, TriangleMesh, PointCloud
 # from pyShapeDetector.primitives import Plane, PlaneBounded
-# from pyShapeDetector.primitives import Line
+from pyShapeDetector.primitives import Primitive, Line
+
+def draw_geometries(elements, **args):
+    from open3d.visualization import draw_geometries
+    
+    elements = np.asarray(elements).flatten()
+    geometries = []
+    for i, element in enumerate(elements):
+        if isinstance(element, Line):
+            geometries.append(element.as_LineSet)
+        elif isinstance(element, Primitive):
+            geometries.append(element.mesh)
+        else:
+            geometries.append(element)
+            
+    draw_geometries(geometries, **args)
 
 def get_rotation_from_axis(axis_origin, axis):
     """ Rotation matrix that transforms `axis_origin` in `axis`.
