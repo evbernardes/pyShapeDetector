@@ -406,9 +406,14 @@ class PlaneBounded(Plane):
             Translation vector.
         """
         Plane.translate(self._plane, translation)
-        self._bounds = self._bounds + translation
+        
         for hole in self.holes:
             hole._translate_points(translation)
+            
+        if self.is_convex:
+            self._bounds = self._bounds + translation
+        else:
+            self._vertices = self._vertices + translation
 
     def rotate(self, rotation, is_hole=False):
         """ Rotate the shape.
@@ -427,8 +432,10 @@ class PlaneBounded(Plane):
 
         self._rotate_points_normals(rotation)
 
-        bounds = rotation.apply(self._bounds)
-        self.set_bounds(bounds, flatten=True)
+        if self.is_convex:
+            self._bounds = rotation.apply(self._bounds)
+        else:
+            self._vertices = rotation.apply(self._vertices)
 
         if not is_hole and len(self.holes) > 0:
             for hole in self.holes:
