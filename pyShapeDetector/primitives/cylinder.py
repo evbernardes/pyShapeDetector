@@ -328,7 +328,7 @@ class Cylinder(Primitive):
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
     
-    def get_mesh(self, resolution=30, closed=False):
+    def get_mesh(self, **options):
         """ Returns mesh defined by the cylinder model.
         
         Parameters
@@ -343,6 +343,9 @@ class Cylinder(Primitive):
         TriangleMesh
             Mesh corresponding to the cylinder.
         """
+        
+        resolution = options.get('resolution', 30)
+        closed = options.get('closed', False)
         
         mesh = TriangleMesh.create_cylinder(
             radius=self.radius, height=self.height, resolution=resolution)

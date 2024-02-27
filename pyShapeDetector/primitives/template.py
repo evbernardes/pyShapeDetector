@@ -146,7 +146,7 @@ class Template(Primitive):
         """
         return points
     
-    def get_mesh(self, points=None):
+    def get_mesh(self, **options):
         """ Creates mesh of the shape.      
         
         Returns

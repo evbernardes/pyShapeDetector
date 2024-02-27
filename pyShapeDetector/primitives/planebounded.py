@@ -304,7 +304,7 @@ class PlaneBounded(Plane):
         plane = Plane.fit(points, normals)
         return plane.get_bounded_plane(points)
 
-    def get_mesh(self, resolution=None):
+    def get_mesh(self, **options):
         """ Flatten points and creates a simplified mesh of the plane defined
         by the points at the borders.
 
@@ -325,7 +325,7 @@ class PlaneBounded(Plane):
             if len(self._fusion_intersections) == 0:
                 points = self.bounds
                 projections = self.bounds_projections
-                idx_intersections_sorted = []
+                # idx_intersections_sorted = []
             else:
                 points = np.vstack([self.bounds, self._fusion_intersections])
                 projections = self.get_projections(points)

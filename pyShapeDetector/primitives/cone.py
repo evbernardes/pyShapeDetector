@@ -386,8 +386,8 @@ class Cone(Primitive):
         normals[safe] /= np.linalg.norm(normals[safe], axis=1)[..., np.newaxis]
         return normals
     
-    def get_mesh(self, resolution=30, closed=False):
-        """ Returns mesh defined by the cylinder model.
+    def get_mesh(self, **options):
+        """ Returns mesh defined by the cone model.
         
         Parameters
         ----------
@@ -401,6 +401,9 @@ class Cone(Primitive):
         TriangleMesh
             Mesh corresponding to the cone.
         """
+        
+        resolution = options.get('resolution', 30)
+        closed = options.get('closed', False)
         
         mesh = TriangleMesh.create_cone(
             # radius=self.radius, height=self.height, resolution=100, split=100)

@@ -193,7 +193,7 @@ class Line(Primitive):
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
     
-    def get_mesh(self, resolution=5, radius=0.01):
+    def get_mesh(self, **options):
         """ Creates mesh of the shape.      
         
         Parameters
@@ -208,6 +208,9 @@ class Line(Primitive):
         TriangleMesh
             Mesh corresponding to the shape.
         """
+        resolution = options.get('resolution', 5)
+        radius = options.get('radius', 0.01)
+        
         cylinder = Cylinder.from_base_vector_radius(
             # self.beginning, self.vector, self.length * radius_ratio)
             self.beginning, self.vector, radius)

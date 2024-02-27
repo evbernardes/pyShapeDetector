@@ -642,7 +642,7 @@ class Primitive(ABC):
         number_of_points = int(density * self.surface_area)
         return self.sample_points_uniformly(number_of_points, use_triangle_normal)
     
-    def get_mesh(self, resolution=30):
+    def get_mesh(self, **options):
         """ Creates mesh of the shape.
         
         Parameters
