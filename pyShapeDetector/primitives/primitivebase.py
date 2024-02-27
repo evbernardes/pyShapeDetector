@@ -772,6 +772,9 @@ class Primitive(ABC):
         self._model[self._translatable] += translation        
         self._translate_points(translation)
         
+        if self._mesh is not None:
+            self._mesh.translate(translation)
+        
     @staticmethod
     def _parse_rotation(rotation):
         """ Internal helper function for rotation"""
@@ -820,6 +823,8 @@ class Primitive(ABC):
         
         self._rotate_points_normals(rotation)
         
+        if self._mesh is not None:
+            self._mesh.rotate(rotation.as_matrix())
     
     def align(self, axis, possible_attributes=['axis', 'vector', 'normal']):
         """ Returns aligned 
