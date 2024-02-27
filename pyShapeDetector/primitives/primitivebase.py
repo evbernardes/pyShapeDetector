@@ -95,6 +95,7 @@ class Primitive(ABC):
     _inlier_colors = np.asarray([])
     # _inlier_indices = np.asarray([])
     _metrics = {}
+    _color = None
     
     @property
     def fit_n_min(self):
@@ -148,12 +149,22 @@ class Primitive(ABC):
             return self.normal
         raise RuntimeError(f'Primitives of type {self.name} do not have an '
                            'axis.')
-        
+    
     @property
     def color(self):
-        seed = int(str(abs(hash(self.name)))[:9])
-        np.random.seed(seed)
-        return np.random.random(3)
+        if self._color is None:
+            seed = int(str(abs(hash(self.name)))[:9])
+            self._color = np.random.seed(seed)
+        return self._color
+    
+    @color.setter
+    def color(self, new_color):
+        new_color = np.asarray(new_color).flatten()
+        if new_color.shape != (3,):
+            raise ValueError("Invalid input shape.")
+        if not np.issubdtype(new_color.dtype, np.number):
+            raise ValueError("Input must be numeric array.")
+        self._color = new_color
         
     @property
     def inlier_points(self):
