@@ -33,6 +33,7 @@ class Plane(Primitive):
     volume
     canonical
     color
+    mesh
     inlier_points
     inlier_points_flattened
     inlier_normals
@@ -308,8 +309,6 @@ class Plane(Primitive):
         bounded_plane._holes = self._holes
         mesh = bounded_plane.get_mesh()
 
-        if len(self.inlier_colors) > 0:
-            mesh.paint_uniform_color(np.median(self.inlier_colors, axis=0))
         return mesh
 
     def translate(self, translation):

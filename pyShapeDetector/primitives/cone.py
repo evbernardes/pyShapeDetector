@@ -31,6 +31,7 @@ class Cone(Primitive):
     volume
     canonical
     color
+    mesh
     inlier_points
     inlier_points_flattened
     inlier_normals
@@ -431,8 +432,6 @@ class Cone(Primitive):
         
         # mesh.translate(self.center)
 
-        if len(self.inlier_colors) > 0:
-            mesh.paint_uniform_color(np.median(self.inlier_colors, axis=0))
         return mesh
     
     def align(self, axis):

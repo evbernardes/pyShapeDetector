@@ -46,6 +46,7 @@ class Primitive(ABC):
     volume
     canonical
     color
+    mesh
     inlier_points
     inlier_points_flattened
     inlier_normals
@@ -96,6 +97,7 @@ class Primitive(ABC):
     # _inlier_indices = np.asarray([])
     _metrics = {}
     _color = None
+    _mesh = None
     
     @property
     def fit_n_min(self):
@@ -153,8 +155,12 @@ class Primitive(ABC):
     @property
     def color(self):
         if self._color is None:
-            seed = int(str(abs(hash(self.name)))[:9])
-            self._color = np.random.seed(seed)
+            if len(self.inlier_colors) > 0:
+                self._color = np.median(self.inlier_colors, axis=0)
+            else:
+                seed = int(str(abs(hash(self.name)))[:9])
+                self._color = np.random.seed(seed)
+                
         return self._color
     
     @color.setter
@@ -165,6 +171,22 @@ class Primitive(ABC):
         if not np.issubdtype(new_color.dtype, np.number):
             raise ValueError("Input must be numeric array.")
         self._color = new_color
+        
+    @property
+    def mesh(self):
+        if self._mesh is None:
+            self._mesh = self.get_mesh()
+            self._mesh.paint_uniform_color(self.color)
+        
+        return self._mesh
+    
+    @mesh.setter
+    def mesh(self, new_mesh):
+        from open3d.geometry import TriangleMesh
+        if not isinstance(new_mesh, TriangleMesh):
+            raise ValueError("Meshes must be of type "
+                             "open3d.geometry.TriangleMesh.")
+        self._mesh = new_mesh
         
     @property
     def inlier_points(self):

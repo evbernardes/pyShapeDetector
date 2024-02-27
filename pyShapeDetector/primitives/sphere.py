@@ -25,6 +25,7 @@ class Sphere(Primitive):
     volume
     canonical
     color
+    mesh
     inlier_points
     inlier_points_flattened
     inlier_normals
@@ -227,8 +228,6 @@ class Sphere(Primitive):
         mesh = TriangleMesh.create_sphere(radius=self.model[3], resolution=resolution)
         mesh.translate(self.model[:3])
         
-        if len(self.inlier_colors) > 0:
-            mesh.paint_uniform_color(np.median(self.inlier_colors, axis=0))
         return mesh
     
     @classmethod

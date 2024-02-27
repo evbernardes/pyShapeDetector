@@ -34,6 +34,7 @@ class Line(Primitive):
     volume
     canonical
     color
+    mesh
     inlier_points
     inlier_points_flattened
     inlier_normals
