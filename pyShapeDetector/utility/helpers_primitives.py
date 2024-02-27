@@ -344,11 +344,7 @@ def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
         for shape in [shapes[i], shapes[j]]:
             line_ = line.get_line_fitted_to_projections(shape.bounds)
             shape.add_bound_points([line_.beginning, line_.ending])
-            new_points = [line.beginning, line.ending]
-            # # shapes[i]._set_bounds(np.vstack([shapes[i].bounds] + new_points))
-            # # shapes[j]._set_bounds(np.vstack([shapes[j].bounds] + new_points))
-            # shapes[i].add_bound_points(new_points)
-            # shapes[j].add_bound_points(new_points)
+            # new_points = [line.beginning, line.ending]
             
     return lines
 
