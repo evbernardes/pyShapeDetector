@@ -50,6 +50,7 @@ class Line(Primitive):
     vector
     axis
     length
+    as_LineSet
         
     Methods
     -------
@@ -94,7 +95,6 @@ class Line(Primitive):
     get_orthogonal_component
     point_from_projection
     point_from_intersection
-    get_LineSet
     get_LineSet_from_list
     """
     
@@ -139,6 +139,12 @@ class Line(Primitive):
     def length(self):
         """ Length of line. """
         return np.linalg.norm(self.vector)
+    
+    @property
+    def as_LineSet(self):
+        return LineSet(
+            Vector3dVector([self.beginning, self.ending]),
+            Vector2iVector([[0, 1]]))
     
     @staticmethod
     def fit(points, normals=None):
@@ -474,11 +480,6 @@ class Line(Primitive):
             return None
         
         return (pa + pb) / 2
-    
-    def get_LineSet(self):
-        return LineSet(
-            Vector3dVector([self.beginning, self.ending]),
-            Vector2iVector([[0, 1]]))
 
     @staticmethod
     def get_LineSet_from_list(lines):
