@@ -103,6 +103,7 @@ class Plane(Primitive):
     _holes = []
     _rotatable = [0, 1, 2]
     _fusion_intersections = np.array([])
+    _color = np.array([0, 0, 1])
 
     @property
     def equation(self):
@@ -139,10 +140,6 @@ class Plane(Primitive):
         plane = Plane(list(self.model))
         plane._holes = self._holes
         return plane
-
-    @property
-    def color(self):
-        return np.array([0, 0, 1])
 
     @property
     def normal(self):

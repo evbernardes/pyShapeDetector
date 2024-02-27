@@ -80,6 +80,7 @@ class Template(Primitive):
     _fit_n_min = 0
     _model_args_n = 0
     _name = 'template' 
+    _color = np.array([0.1, 0.2, 0.3])
     
     @property
     def surface_area(self):

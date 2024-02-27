@@ -102,6 +102,7 @@ class Line(Primitive):
     _name = 'line' 
     _translatable = [0, 1, 2]
     _rotatable = [3, 4, 5]
+    _color = np.array([0, 0, 0])
     
     @property
     def surface_area(self):

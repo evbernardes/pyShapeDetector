@@ -78,6 +78,7 @@ class Sphere(Primitive):
     _fit_n_min = 4
     _model_args_n = 4
     _name = 'sphere'
+    _color = np.array([0, 1, 0])
     
     @property
     def equation(self):
@@ -97,10 +98,6 @@ class Sphere(Primitive):
     def volume(self):
         """ Volume of primitive. """
         return (4/3) * np.pi * (self.radius ** 3)
-    
-    @property
-    def color(self):
-        return np.array([0, 1, 0])
     
     @property
     def radius(self):

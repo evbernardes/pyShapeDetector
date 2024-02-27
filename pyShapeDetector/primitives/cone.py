@@ -99,6 +99,7 @@ class Cone(Primitive):
     _name = 'cone'
     _translatable = [0, 1, 2]
     _rotatable = [3, 4, 5]
+    _color = np.array([0, 0.707, 0.707])
     
     @property
     def equation(self):
@@ -127,10 +128,6 @@ class Cone(Primitive):
             return self
         
         return Cone(list(self.center) + list(-self.vector) + [self.half_angle])
-    
-    @property
-    def color(self):
-        return np.array([0, 0.707, 0.707])
     
     @property
     def appex(self):

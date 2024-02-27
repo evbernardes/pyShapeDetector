@@ -100,6 +100,7 @@ class Cylinder(Primitive):
     _name = 'cylinder'
     _translatable = [0, 1, 2]
     _rotatable = [3, 4, 5]
+    _color = np.array([1, 0, 0])
     
     @property
     def equation(self):
@@ -128,10 +129,6 @@ class Cylinder(Primitive):
             return self
         
         return Cylinder(list(self.base) + list(-self.vector) + [self.radius])
-    
-    @property
-    def color(self):
-        return np.array([1, 0, 0])
     
     @property
     def base(self):
