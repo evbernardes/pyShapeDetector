@@ -36,6 +36,7 @@ class PlaneBounded(Plane):
     volume
     canonical
     color
+    mesh
     inlier_points
     inlier_points_flattened
     inlier_normals
@@ -366,8 +367,6 @@ class PlaneBounded(Plane):
         mesh.vertices = Vector3dVector(points)
         mesh.triangles = Vector3iVector(triangles)
 
-        if len(self.inlier_colors) > 0:
-            mesh.paint_uniform_color(np.median(self.inlier_colors, axis=0))
         return mesh
 
     def copy(self, copy_holes=True):
@@ -395,6 +394,7 @@ class PlaneBounded(Plane):
         shape._inlier_colors = self._inlier_colors.copy()
         shape._fusion_intersections = self._fusion_intersections.copy()
         shape._metrics = self._metrics.copy()
+        shape._color = self._color.copy()
         if copy_holes:
             holes = [h.copy(copy_holes=False) for h in self._holes]
             shape._holes = holes
@@ -797,6 +797,8 @@ class PlaneBounded(Plane):
         lines = self.bound_lines
         lines_other = other.bound_lines
 
+        shape._metrics = self._metrics.copy()
+        shape._color = self._color.copy()
         points = []
         for l1, l2 in product(lines, lines_other):
             p = l1.point_from_intersection(

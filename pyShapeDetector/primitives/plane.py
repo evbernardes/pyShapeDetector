@@ -366,6 +366,7 @@ class Plane(Primitive):
         shape._inlier_colors = self._inlier_colors.copy()
         shape._fusion_intersections = self._fusion_intersections.copy()
         shape._metrics = self._metrics.copy()
+        shape._color = self._color.copy()
         if copy_holes:
             holes = [h.copy(copy_holes=False) for h in self._holes]
             shape._holes = holes

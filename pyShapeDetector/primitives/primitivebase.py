@@ -544,6 +544,7 @@ class Primitive(ABC):
                                  ' point or an array of shape (N, 3), got '
                                  f'{colors.shape}')
             self._inlier_colors = colors
+            self.color = np.median(colors, axis=0)
             
     def closest_inliers(self, other_shape, n=1):
         """ Returns n pairs of closest inlier points with a second shape.
@@ -746,6 +747,7 @@ class Primitive(ABC):
         shape._inlier_normals = self._inlier_normals.copy()
         shape._inlier_colors = self._inlier_colors.copy()
         shape._metrics = self._metrics.copy()
+        shape._colors = self._colors.copy()
         return shape
     
     def _translate_points(self, translation):
@@ -876,7 +878,7 @@ class Primitive(ABC):
         Returns
         -------
         Primitive
-            Loadded shape.
+            Loaded shape.
         """
         import json
         from pyShapeDetector.primitives import dict_primitives
