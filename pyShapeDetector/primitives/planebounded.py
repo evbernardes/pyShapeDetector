@@ -736,9 +736,6 @@ class PlaneBounded(Plane):
     def create_box(center=[0, 0, 0], dimensions=[1, 1, 1]):
         """ Gives list of planes that create, together, a closed box.
 
-        Reference:
-            https://www.ilikebigbits.com/2015_03_04_plane_from_points.html
-
         Parameters
         ----------
         center : array
