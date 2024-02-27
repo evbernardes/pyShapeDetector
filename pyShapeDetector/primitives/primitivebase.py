@@ -6,6 +6,7 @@ Created on Mon Sep 25 15:42:59 2023
 @author: ebernardes
 """
 import warnings
+import copy
 from abc import ABC, abstractmethod
 import numpy as np
 from open3d.geometry import PointCloud, AxisAlignedBoundingBox
@@ -747,7 +748,8 @@ class Primitive(ABC):
         shape._inlier_normals = self._inlier_normals.copy()
         shape._inlier_colors = self._inlier_colors.copy()
         shape._metrics = self._metrics.copy()
-        shape._colors = self._colors.copy()
+        shape._color = self._color.copy()
+        shape._mesh = copy.copy(self._mesh)
         return shape
     
     def _translate_points(self, translation):

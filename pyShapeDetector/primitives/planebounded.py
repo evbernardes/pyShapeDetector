@@ -382,19 +382,16 @@ class PlaneBounded(Plane):
         Primitive
             Copied primitive
         """
-        shape = PlaneBounded(self.model.copy(), bounds=None)
+        shape = Primitive.copy(self)
+        
+        # Copying attributes particular to bounded planes
         shape._convex = self._convex
         shape._vertices = self._vertices.copy()
         shape._triangles = self._triangles.copy()
         shape._bounds_indices = self._bounds_indices.copy()
         shape._bounds = self._bounds.copy()
         shape._bounds_projections = self._bounds_projections.copy()
-        shape._inlier_points = self._inlier_points.copy()
-        shape._inlier_normals = self._inlier_normals.copy()
-        shape._inlier_colors = self._inlier_colors.copy()
         shape._fusion_intersections = self._fusion_intersections.copy()
-        shape._metrics = self._metrics.copy()
-        shape._color = self._color.copy()
         if copy_holes:
             holes = [h.copy(copy_holes=False) for h in self._holes]
             shape._holes = holes
