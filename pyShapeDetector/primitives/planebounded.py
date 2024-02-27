@@ -554,6 +554,7 @@ class PlaneBounded(Plane):
         # else:
         #     raise ValueError(
         #         f"method can be 'convex' or 'alpha', got {method}.")
+        self._mesh = None
         bounds = np.asarray(bounds)
         
         if bounds.shape[1] != 3 :
@@ -602,6 +603,7 @@ class PlaneBounded(Plane):
         #         f"method can be 'convex' or 'alpha', got {method}.")
 
         # if np.
+        self._mesh = None
         vertices = np.asarray(vertices)
         triangles = np.asarray(triangles)
         
