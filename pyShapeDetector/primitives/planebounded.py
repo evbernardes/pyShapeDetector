@@ -337,41 +337,13 @@ class PlaneBounded(Plane):
                 points = points[idx]
                 projections = projections[idx]
     
-                idx_intersections = list(
-                    range(len(points) - len(self._fusion_intersections), len(points)))
-                idx_intersections_sorted = [
-                    np.where(i == idx)[0][0] for i in idx_intersections]
-    
-            # holes = self._holes
-            # has_holes = len(holes) != 0
-            # if has_holes:
-            #     labels = []
-            #     projections_holes = []
-            #     points_holes = []
-            #     labels_holes = []
-            #     for i in range(len(holes)):
-            #         hole = holes[i]
-            #         projections_holes.append(hole.bounds_projections)
-            #         points_holes.append(self.flatten_points(
-            #             hole.bounds))
-            #         labels += [i+1] * len(hole.bounds_projections)
-            #     labels = np.array(
-            #         [0] * len(projections) + labels)
-            #     projections = np.vstack([projections]+projections_holes)
-            #     points = np.vstack([points]+points_holes)
-    
-            # # is_points = np.asarray(is_points)
-            # # A = dict(vertices=plane.projections, holes=[circle.projections])
-            # # triangles = tr.triangulate(A)
-            # triangles = Delaunay(projections).simplices
-            # if has_holes:
-            #     for i in range(len(holes)):
-            #         triangles = triangles[
-            #             ~np.all(labels[triangles] == i+1, axis=1)]
+                # idx_intersections = list(
+                    # range(len(points) - len(self._fusion_intersections), len(points)))
+                # idx_intersections_sorted = [
+                    # np.where(i == idx)[0][0] for i in idx_intersections]
     
             holes = self._holes
             has_holes = len(holes) != 0
-            # has_holes = False
             if has_holes:
                 points_holes = [self.flatten_points(hole.bounds) for hole in holes]
                 points = np.vstack([points]+points_holes)
@@ -384,21 +356,11 @@ class PlaneBounded(Plane):
                     [hole.contains_projections(p).all() for p in points[triangles]])
                 triangles = triangles[~inside_hole]
     
-            # print(len(triangles))
-            # for i in idx_intersections_sorted:
-            #     select = []
-            #     for triangle in triangles:
-            #         test = {i-1, i, (i+1) % len(points)}.intersection(triangle)
-            #         select.append(len(test) == 3)
-            #     select = np.array(select)
-            #     triangles = triangles[~select]
-    
             areas = get_triangle_surface_areas(points, triangles)
             triangles = triangles[areas > 0]
     
             # needed to make plane visible from both sides
             triangles = np.vstack([triangles, triangles[:, ::-1]])
-            # print(len(triangles))
 
         mesh = TriangleMesh()
         mesh.vertices = Vector3dVector(points)
