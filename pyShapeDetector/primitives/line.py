@@ -103,7 +103,7 @@ class Line(Primitive):
     _name = 'line' 
     _translatable = [0, 1, 2]
     _rotatable = [3, 4, 5]
-    _color = np.array([0, 0, 0])
+    _color = np.array([1, 0, 0])
     
     @property
     def surface_area(self):
@@ -142,9 +142,11 @@ class Line(Primitive):
     
     @property
     def as_LineSet(self):
-        return LineSet(
+        line = LineSet(
             Vector3dVector([self.beginning, self.ending]),
             Vector2iVector([[0, 1]]))
+        line.paint_uniform_color(self.color)
+        return line
     
     @staticmethod
     def fit(points, normals=None):
@@ -215,6 +217,7 @@ class Line(Primitive):
         TriangleMesh
             Mesh corresponding to the shape.
         """
+        # assert 1 == 0
         resolution = options.get('resolution', 5)
         radius = options.get('radius', 0.01)
         
@@ -498,6 +501,7 @@ class Line(Primitive):
         lineset = LineSet()
         lineset.points = Vector3dVector(points)
         lineset.lines = Vector2iVector(lines_indices)
+        lineset.colors = Vector3dVector([line.color for line in lines])
         return lineset
     
 
