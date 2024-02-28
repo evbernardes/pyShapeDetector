@@ -75,7 +75,7 @@ def average_nearest_dist(points, k=15, leaf_size=40):
     nearest_dist, nearest_ind = tree.query(points, k=k)
     return np.mean(nearest_dist[:, 1:])
 
-def read_point_cloud(filepath, down_sample=False):
+def read_point_cloud(filepath, down_sample=False, estimate_normals=False):
     """ Read file to pointcloud. Can also read .h5 files from traceparts 
     database.
     
@@ -89,6 +89,11 @@ def read_point_cloud(filepath, down_sample=False):
         in the order of the points with the 0-th point always chosen, 
         not at random. Default: None.
         See: open3d.geometry.PointCloud.uniform_down_sample
+        
+    estimate_normals : boolean, optional
+        If True, compute the normals of a point cloud. Normals are oriented 
+        with respect to the input point cloud if normals exist. Defdault: False.
+        See: open3d.geometry.PointCloud.estimate_normals
         
     Returns
     -------
@@ -127,6 +132,12 @@ def read_point_cloud(filepath, down_sample=False):
             pcds = [pcd.uniform_down_sample(down_sample) for pcd in pcds]
         except TypeError:
             pcds = pcds.uniform_down_sample(down_sample)
+            
+    if estimate_normals:
+        try:
+            [pcd.estimate_normals() for pcd in pcds]
+        except TypeError:
+            pcds.estimate_normals()
 
     return pcds
 
