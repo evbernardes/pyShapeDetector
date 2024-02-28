@@ -13,6 +13,7 @@ from open3d.geometry import TriangleMesh
 from open3d.utility import Vector3dVector, Vector3iVector
 from open3d.visualization import draw_geometries
 from pyShapeDetector.primitives import Plane, Cylinder, Sphere
+from pyShapeDetector import utility as util
 import yaml
 from pathlib import Path
 from scipy.spatial.transform import Rotation
@@ -26,47 +27,6 @@ color_gray = [0.6, 0.6, 0.6]
 
 def normalise(v):
     return v / np.linalg.norm(v)
-
-def draw(objs):
-    if not isinstance(objs, list):
-        objs = [objs]
-        
-    for i in range(len(objs)):
-        if isinstance(objs[i], o3d.cuda.pybind.t.geometry.PointCloud):
-            objs[i] = objs[i].to_legacy()
-            
-    draw_geometries(objs)
-    
-def draw_two_colomns(objs_left, objs_right, dist=5,
-                     lookat=None, up=None, front=None, zoom=None):
-    
-    if type(objs_left) != list:
-        objs_left = [objs_left]
-    objs_left = copy.deepcopy(objs_left)
-    if type(objs_right) != list:
-        objs_right = [objs_right]
-    objs_right = copy.deepcopy(objs_right)
-    
-    try:
-        translate = 0.5 * dist * np.cross(up, front)
-    except:
-        translate = np.array([0, 0.5 * dist, 0])
-        
-    for i in range(len(objs_left)):
-        objs_left[i].translate(-translate)
-    for i in range(len(objs_right)):
-        objs_right[i].translate(translate)
-        
-    if zoom is None:
-        draw_geometries(objs_right+objs_left)
-    else:
-        draw_geometries(objs_right+objs_left,
-                        lookat=lookat,
-                        up=up,
-                        front=front,
-                        zoom=zoom
-                        )
-    
     
 def create_square_plane(normal, center, size=1.0):
     " Creates a square plane"

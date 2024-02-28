@@ -26,7 +26,6 @@ from .helpers_pointclouds import (
     )
 
 from .helpers_primitives import (
-    draw_geometries,
     get_rotation_from_axis, 
     group_similar_shapes, 
     fuse_shape_groups, 
@@ -52,4 +51,9 @@ from .helpers_meshes import (
     remove_big_triangles,
     planes_ressample_and_triangulate,
     planes_ressample_and_triangulate_gui
+    )
+
+from .helpers_visualization import (
+    draw_geometries,
+    draw_two_columns
     )
