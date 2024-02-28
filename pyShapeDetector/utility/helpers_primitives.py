@@ -230,8 +230,9 @@ def fuse_similar_shapes(shapes, detector=None,  rtol=1e-02, atol=1e-02,
     return fuse_shape_groups(shapes_groupped, detector, line_intersection_eps=line_intersection_eps)
 
 def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
-                       length_max=None, distance_max=None, ignore=None, intersect_parallel=False,
-                       eps_angle=np.deg2rad(0.9), eps_distance=1e-2):
+                       length_max=None, distance_max=None, ignore=None, 
+                       intersect_parallel=False, eps_angle=np.deg2rad(0.9), 
+                       eps_distance=1e-2):
     """ For every possible pair of neighboring bounded planes, calculate their
     intersection and then glue them to this intersection.
     
@@ -284,6 +285,7 @@ def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
     
     if ignore is None:
         ignore = [False] * len(shapes)
+        
     if len(ignore) != len(shapes):
         raise ValueError("'ignore' must be a list of booleans the size of 'shapes'.")
     
