@@ -77,6 +77,15 @@ def test_plane_surface_area_and_volume():
     plane_bounded = plane.get_square_plane(length)
     assert plane_bounded.volume == 0
     assert_allclose(plane_bounded.surface_area, length ** 2)
+    
+    vertices = np.array(plane_bounded.mesh.vertices)
+    triangles = np.array(plane_bounded.mesh.triangles)
+
+    # get only half of the doubled triangles
+    triangles = triangles[:int(len(triangles) / 2)]
+
+    plane_bounded.set_vertices_triangles(vertices, triangles)
+    assert_allclose(plane_bounded.surface_area, length ** 2)
 
 
 def test_fit():

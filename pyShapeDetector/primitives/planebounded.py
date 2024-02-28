@@ -145,13 +145,19 @@ class PlaneBounded(Plane):
             x, y = projections.T
             return np.abs(np.sum(x[i-1] * y[i] - x[i] * y[i-1]) * 0.5)
         
+        def test(projections):
+            return np.linalg.norm(np.cross(*np.diff(projections, axis=0))) * 0.5
+        
         if self.is_convex:
             surface_area = shoelace(self.bounds_projections)
             for hole in self.holes:
                 surface_area -= shoelace(hole.bounds_projections)
         else:
-            triangle_points = self.vertices[self.triangles]
-            areas = [shoelace(self.get_projections(points)) for points in triangle_points]
+            triangle_projections = self.get_projections(self.vertices)[self.triangles]
+            # areas = [shoelace(points) for points in triangle_projections]
+            # areas = [test(points) for points in triangle_projections]
+            diff = np.diff(triangle_projections, axis=1)
+            areas = abs(np.cross(diff[:,0,:], diff[:,1,:])) * 0.5
             surface_area = sum(areas)
             
         return surface_area
