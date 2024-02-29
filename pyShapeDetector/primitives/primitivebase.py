@@ -504,8 +504,25 @@ class Primitive(ABC):
         pcd_flattened.colors = pcd.colors
         return pcd_flattened
     
+    @staticmethod
+    def _set_and_check_3d_array(input_array, name='array', num_points=None):
+        if array is None:
+            return np.array([])
+        
+        array = np.asarray(input_array)
+        if array.shape == (3, ):
+            array = np.reshape(array, (1,3))
+        elif array.shape[1] != 3:
+            raise ValueError('Invalid shape for {name}, must be a single'
+                             ' point or an array of shape (N, 3), got '
+                             f'{array.shape}')
+        if num_points is not None and len(array) != num_points:
+            raise ValueError(f'Expected shape of array is ({num_points}, 3), got {array.shape}.')
+            
+        return array
+    
     def set_inliers(self, points, normals=None, colors=None):
-        """ Add inlier points to shape.
+        """ Set inlier points to shape.
         
         Parameters
         ----------
@@ -517,35 +534,36 @@ class Primitive(ABC):
             Colors of inlier points.
         """
             
-        points = np.asarray(points)
-        if points.shape == (3, ):
-            points = np.reshape(points, (1,3))
-        elif points.shape[1] != 3:
-            raise ValueError('Invalid shape for input points, must be a single'
-                             ' point or an array of shape (N, 3), got '
-                             f'{points.shape}')
+        points = Primitive._set_and_check_3d_array(points, 'inlier points')
+        num_points = len(points)
+        normals = Primitive._set_and_check_3d_array(normals, 'inlier normals', num_points)
+        colors = Primitive._set_and_check_3d_array(colors, 'inlier colors', num_points)
+
         self._inlier_points = points
-        
-        if normals is not None:
-            normals = np.asarray(normals)
-            if normals.shape == (3, ):
-                normals = np.reshape(normals, (1,3))
-            elif normals.shape[1] != 3:
-                raise ValueError('Invalid shape for input normals, must be a single'
-                                 ' point or an array of shape (N, 3), got '
-                                 f'{normals.shape}')
-            self._inlier_normals = normals
-        
-        if colors is not None:
-            colors = np.asarray(colors)
-            if colors.shape == (3, ):
-                colors = np.reshape(colors, (1,3))
-            elif normals.shape[1] != 3:
-                raise ValueError('Invalid shape for input colors, must be a single'
-                                 ' point or an array of shape (N, 3), got '
-                                 f'{colors.shape}')
-            self._inlier_colors = colors
+        self._inlier_normals = normals
+        self._inlier_colors = colors
+        if len(colors) > 0:
             self.color = np.median(colors, axis=0)
+            
+    # def add_inliers(self, points, normals=None, colors=None):
+    #     """ Add inlier points to shape.
+        
+    #     Parameters
+    #     ----------
+    #     points : N x 3 array
+    #         Inlier points.
+    #     normals : optional, N x 3 array
+    #         Inlier point normals.
+    #     colors : optional, N x 3 array
+    #         Colors of inlier points.
+    #     """
+    #     new_points = Primitive._set_and_check_3d_array(points, 'inlier points')
+    #     num_points = len(new_points)
+        
+    #     if normals is None and len(self.inlier_normals) > 0:
+    #         if len(self.inlier_points)
+        
+        
             
     def closest_inliers(self, other_shape, n=1):
         """ Returns n pairs of closest inlier points with a second shape.
