@@ -74,6 +74,7 @@ class Primitive(ABC):
     flatten_points
     flatten_PointCloud
     set_inliers
+    add_inliers
     closest_inliers
     inliers_average_dist
     inliers_bounding_box
@@ -107,6 +108,8 @@ class Primitive(ABC):
     
     @property
     def model_args_n(self):
+    add_inliers
+    add_inliers
         """ Number of parameters in the model. """
         return self._model_args_n
     
@@ -506,7 +509,7 @@ class Primitive(ABC):
     
     @staticmethod
     def _set_and_check_3d_array(input_array, name='array', num_points=None):
-        if array is None:
+        if input_array is None or len(input_array) == 0:
             return np.array([])
         
         array = np.asarray(input_array)
@@ -523,6 +526,9 @@ class Primitive(ABC):
     
     def set_inliers(self, points, normals=None, colors=None):
         """ Set inlier points to shape.
+        
+        If normals or/and colors are given, they must have the same shape as
+        the input points.
         
         Parameters
         ----------
@@ -545,25 +551,39 @@ class Primitive(ABC):
         if len(colors) > 0:
             self.color = np.median(colors, axis=0)
             
-    # def add_inliers(self, points, normals=None, colors=None):
-    #     """ Add inlier points to shape.
+    def add_inliers(self, points, normals=None, colors=None):
+        """ Add inlier points to shape.
         
-    #     Parameters
-    #     ----------
-    #     points : N x 3 array
-    #         Inlier points.
-    #     normals : optional, N x 3 array
-    #         Inlier point normals.
-    #     colors : optional, N x 3 array
-    #         Colors of inlier points.
-    #     """
-    #     new_points = Primitive._set_and_check_3d_array(points, 'inlier points')
-    #     num_points = len(new_points)
+        If normals or/and colors are given, they must have the same shape as
+        the input points.
         
-    #     if normals is None and len(self.inlier_normals) > 0:
-    #         if len(self.inlier_points)
+        If normals or/and colors are given, they must have the same shape as
+        the input points.
         
+        Moreover, if original shape has inlier points but no normals or colors, 
+        trying to add new ones will fail.
         
+        See: set_inliers
+        
+        Parameters
+        ----------
+        points : N x 3 array
+            Inlier points.
+        normals : optional, N x 3 array
+            Inlier point normals.
+        colors : optional, N x 3 array
+            Colors of inlier points.
+        """
+        points = Primitive._set_and_check_3d_array(points, 'inlier points')
+        num_points = len(points)
+        normals = Primitive._set_and_check_3d_array(normals, 'inlier normals', num_points)
+        colors = Primitive._set_and_check_3d_array(colors, 'inlier colors', num_points)
+        
+        all_points = np.vstack([self._inlier_points, points])
+        all_normals = np.vstack([self._inlier_normals, normals])
+        all_colors = np.vstack([self._inlier_colors, colors])
+        
+        self.set_inliers(all_points, all_normals, all_colors)       
             
     def closest_inliers(self, other_shape, n=1):
         """ Returns n pairs of closest inlier points with a second shape.
