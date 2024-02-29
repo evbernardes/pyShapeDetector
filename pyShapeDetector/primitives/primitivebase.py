@@ -73,7 +73,7 @@ class Primitive(ABC):
     get_residuals
     flatten_points
     flatten_PointCloud
-    add_inliers
+    set_inliers
     closest_inliers
     inliers_average_dist
     inliers_bounding_box
@@ -504,7 +504,7 @@ class Primitive(ABC):
         pcd_flattened.colors = pcd.colors
         return pcd_flattened
     
-    def add_inliers(self, points, normals=None, colors=None):
+    def set_inliers(self, points, normals=None, colors=None):
         """ Add inlier points to shape.
         
         Parameters
@@ -1002,7 +1002,7 @@ class Primitive(ABC):
                 normals = None
             if colors.shape[1] == 0 or len(colors) < len(points):
                 colors = None
-            shape.add_inliers(points, normals, colors)
+            shape.set_inliers(points, normals, colors)
             
             if detector is not None:
                 num_points = sum([shape.metrics['num_points'] for shape in shapes])

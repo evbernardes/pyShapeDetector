@@ -178,7 +178,7 @@ def fuse_shape_groups(shapes_lists, detector=None,
     #             normals = None
     #         if colors.shape[1] == 0 or len(colors) < len(points):
     #             colors = None
-    #         shape.add_inliers(points, normals, colors)
+    #         shape.set_inliers(points, normals, colors)
             
     #         if detector is not None:
     #             num_points = sum([s.metrics['num_points'] for s in sublist])

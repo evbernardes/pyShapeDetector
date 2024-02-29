@@ -77,7 +77,7 @@ class PlaneBounded(Plane):
     get_residuals
     flatten_points
     flatten_PointCloud
-    add_inliers
+    set_inliers
     closest_inliers
     inliers_average_dist
     inliers_bounding_box
