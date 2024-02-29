@@ -231,7 +231,7 @@ def fuse_similar_shapes(shapes, detector=None,  rtol=1e-02, atol=1e-02,
 
 def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
                        length_max=None, distance_max=None, ignore=None, 
-                       intersect_parallel=False, eps_angle=np.deg2rad(0.9), 
+                       intersect_parallel=False, eps_angle=np.deg2rad(5.0), 
                        eps_distance=1e-2):
     """ For every possible pair of neighboring bounded planes, calculate their
     intersection and then glue them to this intersection.
@@ -262,7 +262,7 @@ def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
         If True, try to intersect parallel planes too. Default: False.
     eps_angle : float, optional
         Minimal angle (in radians) between normals necessary for detecting
-        whether planes are parallel. Default: 0.0017453292519943296
+        whether planes are parallel. Default: 0.08726646259971647 (5 degrees).
     eps_distance : float, optional
         When planes are parallel, eps_distance is used to detect if the 
         planes are close enough to each other in the dimension aligned
@@ -291,8 +291,9 @@ def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
     
     lines = []
     a = {}
+    num_shapes = len(shapes)
 
-    for i, j in combinations(range(len(shapes)), 2):
+    for i, j in combinations(range(num_shapes), 2):
         
         if shapes[i].name != 'bounded plane' or shapes[j].name != 'bounded plane':
             continue
@@ -337,7 +338,7 @@ def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
                 
         a[i, j] = line
         
-    for i, j in combinations(range(len(shapes)), 2):
+    for i, j in combinations(range(num_shapes), 2):
         if (i, j) not in a:
             continue
         

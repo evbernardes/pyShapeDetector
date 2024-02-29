@@ -290,7 +290,7 @@ class Line(Primitive):
     
     @staticmethod
     def from_plane_intersection(plane1, plane2, fit_bounds=True, 
-                                intersect_parallel=False, eps_angle=np.deg2rad(0.9), 
+                                intersect_parallel=False, eps_angle=np.deg2rad(5.0), 
                                 eps_distance=1e-2):
         """ Calculate the line defining the intersection between two planes.
         
@@ -310,7 +310,7 @@ class Line(Primitive):
             If True, try to intersect parallel planes too. Default: False.
         eps_angle : float, optional
             Minimal angle (in radians) between normals necessary for detecting
-            whether planes are parallel. Default: 0.0017453292519943296
+            whether planes are parallel. Default: 0.08726646259971647 (5 degrees).
         eps_distance : float, optional
             When planes are parallel, eps_distance is used to detect if the 
             planes are close enough to each other in the dimension aligned
