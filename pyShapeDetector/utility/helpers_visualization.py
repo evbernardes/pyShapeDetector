@@ -30,10 +30,10 @@ def draw_geometries(elements, **args):
 def draw_two_columns(objs_left, objs_right, dist=5,
                      lookat=None, up=None, front=None, zoom=None):
     
-    if type(objs_left) != list:
+    if not isinstance(objs_left, list):
         objs_left = [objs_left]
     objs_left = copy.deepcopy(objs_left)
-    if type(objs_right) != list:
+    if not isinstance(objs_right, list):
         objs_right = [objs_right]
     objs_right = copy.deepcopy(objs_right)
     
