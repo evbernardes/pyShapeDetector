@@ -257,9 +257,8 @@ class Primitive(ABC):
         return np.array([rho, theta, z])
     
     def __repr__(self):
-        round_ = lambda x:round(x, 5)
-        params = list(map(round_, self.model))
-        return type(self).__name__+'('+str(params)+')'
+        params = [round(x, 5) for x in self.model]
+        return type(self).__name__+f'({params})'
     
     def __eq__(self, other_shape):
         return self.is_similar_to(other_shape, rtol=1e-05, atol=1e-08)
