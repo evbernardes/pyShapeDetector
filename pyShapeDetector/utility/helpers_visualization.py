@@ -39,7 +39,7 @@ def draw_two_columns(objs_left, objs_right, dist=5,
     
     try:
         translate = 0.5 * dist * np.cross(up, front)
-    except:
+    except NameError:
         translate = np.array([0, 0.5 * dist, 0])
         
     for i in range(len(objs_left)):
