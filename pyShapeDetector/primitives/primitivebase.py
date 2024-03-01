@@ -235,7 +235,7 @@ class Primitive(ABC):
     
     @metrics.setter
     def metrics(self, metrics):
-        if type(metrics) != dict:
+        if not isinstance(metrics, dict):
             raise ValueError('metrics should be a dict')
         self._metrics = metrics
     
