@@ -657,8 +657,3 @@ def polygonize_alpha_shape(vertices, edges):
     triangles = list(polygonize(m))
     result = unary_union(triangles)
     return result   
-    
-    
-    
-    
-    
