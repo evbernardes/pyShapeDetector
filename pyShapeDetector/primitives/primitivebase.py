@@ -108,8 +108,6 @@ class Primitive(ABC):
     
     @property
     def model_args_n(self):
-    add_inliers
-    add_inliers
         """ Number of parameters in the model. """
         return self._model_args_n
     
