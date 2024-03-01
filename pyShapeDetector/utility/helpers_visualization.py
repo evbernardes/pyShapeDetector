@@ -27,8 +27,18 @@ def draw_geometries(elements, **args):
     geometries.append(Line.get_LineSet_from_list(lines))
     visualization.draw_geometries(geometries, **args)
     
-def draw_two_columns(objs_left, objs_right, dist=5,
-                     lookat=None, up=None, front=None, zoom=None):
+def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
+                     # lookat=None, up=None, front=None, zoom=None):
+                         
+    lookat = camera_options.get('lookat')
+    up = camera_options.get('get')
+    front = camera_options.get('front')
+    zoom = camera_options.get('zoom')
+    
+    # lookat = camera_options.get('lookat', [0, 0, 1])
+    # up = camera_options.get('get', [0, 0, 1])
+    # front = camera_options.get('front', [1, 0, 0])
+    # zoom = camera_options.get('zoom', 1)
     
     if not isinstance(objs_left, list):
         objs_left = [objs_left]
@@ -37,9 +47,9 @@ def draw_two_columns(objs_left, objs_right, dist=5,
         objs_right = [objs_right]
     objs_right = copy.deepcopy(objs_right)
     
-    try:
+    if up and front:
         translate = 0.5 * dist * np.cross(up, front)
-    except NameError:
+    else:
         translate = np.array([0, 0.5 * dist, 0])
         
     for i in range(len(objs_left)):
