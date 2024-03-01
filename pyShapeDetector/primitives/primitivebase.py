@@ -548,7 +548,7 @@ class Primitive(ABC):
         if len(colors) > 0:
             self.color = np.median(colors, axis=0)
             
-    def add_inliers(self, points, normals=None, colors=None):
+    def add_inliers(self, new_points):
         """ Add inlier points to shape.
         
         If normals or/and colors are given, they must have the same shape as
@@ -564,23 +564,23 @@ class Primitive(ABC):
         
         Parameters
         ----------
-        points : N x 3 array
-            Inlier points.
-        normals : optional, N x 3 array
-            Inlier point normals.
-        colors : optional, N x 3 array
-            Colors of inlier points.
+        new_points : N x 3 array
+            New inlier points.
         """
-        points = Primitive._set_and_check_3d_array(points, 'inlier points')
-        num_points = len(points)
-        normals = Primitive._set_and_check_3d_array(normals, 'inlier normals', num_points)
-        colors = Primitive._set_and_check_3d_array(colors, 'inlier colors', num_points)
+        new_points = Primitive._set_and_check_3d_array(new_points, 'inlier points')
+        num_points = len(new_points)
         
-        all_points = np.vstack([self._inlier_points, points])
-        all_normals = np.vstack([self._inlier_normals, normals])
-        all_colors = np.vstack([self._inlier_colors, colors])
+        new_colors = np.repeat(self.color, num_points).reshape(num_points, 3)
         
-        self.set_inliers(all_points, all_normals, all_colors)       
+        self._inlier_points = np.vstack([self._inlier_points, new_points])
+        
+        if len(self.inlier_normals) > 0:
+            new_normals = self.get_normals(new_points)
+            self._inlier_normals = np.vstack([self._inlier_normals, new_normals])
+            
+        if len(self.inlier_colors) > 0:
+            new_colors = np.repeat(self.color, num_points).reshape(num_points, 3)
+            self._inlier_colors = np.vstack([self._inlier_colors, new_colors])    
             
     def closest_inliers(self, other_shape, n=1):
         """ Returns n pairs of closest inlier points with a second shape.
