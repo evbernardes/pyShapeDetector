@@ -368,7 +368,7 @@ class PlaneBounded(Plane):
             triangles = triangles[areas > 0]
     
             # needed to make plane visible from both sides
-            triangles = np.vstack([triangles, triangles[:, ::-1]])
+            # triangles = np.vstack([triangles, triangles[:, ::-1]])
 
         mesh = TriangleMesh()
         mesh.vertices = Vector3dVector(points)

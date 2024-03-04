@@ -426,7 +426,7 @@ class Cone(Primitive):
             triangles = np.asarray(mesh.triangles)
             triangles = np.array(
                 [t for t in triangles if not np.any(np.isin(base_vertices, t))])
-            triangles = np.vstack([triangles, triangles[:, ::-1]])
+            # triangles = np.vstack([triangles, triangles[:, ::-1]])
             mesh.triangles = Vector3iVector(triangles)
         # center = mesh.get_center()
         # mesh.translate()

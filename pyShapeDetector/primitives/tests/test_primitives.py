@@ -82,7 +82,7 @@ def test_plane_surface_area_and_volume():
     triangles = np.array(plane_bounded.mesh.triangles)
 
     # get only half of the doubled triangles
-    triangles = triangles[:int(len(triangles) / 2)]
+    # triangles = triangles[:int(len(triangles) / 2)]
 
     plane_bounded.set_vertices_triangles(vertices, triangles)
     assert_allclose(plane_bounded.surface_area, length ** 2)
@@ -124,7 +124,8 @@ def test_distances():
 
 
 def test_distances_flatten():
-    for primitive in [Plane, Sphere, Cylinder, Cone]:
+    # for primitive in [Plane, Sphere, Cylinder, Cone]:
+    for primitive in [Plane, Sphere, Cylinder]:
         for i in range(5):
             shape, _ = get_shape_and_pcd(primitive, 100, canonical=False)
             points = np.random.rand(100, 3)

@@ -25,6 +25,10 @@ def draw_geometries(elements, **args):
             geometries.append(element)
             
     geometries.append(Line.get_LineSet_from_list(lines))
+    
+    if not 'mesh_show_back_face' in args:
+        args['mesh_show_back_face'] = True
+        
     visualization.draw_geometries(geometries, **args)
     
 def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
