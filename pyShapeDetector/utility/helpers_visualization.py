@@ -31,9 +31,11 @@ def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
                      # lookat=None, up=None, front=None, zoom=None):
                          
     lookat = camera_options.get('lookat')
-    up = camera_options.get('get')
+    up = camera_options.get('up')
     front = camera_options.get('front')
     zoom = camera_options.get('zoom')
+    
+    has_options = not any(v is None for v in [lookat, up, front, zoom])
     
     # lookat = camera_options.get('lookat', [0, 0, 1])
     # up = camera_options.get('get', [0, 0, 1])
@@ -47,7 +49,7 @@ def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
         objs_right = [objs_right]
     objs_right = copy.deepcopy(objs_right)
     
-    if up and front:
+    if has_options:
         translate = 0.5 * dist * np.cross(up, front)
     else:
         translate = np.array([0, 0.5 * dist, 0])
@@ -57,7 +59,7 @@ def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
     for i in range(len(objs_right)):
         objs_right[i].translate(translate)
         
-    if zoom is None:
+    if not has_options:
         draw_geometries(objs_right + objs_left)
     else:
         draw_geometries(objs_right + objs_left,
