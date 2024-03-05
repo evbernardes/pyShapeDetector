@@ -11,6 +11,8 @@ import numpy as np
 from numpy.testing import assert_allclose
 import warnings
 
+from scipy.spatial.transform import Rotation
+
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
 
@@ -164,3 +166,35 @@ def test_normals_flatten_others():
             normals = pcd_flattened.normals
             angles = shape.get_angles(points_flattened, normals)
             assert_allclose(rmse(angles), 0, atol=1e-1)
+
+def test_translate_and_rotate():
+    inlier_points = np.random.random((100, 3))
+    inlier_normals = np.random.random((100, 3))
+    inlier_normals /= np.linalg.norm(inlier_normals, axis=1)[:, None]
+
+    translation = np.random.random(3) * 10
+    position = np.random.random(3)
+    position_translated = position + translation
+    rotation = Rotation.from_quat(np.random.random(4))
+    vector = np.random.random(3)
+    vector /= np.linalg.norm(vector)
+    vector_rotated = rotation.apply(vector)
+
+    plane = Plane.from_normal_point(vector, position)
+    shapes = [plane, plane.get_square_plane()]
+    for p in shapes:
+        p.set_inliers(inlier_points, inlier_normals)
+        p.translate(translation)
+        assert_allclose(p.get_distances(position_translated), 0, atol=1e-10)
+        p.rotate(rotation)
+        assert_allclose(p.normal, vector_rotated)
+
+    inlier_points = rotation.apply(inlier_points + translation)
+    inlier_normals = rotation.apply(inlier_normals)
+
+    for s in shapes:
+        assert_allclose(s.inlier_points, inlier_points)
+        assert_allclose(s.inlier_normals, inlier_normals)
+
+
+    
