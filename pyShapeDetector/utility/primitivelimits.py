@@ -116,7 +116,7 @@ class PrimitiveLimits:
                 
                 if len(arg) == 3:
                     func, attribute, bounds = arg
-                    if not callable(func):
+                    if func is not None and not callable(func):
                         raise ValueError(f"{func} is not callable")
                             
                 elif len(arg) == 2:
