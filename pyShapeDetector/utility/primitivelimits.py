@@ -22,8 +22,8 @@ class PrimitiveLimits:
             return True
         for arg in self.args:
             test_value = getattr(shape, arg['attribute'])
-            if arg['func'] is not None:
-                test_value = arg['func'](test_value)
+            if (func := arg['func']) is not None:
+                test_value = func(test_value)
             if not (arg['limits'][0] <= test_value <= arg['limits'][1]):
                 return False
             
