@@ -413,6 +413,7 @@ class PlaneBounded(Plane):
             Translation vector.
         """
         Plane.translate(self._plane, translation)
+        self._translate_points(translation)
         
         for hole in self.holes:
             hole._translate_points(translation)
