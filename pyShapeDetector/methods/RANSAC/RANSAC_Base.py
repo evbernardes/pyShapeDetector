@@ -133,7 +133,10 @@ class RANSAC_Base(ABC):
                              '. Either raise the value on the options, or set '
                              'it to None.')
             
-        limit.check_compatibility(primitive)
+        if not limit.check_compatibility(primitive):
+            raise ValueError(f"Primitive of type {primitive.name} is "
+                             "incompatible with PrimitiveLimits instance.")
+            
         self._primitives.append(primitive)
         self._limits.append(limit)
         self._num_primitives += 1
