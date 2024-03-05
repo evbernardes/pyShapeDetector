@@ -192,7 +192,7 @@ class PrimitiveLimits:
             test_value = getattr(shape, arg['attribute'])
             if (func := arg['func']) is not None:
                 test_value = func(test_value)
-            if not (arg['limits'][0] <= test_value <= arg['limits'][1]):
+            if not (arg['bounds'][0] <= test_value <= arg['bounds'][1]):
                 return False
             
         return True
