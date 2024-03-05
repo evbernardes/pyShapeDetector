@@ -207,7 +207,7 @@ def test_translate_and_rotate():
     shapes.append(cylinder)
 
     cone = Cone.from_appex_vector_radius(
-    position, vector, 0.1)
+        position, vector, np.random.random())
     cone.set_inliers(inlier_points, inlier_normals)
     cone.translate(translation)
     assert_allclose(cone.appex, position_translated)
