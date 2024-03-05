@@ -1050,9 +1050,3 @@ class Primitive(ABC):
                     num_points, num_inliers, distances, angles)
                 
         return shape
-        
-        
-        
-        
-        
-        
