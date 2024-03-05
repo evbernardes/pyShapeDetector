@@ -75,7 +75,7 @@ def average_nearest_dist(points, k=15, leaf_size=40):
     nearest_dist, nearest_ind = tree.query(points, k=k)
     return np.mean(nearest_dist[:, 1:])
 
-def read_point_cloud(filepath, down_sample=False, estimate_normals=False):
+def read_point_cloud(filepath, down_sample=None, estimate_normals=False):
     """ Read file to pointcloud. Can also read .h5 files from traceparts 
     database.
     
