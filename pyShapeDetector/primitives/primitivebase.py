@@ -27,7 +27,7 @@ class Primitive(ABC):
         `get_distances`
         `get_normals`
         
-    The method `get_mesh can also optionally be implemented to return a : 3 x 3 array
+    The method `get_mesh` can also optionally be implemented to return a : 3 x 3 array
     TriangleMesh instance.
     
     The properties `surface_area` and `volume` can also be implemented.
