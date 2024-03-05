@@ -16,7 +16,7 @@ from scipy.spatial.transform import Rotation
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
 
-from pyShapeDetector.primitives import Plane, Sphere, Cylinder, Cone
+from pyShapeDetector.primitives import Plane, Sphere, Cylinder, Cone, Line
 from pyShapeDetector.primitives import PlaneBounded
 # primitives_simple = [Plane, Sphere, Cylinder, Cone]
 # primitives_simple = [Plane, Sphere, Cylinder]
@@ -195,7 +195,7 @@ def test_translate_and_rotate():
     sphere.translate(translation)
     assert_allclose(sphere.center, position_translated)
     sphere.rotate(rotation)
-    shapes.append(sphere)
+    # shapes.append(sphere)
 
     cylinder = Cylinder.from_base_vector_radius(
         position, vector, np.random.random())
@@ -204,7 +204,7 @@ def test_translate_and_rotate():
     assert_allclose(cylinder.base, position_translated)
     cylinder.rotate(rotation)
     assert_allclose(cylinder.vector, vector_rotated)
-    shapes.append(cylinder)
+    # shapes.append(cylinder)
 
     cone = Cone.from_appex_vector_radius(
         position, vector, np.random.random())
@@ -213,7 +213,16 @@ def test_translate_and_rotate():
     assert_allclose(cone.appex, position_translated)
     cone.rotate(rotation)
     assert_allclose(cone.vector, vector_rotated)
-    shapes.append(cone)
+    # shapes.append(cone)
+
+    line = Line.from_point_vector(position, vector)
+    line.set_inliers(inlier_points, inlier_normals)
+    line.translate(translation)
+    assert_allclose(line.beginning, position_translated)
+    line.rotate(rotation)
+    assert_allclose(line.vector, vector_rotated)
+
+    shapes += [sphere, cylinder, cone, line]
 
     # testing all transformed inliers
     inlier_points = rotation.apply(inlier_points + translation)
