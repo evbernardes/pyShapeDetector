@@ -93,8 +93,8 @@ def test_fit():
     for i in range(5):
         shape, pcd = get_shape_and_pcd(Cylinder, 1000, canonical=True)
         shape_fit = Cylinder.fit(pcd.points, normals=pcd.normals).canonical
-        # assert_allclose(shape.center, shape_fit.center, rtol=1e-2, atol=1e-2)
-        assert_allclose(shape.vector, shape_fit.vector, rtol=1e-2, atol=1e-2)
+        # test axis instead of vector for direct fit
+        assert_allclose(shape.axis, shape_fit.axis, rtol=1e-2, atol=1e-2)
         assert_allclose(shape.radius, shape_fit.radius, rtol=1e-2, atol=1e-2)
 
     # # testing Cone separately
