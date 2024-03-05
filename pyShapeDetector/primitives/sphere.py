@@ -80,6 +80,8 @@ class Sphere(Primitive):
     _fit_n_min = 4
     _model_args_n = 4
     _name = 'sphere'
+    _translatable = [0, 1, 2]
+    _rotatable = []
     _color = np.array([0, 1, 0])
     
     @property

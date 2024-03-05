@@ -804,7 +804,9 @@ class Primitive(ABC):
             raise NotImplementedError('Shapes of type {shape.name} do not '
                                       'have an implemented _translatable '
                                       'attribute')
-        self._model[self._translatable] += translation        
+            
+        if len(self._translatable) != 0:
+            self._model[self._translatable] += translation        
         self._translate_points(translation)
         
         if self._mesh is not None:
@@ -851,10 +853,11 @@ class Primitive(ABC):
             
         rotation = Primitive._parse_rotation(rotation)
             
-        self._model[self._rotatable] = rotation.apply(
-            self.model[self._rotatable])
-        self._model[self._translatable] = rotation.apply(
-            self.model[self._translatable])
+        if len(self._rotatable) != 0:
+            self._model[self._rotatable] = rotation.apply(
+                self.model[self._rotatable])
+            self._model[self._translatable] = rotation.apply(
+                self.model[self._translatable])
         
         self._rotate_points_normals(rotation)
         

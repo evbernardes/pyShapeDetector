@@ -104,6 +104,7 @@ class Plane(Primitive):
     _name = 'plane'
     _holes = []
     _rotatable = [0, 1, 2]
+    _translatable = []
     _fusion_intersections = np.array([])
     _color = np.array([0, 0, 1])
 

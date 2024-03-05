@@ -180,6 +180,7 @@ def test_translate_and_rotate():
     vector /= np.linalg.norm(vector)
     vector_rotated = rotation.apply(vector)
 
+    # testing both Plane and PlaneBounded
     plane = Plane.from_normal_point(vector, position)
     shapes = [plane, plane.get_square_plane()]
     for p in shapes:
@@ -189,6 +190,32 @@ def test_translate_and_rotate():
         p.rotate(rotation)
         assert_allclose(p.normal, vector_rotated)
 
+    sphere = Sphere.from_center_radius(position, np.random.random())
+    sphere.set_inliers(inlier_points, inlier_normals)
+    sphere.translate(translation)
+    assert_allclose(sphere.center, position_translated)
+    sphere.rotate(rotation)
+    shapes.append(sphere)
+
+    cylinder = Cylinder.from_base_vector_radius(
+        position, vector, np.random.random())
+    cylinder.set_inliers(inlier_points, inlier_normals)
+    cylinder.translate(translation)
+    assert_allclose(cylinder.base, position_translated)
+    cylinder.rotate(rotation)
+    assert_allclose(cylinder.vector, vector_rotated)
+    shapes.append(cylinder)
+
+    cone = Cone.from_appex_vector_radius(
+    position, vector, 0.1)
+    cone.set_inliers(inlier_points, inlier_normals)
+    cone.translate(translation)
+    assert_allclose(cone.appex, position_translated)
+    cone.rotate(rotation)
+    assert_allclose(cone.vector, vector_rotated)
+    shapes.append(cone)
+
+    # testing all transformed inliers
     inlier_points = rotation.apply(inlier_points + translation)
     inlier_normals = rotation.apply(inlier_normals)
 
