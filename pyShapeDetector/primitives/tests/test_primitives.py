@@ -133,8 +133,11 @@ def test_distances_flatten():
             distances = shape.get_distances(points_flattened)
             assert_allclose(distances, 0, atol=1e-6)
 
+            points_reflattened = shape.flatten_points(points_flattened)
+            assert_allclose(points_reflattened, points_flattened, atol=1e-6)
 
-def test_normals_flatten_non_problematic():
+
+def test_normals_flatten_plane():
     for primitive in [Plane]:
         for i in range(5):
             shape, _ = get_shape_and_pcd(primitive, 100, canonical=False)
@@ -148,7 +151,7 @@ def test_normals_flatten_non_problematic():
             assert_allclose(angles, 0, atol=1e-5)      
     
 
-def test_normals_flatten_problematic():
+def test_normals_flatten_others():
     # TODO: Estimation of normals in Cylinder and Sphere give big angles 
     for primitive in [Sphere, Cylinder, Cone]:
         for i in range(5):
