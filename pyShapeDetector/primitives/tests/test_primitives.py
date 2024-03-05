@@ -16,10 +16,8 @@ from scipy.spatial.transform import Rotation
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
 
-from pyShapeDetector.primitives import Plane, Sphere, Cylinder, Cone, Line
-from pyShapeDetector.primitives import PlaneBounded
-# primitives_simple = [Plane, Sphere, Cylinder, Cone]
-# primitives_simple = [Plane, Sphere, Cylinder]
+from pyShapeDetector.primitives import (
+    Plane, PlaneBounded, Sphere, Cylinder, Cone, Line)
 
 def rmse(x):
     """ Helper for root mean square error. """
@@ -231,6 +229,3 @@ def test_translate_and_rotate():
     for s in shapes:
         assert_allclose(s.inlier_points, inlier_points)
         assert_allclose(s.inlier_normals, inlier_normals)
-
-
-    
