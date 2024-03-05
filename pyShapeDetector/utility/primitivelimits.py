@@ -5,6 +5,8 @@ Created on Fri Oct 20 17:01:30 2023
 
 @author: ebernardes
 """
+import numpy as np
+
 class PrimitiveLimits:
     
     def check_compatibility(self, primitive):
@@ -90,6 +92,14 @@ class PrimitiveLimits:
                 if not isinstance(limits, (tuple, list)) or len(limits) != 2:
                     raise ValueError("limits must be a list or tuple of 2 "
                                      f"elements, got {limits}")
+                    
+                if limits[0] != None and limits[1] != None:
+                    raise ValueError(f"Limit ranges cannot all be None, got {limits}.")
+                    
+                if limits[0] is None:
+                    limits[0] = -np.inf
+                if limits[1] is None:
+                    limits[1] = np.inf
                 
                 limits = sorted(limits)
                 

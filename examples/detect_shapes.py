@@ -13,16 +13,12 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import open3d as o3d
-from open3d.visualization import draw_geometries
+
 from open3d.utility import Vector3dVector
 
-# from helpers import color_blue, color_gray, color_red, color_yellow
-from helpers import draw_two_colomns, paint_meshes_by_type, average_nearest_dist, segment_dbscan
 from pyShapeDetector.primitives import Sphere, Plane, PlaneBounded, Cylinder
-from pyShapeDetector.utility import MultiDetector, PrimitiveLimits, DetectorOptions
-from pyShapeDetector.methods import RANSAC_Classic, RANSAC_Weighted, MSAC, \
-    BDSAC, LDSAC
-
+from pyShapeDetector import utility as util
+from pyShapeDetector.methods import BDSAC#, RANSAC_Classic, MSAC, LDSAC
 
 DEG = 0.017453292519943295
 
@@ -55,8 +51,8 @@ pcd_full.points = Vector3dVector(np.asarray(pcd_full.points) + noise)
 # draw_geometries([pcd_full])
 
 #%% Separate full pointcloud into clusters
-eps = average_nearest_dist(pcd_full.points, k=15)
-pcds_segmented = segment_dbscan(pcd_full, 2*eps, min_points=10, colors=True)
+eps = util.average_nearest_dist(pcd_full.points, k=15)
+pcds_segmented = util.segment_dbscan(pcd_full, 2*eps, min_points=10, colors=True)
 # o3d.visualization.draw_geometries(pcds_segmented)
 # pcds_segmented = [pcd_full]
 #%%
@@ -73,19 +69,20 @@ detector.options.num_iterations = 100
 detector.options.probability = 1
 
 # detector.add(Cylinder, PrimitiveLimits(('radius', 'max', 3)))
-detector.add(Sphere, PrimitiveLimits(('radius', 'max', 3)))
+detector.add(Sphere, util.PrimitiveLimits(('radius', 'max', 3)))
 detector.add(PlaneBounded)
 
-shape_detector = MultiDetector(detector, pcds_segmented, debug=True,
-                               # normals_reestimate=True,
-                               points_min=100, num_iterations=20,
-                               compare_metric='fitness', metric_min=0.5)
-                               # compare_metric='weight', metric_min=5385206)             
+shape_detector = util.MultiDetector(
+    detector, pcds_segmented, debug=True,
+    # normals_reestimate=True,
+    points_min=100, num_iterations=20,
+    compare_metric='fitness', metric_min=0.5)
+    # compare_metric='weight', metric_min=5385206)             
 
 #%% Plot detected meshes
 meshes = shape_detector.meshes
 shapes = [shape.canonical for shape in shape_detector.shapes]
-paint_meshes_by_type(meshes, shapes)
+# paint_meshes_by_type(meshes, shapes)
 
 pcds_rest = shape_detector.pcds_rest
 
@@ -98,6 +95,6 @@ zoom=1
 bbox = pcd_full.get_axis_aligned_bounding_box()
 delta = bbox.max_bound - bbox.min_bound
 
-draw_two_colomns(pcds_segmented+meshes, meshes+pcds_rest, 1.3*delta[1],
+util.draw_two_colomns(pcds_segmented+shapes, shapes+[pcds_rest], 1.3*delta[1],
                  lookat, up, front, zoom)
 
