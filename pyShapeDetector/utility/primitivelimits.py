@@ -70,6 +70,7 @@ class PrimitiveLimits:
     check_compatibility
     check
     __add__
+    __eq__
     """
         
     @property
@@ -127,7 +128,11 @@ class PrimitiveLimits:
                     raise ValueError("Limits are defined by 2 or 3 attributes: "
                                      "(func), attribute, limits.")
                     
-                if not isinstance(bounds, (tuple, list)) or len(bounds) != 2:
+                if isinstance(bounds, list) and len(bounds) == 2:
+                    pass
+                elif isinstance(bounds, tuple) and len(bounds) == 2:
+                    bounds = list(bounds)
+                else:
                     raise ValueError("limits must be a list or tuple of 2 "
                                      f"elements, got {bounds}")
                     
@@ -139,7 +144,7 @@ class PrimitiveLimits:
                 if bounds[1] is None:
                     bounds[1] = np.inf
                 
-                bounds = sorted(bounds)
+                bounds = tuple(sorted(bounds))
                 
                 if type(attribute) is not str:
                     raise ValueError("attribute must be a string.")
@@ -200,8 +205,15 @@ class PrimitiveLimits:
     def __add__(self, limits_other):
         """ Fuse args of PrimitiveLimits instances. """
         if not isinstance(limits_other, PrimitiveLimits):
-            raise TypeError(f"unsupported operand type(s) for +: '{limits_other}' and PrimitiveLimits")
+            raise TypeError(f"unsupported operand type(s) for +: PrimitiveLimits and '{type(limits_other)}'")
         
         limits_sum = PrimitiveLimits(None)
         limits_sum.args = self.args + limits_other.args
         return limits_sum
+    
+    def __eq__(self, limits_other):
+        if not isinstance(limits_other, PrimitiveLimits):
+            raise TypeError(f"unsupported operand type(s) for ==: PrimitiveLimits and '{type(limits_other)}'")
+    
+        return self.args == limits_other.args
+        
