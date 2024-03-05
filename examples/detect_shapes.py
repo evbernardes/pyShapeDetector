@@ -68,33 +68,30 @@ detector.options.num_iterations = 100
 # detector.options.probability = 0.9999999
 detector.options.probability = 1
 
-# detector.add(Cylinder, PrimitiveLimits(('radius', 'max', 3)))
-detector.add(Sphere, util.PrimitiveLimits(('radius', 'max', 3)))
+detector.add(Sphere, util.PrimitiveLimits(('radius', [None, 3])))
 detector.add(PlaneBounded)
 
 shape_detector = util.MultiDetector(
     detector, pcds_segmented, debug=True,
     # normals_reestimate=True,
-    points_min=100, num_iterations=20,
+    points_min=100, shapes_per_cluster=20,
     compare_metric='fitness', metric_min=0.5)
     # compare_metric='weight', metric_min=5385206)             
 
 #%% Plot detected meshes
-meshes = shape_detector.meshes
-shapes = [shape.canonical for shape in shape_detector.shapes]
+shapes = shape_detector.shapes
 # paint_meshes_by_type(meshes, shapes)
 
 pcds_rest = shape_detector.pcds_rest
 
-lookat=[0, 0, 1]
-up=[0, 0, 1]
-front=[1, 0, 0]
-zoom=1
+# lookat=[0, 0, 1]
+# up=[0, 0, 1]
+# front=[1, 0, 0]
+# zoom=1
 # zoom = None
 
 bbox = pcd_full.get_axis_aligned_bounding_box()
 delta = bbox.max_bound - bbox.min_bound
 
-util.draw_two_colomns(pcds_segmented+shapes, shapes+[pcds_rest], 1.3*delta[1],
-                 lookat, up, front, zoom)
+util.draw_two_columns(pcds_segmented+shapes, shapes+[pcds_rest], 1.3*delta[1])
 
