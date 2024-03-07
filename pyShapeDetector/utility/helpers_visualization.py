@@ -34,7 +34,7 @@ def draw_geometries(elements, print_points=False, **args):
     if print_points:
         geometries += pcds
     
-    if not 'mesh_show_back_face' in args:
+    if 'mesh_show_back_face' not in args:
         args['mesh_show_back_face'] = True
         
     visualization.draw_geometries(geometries, **args)
