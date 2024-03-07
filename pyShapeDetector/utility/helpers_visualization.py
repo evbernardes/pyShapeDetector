@@ -13,8 +13,6 @@ from open3d import visualization
 def draw_geometries(elements, print_points=False, **camera_options):
     from pyShapeDetector.primitives import Primitive, Line
     
-    # print_points = args.get('print_points', False)
-    
     elements = np.asarray(elements).flatten()
     pcds = []
     geometries = []
@@ -40,7 +38,6 @@ def draw_geometries(elements, print_points=False, **camera_options):
     visualization.draw_geometries(geometries, **camera_options)
     
 def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
-                     # lookat=None, up=None, front=None, zoom=None):
                          
     lookat = camera_options.get('lookat')
     up = camera_options.get('up')
@@ -49,11 +46,6 @@ def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
     print_points = camera_options.get('print_points', False)
     
     has_options = not any(v is None for v in [lookat, up, front, zoom])
-    
-    # lookat = camera_options.get('lookat', [0, 0, 1])
-    # up = camera_options.get('get', [0, 0, 1])
-    # front = camera_options.get('front', [1, 0, 0])
-    # zoom = camera_options.get('zoom', 1)
     
     if not isinstance(objs_left, list):
         objs_left = [objs_left]
