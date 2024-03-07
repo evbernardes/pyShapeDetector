@@ -811,8 +811,8 @@ class PlaneBounded(Plane):
         lines = self.bound_lines
         lines_other = other.bound_lines
 
-        shape._metrics = self._metrics.copy()
-        shape._color = self._color.copy()
+        self._metrics = self._metrics.copy()
+        self._color = self._color.copy()
         points = []
         for l1, l2 in product(lines, lines_other):
             p = l1.point_from_intersection(
