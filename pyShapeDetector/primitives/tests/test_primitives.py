@@ -19,18 +19,22 @@ from open3d.utility import Vector3dVector
 from pyShapeDetector.primitives import (
     Plane, PlaneBounded, Sphere, Cylinder, Cone, Line)
 
+all_primitives = [Plane, PlaneBounded, Sphere, Cylinder, Cone, Line]
+
 def rmse(x):
     """ Helper for root mean square error. """
     return np.sqrt(sum(x * x)) / len(x)
 
 def get_shape_and_pcd(primitive, num_points, canonical=False):
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        if primitive._name == 'bounded plane':
-            shape = Plane(np.random.rand(4)).get_square_plane(np.random.rand())
-        else:
-            model = np.random.rand(primitive._model_args_n)
-            shape = primitive(model)
+        # warnings.simplefilter("ignore")
+        # if primitive._name == 'bounded plane':
+        #     shape = Plane(np.random.rand(4)).get_square_plane(np.random.rand())
+        # else:
+        #     model = np.random.rand(primitive._model_args_n)
+        #     shape = primitive(model)
+
+        shape = primitive.random()
 
         mesh = shape.get_mesh()
         pcd = mesh.sample_points_uniformly(num_points)
@@ -71,6 +75,15 @@ def test_plane_bounded_init():
         PlaneBounded(model)
 
     PlaneBounded(model, bounds)
+
+
+# def test_copy():
+#     for primitive in all_primitives:
+#         shape, pcd = get_shape_and_pcd(primitive, 100)
+
+#         shape_copy = shape.copy()
+#         assert shape.model == shape_copy.model
+#         assert id(shape) != id(shape_copy)
 
 
 def test_plane_surface_area_and_volume():
