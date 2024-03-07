@@ -526,7 +526,7 @@ class Primitive(ABC):
             
         return array
     
-    def set_inliers(self, points, normals=None, colors=None):
+    def set_inliers(self, points_or_pointcloud, normals=None, colors=None):
         """ Set inlier points to shape.
         
         If normals or/and colors are given, they must have the same shape as
@@ -534,13 +534,25 @@ class Primitive(ABC):
         
         Parameters
         ----------
-        points : N x 3 array
+        points_or_pointcloud : N x 3 array or instance of open3d.geometry.PointCloud
             Inlier points.
         normals : optional, N x 3 array
             Inlier point normals.
         colors : optional, N x 3 array
             Colors of inlier points.
         """
+        
+        if isinstance(points_or_pointcloud, PointCloud):
+            if normals is not None or colors is not None:
+                raise TypeError("If PointCloud is given as input, normals and "
+                                "colors are taken from it, and not accepted "
+                                "as input.")
+                
+            points = np.asarray(points_or_pointcloud.points)
+            normals = np.asarray(points_or_pointcloud.normals)
+            colors = np.asarray(points_or_pointcloud.colors)
+        else:
+            points = points_or_pointcloud
             
         points = Primitive._set_and_check_3d_array(points, 'inlier points')
         num_points = len(points)
@@ -681,7 +693,9 @@ class Primitive(ABC):
             Sampled pointcloud from shape.
         """
         mesh = self.get_mesh()
-        return mesh.sample_points_uniformly(number_of_points, use_triangle_normal)
+        pcd = mesh.sample_points_uniformly(number_of_points, use_triangle_normal)
+        pcd.normals = Vector3dVector(self.get_normals(pcd.points))
+        return pcd
     
     def sample_points_density(self, density=1, 
                             use_triangle_normal=False):
