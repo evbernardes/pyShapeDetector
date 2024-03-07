@@ -72,13 +72,13 @@ def test_plane_bounded_init():
     PlaneBounded(model, bounds)
 
 
-# def test_copy():
-#     for primitive in all_primitives:
-#         shape, pcd = get_shape(primitive, 100)
+def test_copy():
+    for primitive in all_primitives:
+        shape = get_shape(primitive, 100)
 
-#         shape_copy = shape.copy()
-#         assert shape.model == shape_copy.model
-#         assert id(shape) != id(shape_copy)
+        shape_copy = shape.copy()
+        assert shape.model == shape_copy.model
+        assert id(shape) != id(shape_copy)
 
 
 def test_plane_surface_area_and_volume():
@@ -107,8 +107,8 @@ def test_fit():
     # testing Cylinder separately
     for i in range(5):
         shape = get_shape(Cylinder, 1000, canonical=True)
-        pcd = shape.inlier_PointCloud
-        shape_fit = Cylinder.fit(shape.inlier_points, normals=shape.inlier_normals).canonical
+        shape_fit = Cylinder.fit(
+            shape.inlier_points, normals=shape.inlier_normals).canonical
         # test axis instead of vector for direct fit
         assert_allclose(shape.axis, shape_fit.axis, rtol=1e-2, atol=1e-2)
         assert_allclose(shape.radius, shape_fit.radius, rtol=1e-2, atol=1e-2)
@@ -127,10 +127,8 @@ def test_fit():
     # for primitive in [Sphere]:
         for i in range(5):
             shape = get_shape(primitive, 100, canonical=True)
-            pcd = shape.inlier_PointCloud
-            points = pcd.points
             shape_fit = primitive.fit(
-                points, normals=shape.inlier_normals).canonical
+                shape.inlier_points, normals=shape.inlier_normals).canonical
             assert_allclose(shape.model, shape_fit.model, rtol=1e-2, atol=1e-2)
 
 
@@ -138,8 +136,7 @@ def test_distances():
     for primitive in [Plane, Sphere, Cylinder, Cone]:
         for i in range(5):
             shape = get_shape(primitive, 100, canonical=False)
-            pcd = shape.inlier_PointCloud
-            distances = shape.get_distances(pcd.points)
+            distances = shape.get_distances(shape.inlier_points)
             # assert_allclose(rmse(distances), 0, atol=1e-2)
             assert_allclose(distances, 0, atol=1e-1)
 
