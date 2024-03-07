@@ -48,14 +48,11 @@ def test_plane_projections():
     assert_allclose(points_recovered, points)
 
 
-def test_primitive_init():
+def test_primitives_regular_init():
     for primitive in [Plane, Sphere, Cylinder]:
+        
         model = np.random.rand(primitive._model_args_n)
-        if primitive.name == 'bounded plane':
-            with pytest.warns(UserWarning, match='returning square plane'):
-                primitive(model)
-        else:
-            primitive(model)
+        primitive(model)
             
         with pytest.raises(ValueError, match='elements, got'): 
             model = np.random.rand(primitive._model_args_n+1)
@@ -64,6 +61,16 @@ def test_primitive_init():
         with pytest.raises(ValueError, match='elements, got'): 
             model = np.random.rand(primitive._model_args_n-1)
             primitive(model)
+
+
+def test_plane_bounded_init():
+    model = np.random.rand(PlaneBounded._model_args_n)
+    bounds = np.random.random((50, 3))
+
+    with pytest.warns(UserWarning, match='returning square plane'):
+        PlaneBounded(model)
+
+    PlaneBounded(model, bounds)
 
 
 def test_plane_surface_area_and_volume():
