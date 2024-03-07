@@ -214,9 +214,14 @@ class Primitive(ABC):
     def inlier_PointCloud(self):
         """ Creates Open3D.geometry.PointCloud object from inlier points. """
         pcd = PointCloud()
+        if len(self.inlier_points) == 0:
+            return pcd
         pcd.points = Vector3dVector(self.inlier_points)
-        pcd.normals = Vector3dVector(self.inlier_normals)
-        pcd.colors = Vector3dVector(self.inlier_colors)
+        
+        if len(self.inlier_normals) > 0:
+            pcd.normals = Vector3dVector(self.inlier_normals)
+        if len(self.inlier_colors) > 0:
+            pcd.colors = Vector3dVector(self.inlier_colors)
         return pcd
     
     @property
