@@ -10,7 +10,7 @@ import copy
 from open3d import visualization
 # from pyShapeDetector.primitives import Primitive, Line
 
-def draw_geometries(elements, print_points=False, **args):
+def draw_geometries(elements, print_points=False, **camera_options):
     from pyShapeDetector.primitives import Primitive, Line
     
     # print_points = args.get('print_points', False)
@@ -34,10 +34,10 @@ def draw_geometries(elements, print_points=False, **args):
     if print_points:
         geometries += pcds
     
-    if 'mesh_show_back_face' not in args:
-        args['mesh_show_back_face'] = True
+    if 'mesh_show_back_face' not in camera_options:
+        camera_options['mesh_show_back_face'] = True
         
-    visualization.draw_geometries(geometries, **args)
+    visualization.draw_geometries(geometries, **camera_options)
     
 def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
                      # lookat=None, up=None, front=None, zoom=None):
