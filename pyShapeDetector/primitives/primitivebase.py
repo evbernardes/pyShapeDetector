@@ -957,7 +957,21 @@ class Primitive(ABC):
         return shape
     
     def check_bbox_intersection(self, other_shape, distance):
+        """ Check if minimal distance of the inlier points bounding box
+        is below a given distance.
         
+        Parameters
+        ----------
+        other_shape : Primitive
+            A shape with inlier points
+        distance : float
+            Max distance between the bounding boxes.
+            
+        Returns
+        -------
+        bool
+            True if the calculated distance is smaller than the input distance.
+        """
         if distance is None:
             return True
         
@@ -980,6 +994,21 @@ class Primitive(ABC):
         return test_intersect.all()
     
     def check_inlier_distance(self, other_shape, distance):
+        """ Check if the distance between the closest inlier point pair in the
+        shapes is below a given distance.
+        
+        Parameters
+        ----------
+        other_shape : Primitive
+            A shape with inlier points
+        distance : float
+            Max distance between the bounding boxes.
+            
+        Returns
+        -------
+        bool
+            True if the calculated distance is smaller than the input distance.
+        """
         
         if distance is None:
             return True
