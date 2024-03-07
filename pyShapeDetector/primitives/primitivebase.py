@@ -142,7 +142,7 @@ class Primitive(ABC):
     @property
     def canonical(self):
         """ Return canonical form for testing."""
-        return self
+        return self.copy()
     
     def _get_axis_or_vector_or_normal(self):
         if hasattr(self, 'axis'):
@@ -548,9 +548,9 @@ class Primitive(ABC):
                                 "colors are taken from it, and not accepted "
                                 "as input.")
                 
-            points = np.asarray(points_or_pointcloud.points)
-            normals = np.asarray(points_or_pointcloud.normals)
-            colors = np.asarray(points_or_pointcloud.colors)
+            points = points_or_pointcloud.points
+            normals = points_or_pointcloud.normals
+            colors = points_or_pointcloud.colors
         else:
             points = points_or_pointcloud
             

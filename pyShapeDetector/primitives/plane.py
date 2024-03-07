@@ -137,12 +137,10 @@ class Plane(Primitive):
     @property
     def canonical(self):
         """ Return canonical form for testing. """
-        model = self.model
+        shape = self.copy()
         if np.sign(self.dist) < 0:
-            model = -model
-        plane = Plane(list(self.model))
-        plane._holes = self._holes
-        return plane
+            self._model = -self._model
+        return shape
 
     @property
     def normal(self):

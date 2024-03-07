@@ -162,16 +162,6 @@ class PlaneBounded(Plane):
             surface_area = sum(areas)
             
         return surface_area
-
-    @property
-    def canonical(self):
-        """ Return canonical form for testing. """
-        model = self.model
-        if self.dist >= 0:
-            model = -model
-        canonical_plane = PlaneBounded(list(-self.model), self.bounds)
-        canonical_plane._holes = self._holes
-        return canonical_plane
     
     @property
     def is_convex(self):

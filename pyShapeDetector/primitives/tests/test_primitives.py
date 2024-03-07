@@ -25,23 +25,18 @@ def rmse(x):
     """ Helper for root mean square error. """
     return np.sqrt(sum(x * x)) / len(x)
 
-def get_shape_and_pcd(primitive, num_points, canonical=False):
+def get_shape(primitive, num_points, canonical=False):
     with warnings.catch_warnings():
-        # warnings.simplefilter("ignore")
-        # if primitive._name == 'bounded plane':
-        #     shape = Plane(np.random.rand(4)).get_square_plane(np.random.rand())
-        # else:
-        #     model = np.random.rand(primitive._model_args_n)
-        #     shape = primitive(model)
+        warnings.simplefilter("ignore")
 
         shape = primitive.random()
+        pcd = shape.sample_points_uniformly(num_points)
+        shape.set_inliers(pcd)
 
-        mesh = shape.get_mesh()
-        pcd = mesh.sample_points_uniformly(num_points)
-        pcd.estimate_normals()
         if canonical:
             shape = shape.canonical
-        return shape, pcd
+            
+        return shape
 
 
 def test_plane_projections():
@@ -79,7 +74,7 @@ def test_plane_bounded_init():
 
 # def test_copy():
 #     for primitive in all_primitives:
-#         shape, pcd = get_shape_and_pcd(primitive, 100)
+#         shape, pcd = get_shape(primitive, 100)
 
 #         shape_copy = shape.copy()
 #         assert shape.model == shape_copy.model
@@ -111,15 +106,17 @@ def test_plane_surface_area_and_volume():
 def test_fit():
     # testing Cylinder separately
     for i in range(5):
-        shape, pcd = get_shape_and_pcd(Cylinder, 1000, canonical=True)
-        shape_fit = Cylinder.fit(pcd.points, normals=pcd.normals).canonical
+        shape = get_shape(Cylinder, 1000, canonical=True)
+        pcd = shape.inlier_PointCloud
+        shape_fit = Cylinder.fit(shape.inlier_points, normals=shape.inlier_normals).canonical
         # test axis instead of vector for direct fit
         assert_allclose(shape.axis, shape_fit.axis, rtol=1e-2, atol=1e-2)
         assert_allclose(shape.radius, shape_fit.radius, rtol=1e-2, atol=1e-2)
 
     # # testing Cone separately
     # for i in range(5):
-    #     shape, pcd = get_shape_and_pcd(Cone, 10000, canonical=True)
+    #     shape = get_shape(Cone, 10000, canonical=True)
+        # pcd = shape.inlier_PointCloud
     #     shape_fit = Cone.fit(pcd.points, normals=pcd.normals).canonical
     #     assert_allclose(shape.appex, shape_fit.appex, rtol=1e-1, atol=1e-1)
     #     assert_allclose(shape.half_angle, shape_fit.half_angle, rtol=1e-1, atol=1e-1)
@@ -129,15 +126,19 @@ def test_fit():
     for primitive in [Plane, Sphere]:
     # for primitive in [Sphere]:
         for i in range(5):
-            shape, pcd = get_shape_and_pcd(primitive, 100, canonical=True)
-            shape_fit = primitive.fit(pcd.points, normals=pcd.normals).canonical
+            shape = get_shape(primitive, 100, canonical=True)
+            pcd = shape.inlier_PointCloud
+            points = pcd.points
+            shape_fit = primitive.fit(
+                points, normals=shape.inlier_normals).canonical
             assert_allclose(shape.model, shape_fit.model, rtol=1e-2, atol=1e-2)
 
 
 def test_distances():
     for primitive in [Plane, Sphere, Cylinder, Cone]:
         for i in range(5):
-            shape, pcd = get_shape_and_pcd(primitive, 100, canonical=False)
+            shape = get_shape(primitive, 100, canonical=False)
+            pcd = shape.inlier_PointCloud
             distances = shape.get_distances(pcd.points)
             # assert_allclose(rmse(distances), 0, atol=1e-2)
             assert_allclose(distances, 0, atol=1e-1)
@@ -147,7 +148,7 @@ def test_distances_flatten():
     # for primitive in [Plane, Sphere, Cylinder, Cone]:
     for primitive in [Plane, Sphere, Cylinder]:
         for i in range(5):
-            shape, _ = get_shape_and_pcd(primitive, 100, canonical=False)
+            shape = get_shape(primitive, 100, canonical=False)
             points = np.random.rand(100, 3)
             points_flattened = shape.flatten_points(points)
             distances = shape.get_distances(points_flattened)
@@ -160,7 +161,7 @@ def test_distances_flatten():
 def test_normals_flatten_plane():
     for primitive in [Plane]:
         for i in range(5):
-            shape, _ = get_shape_and_pcd(primitive, 100, canonical=False)
+            shape = get_shape(primitive, 100, canonical=False)
             points = np.random.rand(1000, 3)
             points_flattened = shape.flatten_points(points)
             # distances = shape.get_distances(points_flattened)
@@ -175,7 +176,7 @@ def test_normals_flatten_others():
     # TODO: Estimation of normals in Cylinder and Sphere give big angles 
     for primitive in [Sphere, Cylinder, Cone]:
         for i in range(5):
-            shape, _ = get_shape_and_pcd(primitive, 100, canonical=False)
+            shape = get_shape(primitive, 100, canonical=False)
             points = np.random.rand(1000, 3)
             points_flattened = shape.flatten_points(points)
             # distances = shape.get_distances(points_flattened)
