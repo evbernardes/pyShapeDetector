@@ -10,21 +10,29 @@ import copy
 from open3d import visualization
 # from pyShapeDetector.primitives import Primitive, Line
 
-def draw_geometries(elements, **args):
+def draw_geometries(elements, print_points=False, **args):
     from pyShapeDetector.primitives import Primitive, Line
+    
+    # print_points = args.get('print_points', False)
+    
     elements = np.asarray(elements).flatten()
+    pcds = []
     geometries = []
     lines = []
-    for i, element in enumerate(elements):
+    for element in elements:
         if isinstance(element, Line):
-            # geometries.append(element.as_LineSet)
             lines.append(element)
         elif isinstance(element, Primitive):
             geometries.append(element.mesh)
         else:
             geometries.append(element)
             
+        if print_points and isinstance(element, Primitive):
+            pcds.append(element.inlier_PointCloud)
+            
     geometries.append(Line.get_LineSet_from_list(lines))
+    if print_points:
+        geometries += pcds
     
     if not 'mesh_show_back_face' in args:
         args['mesh_show_back_face'] = True
@@ -38,6 +46,7 @@ def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
     up = camera_options.get('up')
     front = camera_options.get('front')
     zoom = camera_options.get('zoom')
+    print_points = camera_options.get('print_points', False)
     
     has_options = not any(v is None for v in [lookat, up, front, zoom])
     
@@ -64,9 +73,9 @@ def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
         objs_right[i].translate(translate)
         
     if not has_options:
-        draw_geometries(objs_right + objs_left)
+        draw_geometries(objs_right + objs_left, print_points=print_points)
     else:
-        draw_geometries(objs_right + objs_left,
+        draw_geometries(objs_right + objs_left, print_points=print_points,
                         lookat=lookat,
                         up=up,
                         front=front,
