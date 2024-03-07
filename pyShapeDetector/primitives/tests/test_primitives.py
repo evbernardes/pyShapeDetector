@@ -72,13 +72,28 @@ def test_plane_bounded_init():
     PlaneBounded(model, bounds)
 
 
-def test_copy():
-    for primitive in all_primitives:
-        shape = get_shape(primitive, 100)
+def test_equal():
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for primitive in all_primitives:
+            shape1 = get_shape(primitive, 100)
+            shape2 = get_shape(primitive, 100)
+            shape1_copy = shape1.copy()
+            assert np.all(shape1.model == shape1_copy.model)
+            assert shape1 == shape1_copy
+            assert not np.all(shape1.model == shape2.model)
+            assert shape1 != shape2
 
-        shape_copy = shape.copy()
-        assert shape.model == shape_copy.model
-        assert id(shape) != id(shape_copy)
+
+def test_copy():
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for primitive in all_primitives:
+            shape = get_shape(primitive, 100)
+
+            shape_copy = shape.copy()
+            assert np.all(shape.model == shape_copy.model)
+            assert id(shape) != id(shape_copy)
 
 
 def test_plane_surface_area_and_volume():
