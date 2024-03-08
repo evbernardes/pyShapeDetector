@@ -162,7 +162,15 @@ class PlaneBounded(Plane):
             areas = abs(np.cross(diff[:,0,:], diff[:,1,:])) * 0.5
             surface_area = sum(areas)
             
-        return surface_area    
+        return surface_area
+    
+    @property
+    def canonical(self):
+        """ Return canonical form for testing. """
+        shape = self.copy()
+        if np.sign(self.dist) < 0:
+            self.plane._model = -self.plane._model
+        return shape
     
     @property
     def is_convex(self):
