@@ -15,7 +15,7 @@ import copy
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
 
-from pyShapeDetector.primitives import Primitive
+# from pyShapeDetector.primitives import Primitive
 from pyShapeDetector.utility import PrimitiveLimits, DetectorOptions
 
 # random.seed(time.time())
