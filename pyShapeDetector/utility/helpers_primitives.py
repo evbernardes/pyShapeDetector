@@ -42,7 +42,7 @@ def get_rotation_from_axis(axis_origin, axis):
         return Rotation.from_quat(list(orthogonal_axis)+[0]).as_matrix()
 
 def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, 
-                         bbox_intersection=None, inlier_max_distance=None):
+                          bbox_intersection=None, inlier_max_distance=None):
     """ Detect shapes with similar model and group.
     
     See: fuse_shape_groups
@@ -72,31 +72,75 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
     num_shapes = len(shapes)
     partitions = np.array(range(num_shapes))
     
-    # import time
-    # time1 = 0
-    # time2 = 0
-    
     for i, j in combinations(partitions, 2):
         if partitions[j] != j:
             continue
             
-        test = shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol)
-        test = test and shapes[i].check_bbox_intersection(shapes[j], bbox_intersection)
-        test = test and shapes[i].check_inlier_distance(shapes[j], inlier_max_distance)
-            
-        if test:
-        # if test1 and test2:
-            partitions[j] = i
+        if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
+            continue
+        if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
+            continue
+        if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
+            continue
+
+        partitions[j] = i
     
     sublists = []
-    # partitions = np.array(partitions)
     for partition in set(partitions):
-        # idx = np.where(partitions == partition)
         sublist = [shapes[j] for j in np.where(partitions == partition)[0]]
         sublists.append(sublist)
-    # print(f'time1 = {time1}, time2 = {time2}')
         
     return sublists
+
+# def group_similar_shapes2(shapes, rtol=1e-02, atol=1e-02, 
+#                          bbox_intersection=None, inlier_max_distance=None):
+#     """ Detect shapes with similar model and group.
+    
+#     See: fuse_shape_groups
+    
+#     Parameters
+#     ----------
+#     shapes : list of shapes
+#         List containing all shapes.    
+#     rtol : float, optional
+#         The relative tolerance parameter. Default: 1e-02.
+#     atol : float, optional
+#         The absolute tolerance parameter. Default: 1e-02.
+#     bbox_intersection : float, optional
+#         Max distance between inlier bounding boxes. If None, ignore this test.
+#         Default: None.
+#     inlier_max_distance : float, optional
+#         Max distance between points in shapes. If None, ignore this test.
+#         Default: None.
+        
+#     Returns
+#     -------
+#     list of lists
+#         Grouped shapes.
+    
+#     """
+    
+#     num_shapes = len(shapes)
+#     partitions = np.array(range(num_shapes))
+    
+#     for i, j in combinations(partitions, 2):
+#         if partitions[j] != j:
+#             continue
+            
+#         test = shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol)
+#         test = test and shapes[i].check_bbox_intersection(shapes[j], bbox_intersection)
+#         test = test and shapes[i].check_inlier_distance(shapes[j], inlier_max_distance)
+            
+#         if test:
+#         # if test1 and test2:
+#             partitions[j] = i
+    
+#     sublists = []
+#     for partition in set(partitions):
+#         sublist = [shapes[j] for j in np.where(partitions == partition)[0]]
+#         sublists.append(sublist)
+        
+#     return sublists
 
 def fuse_shape_groups(shapes_lists, detector=None, 
                       ignore_extra_data=False, line_intersection_eps=1e-3):
