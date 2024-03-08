@@ -129,7 +129,7 @@ def read_point_cloud(filepath, down_sample=None, estimate_normals=False):
         filename = filepath
         filepath = Path(filename)
 
-    print(filename)
+    # print(filename)
 
     if filepath.suffix == '.h5':
         f = h5py.File(filepath, 'r')
@@ -172,11 +172,19 @@ def paint_random(elements):
     elements : list of geomery elements
         Elements to be painted
     """
+    
+    from pyShapeDetector.primitives import Primitive
+    
     if not isinstance(elements, list):
-        elements.paint_uniform_color(np.random.random(3))
-    else:
-        for element in elements:
-            element.paint_uniform_color(np.random.random(3))
+        elements = [elements]
+
+    for element in elements:
+        color = np.random.random(3)
+        if isinstance(element, Primitive):
+            element._color = color
+            element._inlier_colors[:] = color
+        else:
+            element.paint_uniform_color(color)
             
     
 def segment_dbscan(pcd, eps, min_points=1, print_progress=False, colors=False):
