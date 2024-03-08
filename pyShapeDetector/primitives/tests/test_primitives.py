@@ -21,8 +21,8 @@ from open3d.utility import Vector3dVector
 from pyShapeDetector.primitives import (
     Plane, PlaneBounded, Sphere, Cylinder, Cone, Line)
 
-all_primitives_regular = [Plane, Sphere, Cylinder, Cone, Line]
-all_primitives = all_primitives_regular + [PlaneBounded]
+all_primitives_regular = [Plane, Sphere, Cylinder, Cone]
+all_primitives = all_primitives_regular + [PlaneBounded, Line]
 
 def rmse(x):
     """ Helper for root mean square error. """
@@ -40,15 +40,7 @@ def get_shape(primitive, num_points, canonical=False):
             shape = shape.canonical
             
         return shape
-
-
-def test_plane_projections():
-    plane = Plane.random()
-    points = plane.flatten_points(np.random.random((100, 3)))
-    projections = plane.get_projections(points)
-    points_recovered = plane.get_points_from_projections(projections)
-    assert_allclose(points_recovered, points)
-
+    
 
 def test_init_primitives_regular():
     for primitive in [Plane, Sphere, Cylinder]:
@@ -82,6 +74,14 @@ def test_canonical():
             shape = get_shape(PlaneBounded, 10)
             shape2 = shape.canonical
             assert shape == shape2
+
+
+def test_plane_projections():
+    plane = Plane.random()
+    points = plane.flatten_points(np.random.random((100, 3)))
+    projections = plane.get_projections(points)
+    points_recovered = plane.get_points_from_projections(projections)
+    assert_allclose(points_recovered, points)
 
 
 def test_equal():
