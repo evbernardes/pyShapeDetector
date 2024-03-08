@@ -75,9 +75,30 @@ def average_nearest_dist(points, k=15, leaf_size=40):
     nearest_dist, nearest_ind = tree.query(points, k=k)
     return np.mean(nearest_dist[:, 1:])
 
+def write_point_cloud(filepath, pointcloud, **options):
+    """ Write pointcloud to file. 
+    
+    Internal call to Open3D.io.write_point_cloud
+    
+    Parameters
+    ----------
+    filepath : string or instance of pathlib.Path
+        File to be loaded
+        
+    pointcloud : Open3D.geometry.PointCloud
+        PointCloud to be saved
+        
+    See: Open3D.io.write_point_cloud
+    """
+    if isinstance(filepath, Path):
+        filepath = filepath.as_posix()
+    o3d.io.write_point_cloud(filepath, pointcloud, **options)
+    
 def read_point_cloud(filepath, down_sample=None, estimate_normals=False):
     """ Read file to pointcloud. Can also read .h5 files from traceparts 
     database.
+    
+    Internal call to Open3D.io.read_point_cloud.
     
     Parameters
     ----------
@@ -99,6 +120,8 @@ def read_point_cloud(filepath, down_sample=None, estimate_normals=False):
     -------
     PointCloud
         Loaded point cloud.
+        
+    See: Open3D.io.read_point_cloud
     """
     if isinstance(filepath, Path):
         filename = filepath.as_posix()
