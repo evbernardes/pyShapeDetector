@@ -83,6 +83,7 @@ class Primitive(ABC):
     get_mesh
     get_cropped_mesh
     is_similar_to
+    __copy__
     copy
     translate
     rotate
@@ -789,6 +790,19 @@ class Primitive(ABC):
                              rtol=rtol, atol=atol)
         return compare.all()
     
+    def __copy__(self):
+        """ Method for compatibility with copy module """
+        model = self.model.copy()
+        primitive = type(self)
+        shape = primitive(model)
+        shape._inlier_points = self._inlier_points.copy()
+        shape._inlier_normals = self._inlier_normals.copy()
+        shape._inlier_colors = self._inlier_colors.copy()
+        shape._metrics = self._metrics.copy()
+        shape._color = self._color.copy()
+        shape._mesh = copy.copy(self._mesh)
+        return shape
+    
     def copy(self):
         """ Returns copy of shape 
         
@@ -797,14 +811,7 @@ class Primitive(ABC):
         Primitive
             Copied primitive
         """
-        shape = type(self)(self.model.copy())
-        shape._inlier_points = self._inlier_points.copy()
-        shape._inlier_normals = self._inlier_normals.copy()
-        shape._inlier_colors = self._inlier_colors.copy()
-        shape._metrics = self._metrics.copy()
-        shape._color = self._color.copy()
-        shape._mesh = copy.copy(self._mesh)
-        return shape
+        return self.__copy__()
     
     def _translate_points(self, translation):
         """ Internal helper function for translation"""

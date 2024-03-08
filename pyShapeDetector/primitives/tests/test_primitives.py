@@ -7,9 +7,11 @@ Created on Tue Oct 24 14:51:40 2023
 """
 
 import pytest
+import copy
 import numpy as np
 from numpy.testing import assert_allclose
 import warnings
+from itertools import combinations
 
 from scipy.spatial.transform import Rotation
 
@@ -19,7 +21,8 @@ from open3d.utility import Vector3dVector
 from pyShapeDetector.primitives import (
     Plane, PlaneBounded, Sphere, Cylinder, Cone, Line)
 
-all_primitives = [Plane, PlaneBounded, Sphere, Cylinder, Cone, Line]
+all_primitives_regular = [Plane, Sphere, Cylinder, Cone, Line]
+all_primitives = all_primitives_regular + [PlaneBounded]
 
 def rmse(x):
     """ Helper for root mean square error. """
@@ -85,15 +88,53 @@ def test_equal():
             assert shape1 != shape2
 
 
-def test_copy():
+def test_copy_regular():
+    for primitive in all_primitives_regular:
+        shape = get_shape(primitive, 100)
+
+        shape_copy = shape.copy()
+        assert shape == shape_copy
+        assert id(shape) != id(shape_copy)
+        assert id(shape.inlier_points) != id(shape_copy.inlier_points)
+        shape_copy = copy.copy(shape)
+        assert shape == shape_copy
+        assert id(shape) != id(shape_copy)
+        assert id(shape.inlier_points) != id(shape_copy.inlier_points)
+
+
+def test_copy_planebounded():
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        for primitive in all_primitives:
-            shape = get_shape(primitive, 100)
+        shape = get_shape(PlaneBounded, 100)
+        hole = PlaneBounded.create_circle(
+            center=shape.centroid, normal=shape.normal, radius=0.2
+        )
+        shape.add_holes(hole)
 
-            shape_copy = shape.copy()
-            assert np.all(shape.model == shape_copy.model)
+        for shape_copy in [shape.copy(), copy.copy(shape)]:
+            assert shape == shape_copy
             assert id(shape) != id(shape_copy)
+            assert id(shape.inlier_points) != id(shape_copy.inlier_points)
+            assert shape.holes[0] == shape_copy.holes[0]
+            assert id(shape.holes[0]) != id(shape_copy.holes[0])
+            assert np.all(shape.holes[0].bounds == shape_copy.holes[0].bounds)
+            assert id(shape.holes[0].bounds) != id(shape_copy.holes[0].bounds)
+
+
+def test_deepcopy():
+    for primitive1, primitive2 in combinations(all_primitives, 2):
+        shapes = [get_shape(primitive1, 20), get_shape(primitive2, 20)]
+        shapes_copy = copy.deepcopy(shapes)
+
+        assert shapes[0] == shapes_copy[0]
+        assert shapes[1] == shapes_copy[1]
+        assert_allclose(shapes[0].inlier_points, shapes_copy[0].inlier_points)
+        assert_allclose(shapes[0].inlier_points, shapes_copy[0].inlier_points)
+        assert id(shapes[0]) != id(shapes_copy[1])
+        assert id(shapes[1]) != id(shapes_copy[1])
+        assert id(shapes[0].inlier_points) != id(shapes_copy[0].inlier_points)
+        assert id(shapes[0].inlier_points) != id(shapes_copy[0].inlier_points)
 
 
 def test_plane_surface_area_and_volume():

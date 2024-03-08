@@ -5,7 +5,7 @@ Created on Thu Feb 15 10:15:09 2024
 
 @author: ebernardes
 """
-from warnings import warn
+import warnings
 from itertools import permutations, product, combinations
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
@@ -87,6 +87,7 @@ class PlaneBounded(Plane):
     get_mesh
     get_cropped_mesh
     is_similar_to
+    __copy__
     copy
     translate
     rotate
@@ -161,7 +162,7 @@ class PlaneBounded(Plane):
             areas = abs(np.cross(diff[:,0,:], diff[:,1,:])) * 0.5
             surface_area = sum(areas)
             
-        return surface_area
+        return surface_area    
     
     @property
     def is_convex(self):
@@ -232,7 +233,7 @@ class PlaneBounded(Plane):
                 raise ValueError("If 'bounds' are given, 'vertices' and "
                                  "'triangles' should not be given.")
         elif vertices is None and triangles is None:
-            warn('No input bounds or vertices/triagles, returning square plane')
+            warnings.warn('No input bounds or vertices/triagles, returning square plane')
         elif vertices is None or triangles is None:
             raise ValueError("Either 'vertices' and 'triangles' should be given, or one of them.")
         else:
@@ -247,7 +248,7 @@ class PlaneBounded(Plane):
 
         if self._convex:
             if bounds is None:
-                # warn('No input bounds, returning square plane')
+                # warnings.warn('No input bounds, returning square plane')
                 self = self._plane.get_square_plane(1)
 
             else:
@@ -366,20 +367,11 @@ class PlaneBounded(Plane):
 
         return mesh
 
-    def copy(self, copy_holes=True):
-        """ Returns copy of plane
-
-        Parameters
-        ----------
-        copy_holes: boolean, optional
-            If True, also copy holes. Default: True.
-
-        Returns
-        -------
-        Primitive
-            Copied primitive
-        """
-        shape = Primitive.copy(self)
+    def __copy__(self):
+        """ Method for compatibility with copy module """
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignoreplane")
+            shape = Plane.__copy__(self)
         
         # Copying attributes particular to bounded planes
         shape._convex = self._convex
@@ -389,9 +381,6 @@ class PlaneBounded(Plane):
         shape._bounds = self._bounds.copy()
         shape._bounds_projections = self._bounds_projections.copy()
         shape._fusion_intersections = self._fusion_intersections.copy()
-        if copy_holes:
-            holes = [h.copy(copy_holes=False) for h in self._holes]
-            shape._holes = holes
         return shape
 
     def translate(self, translation):
@@ -413,7 +402,7 @@ class PlaneBounded(Plane):
         else:
             self._vertices = self._vertices + translation
 
-    def rotate(self, rotation, is_hole=False):
+    def rotate(self, rotation):
         """ Rotate the shape.
 
         Parameters
@@ -435,9 +424,9 @@ class PlaneBounded(Plane):
         else:
             self._vertices = rotation.apply(self._vertices)
 
-        if not is_hole and len(self.holes) > 0:
+        if not self.is_hole and len(self.holes) > 0:
             for hole in self.holes:
-                hole.rotate(rotation, is_hole=True)
+                hole.rotate(rotation)
                 
     @staticmethod
     def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=1e-3,
@@ -654,7 +643,7 @@ class PlaneBounded(Plane):
 
         """
         if not self.is_convex:
-            warn("Cannot add bounds to concave plane.")
+            warnings.warn("Cannot add bounds to concave plane.")
         else:
             if flatten:
                 new_bound_points = self.flatten_points(new_bound_points)

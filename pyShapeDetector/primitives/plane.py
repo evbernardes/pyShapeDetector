@@ -48,6 +48,7 @@ class Plane(Primitive):
     dist
     centroid
     holes
+    is_hole
 
     Methods
     ------- 
@@ -74,6 +75,7 @@ class Plane(Primitive):
     get_mesh
     get_cropped_mesh
     is_similar_to
+    __copy__
     copy
     translate
     rotate
@@ -107,6 +109,7 @@ class Plane(Primitive):
     _translatable = []
     _fusion_intersections = np.array([])
     _color = np.array([0, 0, 1])
+    _is_hole = False
 
     @property
     def equation(self):
@@ -161,6 +164,10 @@ class Plane(Primitive):
     def holes(self):
         """ Existing holes in plane. """
         return self._holes
+    
+    @property
+    def is_hole(self):
+        return self._is_hole
 
     def __init__(self, model):
         """
@@ -347,28 +354,13 @@ class Plane(Primitive):
         self._model = Plane.from_normal_point(normal, centroid).model
         self._rotate_points_normals(rotation)
 
-    def copy(self, copy_holes=True):
-        """ Returns copy of plane
-
-        Parameters
-        ----------
-        copy_holes: boolean, optional
-            If True, also copy holes. Default: True.
-
-        Returns
-        -------
-        Primitive
-            Copied primitive
-        """
-        shape = Plane(self.model.copy())
-        shape._inlier_points = self._inlier_points.copy()
-        shape._inlier_normals = self._inlier_normals.copy()
-        shape._inlier_colors = self._inlier_colors.copy()
+    def __copy__(self):
+        """ Method for compatibility with copy module """
+        shape = Primitive.__copy__(self)
         shape._fusion_intersections = self._fusion_intersections.copy()
-        shape._metrics = self._metrics.copy()
-        shape._color = self._color.copy()
-        if copy_holes:
-            holes = [h.copy(copy_holes=False) for h in self._holes]
+        shape._is_hole = self._is_hole
+        if not self.is_hole:
+            holes = [h.copy() for h in self._holes]
             shape._holes = holes
         return shape
 
@@ -472,6 +464,7 @@ class Plane(Primitive):
                 self._bounds_projections = self._bounds_projections[~inside2]
             else:
                 hole = PlaneBounded(model, hole.bounds)
+            hole._is_hole = True
             fixed_holes.append(hole)
         self._holes += fixed_holes
 

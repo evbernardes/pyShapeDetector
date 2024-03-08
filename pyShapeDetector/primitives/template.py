@@ -67,6 +67,7 @@ class Template(Primitive):
     get_mesh
     get_cropped_mesh
     is_similar_to
+    __copy__
     copy
     translate
     rotate
