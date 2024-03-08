@@ -248,6 +248,7 @@ def test_normals_flatten_others():
             angles = shape.get_angles(points_flattened, normals)
             assert_allclose(rmse(angles), 0, atol=1e-1)
 
+
 def test_translate_and_rotate():
     inlier_points = np.random.random((100, 3))
     inlier_normals = np.random.random((100, 3))
