@@ -50,7 +50,7 @@ def test_plane_projections():
     assert_allclose(points_recovered, points)
 
 
-def test_primitives_regular_init():
+def test_init_primitives_regular():
     for primitive in [Plane, Sphere, Cylinder]:
         
         model = np.random.rand(primitive._model_args_n)
@@ -65,7 +65,7 @@ def test_primitives_regular_init():
             primitive(model)
 
 
-def test_plane_bounded_init():
+def test_init_plane_bounded():
     model = np.random.rand(PlaneBounded._model_args_n)
     bounds = np.random.random((50, 3))
 
@@ -73,6 +73,15 @@ def test_plane_bounded_init():
         PlaneBounded(model)
 
     PlaneBounded(model, bounds)
+
+
+def test_canonical():
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for primitive in all_primitives:
+            shape = get_shape(PlaneBounded, 10)
+            shape2 = shape.canonical
+            assert shape == shape2
 
 
 def test_equal():
