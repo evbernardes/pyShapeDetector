@@ -370,7 +370,7 @@ class PlaneBounded(Plane):
     def __copy__(self):
         """ Method for compatibility with copy module """
         with warnings.catch_warnings():
-            warnings.simplefilter("ignoreplane")
+            warnings.simplefilter("ignore")
             shape = Plane.__copy__(self)
         
         # Copying attributes particular to bounded planes
