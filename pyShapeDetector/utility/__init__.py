@@ -28,7 +28,9 @@ from .helpers_pointclouds import (
 
 from .helpers_primitives import (
     get_rotation_from_axis, 
-    group_similar_shapes, 
+    _get_partitions,
+    _get_partitions_legacy,
+    group_similar_shapes,
     fuse_shape_groups, 
     cut_planes_with_cylinders, 
     get_meshes, 

@@ -41,8 +41,103 @@ def get_rotation_from_axis(axis_origin, axis):
         orthogonal_axis /= np.linalg.norm(orthogonal_axis)
         return Rotation.from_quat(list(orthogonal_axis)+[0]).as_matrix()
 
-def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, 
+def _group_similar_shapes_legacy(shapes, rtol=1e-02, atol=1e-02, 
                           bbox_intersection=None, inlier_max_distance=None):
+    """ Legacy implementation, see group_similar_shapes """    
+    def _test(i, j):
+        if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
+            return False
+        if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
+            return False
+        if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
+            return False
+        return True
+    
+    num_shapes = len(shapes)
+    partitions = np.array(range(num_shapes))
+    
+    for i, j in combinations(partitions, 2):
+        if partitions[j] != j:
+            continue
+            
+        if _test(i, j):
+            partitions[j] = i
+            
+        # if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
+        #     continue
+        # if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
+        #     continue
+        # if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
+        #     continue
+
+        # partitions[j] = i
+    
+    sublists = []
+    for partition in set(partitions):
+        sublist = [shapes[j] for j in np.where(partitions == partition)[0]]
+        sublists.append(sublist)
+        
+    return sublists
+
+def _get_partitions_legacy(num_shapes, pairs):
+    new_indices = np.array(range(num_shapes))
+    for pair, result in pairs.items():
+        i, j = pair
+        
+        if new_indices[j] != j:
+            continue
+            
+        if result:
+            new_indices[j] = i
+        
+    partitions = []
+    for index in set(new_indices):
+        partition = set([i for i in np.where(new_indices == index)[0]])
+        partitions.append(partition)            
+    return partitions
+
+def _get_partitions(num_shapes, pairs):
+    # Step 2: graph-based partitions from pairs
+    partitions = []
+    added_indices = set()
+    for pair, result in pairs.items():
+        if pair[0] in added_indices and pair[1] in added_indices:
+            continue
+        
+        # Check if pair passes the test
+        elif result:
+            for partition in partitions:
+                if pair[1] in partition:
+                    partition.add(pair[0])
+                    added_indices.add(pair[0])
+                    break
+                if pair[0] in partition:
+                    partition.add(pair[1])
+                    added_indices.add(pair[1])
+                    # added_to_partition = True
+                    break
+
+        else:
+            # Add single-element partitions for elements that failed the test
+            if pair[0] not in added_indices and pair[1] not in added_indices:
+                partitions.append({pair[0]})
+                partitions.append({pair[1]})
+                added_indices.add(pair[0])
+                added_indices.add(pair[1])
+                
+    for i in range(num_shapes):
+        if i not in added_indices:
+            partitions.append({i})
+                
+    if (num_test := sum(len(p) for p in partitions)) != num_shapes:
+        print(f"This shouldn't have happened, implementatino error: {num_test} != {num_shapes}")
+        assert False
+        
+    return partitions
+
+def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, 
+                          bbox_intersection=None, inlier_max_distance=None,
+                          legacy=False):
     """ Detect shapes with similar model and group.
     
     See: fuse_shape_groups
@@ -61,6 +156,8 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
     inlier_max_distance : float, optional
         Max distance between points in shapes. If None, ignore this test.
         Default: None.
+    legacy: bool, optional
+        Uses legacy implementation of `group_similar_shapes`. Default: False
         
     Returns
     -------
@@ -68,79 +165,35 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
         Grouped shapes.
     
     """
-    
-    num_shapes = len(shapes)
-    partitions = np.array(range(num_shapes))
-    
-    for i, j in combinations(partitions, 2):
-        if partitions[j] != j:
-            continue
-            
+     
+    def _test(i, j):
         if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
-            continue
+            return False
         if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
-            continue
+            return False
         if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
-            continue
-
-        partitions[j] = i
+            return False
+        return True
     
+    # Step 1: check all pairs
+    shape_pairs = combinations(range(len(shapes)), 2)
+    pairs = {pair: _test(*pair) for pair in shape_pairs}
+    
+    # Step 2: partitions from pairs
+    if legacy:
+        partitions = _get_partitions_legacy(len(shapes), pairs)
+    else:
+        # graph-based 
+        partitions = _get_partitions(len(shapes), pairs)
+                
+    # Step 3: get sublists of shapes from partitions
     sublists = []
-    for partition in set(partitions):
-        sublist = [shapes[j] for j in np.where(partitions == partition)[0]]
+    for partition in partitions:
+        sublist = [shapes[i] for i in partition]
         sublists.append(sublist)
         
     return sublists
 
-# def group_similar_shapes2(shapes, rtol=1e-02, atol=1e-02, 
-#                          bbox_intersection=None, inlier_max_distance=None):
-#     """ Detect shapes with similar model and group.
-    
-#     See: fuse_shape_groups
-    
-#     Parameters
-#     ----------
-#     shapes : list of shapes
-#         List containing all shapes.    
-#     rtol : float, optional
-#         The relative tolerance parameter. Default: 1e-02.
-#     atol : float, optional
-#         The absolute tolerance parameter. Default: 1e-02.
-#     bbox_intersection : float, optional
-#         Max distance between inlier bounding boxes. If None, ignore this test.
-#         Default: None.
-#     inlier_max_distance : float, optional
-#         Max distance between points in shapes. If None, ignore this test.
-#         Default: None.
-        
-#     Returns
-#     -------
-#     list of lists
-#         Grouped shapes.
-    
-#     """
-    
-#     num_shapes = len(shapes)
-#     partitions = np.array(range(num_shapes))
-    
-#     for i, j in combinations(partitions, 2):
-#         if partitions[j] != j:
-#             continue
-            
-#         test = shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol)
-#         test = test and shapes[i].check_bbox_intersection(shapes[j], bbox_intersection)
-#         test = test and shapes[i].check_inlier_distance(shapes[j], inlier_max_distance)
-            
-#         if test:
-#         # if test1 and test2:
-#             partitions[j] = i
-    
-#     sublists = []
-#     for partition in set(partitions):
-#         sublist = [shapes[j] for j in np.where(partitions == partition)[0]]
-#         sublists.append(sublist)
-        
-#     return sublists
 
 def fuse_shape_groups(shapes_lists, detector=None, 
                       ignore_extra_data=False, line_intersection_eps=1e-3):
@@ -171,8 +224,14 @@ def fuse_shape_groups(shapes_lists, detector=None,
     fused_shapes = []
     for sublist in shapes_lists:
         primitive = type(sublist[0])
-        fused_shapes.append(
-            primitive.fuse(sublist, detector, ignore_extra_data, line_intersection_eps))
+        fused_shape = primitive.fuse(
+            sublist, detector, ignore_extra_data, line_intersection_eps)
+        
+        num_points = sum(len(s.inlier_points) for s in sublist)
+        if num_points != len(fused_shape.inlier_points):
+            pass
+        
+        fused_shapes.append(fused_shape)
         
     return fused_shapes
     
@@ -238,7 +297,8 @@ def fuse_shape_groups(shapes_lists, detector=None,
 
 def fuse_similar_shapes(shapes, detector=None,  rtol=1e-02, atol=1e-02, 
                         bbox_intersection=None, inlier_max_distance=None,
-                        line_intersection_eps=1e-3):
+                        line_intersection_eps=1e-3, legacy=False,
+                        ignore_extra_data=False):
     """ Detect shapes with similar model and fuse them.
     
     If a detector is given, use it to compute the metrics of the resulting
@@ -262,16 +322,18 @@ def fuse_similar_shapes(shapes, detector=None,  rtol=1e-02, atol=1e-02,
     inlier_max_distance : float, optional
         Max distance between points in shapes. If None, ignore this test.
         Default: None.
+    ignore_extra_data : boolean, optional
+        If True, ignore everything and only fuse model. Default: False.
     
     Returns
     -------
     list
         Average shapes.
     """
-    shapes_groupped = group_similar_shapes(shapes, rtol=rtol, atol=atol, 
-                                           bbox_intersection=bbox_intersection,
-                                           inlier_max_distance=inlier_max_distance)
-    return fuse_shape_groups(shapes_groupped, detector, line_intersection_eps=line_intersection_eps)
+    shapes_groupped = group_similar_shapes(
+        shapes, rtol, atol, bbox_intersection, inlier_max_distance, legacy)
+    
+    return fuse_shape_groups(shapes_groupped, detector, ignore_extra_data, line_intersection_eps)
 
 def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
                        length_max=None, distance_max=None, ignore=None, 
