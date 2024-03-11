@@ -654,24 +654,40 @@ class Primitive(ABC):
         from pyShapeDetector.utility import average_nearest_dist
         return average_nearest_dist(self.inlier_points, k, leaf_size)
     
-    def inliers_bounding_box(self, slack=0):
+    def inliers_bounding_box(self, slack=0, num_sample=15):
         """ If the shape includes inlier points, returns the minimum and 
         maximum bounds of their bounding box.
         
-        If 'slack' parameter is given, use it expand bounding box in all
-        directions (useful for testing purposes).
+        If 'slack' parameter is given, use it 
         
+        Parameters
+        ----------
+        slack : float, optional
+            Expand bounding box in all directions, useful for testing purposes.
+            Default: 0.
+        num_sample : int, optional
+            If no inliers, bounds or vertices found, sample mesh instead.
+            Default: 15.
+            
         Returns
         -------
         tuple of two 3 x 1 arrays
             Minimum and maximum bounds of inlier points bounding box.
         """
-        if len(self.inlier_points) == 0:
-            return None, None
+        
+        # if len(self.inlier_points) == 0:
+        #     return None, None
         
         slack = abs(slack)
-        min_bound = np.min(self.inlier_points, axis=0)
-        max_bound = np.max(self.inlier_points, axis=0)
+        
+        if len(self.inlier_points) > 0:
+            points = self.inlier_points
+        else:
+            points = np.array(
+                self.sample_points_uniformly(num_sample).points)
+            
+        min_bound = np.min(points, axis=0)
+        max_bound = np.max(points, axis=0)
         return np.vstack([min_bound - slack, max_bound + slack])
             
     def sample_points_uniformly(self, number_of_points=100, 
@@ -1036,6 +1052,9 @@ class Primitive(ABC):
         
         if distance <= 0:
             raise ValueError("Distance must be positive.")
+            
+        if len(self.inlier_points) == 0 or len(other_shape.inlier_points) == 0:
+            raise RuntimeError("Both shapes must have inlier points.")
         
         _, dist = self.closest_inliers(other_shape)
         return dist[0] <= distance

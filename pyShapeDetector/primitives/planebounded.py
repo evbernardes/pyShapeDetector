@@ -436,6 +436,39 @@ class PlaneBounded(Plane):
             for hole in self.holes:
                 hole.rotate(rotation)
                 
+    def inliers_bounding_box(self, slack=0, num_sample=15):
+        """ If the shape includes inlier points, returns the minimum and 
+        maximum bounds of their bounding box.
+        
+        If no inlier points, use bounds or vertices.
+        
+        Parameters
+        ----------
+        slack : float, optional
+            Expand bounding box in all directions, useful for testing purposes.
+            Default: 0.
+        num_sample : int, optional
+            If no inliers, bounds or vertices found, sample mesh instead.
+            Default: 15.
+            
+        Returns
+        -------
+        tuple of two 3 x 1 arrays
+            Minimum and maximum bounds of inlier points bounding box.
+        """
+        
+        if len(self.bounds) > 0:
+            points = self.bounds
+        elif len(self.vertices) > 0:
+            points = self.vertices
+        else:
+            return Primitive.inliers_bounding_box(slack=0, num_sample=15)
+        
+        slack = abs(slack)
+        min_bound = np.min(points, axis=0)
+        max_bound = np.max(points, axis=0)
+        return np.vstack([min_bound - slack, max_bound + slack])
+                
     @staticmethod
     def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=1e-3,
              force_concave=True, ressample_density=1.5, ressample_radius_ratio=1.2):
