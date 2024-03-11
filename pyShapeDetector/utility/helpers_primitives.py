@@ -120,16 +120,21 @@ def _get_partitions(num_shapes, pairs):
         
         # Check if pair passes the test
         elif result:
-            for partition in partitions:
-                if pair[1] in partition:
-                    partition.add(pair[0])
-                    added_indices.add(pair[0])
-                    break
-                if pair[0] in partition:
-                    partition.add(pair[1])
-                    added_indices.add(pair[1])
-                    # added_to_partition = True
-                    break
+            if len(partitions) == 0:
+                partitions.append(set(pair))
+                added_indices.add(pair[0])
+                added_indices.add(pair[1])
+            else:
+                for partition in partitions:
+                    if pair[1] in partition:
+                        partition.add(pair[0])
+                        added_indices.add(pair[0])
+                        break
+                    if pair[0] in partition:
+                        partition.add(pair[1])
+                        added_indices.add(pair[1])
+                        # added_to_partition = True
+                        break
 
         else:
             # Add single-element partitions for elements that failed the test
