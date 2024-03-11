@@ -27,8 +27,10 @@ def draw_geometries(elements, print_points=False, **camera_options):
             
         if print_points and isinstance(element, Primitive):
             pcds.append(element.inlier_PointCloud)
-            
-    geometries.append(Line.get_LineSet_from_list(lines))
+    
+    if len(lines) > 0:
+        geometries.append(Line.get_LineSet_from_list(lines))
+        
     if print_points:
         geometries += pcds
     
