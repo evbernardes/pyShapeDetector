@@ -41,43 +41,43 @@ def get_rotation_from_axis(axis_origin, axis):
         orthogonal_axis /= np.linalg.norm(orthogonal_axis)
         return Rotation.from_quat(list(orthogonal_axis)+[0]).as_matrix()
 
-def _group_similar_shapes_legacy(shapes, rtol=1e-02, atol=1e-02, 
-                          bbox_intersection=None, inlier_max_distance=None):
-    """ Legacy implementation, see group_similar_shapes """    
-    def _test(i, j):
-        if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
-            return False
-        if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
-            return False
-        if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
-            return False
-        return True
+# def _group_similar_shapes_legacy(shapes, rtol=1e-02, atol=1e-02, 
+#                           bbox_intersection=None, inlier_max_distance=None):
+#     """ Legacy implementation, see group_similar_shapes """    
+#     def _test(i, j):
+#         if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
+#             return False
+#         if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
+#             return False
+#         if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
+#             return False
+#         return True
     
-    num_shapes = len(shapes)
-    partitions = np.array(range(num_shapes))
+#     num_shapes = len(shapes)
+#     partitions = np.array(range(num_shapes))
     
-    for i, j in combinations(partitions, 2):
-        if partitions[j] != j:
-            continue
+#     for i, j in combinations(partitions, 2):
+#         if partitions[j] != j:
+#             continue
             
-        if _test(i, j):
-            partitions[j] = i
+#         if _test(i, j):
+#             partitions[j] = i
             
-        # if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
-        #     continue
-        # if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
-        #     continue
-        # if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
-        #     continue
+#         # if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
+#         #     continue
+#         # if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
+#         #     continue
+#         # if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
+#         #     continue
 
-        # partitions[j] = i
+#         # partitions[j] = i
     
-    sublists = []
-    for partition in set(partitions):
-        sublist = [shapes[j] for j in np.where(partitions == partition)[0]]
-        sublists.append(sublist)
+#     sublists = []
+#     for partition in set(partitions):
+#         sublist = [shapes[j] for j in np.where(partitions == partition)[0]]
+#         sublists.append(sublist)
         
-    return sublists
+#     return sublists
 
 def _get_partitions_legacy(num_shapes, pairs):
     new_indices = np.array(range(num_shapes))
@@ -101,8 +101,22 @@ def _get_partitions(num_shapes, pairs):
     partitions = []
     added_indices = set()
     for pair, result in pairs.items():
+        
         if pair[0] in added_indices and pair[1] in added_indices:
-            continue
+            if not result:
+                continue
+            
+            i0 = np.where([pair[0] in p for p in partitions])[0][0]
+            partition = partitions.pop(i0)
+            
+            # both added in same partitions
+            if pair[1] in partition:
+                partitions.append(partition)
+         
+            # fuse partitions
+            else:
+               i1 = np.where([pair[1] in p for p in partitions])[0][0]
+               partitions[i1] |= partition
         
         # Check if pair passes the test
         elif result:
@@ -194,7 +208,6 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
         
     return sublists
 
-
 def fuse_shape_groups(shapes_lists, detector=None, 
                       ignore_extra_data=False, line_intersection_eps=1e-3):
     """ Find weigthed average of shapes, where the weight is the fitness
@@ -234,66 +247,6 @@ def fuse_shape_groups(shapes_lists, detector=None,
         fused_shapes.append(fused_shape)
         
     return fused_shapes
-    
-    # num_partitions = len(shapes_lists):
-    # from pyShapeDetector.primitives import PlaneBounded
-        
-    # new_list = []
-    # for sublist in shapes_lists:
-    #     try:
-    #         fitness = [s.metrics['fitness'] for s in sublist]
-    #     except:
-    #         fitness = [1] * len(sublist)
-        
-    #     model = np.vstack([s.model for s in sublist])
-    #     model = np.average(model, axis=0, weights=fitness)
-        
-    #     primitive = type(sublist[0])
-        
-    #     if ignore_extra_data:
-    #         shape = primitive(model)
-    #     else:
-    #         if sublist[0].name == 'bounded plane':
-    #         # if isinstance(primitive, PlaneBounded):
-    #             bounds = np.vstack([s.bounds for s in sublist])
-    #             # shape = primitive(model, bounds=bounds, rmse_max=None)
-    #             shape = primitive(model, bounds=bounds)
-                
-    #             intersections = []
-    #             for plane1, plane2 in combinations(sublist, 2):
-    #                 points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
-    #                 if len(points) > 0:
-    #                     intersections.append(points)
-                
-    #             # temporary hack, saving intersections for mesh generation
-    #             if len(intersections) > 0:
-    #                 shape._fusion_intersections = np.vstack(intersections)
-                
-    #         else:
-    #             shape = primitive(model)
-            
-    #         points = np.vstack([s.inlier_points for s in sublist])
-    #         normals = np.vstack([s.inlier_normals for s in sublist])
-    #         colors = np.vstack([s.inlier_colors for s in sublist])
-    #         if points.shape[1] == 0:
-    #             points = None
-    #         if normals.shape[1] == 0 or len(normals) < len(points):
-    #             normals = None
-    #         if colors.shape[1] == 0 or len(colors) < len(points):
-    #             colors = None
-    #         shape.set_inliers(points, normals, colors)
-            
-    #         if detector is not None:
-    #             num_points = sum([s.metrics['num_points'] for s in sublist])
-    #             num_inliers = len(points)
-    #             distances, angles = shape.get_residuals(points, normals)
-    #             shape.metrics = detector.get_metrics(
-    #                 num_points, num_inliers, distances, angles)
-            
-    #     new_list.append(shape)
-        
-    # return new_list
-
 
 def fuse_similar_shapes(shapes, detector=None,  rtol=1e-02, atol=1e-02, 
                         bbox_intersection=None, inlier_max_distance=None,
