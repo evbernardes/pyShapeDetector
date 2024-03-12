@@ -48,6 +48,8 @@ class PlaneBounded(Plane):
     axis_cylindrical
     bbox
     bbox_bounds
+    inlier_bbox
+    inlier_bbox_bounds
 
     normal
     dist
@@ -83,7 +85,7 @@ class PlaneBounded(Plane):
     add_inliers
     closest_inliers
     inliers_average_dist
-    inliers_bounding_box
+    get_inliers_axis_aligned_bounding_box
     get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density
@@ -444,7 +446,7 @@ class PlaneBounded(Plane):
             for hole in self.holes:
                 hole.rotate(rotation)
                 
-    def inliers_bounding_box(self, slack=0, num_sample=15):
+    def get_inliers_axis_aligned_bounding_box(self, slack=0, num_sample=15):
         """ If the shape includes inlier points, returns the minimum and 
         maximum bounds of their bounding box.
         
@@ -475,7 +477,7 @@ class PlaneBounded(Plane):
         slack = abs(slack)
         min_bound = np.min(points, axis=0)
         max_bound = np.max(points, axis=0)
-        return np.vstack([min_bound - slack, max_bound + slack])
+        return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
     
     def get_axis_aligned_bounding_box(self, slack=0):
         """ Returns an axis-aligned bounding box of the primitive.

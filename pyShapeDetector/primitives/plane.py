@@ -45,6 +45,8 @@ class Plane(Primitive):
     axis_cylindrical
     bbox
     bbox_bounds
+    inlier_bbox
+    inlier_bbox_bounds
 
     normal
     dist
@@ -71,7 +73,7 @@ class Plane(Primitive):
     add_inliers
     closest_inliers
     inliers_average_dist
-    inliers_bounding_box
+    get_inliers_axis_aligned_bounding_box
     get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density

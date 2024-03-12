@@ -59,6 +59,8 @@ class Primitive(ABC):
     axis_cylindrical
     bbox
     bbox_bounds
+    inlier_bbox
+    inlier_bbox_bounds
         
     Methods
     -------
@@ -70,7 +72,8 @@ class Primitive(ABC):
     fit
     get_signed_distances
     get_distances
-    get_normalsaxis_aligned_bounding_box
+    get_normals
+    axis_aligned_bounding_box
     get_angles_cos
     get_angles
     get_residuals
@@ -80,7 +83,7 @@ class Primitive(ABC):
     add_inliers
     closest_inliers
     inliers_average_dist
-    inliers_bounding_box
+    get_inliers_axis_aligned_bounding_box
     get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density
@@ -275,6 +278,17 @@ class Primitive(ABC):
     @property
     def bbox_bounds(self):
         bbox = self.get_axis_aligned_bounding_box()
+        return bbox.min_bound, bbox.max_bound
+    
+    @property
+    def inlier_bbox(self):
+        bbox = self.get_inliers_axis_aligned_bounding_box()
+        bbox.color = self.color
+        return bbox
+    
+    @property
+    def inlier_bbox_bounds(self):
+        bbox = self.get_inliers_axis_aligned_bounding_box()
         return bbox.min_bound, bbox.max_bound
     
     def __repr__(self):
@@ -669,7 +683,7 @@ class Primitive(ABC):
         from pyShapeDetector.utility import average_nearest_dist
         return average_nearest_dist(self.inlier_points, k, leaf_size)
     
-    def inliers_bounding_box(self, slack=0, num_sample=15):
+    def get_inliers_axis_aligned_bounding_box(self, slack=0, num_sample=15):
         """ If the shape includes inlier points, returns the minimum and 
         maximum bounds of their bounding box.
         
@@ -688,11 +702,7 @@ class Primitive(ABC):
         -------
         tuple of two 3 x 1 arrays
             Minimum and maximum bounds of inlier points bounding box.
-        """
-        
-        # if len(self.inlier_points) == 0:
-        #     return None, None
-        
+        """        
         slack = abs(slack)
         
         if len(self.inlier_points) > 0:
@@ -703,7 +713,7 @@ class Primitive(ABC):
             
         min_bound = np.min(points, axis=0)
         max_bound = np.max(points, axis=0)
-        return np.vstack([min_bound - slack, max_bound + slack])
+        return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
     
     def get_axis_aligned_bounding_box(self, slack=0):
         """ Returns an axis-aligned bounding box of the primitive.
@@ -749,6 +759,9 @@ class Primitive(ABC):
         open3d.geometry.PointCloud
             Sampled pointcloud from shape.
         """
+        if number_of_points <= 0:
+            raise ValueError("Number of points must be a non-negative number.")
+            
         mesh = self.get_mesh()
         pcd = mesh.sample_points_uniformly(number_of_points, use_triangle_normal)
         pcd.normals = Vector3dVector(self.get_normals(pcd.points))
@@ -773,6 +786,9 @@ class Primitive(ABC):
         open3d.geometry.PointCloud
             Sampled pointcloud from shape.
         """
+        if density <= 0:
+            raise ValueError("Density must be a non-negative number.")
+            
         # mesh = self.get_mesh()
         number_of_points = int(density * self.surface_area)
         return self.sample_points_uniformly(number_of_points, use_triangle_normal)
@@ -1055,10 +1071,10 @@ class Primitive(ABC):
         if distance <= 0:
             raise ValueError("Distance must be positive.")
         
-        bb1 = self.inliers_bounding_box(slack=distance/2)
-        bb2 = other_shape.inliers_bounding_box(slack=distance/2)
+        bb1 = self.get_inliers_axis_aligned_bounding_box(slack=distance/2)
+        bb2 = other_shape.get_inliers_axis_aligned_bounding_box(slack=distance/2)
         
-        test_order = bb2[1] - bb1[0] >= 0
+        test_order = bb2.max_bound - bb1.min_bound >= 0
         if test_order.all():
             pass
         elif (~test_order).all():
@@ -1067,7 +1083,7 @@ class Primitive(ABC):
             return False
         
         # test_intersect = (bb1.max_bound + atol) - (bb2.min_bound - atol) >= 0
-        test_intersect = bb1[1] - bb2[0] >= 0
+        test_intersect = bb1.max_bound - bb2.min_bound >= 0
         return test_intersect.all()
     
     def check_inlier_distance(self, other_shape, distance):
