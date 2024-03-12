@@ -496,7 +496,7 @@ class PlaneBounded(Plane):
                 
     @staticmethod
     def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=1e-3,
-             force_concave=True, ressample_density=1.5, ressample_radius_ratio=1.2):
+             **extra_options):
         """ Find weigthed average of shapes, where the weight is the fitness
         metric.
         
@@ -516,12 +516,20 @@ class PlaneBounded(Plane):
         force_concave : boolean, optional.
             If True, the fused plane will be concave regardless of inputs.
             Default: True.
+        ressample_density : float, optional
+            Default: 1.5
+        ressample_radius_ratio : float, optional
+            Default: 1.2
             
         Returns
         -------
         PlaneBounded
             Averaged PlaneBounded instance.    
         """
+        force_concave = extra_options.get('force_concave', True)
+        ressample_density = extra_options.get('ressample_density', 1.5)
+        ressample_radius_ratio = extra_options.get('ressample_radius_ratio', 1.2)
+        
         if len(shapes) == 1:
             return shapes[0]
         elif isinstance(shapes, Primitive):

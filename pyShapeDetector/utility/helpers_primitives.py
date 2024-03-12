@@ -213,8 +213,7 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
         
     return sublists
 
-def fuse_shape_groups(shapes_lists, detector=None, 
-                      ignore_extra_data=False, line_intersection_eps=1e-3):
+def fuse_shape_groups(shapes_lists, **fuse_options):
     """ Find weigthed average of shapes, where the weight is the fitness
     metric.
     
@@ -234,6 +233,16 @@ def fuse_shape_groups(shapes_lists, detector=None,
     line_intersection_eps : float, optional
         Distance for detection of intersection between planes. Default: 0.001.
         
+    Extra parameters for PlaneBounded
+    ---------------------------------
+    force_concave : boolean, optional.
+        If True, the fused plane will be concave regardless of inputs.
+        Default: True.
+    ressample_density : float, optional
+        Default: 1.5
+    ressample_radius_ratio : float, optional
+        Default: 1.2
+        
     Returns
     -------
     list
@@ -243,7 +252,7 @@ def fuse_shape_groups(shapes_lists, detector=None,
     for sublist in shapes_lists:
         primitive = type(sublist[0])
         fused_shape = primitive.fuse(
-            sublist, detector, ignore_extra_data, line_intersection_eps)
+            sublist, **fuse_options)
         
         num_points = sum(len(s.inlier_points) for s in sublist)
         if num_points != len(fused_shape.inlier_points):
@@ -253,23 +262,22 @@ def fuse_shape_groups(shapes_lists, detector=None,
         
     return fused_shapes
 
-def fuse_similar_shapes(shapes, detector=None,  rtol=1e-02, atol=1e-02, 
+def fuse_similar_shapes(shapes, rtol=1e-02, atol=1e-02, 
                         bbox_intersection=None, inlier_max_distance=None,
-                        line_intersection_eps=1e-3, legacy=False,
-                        ignore_extra_data=False):
+                        legacy=False, **fuse_options):
     """ Detect shapes with similar model and fuse them.
     
     If a detector is given, use it to compute the metrics of the resulting
     average shapes.
     
-    See: group_shape_groups, fuse_shape_groups
+    For extra fuse options, see: fuse_shape_groups
+    
+    See: group_shape_groups
     
     Parameters
     ----------
     shapes : list of shapes
-        List containing all shapes.  
-    detector : instance of some Detector, optional
-        Used to recompute metrics.  
+        List containing all shapes.
     rtol : float, optional
         The relative tolerance parameter. Default: 1e-02.
     atol : float, optional
@@ -280,8 +288,6 @@ def fuse_similar_shapes(shapes, detector=None,  rtol=1e-02, atol=1e-02,
     inlier_max_distance : float, optional
         Max distance between points in shapes. If None, ignore this test.
         Default: None.
-    ignore_extra_data : boolean, optional
-        If True, ignore everything and only fuse model. Default: False.
     
     Returns
     -------
@@ -291,7 +297,7 @@ def fuse_similar_shapes(shapes, detector=None,  rtol=1e-02, atol=1e-02,
     shapes_groupped = group_similar_shapes(
         shapes, rtol, atol, bbox_intersection, inlier_max_distance, legacy)
     
-    return fuse_shape_groups(shapes_groupped, detector, ignore_extra_data, line_intersection_eps)
+    return fuse_shape_groups(shapes_groupped, **fuse_options)
 
 def find_plane_intersections(
         shapes, bbox_intersection=None, inlier_max_distance=None,
