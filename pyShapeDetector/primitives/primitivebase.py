@@ -321,7 +321,7 @@ class Primitive(ABC):
         self._model = model
         
     @classmethod
-    def random(cls, scale=1, decimals=5):
+    def random(cls, scale=1, decimals=3):
         """ Generates a random shape.
         
         see: numpy.array.round
