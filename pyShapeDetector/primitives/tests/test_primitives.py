@@ -200,7 +200,7 @@ def test_fit():
 
 
 def test_distances():
-    for primitive in [Plane, Sphere, Cylinder, Cone]:
+    for primitive in all_primitives_regular:
         for i in range(5):
             shape = get_shape(primitive, 100, canonical=False)
             distances = shape.get_distances(shape.inlier_points)
@@ -209,8 +209,10 @@ def test_distances():
 
 
 def test_distances_flatten():
-    # for primitive in [Plane, Sphere, Cylinder, Cone]:
-    for primitive in [Plane, Sphere, Cylinder]:
+    primitives = all_primitives_regular
+    primitives.remove(Cone) # not working for Cones
+
+    for primitive in primitives:
         for i in range(5):
             shape = get_shape(primitive, 100, canonical=False)
             points = np.random.rand(100, 3)
@@ -223,17 +225,16 @@ def test_distances_flatten():
 
 
 def test_normals_flatten_plane():
-    for primitive in [Plane]:
-        for i in range(5):
-            shape = get_shape(primitive, 100, canonical=False)
-            points = np.random.rand(1000, 3)
-            points_flattened = shape.flatten_points(points)
-            # distances = shape.get_distances(points_flattened)
-            pcd_flattened = PointCloud(Vector3dVector(points_flattened))
-            pcd_flattened.estimate_normals()
-            normals = pcd_flattened.normals
-            angles = shape.get_angles(points_flattened, normals)
-            assert_allclose(angles, 0, atol=1e-5)      
+    for i in range(5):
+        shape = get_shape(Plane, 100, canonical=False)
+        points = np.random.rand(1000, 3)
+        points_flattened = shape.flatten_points(points)
+        # distances = shape.get_distances(points_flattened)
+        pcd_flattened = PointCloud(Vector3dVector(points_flattened))
+        pcd_flattened.estimate_normals()
+        normals = pcd_flattened.normals
+        angles = shape.get_angles(points_flattened, normals)
+        assert_allclose(angles, 0, atol=1e-5)      
     
 
 def test_normals_flatten_others():
@@ -366,7 +367,9 @@ def test_axis_aligned_bounding_box_planes():
     #         pcd = plane.inlier_PointCloud.crop(plane.bbox)
     #         assert len(pcd.points) == num_samples
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
+    # test_distances()
+    test_equal()
     # test_bounding_box_bounds()
     # test_axis_aligned_bounding_box_no_planes()
     # test_axis_aligned_bounding_box_planes()
