@@ -58,6 +58,7 @@ class Primitive(ABC):
     axis_spherical
     axis_cylindrical
     bbox
+    bbox_bounds
         
     Methods
     -------
@@ -270,6 +271,11 @@ class Primitive(ABC):
         bbox = self.get_axis_aligned_bounding_box()
         bbox.color = self.color
         return bbox
+    
+    @property
+    def bbox_bounds(self):
+        bbox = self.get_axis_aligned_bounding_box()
+        return bbox.min_bound, bbox.max_bound
     
     def __repr__(self):
         params = [round(x, 5) for x in self.model]

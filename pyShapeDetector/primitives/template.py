@@ -42,6 +42,7 @@ class Template(Primitive):
     axis_spherical
     axis_cylindrical
     bbox
+    bbox_bounds
         
     Methods
     -------

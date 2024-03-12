@@ -47,6 +47,7 @@ class PlaneBounded(Plane):
     axis_spherical
     axis_cylindrical
     bbox
+    bbox_bounds
 
     normal
     dist

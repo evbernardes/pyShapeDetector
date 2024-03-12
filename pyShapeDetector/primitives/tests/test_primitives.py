@@ -15,7 +15,7 @@ from itertools import combinations
 
 from scipy.spatial.transform import Rotation
 
-from open3d.geometry import PointCloud
+from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
 
 from pyShapeDetector.primitives import (
@@ -315,6 +315,14 @@ def test_translate_and_rotate():
     for s in shapes:
         assert_allclose(s.inlier_points, inlier_points)
         assert_allclose(s.inlier_normals, inlier_normals)
+        
+        
+def test_bounding_box_bounds():
+    with pytest.warns(UserWarning, match='infinite axis aligned bounding'):
+        for primitive in all_primitives:
+            shape = get_shape(Sphere, 0)
+            bbox = AxisAlignedBoundingBox(*shape.bbox_bounds)
+            assert shape.get_axis_aligned_bounding_box() == bbox
 
 
 def test_axis_aligned_bounding_box_no_planes():
@@ -323,6 +331,7 @@ def test_axis_aligned_bounding_box_no_planes():
         shape = get_shape(Sphere, num_samples)
         pcd = shape.inlier_PointCloud.crop(shape.bbox)
         assert len(pcd.points) == num_samples
+        
         
 def test_axis_aligned_bounding_box_planes():
     plane_x = Plane([1, 0, 0, np.random.random()])
@@ -351,5 +360,6 @@ def test_axis_aligned_bounding_box_planes():
     #         assert len(pcd.points) == num_samples
 
 # if __name__ == "__main__":
+#     test_bounding_box_bounds
 #     test_axis_aligned_bounding_box_no_planes()
 #     test_axis_aligned_bounding_box_planes()

@@ -42,6 +42,7 @@ class Cylinder(Primitive):
     axis_spherical
     axis_cylindrical
     bbox
+    bbox_bounds
     
     base
     top

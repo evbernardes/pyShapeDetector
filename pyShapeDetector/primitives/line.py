@@ -45,6 +45,7 @@ class Line(Primitive):
     axis_spherical
     axis_cylindrical
     bbox
+    bbox_bounds
     
     beginning
     ending

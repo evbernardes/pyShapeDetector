@@ -42,6 +42,7 @@ class Cone(Primitive):
     axis_spherical
     axis_cylindrical
     bbox
+    bbox_bounds
     
     appex
     top
