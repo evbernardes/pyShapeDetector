@@ -10,7 +10,7 @@ from itertools import permutations, product
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
 from scipy.spatial.transform import Rotation
-from open3d.geometry import TriangleMesh
+from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector, Vector3dVector
 
 from pyShapeDetector.utility import get_rotation_from_axis, get_triangle_surface_areas
@@ -43,6 +43,7 @@ class Plane(Primitive):
     metrics
     axis_spherical
     axis_cylindrical
+    bbox
 
     normal
     dist
@@ -70,6 +71,7 @@ class Plane(Primitive):
     closest_inliers
     inliers_average_dist
     inliers_bounding_box
+    get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density
     get_mesh
@@ -295,6 +297,42 @@ class Plane(Primitive):
             Nx3 array containing normal vectors.
         """
         return np.tile(self.normal, (len(points), 1))
+    
+    def get_axis_aligned_bounding_box(self, slack=0):
+        """ Returns an axis-aligned bounding box of the primitive.
+        
+        Parameters
+        ----------
+        slack : float, optional
+            Expand bounding box in all directions, useful for testing purposes.
+            Default: 0.
+        
+        See: open3d.geometry.get_axis_aligned_bounding_box
+            
+        Returns
+        -------
+        open3d.geometry.AxisAlignedBoundingBox
+        """
+        if slack < 0:
+            raise ValueError("Slack must be non-negative.")
+            
+        warn("Unbounded planes have infinite axis aligned bounding boxes.")
+        
+        eps = 1e-3
+        if np.linalg.norm(self.normal - [1, 0, 0]) < eps:
+            idx = 0
+        elif np.linalg.norm(self.normal - [0, 1, 0]) < eps:
+            idx = 1
+        elif np.linalg.norm(self.normal - [0, 0, 1]) < eps:
+            idx = 2
+        else:
+            idx = -1
+        
+        centroid = self.centroid
+        expand = np.array(
+            [slack if n == idx else np.inf for n in range(3)])
+        return AxisAlignedBoundingBox(centroid - expand, 
+                                      centroid + expand)
 
     def get_mesh(self, **options):
         """ Flatten inliers points and creates a simplified mesh of the plane. If the

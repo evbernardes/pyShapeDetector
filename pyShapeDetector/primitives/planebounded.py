@@ -10,7 +10,7 @@ from itertools import permutations, product, combinations
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
 # from scipy.spatial.transform import Rotation
-from open3d.geometry import TriangleMesh
+from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector, Vector3dVector
 
 from pyShapeDetector.utility import (
@@ -46,6 +46,7 @@ class PlaneBounded(Plane):
     metricsd
     axis_spherical
     axis_cylindrical
+    bbox
 
     normal
     dist
@@ -82,6 +83,7 @@ class PlaneBounded(Plane):
     closest_inliers
     inliers_average_dist
     inliers_bounding_box
+    get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density
     get_mesh
@@ -212,9 +214,14 @@ class PlaneBounded(Plane):
     @property
     def bounds_or_vertices(self):
         if self.is_convex:
-            return self.bounds
+            points = self.bounds
         else:
-            return self.vertices        
+            points = self.vertices
+            
+        if len(points) == 0:
+            raise RuntimeError("PlaneBounded instance has no bounds or vertices.")
+            
+        return points
 
     def __init__(self, planemodel, bounds=None, vertices=None, triangles=None):
         """
@@ -468,6 +475,28 @@ class PlaneBounded(Plane):
         min_bound = np.min(points, axis=0)
         max_bound = np.max(points, axis=0)
         return np.vstack([min_bound - slack, max_bound + slack])
+    
+    def get_axis_aligned_bounding_box(self, slack=0):
+        """ Returns an axis-aligned bounding box of the primitive.
+        
+        Parameters
+        ----------
+        slack : float, optional
+            Expand bounding box in all directions, useful for testing purposes.
+            Default: 0.
+        
+        See: open3d.geometry.get_axis_aligned_bounding_box
+            
+        Returns
+        -------
+        open3d.geometry.AxisAlignedBoundingBox
+        """
+        if slack < 0:
+            raise ValueError("Slack must be non-negative.")
+        points = self.bounds_or_vertices
+        min_bound = np.min(points, axis=0)
+        max_bound = np.max(points, axis=0)
+        return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
                 
     @staticmethod
     def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=1e-3,

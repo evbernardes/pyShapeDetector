@@ -41,6 +41,7 @@ class Cylinder(Primitive):
     metrics
     axis_spherical
     axis_cylindrical
+    bbox
     
     base
     top
@@ -73,6 +74,7 @@ class Cylinder(Primitive):
     closest_inliers
     inliers_average_dist
     inliers_bounding_box
+    get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density
     get_mesh

@@ -57,17 +57,19 @@ class Primitive(ABC):
     metrics
     axis_spherical
     axis_cylindrical
+    bbox
         
     Methods
     -------
     __init__
     __repr__
     __eq__
+    _get_bounding_box
     random
     fit
     get_signed_distances
     get_distances
-    get_normals
+    get_normalsaxis_aligned_bounding_box
     get_angles_cos
     get_angles
     get_residuals
@@ -78,6 +80,7 @@ class Primitive(ABC):
     closest_inliers
     inliers_average_dist
     inliers_bounding_box
+    get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density
     get_mesh
@@ -261,6 +264,12 @@ class Primitive(ABC):
         rho = np.sqrt(x**2 + y**2)
         theta = np.arctan2(y, x)
         return np.array([rho, theta, z])
+    
+    @property
+    def bbox(self):
+        bbox = self.get_axis_aligned_bounding_box()
+        bbox.color = self.color
+        return bbox
     
     def __repr__(self):
         params = [round(x, 5) for x in self.model]
@@ -689,6 +698,31 @@ class Primitive(ABC):
         min_bound = np.min(points, axis=0)
         max_bound = np.max(points, axis=0)
         return np.vstack([min_bound - slack, max_bound + slack])
+    
+    def get_axis_aligned_bounding_box(self, slack=0):
+        """ Returns an axis-aligned bounding box of the primitive.
+        
+        Parameters
+        ----------
+        slack : float, optional
+            Expand bounding box in all directions, useful for testing purposes.
+            Default: 0.
+        
+        See: open3d.geometry.get_axis_aligned_bounding_box
+            
+        Returns
+        -------
+        open3d.geometry.AxisAlignedBoundingBox
+        """
+        if slack < 0:
+            raise ValueError("Slack must be non-negative.")
+            
+        bbox = self.mesh.get_axis_aligned_bounding_box()
+        if slack > 0:
+            min_bound = bbox.min_bound - slack
+            max_bound = bbox.min_bound + slack
+            bbox = AxisAlignedBoundingBox(min_bound, max_bound)
+        return bbox
             
     def sample_points_uniformly(self, number_of_points=100, 
                             use_triangle_normal=False):

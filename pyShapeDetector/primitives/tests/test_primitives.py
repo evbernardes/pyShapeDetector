@@ -23,6 +23,7 @@ from pyShapeDetector.primitives import (
 
 all_primitives_regular = [Plane, Sphere, Cylinder, Cone]
 all_primitives = all_primitives_regular + [PlaneBounded, Line]
+all_primitives_regular_bounded = [PlaneBounded, Sphere, Cylinder, Cone]
 
 def rmse(x):
     """ Helper for root mean square error. """
@@ -313,3 +314,41 @@ def test_translate_and_rotate():
     for s in shapes:
         assert_allclose(s.inlier_points, inlier_points)
         assert_allclose(s.inlier_normals, inlier_normals)
+
+
+def test_axis_aligned_bounding_box_no_planes():
+    num_samples = 1000
+    for primitive in all_primitives_regular_bounded:
+        shape = get_shape(Sphere, num_samples)
+        pcd = shape.inlier_PointCloud.crop(shape.bbox)
+        assert len(pcd.points) == num_samples
+        
+def test_axis_aligned_bounding_box_planes():
+    plane_x = Plane([1, 0, 0, np.random.random()])
+    plane_y = Plane([0, 1, 0, np.random.random()])
+    plane_z = Plane([0, 0, 1, np.random.random()])
+    
+    for plane in [plane_x, plane_y, plane_z]:
+        with pytest.warns(UserWarning, match='infinite axis aligned bounding'):
+            assert sum(np.isinf(plane_y.bbox.min_bound)) == 2
+            assert sum(np.isinf(plane_y.bbox.max_bound)) == 2
+      
+    plane_all = Plane.random()
+    with pytest.warns(UserWarning, match='infinite axis aligned bounding'):
+        assert sum(np.isinf(plane_all.bbox.min_bound)) == 3
+        assert sum(np.isinf(plane_all.bbox.max_bound)) == 3
+    
+    # cannot be used because Open3D does not crop with inf in bounding box
+    #
+    # num_samples = 1000
+    # with pytest.warns(UserWarning, match='infinite axis aligned bounding'):
+    #     for plane in [plane_x, plane_y, plane_z, plane_all]:
+    #         plane = plane.get_square_plane(np.random.random())
+            
+    #         plane.set_inliers(plane.sample_points_uniformly(num_samples))
+    #         pcd = plane.inlier_PointCloud.crop(plane.bbox)
+    #         assert len(pcd.points) == num_samples
+
+if __name__ == "__main__":
+    test_axis_aligned_bounding_box_no_planes()
+    test_axis_aligned_bounding_box_planes()

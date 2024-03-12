@@ -6,7 +6,7 @@ Created on Mon Sep 25 15:42:59 2023
 @author: ebernardes
 """
 import numpy as np
-from open3d.geometry import TriangleMesh
+from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
 
 from .primitivebase import Primitive
     
@@ -35,6 +35,7 @@ class Sphere(Primitive):
     metrics
     axis_spherical
     axis_cylindrical
+    bbox
     
     radius
     center
@@ -59,6 +60,7 @@ class Sphere(Primitive):
     closest_inliers
     inliers_average_dist
     inliers_bounding_box
+    get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density
     get_mesh
@@ -112,7 +114,7 @@ class Sphere(Primitive):
     def center(self):
         """ Center point of the sphere."""
         return np.array(self.model[:3])
-    
+        
     @staticmethod
     def fit(points, normals=None):
         """ Gives sphere that fits the input points. If the number of points is
@@ -211,7 +213,28 @@ class Sphere(Primitive):
         points = np.asarray(points)
         dist_vec = points - self.model[:3]
         normals = dist_vec / np.linalg.norm(dist_vec, axis=1)[..., np.newaxis]
-        return normals        
+        return normals 
+
+    def get_axis_aligned_bounding_box(self, slack=0):
+        """ Returns an axis-aligned bounding box of the primitive.
+        
+        Parameters
+        ----------
+        slack : float, optional
+            Expand bounding box in all directions, useful for testing purposes.
+            Default: 0.
+        
+        See: open3d.geometry.get_axis_aligned_bounding_box
+            
+        Returns
+        -------
+        open3d.geometry.AxisAlignedBoundingBox
+        """
+        if slack < 0:
+            raise ValueError("Slack must be non-negative.")
+            
+        return AxisAlignedBoundingBox(self.center - self.radius - slack, 
+                                      self.center + self.radius + slack)
 
     def get_mesh(self, **options):
         """ Returns mesh defined by the sphere model.   

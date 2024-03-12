@@ -44,6 +44,7 @@ class Line(Primitive):
     metrics
     axis_spherical
     axis_cylindrical
+    bbox
     
     beginning
     ending
@@ -72,6 +73,7 @@ class Line(Primitive):
     closest_inliers
     inliers_average_dist
     inliers_bounding_box
+    get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density
     get_mesh
