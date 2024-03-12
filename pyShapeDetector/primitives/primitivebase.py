@@ -318,20 +318,27 @@ class Primitive(ABC):
         self._model = model
         
     @classmethod
-    def random(cls, scale=1):
+    def random(cls, scale=1, decimals=5):
         """ Generates a random shape.
+        
+        see: numpy.array.round
         
         Parameters
         ----------
         scale : float, optional
             scaling factor for random model values.
+        decimals : int, optional
+            Number of decimal places to round to (default: 0). If
+            decimals is negative, it specifies the number of positions to
+            the left of the decimal point.
 
         Returns
         -------
         Primitive
             Random shape.
         """
-        return cls(np.random.random(cls._model_args_n) * scale)
+        model = np.random.random(cls._model_args_n) * scale
+        return cls(model.round(decimals))
     
     @staticmethod
     @abstractmethod
