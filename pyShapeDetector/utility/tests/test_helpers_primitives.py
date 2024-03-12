@@ -10,7 +10,8 @@ import pytest
 import numpy as np
 
 from pyShapeDetector.primitives import Plane, PlaneBounded
-from pyShapeDetector.utility import group_similar_shapes
+from pyShapeDetector.utility import (
+    group_similar_shapes, find_plane_intersections)
 
 def test_planes_group_bbox_intersection():
     # num_samples = 50
@@ -73,6 +74,21 @@ def test_planes_group_inlier_max_distance():
     assert 1 == len(group_similar_shapes([pleft, p, pright], inlier_max_distance=dist+eps))
     assert 3 == len(group_similar_shapes([pleft, p, pright], inlier_max_distance=dist-eps))
     
+    
+def test_box_intersections():
+    length = 5
+    
+    planes = PlaneBounded.create_box((0, 0, 0), length)
+    intersections = find_plane_intersections(planes, 1e-3)
+    assert len(intersections) == 12
+    
+    planes[0].translate(planes[0].normal * 10)
+    intersections = find_plane_intersections(planes, 1e-3)
+    assert len(intersections) == 12 - 4
+    intersections = find_plane_intersections(planes, 10 + 1e-3)
+    assert len(intersections) == 12
+    
+    
 # if __name__ == "__main__":
-#     test_group_bbox_intersection()
+    # test_box_intersections()
 #     test_group_inlier_max_distance()
