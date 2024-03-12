@@ -11,7 +11,7 @@ import numpy as np
 from itertools import combinations, product
 from scipy.spatial.transform import Rotation
 # from open3d.geometry import LineSet, TriangleMesh, PointCloud
-# from pyShapeDetector.primitives import Plane, PlaneBounded
+# from pyShapeDetector.primitives import Plane, PlaneBounded, Line
 # from pyShapeDetector.primitives import Primitive, Line
 
 def get_rotation_from_axis(axis_origin, axis):
@@ -336,11 +336,11 @@ def find_plane_intersections(
     dict
         Dictionary of intersections.
     """
-    if bbox_intersection is None and inlier_max_distance is None:
-        raise ValueError("bbox_intersection and inlier_max_distance cannot "
-                         "both be equal to None.")
+    # if bbox_intersection is None and inlier_max_distance is None:
+    #     raise ValueError("bbox_intersection and inlier_max_distance cannot "
+    #                      "both be equal to None.")
     
-    from pyShapeDetector.primitives import Line
+    from pyShapeDetector.primitives import Plane, PlaneBounded, Line
     
     if length_max is not None and length_max <= 0:
         raise ValueError(f"'length_max' must be a positive float, got {length_max}." )    
@@ -357,7 +357,10 @@ def find_plane_intersections(
 
     for i, j in combinations(range(num_shapes), 2):
         
-        if shapes[i].name != 'bounded plane' or shapes[j].name != 'bounded plane':
+        # if shapes[i].name != 'bounded plane' or shapes[j].name != 'bounded plane':
+        #     continue
+    
+        if not isinstance(shapes[i], Plane) or not isinstance(shapes[j], Plane):
             continue
         
         if not shapes[i].is_convex or not shapes[j].is_convex:
@@ -366,10 +369,12 @@ def find_plane_intersections(
         if ignore[i] or ignore[j]:
             continue
         
-        if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
+        both_bounded = isinstance(shapes[i], PlaneBounded) and isinstance(shapes[j], PlaneBounded)
+        
+        if both_bounded and not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
             continue
         
-        if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
+        if both_bounded and not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
             continue
         
         line = Line.from_plane_intersection(
@@ -417,10 +422,18 @@ def glue_nearby_planes(shapes, **options):
         Dictionary of intersections.
     """
     intersections = find_plane_intersections(shapes, **options)
+    
+    from pyShapeDetector.primitives import PlaneBounded
         
     for (i, j), line in intersections.items():
+        
+        if not isinstance(shapes[i], PlaneBounded) or not isinstance(shapes[j], PlaneBounded):
+            del intersections[i, j]
+            continue
+        
         for shape in [shapes[i], shapes[j]]:
             line_ = line.get_line_fitted_to_projections(shape.bounds)
+            # TODO: add vertices too?
             shape.add_bound_points([line_.beginning, line_.ending])
             shape.add_inliers([line_.beginning, line_.ending])
             # new_points = [line.beginning, line.ending]
