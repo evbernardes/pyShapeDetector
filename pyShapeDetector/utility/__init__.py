@@ -34,7 +34,8 @@ from .helpers_primitives import (
     fuse_shape_groups, 
     cut_planes_with_cylinders, 
     get_meshes, 
-    fuse_similar_shapes, 
+    fuse_similar_shapes,
+    find_plane_intersections,
     glue_nearby_planes
     )
 

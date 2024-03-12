@@ -293,16 +293,15 @@ def fuse_similar_shapes(shapes, detector=None,  rtol=1e-02, atol=1e-02,
     
     return fuse_shape_groups(shapes_groupped, detector, ignore_extra_data, line_intersection_eps)
 
-def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
-                       length_max=None, distance_max=None, ignore=None, 
-                       intersect_parallel=False, eps_angle=np.deg2rad(5.0), 
-                       eps_distance=1e-2):
+def find_plane_intersections(
+        shapes, bbox_intersection=None, inlier_max_distance=None,
+        length_max=None, distance_max=None, ignore=None, 
+        intersect_parallel=False, eps_angle=np.deg2rad(5.0), 
+        eps_distance=1e-2):
     """ For every possible pair of neighboring bounded planes, calculate their
-    intersection and then glue them to this intersection.
+    intersection and return dictionary of all intersection lines.
     
-    Also returns list of all intersection lines.
-    
-    See: group_shape_groups, fuse_shape_groups
+    See: group_shape_groups, fuse_shape_groups, glue_nearby_planes
     
     Parameters
     ----------
@@ -334,10 +333,9 @@ def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
     
     Returns
     -------
-    list
-        List of intersections.
+    dict
+        Dictionary of intersections.
     """
-    
     if bbox_intersection is None and inlier_max_distance is None:
         raise ValueError("bbox_intersection and inlier_max_distance cannot "
                          "both be equal to None.")
@@ -354,7 +352,7 @@ def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
         raise ValueError("'ignore' must be a list of booleans the size of 'shapes'.")
     
     lines = []
-    a = {}
+    intersections = {}
     num_shapes = len(shapes)
 
     for i, j in combinations(range(num_shapes), 2):
@@ -378,44 +376,57 @@ def glue_nearby_planes(shapes, bbox_intersection=None, inlier_max_distance=None,
             shapes[i], shapes[j], intersect_parallel=intersect_parallel,
             eps_angle=eps_angle, eps_distance=eps_distance)
         
-        if line is not None:
-            # line = None
-            # continue
+        if line is None:
+            continue
         
-            if length_max is not None and line.length > length_max:
-                line = None
+        if length_max is not None and line.length > length_max:
+            continue
+            line = None
+        
+        elif distance_max is not None:
+            # TODO: bounds_or_vertices should be changed for bounds if we are 
+            # sure that it will never be implemented for non convex planes
+            points = shapes[i].bounds_or_vertices
+
+            if min(line.get_distances(points)) > distance_max:
+                continue
                 # continue
-            
-            elif distance_max is not None:
-                # points = shapes[i].bounds_or_vertices
-                points = shapes[i].bounds
-
-                if min(line.get_distances(points)) > distance_max:
-                    line = None
-                    # continue
-                elif min(line.get_distances(points)) > distance_max:
-                    line = None
-                    # continue
-            
-            if line is not None:
-                lines.append(line)
-                
-        a[i, j] = line
+            if min(line.get_distances(points)) > distance_max:
+                continue
+                # continue
         
-    for i, j in combinations(range(num_shapes), 2):
-        if (i, j) not in a:
-            continue
+        lines.append(line)            
+        intersections[i, j] = line
         
-        if (line := a[i, j]) is None:
-            continue
+    return intersections
 
+def glue_nearby_planes(shapes, **options):
+    """ For every possible pair of neighboring bounded planes, calculate their
+    intersection and then glue them to this intersection.
+    
+    Also returns dictionary of all intersection lines.
+    
+    See: group_shape_groups, fuse_shape_groups, find_plane_intersections
+    
+    Parameters
+    ----------
+    To see every possible parameter, see: find_plane_intersections
+    
+    Returns
+    -------
+    dict
+        Dictionary of intersections.
+    """
+    intersections = find_plane_intersections(shapes, **options)
+        
+    for (i, j), line in intersections.items():
         for shape in [shapes[i], shapes[j]]:
             line_ = line.get_line_fitted_to_projections(shape.bounds)
             shape.add_bound_points([line_.beginning, line_.ending])
             shape.add_inliers([line_.beginning, line_.ending])
             # new_points = [line.beginning, line.ending]
             
-    return lines
+    return intersections
 
 def cut_planes_with_cylinders(shapes, radius_min, total_cut=False, eps=0):
     """ Isolates planes and cylinders. For every plane and cylinder 
