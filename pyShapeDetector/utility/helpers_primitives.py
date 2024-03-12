@@ -410,6 +410,44 @@ def find_plane_intersections(
         
     return intersections
 
+def glue_planes_with_intersections(shapes, intersections):
+    """ Glue shapes using intersections in a dict.
+    
+    Also returns dictionary of all intersection lines.
+    
+    See: group_shape_groups, fuse_shape_groups, find_plane_intersections, glue_nearby_planes
+    
+    Parameters
+    ----------
+    intersections : dict
+        Dictionary with keys of type `(i, j)` and values of type Primitive.Line.
+    
+    Returns
+    -------
+    dict
+        Dictionary of intersections.
+    """
+    from pyShapeDetector.primitives import PlaneBounded
+    
+    new_intersections = []
+        
+    for (i, j), line in intersections.items():
+        
+        if not isinstance(shapes[i], PlaneBounded) or not isinstance(shapes[j], PlaneBounded):
+            # del intersections[i, j]
+            continue
+        
+        new_intersections[i, j] = line
+        
+        for shape in [shapes[i], shapes[j]]:
+            line_ = line.get_line_fitted_to_projections(shape.bounds)
+            # TODO: add vertices too?
+            shape.add_bound_points([line_.beginning, line_.ending])
+            shape.add_inliers([line_.beginning, line_.ending])
+            # new_points = [line.beginning, line.ending]
+            
+    return new_intersections
+
 def glue_nearby_planes(shapes, **options):
     """ For every possible pair of neighboring bounded planes, calculate their
     intersection and then glue them to this intersection.
@@ -428,23 +466,7 @@ def glue_nearby_planes(shapes, **options):
         Dictionary of intersections.
     """
     intersections = find_plane_intersections(shapes, **options)
-    
-    from pyShapeDetector.primitives import PlaneBounded
-        
-    for (i, j), line in intersections.items():
-        
-        if not isinstance(shapes[i], PlaneBounded) or not isinstance(shapes[j], PlaneBounded):
-            del intersections[i, j]
-            continue
-        
-        for shape in [shapes[i], shapes[j]]:
-            line_ = line.get_line_fitted_to_projections(shape.bounds)
-            # TODO: add vertices too?
-            shape.add_bound_points([line_.beginning, line_.ending])
-            shape.add_inliers([line_.beginning, line_.ending])
-            # new_points = [line.beginning, line.ending]
-            
-    return intersections
+    return glue_planes_with_intersections(shapes, intersections)
 
 def cut_planes_with_cylinders(shapes, radius_min, total_cut=False, eps=0):
     """ Isolates planes and cylinders. For every plane and cylinder 

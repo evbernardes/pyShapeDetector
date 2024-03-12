@@ -35,6 +35,7 @@ from .helpers_primitives import (
     get_meshes, 
     fuse_similar_shapes,
     find_plane_intersections,
+    glue_planes_with_intersections,
     glue_nearby_planes
     )
 
