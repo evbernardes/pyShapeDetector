@@ -961,6 +961,7 @@ class Primitive(ABC):
         if len(self._rotatable) != 0:
             self._model[self._rotatable] = rotation.apply(
                 self.model[self._rotatable])
+        if len(self._translatable) != 0:
             self._model[self._translatable] = rotation.apply(
                 self.model[self._translatable])
         
