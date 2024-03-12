@@ -381,7 +381,6 @@ def find_plane_intersections(
         
         if length_max is not None and line.length > length_max:
             continue
-            line = None
         
         elif distance_max is not None:
             # TODO: bounds_or_vertices should be changed for bounds if we are 

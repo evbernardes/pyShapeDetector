@@ -39,6 +39,7 @@ def test_planes_group_bbox_intersection():
     assert 1 == len(group_similar_shapes([pleft, p, pright], bbox_intersection=dist+eps))
     assert 3 == len(group_similar_shapes([pleft, p, pright], bbox_intersection=dist-eps))
     
+    
 def test_planes_group_inlier_max_distance():
     num_samples = 1000
     centroid = np.array([0, 0, 0])
