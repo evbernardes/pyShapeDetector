@@ -905,13 +905,13 @@ class Primitive(ABC):
         translation : 1 x 3 array
             Translation vector.
         """
-        if not hasattr(self, '_translatable'):
-            raise NotImplementedError('Shapes of type {shape.name} do not '
-                                      'have an implemented _translatable '
-                                      'attribute')
+        # if not hasattr(self, '_translatable'):
+        #     raise NotImplementedError('Shapes of type {shape.name} do not '
+        #                               'have an implemented _translatable '
+        #                               'attribute')
             
         if len(self._translatable) != 0:
-            self._model[self._translatable] += translation        
+            self._model[self._translatable] += translation
         self._translate_points(translation)
         
         if self._mesh is not None:
@@ -951,16 +951,17 @@ class Primitive(ABC):
         rotation : 3 x 3 rotation matrix or scipy.spatial.transform.Rotation
             Rotation matrix.
         """
-        if not hasattr(self, '_rotatable'):
-            raise NotImplementedError('Shapes of type {shape.name} do not '
-                                      'have an implemented _rotatable '
-                                      'attribute')
+        # if not hasattr(self, '_rotatable'):
+        #     raise NotImplementedError('Shapes of type {shape.name} do not '
+        #                               'have an implemented _rotatable '
+        #                               'attribute')
             
         rotation = Primitive._parse_rotation(rotation)
             
         if len(self._rotatable) != 0:
             self._model[self._rotatable] = rotation.apply(
                 self.model[self._rotatable])
+            
         if len(self._translatable) != 0:
             self._model[self._translatable] = rotation.apply(
                 self.model[self._translatable])
