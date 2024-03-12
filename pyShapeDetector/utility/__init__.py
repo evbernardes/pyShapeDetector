@@ -13,8 +13,7 @@ from .detector_options import DetectorOptions
 from .helpers_pointclouds import (
     write_point_cloud, 
     read_point_cloud, 
-    paint_random, 
-    segment_dbscan, 
+    paint_random,
     average_nearest_dist,
     segment_with_region_growing, 
     segment_dbscan, 
