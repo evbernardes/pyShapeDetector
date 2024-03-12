@@ -367,11 +367,11 @@ class Plane(Primitive):
         translation : 1 x 3 array
             Translation vector.
         """
+        Primitive.translate(self, translation)
         centroid = self.centroid + translation
         self._model = Plane.from_normal_point(
             self.normal, centroid).model
-
-        self._translate_points(translation)
+            
         for hole in self.holes:
             hole._translate_points(translation)
 
@@ -383,17 +383,21 @@ class Plane(Primitive):
         rotation : 3 x 3 rotation matrix or scipy.spatial.transform.Rotation
             Rotation matrix.
         """
-        if not hasattr(self, '_rotatable'):
-            raise NotImplementedError('Shapes of type {shape.name} do not '
-                                      'have an implemented _rotatable '
-                                      'attribute')
-
-        rotation = Primitive._parse_rotation(rotation)
 
         centroid = rotation.apply(self.centroid)
         normal = rotation.apply(self.normal)
+        
+        rotation = Primitive._parse_rotation(rotation)
+        
+        # for everything else
+        Primitive.rotate(self, rotation)
+        
+        # only for model
         self._model = Plane.from_normal_point(normal, centroid).model
-        self._rotate_points_normals(rotation)
+        
+        if not self.is_hole and len(self.holes) > 0:
+            for hole in self.holes:
+                hole.rotate(rotation)
 
     def __copy__(self):
         """ Method for compatibility with copy module """

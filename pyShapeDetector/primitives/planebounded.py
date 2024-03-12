@@ -135,6 +135,7 @@ class PlaneBounded(Plane):
     _vertices = np.array([])
     _triangles = np.array([])
     _convex = True
+    _rotatable = []  # no automatic rotation
 
     @property
     def model(self):
@@ -409,8 +410,8 @@ class PlaneBounded(Plane):
         translation : 1 x 3 array
             Translation vector.
         """
+        Primitive.translate(self, translation)
         Plane.translate(self._plane, translation)
-        self._translate_points(translation)
         
         for hole in self.holes:
             hole._translate_points(translation)
@@ -428,23 +429,15 @@ class PlaneBounded(Plane):
         rotation : 3 x 3 rotation matrix or scipy.spatial.transform.Rotation
             Rotation matrix.
         """
-        if not hasattr(self, '_rotatable'):
-            raise NotImplementedError('Shapes of type {shape.name} do not '
-                                      'have an implemented _rotatable '
-                                      'attribute')
         rotation = self._parse_rotation(rotation)
+        
+        Primitive.rotate(self, rotation)
         Plane.rotate(self._plane, rotation)
-
-        self._rotate_points_normals(rotation)
 
         if self.is_convex:
             self._bounds = rotation.apply(self._bounds)
         else:
-            self._vertices = rotation.apply(self._vertices)
-
-        if not self.is_hole and len(self.holes) > 0:
-            for hole in self.holes:
-                hole.rotate(rotation)
+            self._vertices = rotation.apply(self._vertices)        
                 
     def get_inliers_axis_aligned_bounding_box(self, slack=0, num_sample=15):
         """ If the shape includes inlier points, returns the minimum and 
