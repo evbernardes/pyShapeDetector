@@ -1049,7 +1049,7 @@ class Primitive(ABC):
         f.close()
         return shape
     
-    def check_bbox_intersection(self, other_shape, distance):
+    def check_bbox_intersection(self, other_shape, distance, use_inliers=False):
         """ Check if minimal distance of the inlier points bounding box
         is below a given distance.
         
@@ -1059,6 +1059,8 @@ class Primitive(ABC):
             A shape with inlier points
         distance : float
             Max distance between the bounding boxes.
+        use_inliers : bool, optional
+            If True, use inliers bounding box. Default: False.
             
         Returns
         -------
@@ -1071,8 +1073,12 @@ class Primitive(ABC):
         if distance <= 0:
             raise ValueError("Distance must be positive.")
         
-        bb1 = self.get_inliers_axis_aligned_bounding_box(slack=distance/2)
-        bb2 = other_shape.get_inliers_axis_aligned_bounding_box(slack=distance/2)
+        if use_inliers:
+            bb1 = self.get_inliers_axis_aligned_bounding_box(slack=distance/2)
+            bb2 = other_shape.get_inliers_axis_aligned_bounding_box(slack=distance/2)
+        else:
+            bb1 = self.get_inliers_axis_aligned_bounding_box(slack=distance/2)
+            bb2 = other_shape.get_inliers_axis_aligned_bounding_box(slack=distance/2)
         
         test_order = bb2.max_bound - bb1.min_bound >= 0
         if test_order.all():
