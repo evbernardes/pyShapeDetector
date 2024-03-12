@@ -10,7 +10,7 @@ import random
 import copy
 import numpy as np
 import open3d as o3d
-from open3d.geometry import LineSet, TriangleMesh, PointCloud
+from open3d.geometry import LineSet, TriangleMesh, PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector2iVector, Vector3iVector, Vector3dVector
 
 from .primitivebase import Primitive
@@ -205,6 +205,31 @@ class Line(Primitive):
         normals = self.get_orthogonal_component(points)
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
+    
+    def get_axis_aligned_bounding_box(self, slack=0):
+        """ Returns an axis-aligned bounding box of the primitive.
+        
+        Parameters
+        ----------
+        slack : float, optional
+            Expand bounding box in all directions, useful for testing purposes.
+            Default: 0.
+        
+        See: open3d.geometry.get_axis_aligned_bounding_box
+            
+        Returns
+        -------
+        open3d.geometry.AxisAlignedBoundingBox
+        """
+        if slack < 0:
+            raise ValueError("Slack must be non-negative.")
+            
+        bbox = self.as_LineSet.get_axis_aligned_bounding_box()
+        if slack > 0:
+            min_bound = bbox.min_bound - slack
+            max_bound = bbox.min_bound + slack
+            bbox = AxisAlignedBoundingBox(min_bound, max_bound)
+        return bbox
     
     def get_mesh(self, **options):
         """ Creates mesh of the shape.      

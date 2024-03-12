@@ -24,6 +24,7 @@ from pyShapeDetector.primitives import (
 all_primitives_regular = [Plane, Sphere, Cylinder, Cone]
 all_primitives = all_primitives_regular + [PlaneBounded, Line]
 all_primitives_regular_bounded = [PlaneBounded, Sphere, Cylinder, Cone]
+all_primitives_bounded = [PlaneBounded, Sphere, Cylinder, Cone] + [Line]
 
 def rmse(x):
     """ Helper for root mean square error. """
@@ -349,6 +350,6 @@ def test_axis_aligned_bounding_box_planes():
     #         pcd = plane.inlier_PointCloud.crop(plane.bbox)
     #         assert len(pcd.points) == num_samples
 
-if __name__ == "__main__":
-    test_axis_aligned_bounding_box_no_planes()
-    test_axis_aligned_bounding_box_planes()
+# if __name__ == "__main__":
+#     test_axis_aligned_bounding_box_no_planes()
+#     test_axis_aligned_bounding_box_planes()
