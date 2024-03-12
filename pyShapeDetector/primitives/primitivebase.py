@@ -182,6 +182,9 @@ class Primitive(ABC):
             raise ValueError("Input must be numeric array.")
         self._color = new_color
         
+        if self._mesh is not None:
+            self._mesh.paint_uniform_color(new_color)
+        
     @property
     def mesh(self):
         if self._mesh is None:
