@@ -16,7 +16,8 @@ from open3d.utility import Vector3iVector, Vector3dVector
 from pyShapeDetector.utility import (
     get_triangle_surface_areas, 
     fuse_vertices_triangles, 
-    planes_ressample_and_triangulate)
+    planes_ressample_and_triangulate,
+    remove_big_triangles)
 from .primitivebase import Primitive
 from .plane import Plane
 # from alphashape import alphashape
@@ -121,6 +122,7 @@ class PlaneBounded(Plane):
     set_bounds
     set_vertices_triangles
     add_bound_points
+    add_vertex_points
     create_circle
     create_ellipse
     create_box
@@ -136,6 +138,8 @@ class PlaneBounded(Plane):
     _triangles = np.array([])
     _convex = True
     _rotatable = []  # no automatic rotation
+    _ressample_density = None
+    _ressample_radius_ratio = None
 
     @property
     def model(self):
@@ -549,13 +553,17 @@ class PlaneBounded(Plane):
             if force_concave:
                 vertices, triangles = planes_ressample_and_triangulate(
                     shapes, ressample_density, ressample_radius_ratio, double_triangles=True)
-                shape.set_vertices_triangles(vertices, triangles)
+                shape.set_vertices_triangles(vertices, triangles, 
+                                             ressample_density=ressample_density, 
+                                             ressample_radius_ratio=ressample_radius_ratio)
                 
             elif not all_convex:
                 vertices = [shape.vertices for shape in shapes]
                 triangles = [shape.triangles for shape in shapes]
                 vertices, triangles = fuse_vertices_triangles(vertices, triangles)                                       
-                shape.set_vertices_triangles(vertices, triangles)
+                shape.set_vertices_triangles(vertices, triangles, 
+                                             ressample_density=ressample_density, 
+                                             ressample_radius_ratio=ressample_radius_ratio)
                 
             else:
                 bounds = np.vstack([shape.bounds for shape in shapes])
@@ -636,6 +644,8 @@ class PlaneBounded(Plane):
         self._vertices = np.array([])
         self._triangles = np.array([])
         self._convex = True
+        self._ressample_density = None
+        self._ressample_radius_ratio = None
 
         projections = self.get_projections(bounds)
 
@@ -645,7 +655,8 @@ class PlaneBounded(Plane):
         self._bounds = bounds[chull.vertices]
         self._bounds_projections = projections[chull.vertices]
         
-    def set_vertices_triangles(self, vertices, triangles, flatten=True):
+    def set_vertices_triangles(self, vertices, triangles, flatten=True,
+                               ressample_density=None, ressample_radius_ratio=None):
         """ Flatten points according to plane model, get projections of 
         flattened points in the model and set desired vertices and triangles.
 
@@ -659,18 +670,20 @@ class PlaneBounded(Plane):
             Vertices of plane triangulation.
         flatten : bool, optional
             If False, does not flatten points
+        ressample_density : float, optional
+            Saves ressample density used. Default: None
+        ressample_radius_ratio : float, optional
+            Saves ressample radial ratio used. Default: None
 
         """
-        # method = method.lower()
-        # if method == 'convex':
-        #     pass
-        # elif method == 'alpha':
-        #     raise NotImplementedError("Alpha shapes not implemented yet.")
-        # else:
-        #     raise ValueError(
-        #         f"method can be 'convex' or 'alpha', got {method}.")
-
-        # if np.
+        if ressample_density is None and ressample_radius_ratio is not None:
+            raise TypeError("If ressample_radius_ratio is given, then "
+                            "ressample_density must algo be given.")
+        
+        if ressample_radius_ratio is None and ressample_density is not None:
+            raise TypeError("If ressample_density is given, then "
+                            "ressample_radius_ratio must algo be given.")
+        
         self._mesh = None
         vertices = np.asarray(vertices)
         triangles = np.asarray(triangles)
@@ -696,6 +709,8 @@ class PlaneBounded(Plane):
         self._vertices = vertices
         self._triangles = triangles
         self._convex = False
+        self._ressample_density = ressample_density
+        self._ressample_radius_ratio = ressample_radius_ratio
 
     # def add_bound_points(self, new_bound_points, flatten=True, method='convex',
                          # alpha=None):
@@ -717,6 +732,7 @@ class PlaneBounded(Plane):
 
         """
         if not self.is_convex:
+            # TODO: warning or error?
             warnings.warn("Cannot add bounds to concave plane.")
         else:
             if flatten:
@@ -724,6 +740,34 @@ class PlaneBounded(Plane):
             bounds = np.vstack([self.bounds, new_bound_points])
             self.set_bounds(bounds, flatten=False)
             # self.set_bounds(points, flatten, method, alpha)
+            
+    def add_vertex_points(self, new_vertice_points, flatten=True):
+        """ Add points to current vertices.
+
+        Parameters
+        ----------
+        new_vertice_points : N x 3 np.array
+            New points to be added.
+        flatten : bool, optional
+            If False, does not flatten points
+        """
+        if self.is_convex:
+            # TODO: warning or error?
+            warnings.warn("Cannot add vertices convex plane.")
+        elif self._ressample_density is None or self._ressample_radius_ratio is None:
+            warnings.warn("Cannot add vertices to plane without ressampling info.")
+        else:
+            if flatten:
+                new_vertice_points = self.flatten_points(new_vertice_points)
+            vertices = np.vstack([self.vertices, new_vertice_points])
+            projections = self.get_projections(vertices)
+            triangles = Delaunay(projections).simplices
+            triangles = remove_big_triangles(vertices, triangles, 
+                                             self._ressample_radius_ratio)
+            
+            self.set_vertices_triangles(vertices, triangles, flatten=False,
+                              ressample_density=self._ressample_density, 
+                              ressample_radius_ratio=self._ressample_radius_ratio)
 
     @staticmethod
     def create_circle(center, normal, radius, resolution=30):

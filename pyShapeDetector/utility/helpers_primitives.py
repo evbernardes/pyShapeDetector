@@ -443,18 +443,23 @@ def glue_planes_with_intersections(shapes, intersections):
             # del intersections[i, j]
             continue
         
-        if not shapes[i].is_convex or not shapes[j].is_convex:
-            continue
+        # if not shapes[i].is_convex or not shapes[j].is_convex:
+            # continue
         
         # new_intersections[i, j] = line
-        lines.append(line)
+        
         
         for shape in [shapes[i], shapes[j]]:
-            line_ = line.get_line_fitted_to_projections(shape.bounds)
-            # TODO: add vertices too?
-            shape.add_bound_points([line_.beginning, line_.ending])
+            line_ = line.get_line_fitted_to_projections(shape.bounds_or_vertices)
+            
+            if shape.is_convex:
+                shape.add_bound_points([line_.beginning, line_.ending])
+            else:
+                shape.add_vertex_points([line_.beginning, line_.ending])
             shape.add_inliers([line_.beginning, line_.ending])
             # new_points = [line.beginning, line.ending]
+            
+        lines.append(line)
             
     return lines
 
