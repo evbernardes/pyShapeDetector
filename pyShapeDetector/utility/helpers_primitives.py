@@ -368,15 +368,12 @@ def find_plane_intersections(
     num_shapes = len(shapes)
 
     for i, j in combinations(range(num_shapes), 2):
-        
-        # if shapes[i].name != 'bounded plane' or shapes[j].name != 'bounded plane':
-        #     continue
     
         if not isinstance(shapes[i], Plane) or not isinstance(shapes[j], Plane):
             continue
         
-        if not shapes[i].is_convex or not shapes[j].is_convex:
-            continue
+        # if not shapes[i].is_convex or not shapes[j].is_convex:
+        #     continue
         
         if ignore[i] or ignore[j]:
             continue
@@ -442,6 +439,9 @@ def glue_planes_with_intersections(shapes, intersections):
         
         if not isinstance(shapes[i], PlaneBounded) or not isinstance(shapes[j], PlaneBounded):
             # del intersections[i, j]
+            continue
+        
+        if not shapes[i].is_convex or not shapes[j].is_convex:
             continue
         
         # new_intersections[i, j] = line

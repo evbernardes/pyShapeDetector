@@ -387,10 +387,24 @@ class Line(Primitive):
         axis /= norm
         line = Line.from_point_vector(point, axis)
         
-        if fit_bounds and plane1.is_convex and plane1.is_convex:
-            points = np.vstack([plane1.bounds, plane2.bounds])
+        # if fit_bounds and plane1.is_convex and plane1.is_convex:
+        #     points = np.vstack([plane1.bounds, plane2.bounds])
+        #     line = line.get_line_fitted_to_projections(points)
+            
+        if fit_bounds:
+            points = []
+            if len(p := plane1.bounds_or_vertices) > 0:
+                points.append(p)
+            if len(p := plane2.bounds_or_vertices) > 0:
+                points.append(p)
+                
+            if len(points) == 0:
+                raise ValueError("fit_bounds is True, but both planes have no "
+                                 "bounds or vertices.")
+            points = np.vstack(points)    
+            
             line = line.get_line_fitted_to_projections(points)
-            projections = []        
+
         return line
     
     def get_line_fitted_to_projections(self, points):
