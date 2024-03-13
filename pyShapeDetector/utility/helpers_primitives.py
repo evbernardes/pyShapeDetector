@@ -208,14 +208,15 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
         partitions = _get_partitions(len(shapes), pairs)
                 
     # Step 3: get sublists of shapes from partitions
-    shape_groups = [[shapes[i] for i in partition] for partition in partitions]
+    # shape_groups = [[shapes[i] for i in partition] for partition in partitions]
     
     # shape_groups = []
     # for partition in partitions:
     #     group = [shapes[i] for i in partition]
     #     shape_groups.append(group)
         
-    return shape_groups, partitions
+    # return shape_groups, partitions
+    return partitions
 
 def fuse_shape_groups(shapes_lists, **fuse_options):
     """ Find weigthed average of shapes, where the weight is the fitness
@@ -298,10 +299,11 @@ def fuse_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
     list
         Average shapes.
     """
-    shapes_groupped, _ = group_similar_shapes(
+    partitions = group_similar_shapes(
         shapes, rtol, atol, bbox_intersection, inlier_max_distance, legacy)
+    shape_groups = [[shapes[i] for i in partition] for partition in partitions]
     
-    return fuse_shape_groups(shapes_groupped, **fuse_options)
+    return fuse_shape_groups(shape_groups, **fuse_options)
 
 def find_plane_intersections(
         shapes, bbox_intersection=None, inlier_max_distance=None,
@@ -428,12 +430,13 @@ def glue_planes_with_intersections(shapes, intersections):
     
     Returns
     -------
-    dict
-        Dictionary of intersections.
+    list of Line instances
+        Only intersections that were actually used
     """
     from pyShapeDetector.primitives import PlaneBounded
     
-    new_intersections = []
+    # new_intersections = {}
+    lines = []
         
     for (i, j), line in intersections.items():
         
@@ -441,7 +444,8 @@ def glue_planes_with_intersections(shapes, intersections):
             # del intersections[i, j]
             continue
         
-        new_intersections[i, j] = line
+        # new_intersections[i, j] = line
+        lines.append(line)
         
         for shape in [shapes[i], shapes[j]]:
             line_ = line.get_line_fitted_to_projections(shape.bounds)
@@ -450,7 +454,7 @@ def glue_planes_with_intersections(shapes, intersections):
             shape.add_inliers([line_.beginning, line_.ending])
             # new_points = [line.beginning, line.ending]
             
-    return new_intersections
+    return lines
 
 def glue_nearby_planes(shapes, **options):
     """ For every possible pair of neighboring bounded planes, calculate their
