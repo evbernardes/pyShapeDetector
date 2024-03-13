@@ -175,14 +175,16 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
     inlier_max_distance : float, optional
         Max distance between points in shapes. If None, ignore this test.
         Default: None.
-    legacy: bool, optional
+    legacy : bool, optional
         Uses legacy implementation of `group_similar_shapes`. Default: False
+    return_partitions : 
         
     Returns
     -------
     list of lists
-        Grouped shapes.
-    
+        Grouped shapes
+    list of sets
+        Index partitions defining the shape groups.
     """
      
     def _test(i, j):
@@ -211,7 +213,7 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
         sublist = [shapes[i] for i in partition]
         sublists.append(sublist)
         
-    return sublists
+    return sublists, partitions
 
 def fuse_shape_groups(shapes_lists, **fuse_options):
     """ Find weigthed average of shapes, where the weight is the fitness
@@ -294,7 +296,7 @@ def fuse_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
     list
         Average shapes.
     """
-    shapes_groupped = group_similar_shapes(
+    shapes_groupped, _ = group_similar_shapes(
         shapes, rtol, atol, bbox_intersection, inlier_max_distance, legacy)
     
     return fuse_shape_groups(shapes_groupped, **fuse_options)
