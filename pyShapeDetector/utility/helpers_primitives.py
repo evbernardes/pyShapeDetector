@@ -208,12 +208,14 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
         partitions = _get_partitions(len(shapes), pairs)
                 
     # Step 3: get sublists of shapes from partitions
-    sublists = []
-    for partition in partitions:
-        sublist = [shapes[i] for i in partition]
-        sublists.append(sublist)
+    shape_groups = [[shapes[i] for i in partition] for partition in partitions]
+    
+    # shape_groups = []
+    # for partition in partitions:
+    #     group = [shapes[i] for i in partition]
+    #     shape_groups.append(group)
         
-    return sublists, partitions
+    return shape_groups, partitions
 
 def fuse_shape_groups(shapes_lists, **fuse_options):
     """ Find weigthed average of shapes, where the weight is the fitness
