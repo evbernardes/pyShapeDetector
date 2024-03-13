@@ -422,6 +422,8 @@ def glue_planes_with_intersections(shapes, intersections):
     
     Parameters
     ----------
+    shapes : list of shapes
+        List containing all shapes to be glued.
     intersections : dict
         Dictionary with keys of type `(i, j)` and values of type Primitive.Line.
     
