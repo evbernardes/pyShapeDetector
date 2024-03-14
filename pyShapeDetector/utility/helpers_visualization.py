@@ -10,10 +10,11 @@ import copy
 from open3d import visualization
 # from pyShapeDetector.primitives import Primitive, Line
 
-def draw_geometries(elements, print_points=False, **camera_options):
+def draw_geometries(elements, **camera_options):
     from pyShapeDetector.primitives import Primitive, Line
     
     elements = np.asarray(elements).flatten()
+    print_points=camera_options.get('print_points', False)
     pcds = []
     geometries = []
     lines = []
