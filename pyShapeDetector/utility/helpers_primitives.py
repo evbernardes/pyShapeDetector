@@ -413,7 +413,7 @@ def find_plane_intersections(
         
     return intersections
 
-def glue_planes_with_intersections(shapes, intersections):
+def glue_planes_with_intersections(shapes, intersections, fit_separated=True):
     """ Glue shapes using intersections in a dict.
     
     Also returns dictionary of all intersection lines.
@@ -426,6 +426,9 @@ def glue_planes_with_intersections(shapes, intersections):
         List containing all shapes to be glued.
     intersections : dict
         Dictionary with keys of type `(i, j)` and values of type Primitive.Line.
+    fit_separated : bool, optional
+        If True, find projections separated for each shape. Default: True.
+    
     
     Returns
     -------
@@ -449,8 +452,23 @@ def glue_planes_with_intersections(shapes, intersections):
         # new_intersections[i, j] = line
         lines.append(line)
         
-        for shape in [shapes[i], shapes[j]]:
-            line_ = line.get_line_fitted_to_projections(shape.bounds)
+        if fit_separated:
+            lines_ij = [line.get_line_fitted_to_projections(shapes[i].bounds),
+                        line.get_line_fitted_to_projections(shapes[j].bounds)]
+        
+        if not fit_separated:
+            projections = np.array([
+                line.projections_limits_from_points(shapes[i].bounds),
+                line.projections_limits_from_points(shapes[j].bounds)])
+            
+            points = line.points_from_projections([
+                    projections.min(axis=1).max(),
+                    projections.max(axis=1).min()])
+            
+            lines_ij = [line.get_fitted_to_points(points)] * 2
+
+        for shape, line_ in zip([shapes[i], shapes[j]], lines_ij):
+            # line_ = line.get_line_fitted_to_projections(shape.bounds)
             # TODO: add vertices too?
             shape.add_bound_points([line_.beginning, line_.ending])
             shape.add_inliers([line_.beginning, line_.ending])
@@ -458,7 +476,7 @@ def glue_planes_with_intersections(shapes, intersections):
             
     return lines
 
-def glue_nearby_planes(shapes, **options):
+def glue_nearby_planes(shapes, fit_separated=True, **options):
     """ For every possible pair of neighboring bounded planes, calculate their
     intersection and then glue them to this intersection.
     
@@ -468,6 +486,9 @@ def glue_nearby_planes(shapes, **options):
     
     Parameters
     ----------
+    fit_separated : bool, optional
+        If True, find projections separated for each shape. Default: True.
+    
     To see every possible parameter, see: find_plane_intersections
     
     Returns
