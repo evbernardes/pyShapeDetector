@@ -14,7 +14,11 @@ def draw_geometries(elements, **camera_options):
     from pyShapeDetector.primitives import Primitive, Line
     
     elements = np.asarray(elements).flatten()
-    print_points=camera_options.get('print_points', False)
+    try:
+        print_points = camera_options.pop('print_points')
+    except KeyError:
+        print_points = False
+        
     pcds = []
     geometries = []
     lines = []
