@@ -413,7 +413,7 @@ def find_plane_intersections(
         
     return intersections
 
-def glue_planes_with_intersections(shapes, intersections, fit_separated=True):
+def glue_planes_with_intersections(shapes, intersections, fit_separated=False):
     """ Glue shapes using intersections in a dict.
     
     Also returns dictionary of all intersection lines.
@@ -476,7 +476,7 @@ def glue_planes_with_intersections(shapes, intersections, fit_separated=True):
             
     return lines
 
-def glue_nearby_planes(shapes, fit_separated=True, **options):
+def glue_nearby_planes(shapes, fit_separated=False, **options):
     """ For every possible pair of neighboring bounded planes, calculate their
     intersection and then glue them to this intersection.
     
