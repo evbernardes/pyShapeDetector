@@ -313,6 +313,9 @@ def find_plane_intersections(
     """ For every possible pair of neighboring bounded planes, calculate their
     intersection and return dictionary of all intersection lines.
     
+    Checking bbox_intersection is much quicker than checking inlier_max_distance,
+    which is why it is a good idea to check both.
+    
     See: group_shape_groups, fuse_shape_groups, glue_nearby_planes
     
     Parameters
@@ -396,7 +399,7 @@ def find_plane_intersections(
         if length_max is not None and line.length > length_max:
             continue
         
-        elif distance_max is not None:
+        if distance_max is not None:
             # TODO: bounds_or_vertices should be changed for bounds if we are 
             # sure that it will never be implemented for non convex planes
             points = shapes[i].bounds_or_vertices
