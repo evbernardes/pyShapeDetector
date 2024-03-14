@@ -100,7 +100,8 @@ class Line(Primitive):
     get_line_fitted_to_projections
     closest_to_line
     get_orthogonal_component
-    point_from_projection
+    projections_from_points
+    points_from_projections
     point_from_intersection
     get_LineSet_from_list
     """
@@ -421,10 +422,11 @@ class Line(Primitive):
         Line
             Generated shape.
         """
-        projections = np.dot(points - self.beginning, self.axis)
+        # projections = np.dot(points - self.beginning, self.axis)
+        projections = self.projections_from_points(points)
         new_line = self.from_two_points(
-            self.point_from_projection(min(projections)), 
-            self.point_from_projection(max(projections)))
+            self.points_from_projections(min(projections)), 
+            self.points_from_projections(max(projections)))
         return new_line
     
     def closest_to_line(self, points):
@@ -462,20 +464,54 @@ class Line(Primitive):
         delta = points - self.beginning
         return -np.cross(self.axis, np.cross(self.axis, delta))
     
-    def point_from_projection(self, projection):
-        """ Gives point in line whose projection is equal to the input value.
+    def projections_from_points(self, points):
+        """ Gives projection in line axis.
+        
+        See: Line.points_from_projections
         
         Parameters
-        ----------
-        projection : float
-            Target projection. 
+        ----------        
+        points : Nx3 array
+            Nx1 array containing normal vectors.
         
         Returns
         -------
-        point
-            Nx1 array containing normal vectors.
+    
+        projections : float
+            Target projection. 
         """
-        return self.beginning + self.axis * projection
+        points = np.asarray(points)
+        if (reduce := points.ndim == 1):
+            points = points[np.newaxis]
+            
+        projections = ((points - self.beginning) * self.axis).sum(axis=1)
+        if reduce:
+            projections = projections[0]
+        return projections
+    
+    def points_from_projections(self, projections):
+        """ Gives point in line whose projection is equal to the input value.
+        
+        See: Line.projections_from_points
+        
+        Parameters
+        ----------
+        projections : Nx1 array float
+            Target projections. 
+        
+        Returns
+        -------
+        points
+            Nx3 array points.
+        """
+        projections = np.asarray(projections)
+        if (reduce := projections.ndim == 0):
+            projections = projections[np.newaxis]
+            
+        points = self.beginning + self.axis * projections[:, None]
+        if reduce:
+            points = points[0]
+        return points
     
     def point_from_intersection(self, other, within_segment=True, eps=1e-3):
         """ Calculates intersection point between two lines.
