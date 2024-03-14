@@ -101,6 +101,7 @@ class Line(Primitive):
     closest_to_line
     get_orthogonal_component
     projections_from_points
+    projections_limits_from_points
     points_from_projections
     point_from_intersection
     get_LineSet_from_list
@@ -488,6 +489,25 @@ class Line(Primitive):
         if reduce:
             projections = projections[0]
         return projections
+    
+    def projections_limits_from_points(self, points):
+        """ Gives min and max value for projections of points in line axis.
+        
+        See: Line.projections_from_points
+        
+        Parameters
+        ----------        
+        points : Nx3 array
+            Nx1 array containing normal vectors.
+        
+        Returns
+        -------
+    
+        projections : float
+            Target projection. 
+        """
+        projections = self.projections_from_points(points)
+        return np.array([projections.min(), projections.max()])
     
     def points_from_projections(self, projections):
         """ Gives point in line whose projection is equal to the input value.
