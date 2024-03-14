@@ -97,7 +97,7 @@ class Line(Primitive):
     from_two_points
     from_bounds
     from_plane_intersection
-    get_line_fitted_to_projections
+    get_fitted_to_points
     closest_to_line
     get_orthogonal_component
     projections_from_points
@@ -282,8 +282,7 @@ class Line(Primitive):
     
     @classmethod
     def from_two_points(cls, beginning, ending):
-        """ Creates cylinder from center base point, vector and radius as 
-        separated arguments.
+        """ Creates line from beginning and end points.
         
         Parameters
         ----------            
@@ -391,7 +390,7 @@ class Line(Primitive):
         
         # if fit_bounds and plane1.is_convex and plane1.is_convex:
         #     points = np.vstack([plane1.bounds, plane2.bounds])
-        #     line = line.get_line_fitted_to_projections(points)
+        #     line = line.get_fitted_to_points(points)
             
         if fit_bounds:
             points = []
@@ -405,11 +404,11 @@ class Line(Primitive):
                                  "bounds or vertices.")
             points = np.vstack(points)    
             
-            line = line.get_line_fitted_to_projections(points)
+            line = line.get_fitted_to_points(points)
 
         return line
     
-    def get_line_fitted_to_projections(self, points):
+    def get_fitted_to_points(self, points):
         """ Creates a new line with beginning and end points fitted to 
         projections of points.
         
