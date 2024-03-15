@@ -28,6 +28,50 @@ from alphashape import alphasimplices
 from shapely.geometry import MultiPoint, MultiLineString
 from shapely.ops import unary_union, polygonize
 
+def new_PointCloud(shape_or_points, normals=None, colors=None):
+    """ Creates Open3d.geometry.PointCloud instance from vertices and triangles.
+
+    Parameters
+    ----------
+    shape_or_points : instance Primitive or numpy.array
+        Shape with inliers or Points of the PointCloud.
+    normals : numpy.array, optional
+        Normals for each point of the PointCloud, must have same length as 
+        points. Default: None.
+    colors : numpy.array, optional
+        Colors for each point of the PointCloud, must have same length as 
+        points. Default: None.
+        
+    Returns
+    -------
+    Open3d.geometry.PointCloud
+        PointCloud defined by the inputs.
+    """
+    from pyShapeDetector.primitives import Primitive
+    
+    if isinstance(shape_or_points, Primitive):
+        points = shape_or_points.inlier_points
+        if normals is None:
+            normals = shape_or_points.inlier_normals
+        if colors is None:
+            colors = shape_or_points.inlier_colors
+    else:
+        points = shape_or_points
+
+    # points = np.asarray(points)
+    # normals = np.asarray(points)
+    # colors = np.asarray(points)
+
+    pcd = PointCloud()
+    if len(points) == 0:
+        return pcd
+    pcd.points = Vector3dVector(points)
+    if normals is not None and len(normals) > 0:
+        pcd.normals = Vector3dVector(normals)
+    if colors is not None and len(colors) > 0:
+        pcd.colors = Vector3dVector(colors)
+    return pcd
+
 def fuse_pointclouds(pcds):
     """ Fuses list of pointclouds into a single open3d.geometry.PointCloud 
     instance.

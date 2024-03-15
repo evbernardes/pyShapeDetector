@@ -11,6 +11,7 @@ from .primitivelimits import PrimitiveLimits
 from .detector_options import DetectorOptions
 
 from .helpers_pointclouds import (
+    new_PointCloud,
     write_point_cloud, 
     read_point_cloud, 
     paint_random,

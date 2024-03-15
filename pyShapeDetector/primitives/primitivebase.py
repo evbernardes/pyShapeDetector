@@ -12,7 +12,7 @@ import numpy as np
 from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
 from scipy.spatial.transform import Rotation
-from pyShapeDetector.utility import clean_crop, get_rotation_from_axis
+from pyShapeDetector.utility import clean_crop, get_rotation_from_axis, new_PointCloud
     
 class Primitive(ABC):
     """
@@ -226,26 +226,17 @@ class Primitive(ABC):
     @property
     def inlier_PointCloud(self):
         """ Creates Open3D.geometry.PointCloud object from inlier points. """
-        pcd = PointCloud()
-        if len(self.inlier_points) == 0:
-            return pcd
-        pcd.points = Vector3dVector(self.inlier_points)
-        
-        if len(self.inlier_normals) > 0:
-            pcd.normals = Vector3dVector(self.inlier_normals)
-        if len(self.inlier_colors) > 0:
-            pcd.colors = Vector3dVector(self.inlier_colors)
-        return pcd
+        return new_PointCloud(self.inlier_points, 
+                              self.inlier_normals, 
+                              self.inlier_colors)
     
     @property
     def inlier_PointCloud_flattened(self):
         """ Creates Open3D.geometry.PointCloud object from inlier points. """
-        pcd = PointCloud()
-        pcd.points = Vector3dVector(self.inlier_points_flattened)
-        pcd.normals = Vector3dVector(self.inlier_normals)
-        pcd.colors = Vector3dVector(self.inlier_colors)
-        return pcd
-        
+        return new_PointCloud(self.inlier_points_flattened, 
+                              self.inlier_normals, 
+                              self.inlier_colors)
+
     @property
     def metrics(self):
         """ Convenience attribute that can be set to save shape metrics """
