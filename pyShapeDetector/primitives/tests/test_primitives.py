@@ -209,10 +209,7 @@ def test_distances():
 
 
 def test_distances_flatten():
-    primitives = all_primitives_regular
-    primitives.remove(Cone) # not working for Cones
-
-    for primitive in primitives:
+    for primitive in all_primitives_regular:
         for i in range(5):
             shape = get_shape(primitive, 100, canonical=False)
             points = np.random.rand(100, 3)
@@ -222,6 +219,22 @@ def test_distances_flatten():
 
             points_reflattened = shape.flatten_points(points_flattened)
             assert_allclose(points_reflattened, points_flattened, atol=1e-6)
+
+
+def test_issue_2_cone_distances():
+
+    appex = np.array([0.18595758, 0.80201102, 0.85902078])
+    top = np.array([0.56415032, 1.40444288, 1.14442953])
+    radius = 0.769831334575714
+    shape = Cone.from_appex_top_radius(appex, top, radius)
+
+    point = shape.top[np.newaxis]
+
+    point_flat = shape.flatten_points(point)
+    point_reflat = shape.flatten_points(point_flat)
+    points = np.vstack([point_flat, point_reflat])
+    distances = shape.get_distances(points)
+    assert_allclose(distances, 0, atol=1e-10, rtol=1e-10)
 
 
 def test_normals_flatten_plane():
@@ -372,4 +385,5 @@ def test_axis_aligned_bounding_box_planes():
     # test_equal()
     # test_bounding_box_bounds()
     # test_axis_aligned_bounding_box_no_planes()
-    # test_axis_aligned_bounding_box_planes()
+    # test_axis_aligned_bounding_box_planes()t
+        

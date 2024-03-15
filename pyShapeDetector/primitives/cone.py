@@ -344,6 +344,10 @@ class Cone(Primitive):
         angle_diff = self.get_angle_diff(points)
         distances = np.empty(len(points))
         safe = abs(angle_diff) > 1E-7
+        
+        # Important not to mess up points near the positive cone:
+        safe = np.logical_or(safe, delta.dot(self.axis) > 0)
+        
         distances[safe] = np.sin(angle_diff[safe]) * delta_norm[safe]
         distances[~safe] = delta_norm[~safe] / (2 * np.cos(self.half_angle))
         return distances
