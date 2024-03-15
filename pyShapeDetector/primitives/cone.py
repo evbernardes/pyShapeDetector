@@ -186,12 +186,16 @@ class Cone(Primitive):
         """ Rotation matrix that aligns z-axis with cylinder axis."""
         return get_rotation_from_axis([0, 0, 1], self.axis)
     
-    def __init__(self, model):
+    def __init__(self, model, decimals=None):
         """
         Parameters
         ----------
         model : list or tuple
-            Parameters defining the shape model            
+            Parameters defining the shape model    
+        decimals : int, optional
+            Number of decimal places to round to (default: 0). If
+            decimals is negative, it specifies the number of positions to
+            the left of the decimal point. Default: None.        
                         
         Raises
         ------
@@ -199,7 +203,10 @@ class Cone(Primitive):
             If number of parameters is incompatible with the model of the 
             primitive.
         """
+        model = np.asarray(model)
+        model = Primitive._parse_model_decimals(model, decimals)
         Primitive.__init__(self, model)
+        self._decimals = decimals
 
         if not (0 <= self.half_angle < np.pi / 2):
             raise ValueError('half_angle must be between 0 and 90 degrees, '
@@ -307,7 +314,7 @@ class Cone(Primitive):
         return Cone.from_appex_vector_half_angle(appex, vector, half_angle)
     
     @classmethod
-    def random(cls, scale=1, decimals=3):
+    def random(cls, scale=1, decimals=16):
         """ Generates a random cone.
         
         Parameters
@@ -329,7 +336,7 @@ class Cone(Primitive):
         radius = np.random.random()
         half_angle = np.arctan(radius / height)
         model = np.append(model, half_angle)
-        return cls(model.round(decimals))
+        return cls(model, decimals=decimals)
 
     def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the cylinder. 

@@ -110,6 +110,7 @@ class Primitive(ABC):
     _metrics = {}
     _color = None
     _mesh = None
+    _decimals = None
     
     @property
     def fit_n_min(self):
@@ -326,11 +327,13 @@ class Primitive(ABC):
         if len(model) != self.model_args_n:
             raise ValueError(f'{self.name.capitalize()} primitives take '
                              f'{self.model_args_n} elements, got {model}')
-
+            
+        
         self._model = Primitive._parse_model_decimals(model, decimals)
+        self._decimals = decimals
         
     @classmethod
-    def random(cls, scale=1, decimals=3):
+    def random(cls, scale=1, decimals=16):
         """ Generates a random shape.
         
         see: numpy.array.round
@@ -941,13 +944,14 @@ class Primitive(ABC):
         """ Method for compatibility with copy module """
         model = self.model.copy()
         primitive = type(self)
-        shape = primitive(model)
+        shape = primitive(model, decimals=self._decimals)
         shape._inlier_points = self._inlier_points.copy()
         shape._inlier_normals = self._inlier_normals.copy()
         shape._inlier_colors = self._inlier_colors.copy()
         shape._metrics = self._metrics.copy()
         shape._color = self._color.copy()
         shape._mesh = copy.copy(self._mesh)
+        shape._decimals = self._decimals
         return shape
     
     def copy(self):

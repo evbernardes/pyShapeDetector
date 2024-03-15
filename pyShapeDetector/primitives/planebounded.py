@@ -284,10 +284,11 @@ class PlaneBounded(Plane):
         else:
             self.set_vertices_triangles(vertices, triangles, flatten=True)
 
+        self._decimals = decimals
         self._holes = []
 
     @classmethod
-    def random(cls, scale=1, decimals=3):
+    def random(cls, scale=1, decimals=16):
         """ Generates a random shape.
 
         Parameters

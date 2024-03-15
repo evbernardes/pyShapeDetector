@@ -197,6 +197,7 @@ class Plane(Primitive):
         norm = np.linalg.norm(model[:3])
         model = Primitive._parse_model_decimals(model / norm, decimals)
         Primitive.__init__(self, model)
+        self._decimals = decimals
         self._holes = []
 
     @staticmethod
@@ -408,6 +409,7 @@ class Plane(Primitive):
     def __copy__(self):
         """ Method for compatibility with copy module """
         shape = Primitive.__copy__(self)
+        shape._model = self.model.copy()
         shape._fusion_intersections = self._fusion_intersections.copy()
         shape._is_hole = self._is_hole
         if not self.is_hole:
@@ -729,7 +731,7 @@ class Plane(Primitive):
             centroid + (- v1 + v2) * length / 2,
             centroid + (- v1 - v2) * length / 2])
 
-        plane_bounded = PlaneBounded(self.model, vertices)
+        plane_bounded = PlaneBounded(self.model, vertices, decimals=self._decimals)
         plane_bounded._holes = self._holes
         return plane_bounded
 

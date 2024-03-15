@@ -88,8 +88,6 @@ def test_plane_projections():
 
 def test_equal():
     primitives = all_primitives
-    primitives.remove(Plane)
-    primitives.remove(PlaneBounded)
     for _ in range(10):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -104,8 +102,9 @@ def test_equal():
 
 def test_issue_3_plane_init():
     for _ in range(100):
-        plane = Plane.random(decimals=4)
+        plane = Plane.random(decimals=6)
         assert plane == plane.copy()
+        # assert assert_allclose(model, model_copy, rtol=eps, atol=eps)
 
 
 def test_copy_regular():
