@@ -436,11 +436,11 @@ def planes_ressample_and_triangulate(planes, density, radius_ratio=None, double_
     for p in planes:
         N = int(np.ceil(density * len(p.inlier_points)))
     #     print(N)
-        vertices.append(p.sample_points_uniformly(N).points)
+        vertices.append(p.sample_points_uniformly(N))
     vertices = np.vstack(vertices)
     
     # number_of_points = int(self.surface_area * density)
-    # vertices = [p.sample_points_uniformly(int(len(p.inlier_points) * density)).points for p in planes]
+    # vertices = [p.sample_points_uniformly(int(len(p.inlier_points) * density)) for p in planes]
     # vertices = [p.sample_points_density(density).points for p in planes]
     # vertices = np.vstack(vertices)
     
@@ -472,7 +472,7 @@ def planes_ressample_and_triangulate_gui(planes, translation_ratio = 0.055,
     all_triangles = Delaunay(all_projections).simplices
     
     # all_points = np.vstack(
-    #     [p.sample_points_uniformly(density * len(p.inlier_points)).points for p in planes])
+    #     [p.sample_points_uniformly(density * len(p.inlier_points)) for p in planes])
     # all_projections = planes[0].get_projections(all_points)
     # all_triangles = Delaunay(all_projections).simplices
     # vertices = all_points
