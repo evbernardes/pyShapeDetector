@@ -206,8 +206,8 @@ def get_triangle_circumradius(mesh_or_vertices, triangles=None):
         perimeters * (perimeters[:, np.newaxis] - 2 * sides).prod(axis=1))
 
 def new_TriangleMesh(vertices, triangles, double_triangles=False):
-    """ Fuse TriangleMesh instances into single mesh.
-    
+    """ Creates Open3d.geometry.TriangleMesh instance from vertices and triangles.
+
     Parameters
     ----------
     vertices : numpy.array
