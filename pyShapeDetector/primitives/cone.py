@@ -307,24 +307,29 @@ class Cone(Primitive):
         return Cone.from_appex_vector_half_angle(appex, vector, half_angle)
     
     @classmethod
-    def random(cls, scale=1):
+    def random(cls, scale=1, decimals=3):
         """ Generates a random cone.
         
         Parameters
         ----------
         scale : float, optional
             scaling factor for random model values.
+        decimals : int, optional
+            Number of decimal places to round to (default: 0). If
+            decimals is negative, it specifies the number of positions to
+            the left of the decimal point.
 
         Returns
         -------
         Cone
             Random shape.
         """
-        model = np.random.random(cls._model_args_n - 1)
+        model = np.random.random(cls._model_args_n - 1) * scale
         height = np.linalg.norm(model[3:6])
         radius = np.random.random()
         half_angle = np.arctan(radius / height)
-        return cls(np.append(model * scale, half_angle))
+        model = np.append(model, half_angle)
+        return cls(model.round(decimals))
 
     def get_signed_distances(self, points):
         """ Gives the minimum distance between each point to the cylinder. 

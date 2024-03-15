@@ -282,21 +282,27 @@ class PlaneBounded(Plane):
         self._holes = []
 
     @classmethod
-    def random(cls, scale=1):
+    def random(cls, scale=1, decimals=3):
         """ Generates a random shape.
 
         Parameters
         ----------
         scale : float, optional
             scaling factor for random model values.
+        decimals : int, optional
+            Number of decimal places to round to (default: 0). If
+            decimals is negative, it specifies the number of positions to
+            the left of the decimal point.
 
         Returns
         -------
         Primitive
             Random shape.
         """
-        plane = Plane(np.random.random(4) * scale)
-        return plane.get_square_plane(np.random.random() * scale)
+        model = np.random.random(4) * scale
+        plane = Plane(model.round(decimals))
+        length = np.random.random() * scale
+        return plane.get_square_plane(np.round(length, decimals))
 
     @staticmethod
     def fit(points, normals=None):

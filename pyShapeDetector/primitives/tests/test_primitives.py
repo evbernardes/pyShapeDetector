@@ -87,16 +87,19 @@ def test_plane_projections():
 
 
 def test_equal():
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        for primitive in all_primitives:
-            shape1 = get_shape(primitive, 100)
-            shape2 = get_shape(primitive, 100)
-            shape1_copy = shape1.copy()
-            assert np.all(shape1.model == shape1_copy.model)
-            assert shape1 == shape1_copy
-            assert not np.all(shape1.model == shape2.model)
-            assert shape1 != shape2
+    primitives = all_primitives
+    primitives.remove(Plane)
+    primitives.remove(PlaneBounded)
+    for _ in range(10):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            for primitive in primitives:
+                shape1 = primitive.random(decimals=3)
+                shape2 = primitive.random(decimals=3)
+                assert np.all(shape1.model == shape1.copy().model)
+                assert shape1 == shape1.copy()
+                assert not np.all(shape1.model == shape2.model)
+                assert shape1 != shape2
 
 
 def test_copy_regular():

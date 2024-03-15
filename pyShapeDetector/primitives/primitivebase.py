@@ -292,7 +292,8 @@ class Primitive(ABC):
         return type(self).__name__+f'({params})'
     
     def __eq__(self, other_shape):
-        return self.is_similar_to(other_shape, rtol=1e-05, atol=1e-08)
+        # return self.is_similar_to(other_shape, rtol=1e-05, atol=1e-08)
+        return (type(self) is type(other_shape)) and np.all(self.model == other_shape.model)
     
     def __init__(self, model):
         """
