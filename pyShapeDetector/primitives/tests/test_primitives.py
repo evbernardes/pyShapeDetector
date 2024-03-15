@@ -35,7 +35,7 @@ def get_shape(primitive, num_points, canonical=False):
         warnings.simplefilter("ignore")
 
         shape = primitive.random()
-        pcd = shape.sample_points_uniformly(num_points)
+        pcd = shape.sample_PointCloud_uniformly(num_points)
         shape.set_inliers(pcd)
 
         if canonical:

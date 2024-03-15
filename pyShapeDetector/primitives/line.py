@@ -79,6 +79,8 @@ class Line(Primitive):
     get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density
+    sample_PointCloud_uniformly
+    sample_PointCloud_density
     get_mesh
     get_cropped_mesh
     is_similar_to
