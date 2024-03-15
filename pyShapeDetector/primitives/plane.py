@@ -176,12 +176,16 @@ class Plane(Primitive):
     def is_hole(self):
         return self._is_hole
 
-    def __init__(self, model):
+    def __init__(self, model, decimals=None):
         """
         Parameters
         ----------
         model : list or tuple
-            Parameters defining the shape model
+            Parameters defining the shape model 
+        decimals : int, optional
+            Number of decimal places to round to (default: 0). If
+            decimals is negative, it specifies the number of positions to
+            the left of the decimal point. Default: None.
 
         Raises
         ------
@@ -191,7 +195,7 @@ class Plane(Primitive):
         """
         model = np.array(model)
         norm = np.linalg.norm(model[:3])
-        model = model / norm
+        model = Primitive._parse_model_decimals(model / norm, decimals)
         Primitive.__init__(self, model)
         self._holes = []
 

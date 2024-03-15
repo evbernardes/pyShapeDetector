@@ -295,13 +295,27 @@ class Primitive(ABC):
         # return self.is_similar_to(other_shape, rtol=1e-05, atol=1e-08)
         return (type(self) is type(other_shape)) and np.all(self.model == other_shape.model)
     
-    def __init__(self, model):
+    @staticmethod
+    def _parse_model_decimals(model, decimals):
+        if decimals is None:
+            return model
+
+        if not isinstance(decimals, int) or decimals < 1:
+            raise TypeError("decimals should be a positive integer.")
+        return model.round(decimals)
+    
+    def __init__(self, model, decimals=None):
+        
         """
         Parameters
         ----------
         model : list or tuple
-            Parameters defining the shape model            
-                        
+            Parameters defining the shape model           
+        decimals : int, optional
+            Number of decimal places to round to (default: 0). If
+            decimals is negative, it specifies the number of positions to
+            the left of the decimal point. Default: None.
+ 
         Raises
         ------
         ValueError
@@ -312,7 +326,8 @@ class Primitive(ABC):
         if len(model) != self.model_args_n:
             raise ValueError(f'{self.name.capitalize()} primitives take '
                              f'{self.model_args_n} elements, got {model}')
-        self._model = model
+
+        self._model = Primitive._parse_model_decimals(model, decimals)
         
     @classmethod
     def random(cls, scale=1, decimals=3):
@@ -335,7 +350,7 @@ class Primitive(ABC):
             Random shape.
         """
         model = np.random.random(cls._model_args_n) * scale
-        return cls(model.round(decimals))
+        return cls(model, decimals=decimals)
     
     @staticmethod
     @abstractmethod

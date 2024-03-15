@@ -102,6 +102,12 @@ def test_equal():
                 assert shape1 != shape2
 
 
+def test_issue_3_plane_init():
+    for _ in range(100):
+        plane = Plane.random(decimals=4)
+        assert plane == plane.copy()
+
+
 def test_copy_regular():
     for primitive in all_primitives_regular:
         shape = get_shape(primitive, 100)

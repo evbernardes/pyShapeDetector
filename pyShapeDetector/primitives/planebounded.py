@@ -229,7 +229,8 @@ class PlaneBounded(Plane):
             
         return points
 
-    def __init__(self, planemodel, bounds=None, vertices=None, triangles=None):
+    def __init__(self, planemodel, bounds=None, vertices=None, triangles=None,
+                 decimals=None):
         """
         Parameters
         ----------
@@ -241,6 +242,10 @@ class PlaneBounded(Plane):
             Vertices of plane triangulation.
         triangles : array_like, shape (N, 3)
             Vertices of plane triangulation.
+        decimals : int, optional
+            Number of decimal places to round to (default: 0). If
+            decimals is negative, it specifies the number of positions to
+            the left of the decimal point. Default: None.
 
         Raises
         ------
@@ -265,7 +270,7 @@ class PlaneBounded(Plane):
         elif isinstance(planemodel, Plane):
             self._plane = planemodel
         else:
-            self._plane = Plane(planemodel)
+            self._plane = Plane(planemodel, decimals=decimals)
 
         if self._convex:
             if bounds is None:
@@ -300,7 +305,7 @@ class PlaneBounded(Plane):
             Random shape.
         """
         model = np.random.random(4) * scale
-        plane = Plane(model.round(decimals))
+        plane = Plane(model, decimals=decimals)
         length = np.random.random() * scale
         return plane.get_square_plane(np.round(length, decimals))
 
