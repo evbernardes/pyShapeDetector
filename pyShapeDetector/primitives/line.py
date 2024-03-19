@@ -35,6 +35,7 @@ class Line(Primitive):
     canonical
     color
     mesh
+    has_inliers
     inlier_points
     inlier_points_flattened
     inlier_normals

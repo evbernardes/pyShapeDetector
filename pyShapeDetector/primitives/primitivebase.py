@@ -48,6 +48,7 @@ class Primitive(ABC):
     canonical
     color
     mesh
+    has_inliers
     inlier_points
     inlier_points_flattened
     inlier_normals
@@ -203,6 +204,10 @@ class Primitive(ABC):
             raise ValueError("Meshes must be of type "
                              "open3d.geometry.TriangleMesh.")
         self._mesh = new_mesh
+
+    @property
+    def has_inliers(self):
+        return len(self._inlier_points) > 0
         
     @property
     def inlier_points(self):
