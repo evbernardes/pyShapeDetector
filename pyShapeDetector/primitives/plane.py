@@ -709,11 +709,6 @@ class Plane(Primitive):
         Plane
             Square plane
         """
-        # center = self.centroid
-        # center = np.mean(np.asarray(pcd.points), axis=0)
-        # bb = pcd.get_axis_aligned_bounding_box()
-        # half_length = max(bb.max_bound - bb.min_bound) / 2
-        
         from .planebounded import PlaneBounded
 
         def normalized(x): return x / np.linalg.norm(x)
@@ -735,15 +730,6 @@ class Plane(Primitive):
         plane_bounded = PlaneBounded(self.model, vertices, decimals=self._decimals)
         plane_bounded._holes = self._holes
         return plane_bounded
-
-        # triangles = Vector3iVector(np.array([
-        #     [0, 1, 2],
-        #     [2, 1, 0],
-        #     [0, 2, 3],
-        #     [3, 2, 0]]))
-        # vertices = Vector3dVector(vertices)
-
-        # return TriangleMesh(vertices, triangles)
 
     def get_square_mesh(self, length=1):
         """ Gives a square mesh that fits the plane model.   
