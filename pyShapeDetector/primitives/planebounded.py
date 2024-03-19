@@ -602,6 +602,7 @@ class PlaneBounded(Plane):
         array of booleans
             True for points whose projection lies in plane's bounds
         """
+        
         inside = np.array([True] * len(points))
         projections = self.get_projections(points)
         for i in range(len(points)):
