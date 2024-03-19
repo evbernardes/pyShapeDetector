@@ -506,13 +506,8 @@ class Plane(Primitive):
                     bounds = np.vstack([hole.bounds[inside1]]+intersections)
                 else:
                     bounds = hole.bounds
-                # if sum(inside1) < 1:
-                    # print('shape does not contain hole')
-                    # continue
 
                 inside2 = hole.contains_projections(self.bounds)
-                # print(inside2)
-                # hole = PlaneBounded(model, hole.bounds[inside1])
                 hole = PlaneBounded(model, bounds)
                 self._bounds = self._bounds[~inside2]
                 self._bounds_projections = self._bounds_projections[~inside2]

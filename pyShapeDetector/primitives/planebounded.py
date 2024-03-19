@@ -165,8 +165,6 @@ class PlaneBounded(Plane):
                 surface_area -= shoelace(hole.bounds_projections)
         else:
             triangle_projections = self.get_projections(self.vertices)[self.triangles]
-            # areas = [shoelace(points) for points in triangle_projections]
-            # areas = [test(points) for points in triangle_projections]
             diff = np.diff(triangle_projections, axis=1)
             areas = abs(np.cross(diff[:,0,:], diff[:,1,:])) * 0.5
             surface_area = sum(areas)
@@ -227,6 +225,18 @@ class PlaneBounded(Plane):
             
         if len(points) == 0:
             raise RuntimeError("PlaneBounded instance has no bounds or vertices.")
+            
+        return points
+    
+    @property
+    def bounds_or_vertices_or_inliers(self):
+        try:
+            points = self.bounds_or_vertices
+        except RuntimeError:
+            points = self.inlier_points
+            
+        if len(points) == 0:
+            raise RuntimeError("PlaneBounded instance has no bounds, vertices or inliers.")
             
         return points
 
