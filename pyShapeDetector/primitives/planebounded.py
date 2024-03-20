@@ -121,6 +121,7 @@ class PlaneBounded(Plane):
     get_square_mesh
 
     contains_projections
+    bound_lines_meshes
     set_bounds
     set_vertices_triangles
     add_bound_points
@@ -623,6 +624,12 @@ class PlaneBounded(Plane):
                     inside[i] = False
                     continue
         return inside
+    
+    def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
+        lines = self.bound_lines
+        meshes = [line.get_mesh(radius=radius) for line in lines]
+        [mesh.paint_uniform_color(color) for mesh in meshes]
+        return meshes
 
     def set_bounds(self, bounds, flatten=True):
         """ Flatten points according to plane model, get projections of 

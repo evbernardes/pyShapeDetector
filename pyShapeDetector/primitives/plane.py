@@ -96,7 +96,6 @@ class Plane(Primitive):
 
     from_normal_dist
     from_normal_point
-    bound_lines_meshes
     add_holes
     remove_hole
     intersect
@@ -418,11 +417,11 @@ class Plane(Primitive):
             shape._holes = holes
         return shape
 
-    def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
-        lines = self.bound_lines
-        meshes = [line.get_mesh(radius=radius) for line in lines]
-        [mesh.paint_uniform_color(color) for mesh in meshes]
-        return meshes
+    # def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
+    #     lines = self.bound_lines
+    #     meshes = [line.get_mesh(radius=radius) for line in lines]
+    #     [mesh.paint_uniform_color(color) for mesh in meshes]
+    #     return meshes
 
     @classmethod
     def from_normal_dist(cls, normal, dist):
