@@ -49,6 +49,7 @@ class Plane(Primitive):
     inlier_bbox
     inlier_bbox_bounds
 
+    is_convex
     normal
     dist
     centroid
@@ -83,6 +84,7 @@ class Plane(Primitive):
     get_mesh
     get_cropped_mesh
     is_similar_to
+    __copy_atributes__
     __copy__
     copy
     translate
@@ -100,6 +102,7 @@ class Plane(Primitive):
     remove_hole
     intersect
     closest_bounds
+    get_unbounded_plane
     get_bounded_plane
     get_projections
     get_points_from_projections
@@ -117,6 +120,7 @@ class Plane(Primitive):
     _fusion_intersections = np.array([])
     _color = np.array([0, 0, 1])
     _is_hole = False
+    _convex = None
 
     @property
     def equation(self):
@@ -151,6 +155,10 @@ class Plane(Primitive):
         if np.sign(self.dist) < 0:
             shape._model = -self._model
         return shape
+    
+    @property
+    def is_convex(self):
+        return self._convex
 
     @property
     def normal(self):
@@ -407,16 +415,14 @@ class Plane(Primitive):
             for hole in self.holes:
                 hole.rotate(rotation)
 
-    def __copy__(self):
-        """ Method for compatibility with copy module """
-        shape = Primitive.__copy__(self)
-        shape._model = self.model.copy()
-        shape._fusion_intersections = self._fusion_intersections.copy()
-        shape._is_hole = self._is_hole
-        if not self.is_hole:
-            holes = [h.copy() for h in self._holes]
-            shape._holes = holes
-        return shape
+    def __copy_atributes__(self, shape_original):
+        super().__copy_atributes__(shape_original)
+        self._model = shape_original._model.copy()
+        self._fusion_intersections = shape_original._fusion_intersections.copy()
+        self._is_hole = shape_original._is_hole
+        if not shape_original.is_hole:
+            holes = [h.copy() for h in shape_original._holes]
+            self._holes = holes
 
     # def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
     #     lines = self.bound_lines
@@ -602,8 +608,20 @@ class Plane(Primitive):
             self.bounds, other_plane.bounds, n)
 
         return closest_points, distances
+    
+    def get_unbounded_plane(self):
+        """ Gives unbounded version of plane
 
-    def get_bounded_plane(self, points=None):
+        Returns
+        -------
+        Bounded
+            unbounded version of plane.
+        """
+        plane = Plane(self)
+        plane.__copy_atributes__(self)
+        return plane
+
+    def get_bounded_plane(self, points):
         """ Gives bounded version of plane, using input points to define 
         border.
 
@@ -618,15 +636,10 @@ class Plane(Primitive):
             Bounded version of plane.
         """
         from .planebounded import PlaneBounded
-        if points is None:
-            points = self.inlier_points
-        if len(points) == 0:
-            raise ValueError(
-                'if no points are given, shape must have inlier points')
-        bounds = self.flatten_points(points)
-        bounded_plane = PlaneBounded(self, bounds)
-        bounded_plane._holes = self._holes
-        return bounded_plane
+
+        plane = PlaneBounded(self.model, points)
+        type(self).__copy_atributes__(plane, self)
+        return plane
 
     def get_projections(self, points):
         """ Get 2D projections of points in plane.
@@ -701,10 +714,9 @@ class Plane(Primitive):
 
         Returns
         -------
-        Plane
+        PlaneBounded
             Square plane
         """
-        from .planebounded import PlaneBounded
 
         def normalized(x): return x / np.linalg.norm(x)
 
@@ -722,9 +734,7 @@ class Plane(Primitive):
             centroid + (- v1 + v2) * length / 2,
             centroid + (- v1 - v2) * length / 2])
 
-        plane_bounded = PlaneBounded(self.model, vertices, decimals=self._decimals)
-        plane_bounded._holes = self._holes
-        return plane_bounded
+        return self.get_bounded_plane(vertices)
 
     def get_square_mesh(self, length=1):
         """ Gives a square mesh that fits the plane model.   

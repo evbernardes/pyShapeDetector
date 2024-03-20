@@ -44,6 +44,27 @@ def get_shape(primitive, num_points, canonical=False):
         return shape
     
 
+def test_plane_transformations():
+    points = np.random.random((20, 3))
+
+    plane = Plane.random()
+    plane_bounded = plane.get_square_plane(1)
+    assert not plane.has_inliers
+    assert not plane_bounded.has_inliers
+
+    plane_bounded.set_inliers(points)
+    assert not plane.has_inliers
+    assert plane_bounded.has_inliers
+
+    plane_unbounded = plane_bounded.get_unbounded_plane()
+    assert not plane.has_inliers
+    assert plane_unbounded.has_inliers
+    assert plane_bounded.has_inliers
+
+    plane_bounded_two = plane_unbounded.get_bounded_plane(plane_bounded.bounds)
+    assert plane_bounded_two.has_inliers
+
+
 def test_init_primitives_regular():
     for primitive in [Plane, Sphere, Cylinder]:
         

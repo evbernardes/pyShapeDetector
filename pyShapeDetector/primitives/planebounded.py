@@ -52,13 +52,13 @@ class PlaneBounded(Plane):
     inlier_bbox
     inlier_bbox_bounds
 
+    is_convex
     normal
     dist
     centroid
     holes
+    is_hole
 
-    is_convex
-    plane
     bounds
     bounds_indices
     bounds_projections
@@ -95,6 +95,7 @@ class PlaneBounded(Plane):
     get_mesh
     get_cropped_mesh
     is_similar_to
+    __copy_atributes__
     __copy__
     copy
     translate
@@ -112,6 +113,7 @@ class PlaneBounded(Plane):
     remove_hole
     intersect
     closest_bounds
+    get_unbounded_plane
     get_bounded_plane
     get_projections
     get_points_from_projections
@@ -163,15 +165,6 @@ class PlaneBounded(Plane):
             surface_area = sum(areas)
             
         return surface_area
-    
-    @property
-    def is_convex(self):
-        return self._convex
-        
-    @property
-    def plane(self):
-        """ Return internal plane without bounds. """
-        return Plane(self.model)
 
     @property
     def bounds(self):
@@ -202,28 +195,15 @@ class PlaneBounded(Plane):
         return self._triangles
     
     @property
-    def bounds_or_vertices(self):
-        if self.is_convex:
-            points = self.bounds
-        else:
-            points = self.vertices
-            
-        if len(points) == 0:
-            raise RuntimeError("PlaneBounded instance has no bounds or vertices.")
-            
-        return points
+    def bounds_or_vertices(self):            
+        return self.bounds
     
     @property
     def bounds_or_vertices_or_inliers(self):
-        try:
-            points = self.bounds_or_vertices
-        except RuntimeError:
-            points = self.inlier_points
-            
-        if len(points) == 0:
-            raise RuntimeError("PlaneBounded instance has no bounds, vertices or inliers.")
-            
-        return points
+        if len(self.vertices) > 0:
+            return self.bounds
+        else:
+            return self.inlier_points
 
     def __init__(self, model, bounds=None, vertices=None, triangles=None,
                  decimals=None):
@@ -387,22 +367,32 @@ class PlaneBounded(Plane):
         mesh.triangles = Vector3iVector(triangles)
 
         return mesh
+    
+    def __copy_atributes__(self, shape_original):
+        super().__copy_atributes__(shape_original)
+        # self._convex = shape_original._convex
+        self._vertices = shape_original._vertices.copy()
+        self._triangles = shape_original._triangles.copy()
+        self._bounds_indices = shape_original._bounds_indices.copy()
+        self._bounds = shape_original._bounds.copy()
+        self._bounds_projections = shape_original._bounds_projections.copy()
+        self._fusion_intersections = shape_original._fusion_intersections.copy()
 
-    def __copy__(self):
-        """ Method for compatibility with copy module """
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            shape = Plane.__copy__(self)
+    # def __copy__(self, change_to=None):
+    #     """ Method for compatibility with copy module """
+    #     with warnings.catch_warnings():
+    #         warnings.simplefilter("ignore")
+    #         shape = Plane.__copy__(self, change_to)
         
-        # Copying attributes particular to bounded planes
-        shape._convex = self._convex
-        shape._vertices = self._vertices.copy()
-        shape._triangles = self._triangles.copy()
-        shape._bounds_indices = self._bounds_indices.copy()
-        shape._bounds = self._bounds.copy()
-        shape._bounds_projections = self._bounds_projections.copy()
-        shape._fusion_intersections = self._fusion_intersections.copy()
-        return shape
+    #     # Copying attributes particular to bounded planes
+    #     shape._convex = self._convex
+    #     shape._vertices = self._vertices.copy()
+    #     shape._triangles = self._triangles.copy()
+    #     shape._bounds_indices = self._bounds_indices.copy()
+    #     shape._bounds = self._bounds.copy()
+    #     shape._bounds_projections = self._bounds_projections.copy()
+    #     shape._fusion_intersections = self._fusion_intersections.copy()
+    #     return shape
 
     def translate(self, translation):
         """ Translate the shape.

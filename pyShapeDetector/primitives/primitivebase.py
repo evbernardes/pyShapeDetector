@@ -93,6 +93,7 @@ class Primitive(ABC):
     get_mesh
     get_cropped_mesh
     is_similar_to
+    __copy_atributes__
     __copy__
     copy
     translate
@@ -948,18 +949,23 @@ class Primitive(ABC):
                              rtol=rtol, atol=atol)
         return compare.all()
     
+    def __copy_atributes__(self, shape_original):
+        self._inlier_points = shape_original._inlier_points.copy()
+        self._inlier_normals = shape_original._inlier_normals.copy()
+        self._inlier_colors = shape_original._inlier_colors.copy()
+        self._metrics = shape_original._metrics.copy()
+        self._color = shape_original._color.copy()
+        self._mesh = copy.copy(shape_original._mesh)
+        self._decimals = shape_original._decimals
+    
     def __copy__(self):
         """ Method for compatibility with copy module """
-        model = self.model.copy()
-        primitive = type(self)
-        shape = primitive(model, decimals=self._decimals)
-        shape._inlier_points = self._inlier_points.copy()
-        shape._inlier_normals = self._inlier_normals.copy()
-        shape._inlier_colors = self._inlier_colors.copy()
-        shape._metrics = self._metrics.copy()
-        shape._color = self._color.copy()
-        shape._mesh = copy.copy(self._mesh)
-        shape._decimals = self._decimals
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            model = self.model.copy()
+            primitive = type(self)
+            shape = primitive(model, decimals=self._decimals)
+            shape.__copy_atributes__(self)
         return shape
     
     def copy(self):
