@@ -101,9 +101,9 @@ class Plane(Primitive):
     add_holes
     remove_hole
     intersect
-    closest_bounds
     get_unbounded_plane
     get_bounded_plane
+    get_triangulated_plane
     get_projections
     get_points_from_projections
     get_mesh_alphashape
@@ -383,7 +383,8 @@ class Plane(Primitive):
         translation : 1 x 3 array
             Translation vector.
         """
-        Primitive.translate(self, translation)
+        super().translate(translation)
+
         centroid = self.centroid + translation
         self._model = Plane.from_normal_point(
             self.normal, centroid).model
@@ -406,7 +407,7 @@ class Plane(Primitive):
         rotation = Primitive._parse_rotation(rotation)
         
         # for everything else
-        Primitive.rotate(self, rotation)
+        super().rotate(rotation)
         
         # only for model
         self._model = Plane.from_normal_point(normal, centroid).model
@@ -579,35 +580,6 @@ class Plane(Primitive):
         line2 = line.get_line_fitted_to_projections(other_plane.bounds)
 
         return line1, line2
-
-    def closest_bounds(self, other_plane, n=1):
-        """ Returns n pairs of closest bound points with a second plane.
-
-        Parameters
-        ----------            
-        other_plane : Plane
-            Another plane.
-        n : int, optional
-            Number of pairs. Default=1.
-
-        Returns
-        -------
-        closest_points : np.array
-            Pairs of points.
-        distances : np.array
-            Distances for each pair.
-        """
-        from .planebounded import PlaneBounded
-        if not isinstance(other_plane, PlaneBounded):
-            raise ValueError("Only implemented with other instances of "
-                             "PlaneBounded.")
-
-        from pyShapeDetector.utility import find_closest_points
-
-        closest_points, distances = find_closest_points(
-            self.bounds, other_plane.bounds, n)
-
-        return closest_points, distances
     
     def get_unbounded_plane(self):
         """ Gives unbounded version of plane
@@ -621,7 +593,38 @@ class Plane(Primitive):
         plane.__copy_atributes__(self)
         return plane
 
-    def get_bounded_plane(self, points):
+    def get_bounded_plane(self, bounds=None):
+        """ Gives bounded version of plane, using input points to define 
+        border.
+
+        If points is None, then use vertices or inliers, if they exist.
+
+        Parameters
+        ----------
+        points : array_like, shape (N, 3), optional.
+            Bound points.
+
+        Returns
+        -------
+        PlaneBounded
+            Bounded version of plane.
+        """
+        from .planebounded import PlaneBounded
+
+        if bounds is None:
+            try:
+                bounds = self.vertices
+            except AttributeError:
+                bounds = self.inlier_points
+                if len(bounds) == 0:
+                    raise ValueError("If shape has no vertices or inliers, "
+                                     "input points are required.")
+
+        plane = PlaneBounded(self.model, bounds)
+        Plane.__copy_atributes__(plane, self)
+        return plane
+    
+    def get_triangulated_plane(self, vertices, triangles):
         """ Gives bounded version of plane, using input points to define 
         border.
 
@@ -635,10 +638,10 @@ class Plane(Primitive):
         PlaneBounded
             Bounded version of plane.
         """
-        from .planebounded import PlaneBounded
+        from .planetriangulated import PlaneTriangulated
 
-        plane = PlaneBounded(self.model, points)
-        type(self).__copy_atributes__(plane, self)
+        plane = PlaneTriangulated(self.model, vertices, triangles)
+        Plane.__copy_atributes__(plane, self)
         return plane
 
     def get_projections(self, points):

@@ -19,12 +19,12 @@ from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
 
 from pyShapeDetector.primitives import (
-    Plane, PlaneBounded, Sphere, Cylinder, Cone, Line)
+    Plane, PlaneBounded, PlaneTriangulated, Sphere, Cylinder, Cone, Line)
 
 all_primitives_regular = [Plane, Sphere, Cylinder, Cone]
-all_primitives = all_primitives_regular + [PlaneBounded, Line]
-all_primitives_regular_bounded = [PlaneBounded, Sphere, Cylinder, Cone]
-all_primitives_bounded = [PlaneBounded, Sphere, Cylinder, Cone] + [Line]
+all_primitives = all_primitives_regular + [PlaneBounded, PlaneTriangulated, Line]
+all_primitives_regular_bounded = [PlaneBounded, PlaneTriangulated, Sphere, Cylinder, Cone]
+all_primitives_bounded = [PlaneBounded, PlaneTriangulated, Sphere, Cylinder, Cone] + [Line]
 
 def rmse(x):
     """ Helper for root mean square error. """
@@ -49,12 +49,16 @@ def test_plane_transformations():
 
     plane = Plane.random()
     plane_bounded = plane.get_square_plane(1)
+    plane_triangulated = PlaneTriangulated.from_bounded_plane(plane_bounded)
     assert not plane.has_inliers
     assert not plane_bounded.has_inliers
+    assert not plane_triangulated.has_inliers
 
     plane_bounded.set_inliers(points)
+    plane_triangulated = PlaneTriangulated.from_bounded_plane(plane_bounded)
     assert not plane.has_inliers
     assert plane_bounded.has_inliers
+    assert plane_triangulated.has_inliers
 
     plane_unbounded = plane_bounded.get_unbounded_plane()
     assert not plane.has_inliers
@@ -190,14 +194,14 @@ def test_plane_surface_area_and_volume():
     assert plane_bounded.volume == 0
     assert_allclose(plane_bounded.surface_area, length ** 2)
     
-    vertices = np.array(plane_bounded.mesh.vertices)
-    triangles = np.array(plane_bounded.mesh.triangles)
+    # vertices = np.array(plane_bounded.mesh.vertices)
+    # triangles = np.array(plane_bounded.mesh.triangles)
 
     # get only half of the doubled triangles
     # triangles = triangles[:int(len(triangles) / 2)]
 
-    plane_bounded.set_vertices_triangles(vertices, triangles)
-    assert_allclose(plane_bounded.surface_area, length ** 2)
+    plane_triangulated = PlaneTriangulated.from_bounded_plane(plane_bounded)
+    assert_allclose(plane_triangulated.surface_area, length ** 2)
 
 
 def test_fit():

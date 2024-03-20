@@ -9,13 +9,14 @@ Created on Tue Sep 26 16:02:34 2023
 from .primitivebase import Primitive
 from .plane import Plane
 from .planebounded import PlaneBounded
+from .planetriangulated import PlaneTriangulated
 from .sphere import Sphere
 from .cylinder import Cylinder
 from .cone import Cone
 from .line import Line
 
 list_primitives=[
-    Plane, Sphere, Cylinder, PlaneBounded, Cone, Line,
+    Plane, Sphere, Cylinder, PlaneBounded, PlaneTriangulated, Cone, Line,
 ]
 
 dict_primitives = {p._name: p for p in list_primitives}

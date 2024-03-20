@@ -113,22 +113,22 @@ class PlaneBounded(Plane):
     closest_bounds
     get_unbounded_plane
     get_bounded_plane
+    get_triangulated_plane
     get_projections
     get_points_from_projections
     get_mesh_alphashape
     get_square_plane
     get_square_mesh
 
+    closest_bounds
     contains_projections
     bound_lines_meshes
     set_bounds
-    set_vertices_triangles
     add_bound_points
     create_circle
     create_ellipse
     create_box
     intersection_bounds
-
     """
     _name = 'bounded plane'
     _bounds_indices = np.array([])
@@ -147,18 +147,9 @@ class PlaneBounded(Plane):
             x, y = projections.T
             return np.abs(np.sum(x[i-1] * y[i] - x[i] * y[i-1]) * 0.5)
         
-        def test(projections):
-            return np.linalg.norm(np.cross(*np.diff(projections, axis=0))) * 0.5
-        
-        if self.is_convex:
-            surface_area = shoelace(self.bounds_projections)
-            for hole in self.holes:
-                surface_area -= shoelace(hole.bounds_projections)
-        else:
-            triangle_projections = self.get_projections(self.vertices)[self.triangles]
-            diff = np.diff(triangle_projections, axis=1)
-            areas = abs(np.cross(diff[:,0,:], diff[:,1,:])) * 0.5
-            surface_area = sum(areas)
+        surface_area = shoelace(self.bounds_projections)
+        for hole in self.holes:
+            surface_area -= shoelace(hole.bounds_projections)
             
         return surface_area
 
@@ -181,14 +172,6 @@ class PlaneBounded(Plane):
         """ Lines defining bounds. """
         from .line import Line
         return Line.from_bounds(self.bounds)
-
-    @property
-    def vertices(self):
-        return self._vertices
-
-    @property
-    def triangles(self):
-        return self._triangles
     
     @property
     def bounds_or_vertices(self):            
@@ -201,19 +184,14 @@ class PlaneBounded(Plane):
         else:
             return self.inlier_points
 
-    def __init__(self, model, bounds=None, vertices=None, triangles=None,
-                 decimals=None):
+    def __init__(self, model, bounds=None, decimals=None):
         """
         Parameters
         ----------
         model : Primitive or list of 4 values
             Shape defining plane
         bounds : array_like, shape (N, 3), optional
-            Points defining bounds. 
-        vertices : array_like, shape (N, 3)
-            Vertices of plane triangulation.
-        triangles : array_like, shape (N, 3)
-            Vertices of plane triangulation.
+            Points defining bounds.
         decimals : int, optional
             Number of decimal places to round to (default: 0). If
             decimals is negative, it specifies the number of positions to
@@ -226,30 +204,13 @@ class PlaneBounded(Plane):
         """
         super().__init__(model, decimals)
 
-        if bounds is not None:
-            if vertices is None and triangles is None:
-                self._convex = True
-            else:
-                raise ValueError("If 'bounds' are given, 'vertices' and "
-                                 "'triangles' should not be given.")
-        elif vertices is None and triangles is None:
-            warnings.warn('No input bounds or vertices/triagles, returning square plane')
-        elif vertices is None or triangles is None:
-            raise ValueError("Either 'vertices' and 'triangles' should be given, or one of them.")
-        else:
-            self._convex = False
+        flatten = True
+        if bounds is None:
+            warnings.warn('No input bounds, returning square plane')
+            bounds = self.get_square_plane(1).bounds
+            flatten = False
 
-        if self._convex:
-            if bounds is None:
-                # warnings.warn('No input bounds, returning square plane')
-                self = self.get_square_plane(1)
-
-            else:
-                self.set_bounds(bounds, flatten=True)
-                if self._bounds is None:
-                    self = None
-        else:
-            self.set_vertices_triangles(vertices, triangles, flatten=True)
+        self.set_bounds(bounds, flatten=flatten)
 
     @classmethod
     def random(cls, scale=1, decimals=16):
@@ -266,7 +227,7 @@ class PlaneBounded(Plane):
 
         Returns
         -------
-        Primitive
+        PlaneBounded
             Random shape.
         """
         model = np.random.random(4) * scale
@@ -314,49 +275,46 @@ class PlaneBounded(Plane):
         TriangleMesh
             Mesh corresponding to the plane.
         """
-        if not self.is_convex:
-            points = self.vertices
-            triangles = self.triangles
+
+        if len(self._fusion_intersections) == 0:
+            points = self.bounds
+            projections = self.bounds_projections
+            # idx_intersections_sorted = []
         else:
-            if len(self._fusion_intersections) == 0:
-                points = self.bounds
-                projections = self.bounds_projections
-                # idx_intersections_sorted = []
-            else:
-                points = np.vstack([self.bounds, self._fusion_intersections])
-                projections = self.get_projections(points)
-    
-                angles = projections - projections.mean(axis=0)
-                angles = np.arctan2(*angles.T) + np.pi
-                idx = np.argsort(angles)
-    
-                points = points[idx]
-                projections = projections[idx]
-    
-                # idx_intersections = list(
-                    # range(len(points) - len(self._fusion_intersections), len(points)))
-                # idx_intersections_sorted = [
-                    # np.where(i == idx)[0][0] for i in idx_intersections]
-    
-            holes = self._holes
-            has_holes = len(holes) != 0
-            if has_holes:
-                points_holes = [self.flatten_points(hole.bounds) for hole in holes]
-                points = np.vstack([points]+points_holes)
-                projections = self.get_projections(points)
-            
-            triangles = Delaunay(projections).simplices
-    
-            for hole in self._holes:
-                inside_hole = np.array(
-                    [hole.contains_projections(p).all() for p in points[triangles]])
-                triangles = triangles[~inside_hole]
-    
-            areas = get_triangle_surface_areas(points, triangles)
-            triangles = triangles[areas > 0]
-    
-            # needed to make plane visible from both sides
-            # triangles = np.vstack([triangles, triangles[:, ::-1]])
+            points = np.vstack([self.bounds, self._fusion_intersections])
+            projections = self.get_projections(points)
+
+            angles = projections - projections.mean(axis=0)
+            angles = np.arctan2(*angles.T) + np.pi
+            idx = np.argsort(angles)
+
+            points = points[idx]
+            projections = projections[idx]
+
+            # idx_intersections = list(
+                # range(len(points) - len(self._fusion_intersections), len(points)))
+            # idx_intersections_sorted = [
+                # np.where(i == idx)[0][0] for i in idx_intersections]
+
+        holes = self._holes
+        has_holes = len(holes) != 0
+        if has_holes:
+            points_holes = [self.flatten_points(hole.bounds) for hole in holes]
+            points = np.vstack([points]+points_holes)
+            projections = self.get_projections(points)
+        
+        triangles = Delaunay(projections).simplices
+
+        for hole in self._holes:
+            inside_hole = np.array(
+                [hole.contains_projections(p).all() for p in points[triangles]])
+            triangles = triangles[~inside_hole]
+
+        areas = get_triangle_surface_areas(points, triangles)
+        triangles = triangles[areas > 0]
+
+        # needed to make plane visible from both sides
+        # triangles = np.vstack([triangles, triangles[:, ::-1]])
 
         mesh = TriangleMesh()
         mesh.vertices = Vector3dVector(points)
@@ -366,29 +324,10 @@ class PlaneBounded(Plane):
     
     def __copy_atributes__(self, shape_original):
         super().__copy_atributes__(shape_original)
-        # self._convex = shape_original._convex
-        self._vertices = shape_original._vertices.copy()
-        self._triangles = shape_original._triangles.copy()
         self._bounds_indices = shape_original._bounds_indices.copy()
         self._bounds = shape_original._bounds.copy()
         self._bounds_projections = shape_original._bounds_projections.copy()
         self._fusion_intersections = shape_original._fusion_intersections.copy()
-
-    # def __copy__(self, change_to=None):
-    #     """ Method for compatibility with copy module """
-    #     with warnings.catch_warnings():
-    #         warnings.simplefilter("ignore")
-    #         shape = Plane.__copy__(self, change_to)
-        
-    #     # Copying attributes particular to bounded planes
-    #     shape._convex = self._convex
-    #     shape._vertices = self._vertices.copy()
-    #     shape._triangles = self._triangles.copy()
-    #     shape._bounds_indices = self._bounds_indices.copy()
-    #     shape._bounds = self._bounds.copy()
-    #     shape._bounds_projections = self._bounds_projections.copy()
-    #     shape._fusion_intersections = self._fusion_intersections.copy()
-    #     return shape
 
     def translate(self, translation):
         """ Translate the shape.
@@ -399,15 +338,8 @@ class PlaneBounded(Plane):
             Translation vector.
         """
         # Primitive.translate(self, translation)
-        Plane.translate(self, translation)
-        
-        for hole in self.holes:
-            hole._translate_points(translation)
-            
-        if self.is_convex:
-            self._bounds = self._bounds + translation
-        else:
-            self._vertices = self._vertices + translation
+        super().translate(translation)
+        self._bounds = self._bounds + translation
 
     def rotate(self, rotation):
         """ Rotate the shape.
@@ -418,47 +350,40 @@ class PlaneBounded(Plane):
             Rotation matrix.
         """
         rotation = self._parse_rotation(rotation)
-        
-        # Primitive.rotate(self, rotation)
-        Plane.rotate(self, rotation)
+        super().rotate(rotation)
 
-        if self.is_convex:
-            self._bounds = rotation.apply(self._bounds)
-        else:
-            self._vertices = rotation.apply(self._vertices)        
+        self._bounds = rotation.apply(self._bounds)    
                 
-    def get_inliers_axis_aligned_bounding_box(self, slack=0, num_sample=15):
-        """ If the shape includes inlier points, returns the minimum and 
-        maximum bounds of their bounding box.
+    # def get_inliers_axis_aligned_bounding_box(self, slack=0, num_sample=15):
+    #     """ If the shape includes inlier points, returns the minimum and 
+    #     maximum bounds of their bounding box.
         
-        If no inlier points, use bounds or vertices.
+    #     If no inlier points, use bounds or vertices.
         
-        Parameters
-        ----------
-        slack : float, optional
-            Expand bounding box in all directions, useful for testing purposes.
-            Default: 0.
-        num_sample : int, optional
-            If no inliers, bounds or vertices found, sample mesh instead.
-            Default: 15.
+    #     Parameters
+    #     ----------
+    #     slack : float, optional
+    #         Expand bounding box in all directions, useful for testing purposes.
+    #         Default: 0.
+    #     num_sample : int, optional
+    #         If no inliers, bounds or vertices found, sample mesh instead.
+    #         Default: 15.
             
-        Returns
-        -------
-        tuple of two 3 x 1 arrays
-            Minimum and maximum bounds of inlier points bounding box.
-        """
+    #     Returns
+    #     -------
+    #     tuple of two 3 x 1 arrays
+    #         Minimum and maximum bounds of inlier points bounding box.
+    #     """
         
-        if len(self.bounds) > 0:
-            points = self.bounds
-        elif len(self.vertices) > 0:
-            points = self.vertices
-        else:
-            return Primitive.inliers_bounding_box(slack=0, num_sample=15)
+    #     if len(self.bounds) > 0:
+    #         points = self.bounds
+    #     else:
+    #         return Primitive.inliers_bounding_box(slack=0, num_sample=15)
         
-        slack = abs(slack)
-        min_bound = np.min(points, axis=0)
-        max_bound = np.max(points, axis=0)
-        return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
+    #     slack = abs(slack)
+    #     min_bound = np.min(points, axis=0)
+    #     max_bound = np.max(points, axis=0)
+    #     return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
     
     def get_axis_aligned_bounding_box(self, slack=0):
         """ Returns an axis-aligned bounding box of the primitive.
@@ -477,9 +402,8 @@ class PlaneBounded(Plane):
         """
         if slack < 0:
             raise ValueError("Slack must be non-negative.")
-        points = self.bounds_or_vertices
-        min_bound = np.min(points, axis=0)
-        max_bound = np.max(points, axis=0)
+        min_bound = np.min(self.bounds, axis=0)
+        max_bound = np.max(self.bounds, axis=0)
         return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
                 
     @staticmethod
@@ -537,13 +461,13 @@ class PlaneBounded(Plane):
             if force_concave:
                 vertices, triangles = planes_ressample_and_triangulate(
                     shapes, ressample_density, ressample_radius_ratio, double_triangles=True)
-                shape.set_vertices_triangles(vertices, triangles)
+                shape = shape.get_triangulated_plane(vertices, triangles)
                 
             elif not all_convex:
                 vertices = [shape.vertices for shape in shapes]
                 triangles = [shape.triangles for shape in shapes]
                 vertices, triangles = fuse_vertices_triangles(vertices, triangles)                                       
-                shape.set_vertices_triangles(vertices, triangles)
+                shape = shape.get_triangulated_plane(vertices, triangles)
                 
             else:
                 bounds = np.vstack([shape.bounds for shape in shapes])
@@ -560,6 +484,35 @@ class PlaneBounded(Plane):
                     shape._fusion_intersections = np.vstack(intersections)
         
         return shape
+    
+    def closest_bounds(self, other_plane, n=1):
+        """ Returns n pairs of closest bound points with a second plane.
+
+        Parameters
+        ----------            
+        other_plane : Plane
+            Another plane.
+        n : int, optional
+            Number of pairs. Default=1.
+
+        Returns
+        -------
+        closest_points : np.array
+            Pairs of points.
+        distances : np.array
+            Distances for each pair.
+        """
+        from .planebounded import PlaneBounded
+        if not isinstance(other_plane, PlaneBounded):
+            raise ValueError("Only implemented with other instances of "
+                             "PlaneBounded.")
+
+        from pyShapeDetector.utility import find_closest_points
+
+        closest_points, distances = find_closest_points(
+            self.bounds, other_plane.bounds, n)
+
+        return closest_points, distances
 
     def contains_projections(self, points):
         """ For each point in points, check if its projection on the plane lies
@@ -608,14 +561,6 @@ class PlaneBounded(Plane):
             If False, does not flatten points
 
         """
-        # method = method.lower()
-        # if method == 'convex':
-        #     pass
-        # elif method == 'alpha':
-        #     raise NotImplementedError("Alpha shapes not implemented yet.")
-        # else:
-        #     raise ValueError(
-        #         f"method can be 'convex' or 'alpha', got {method}.")
         self._mesh = None
         bounds = np.asarray(bounds)
         
@@ -627,9 +572,9 @@ class PlaneBounded(Plane):
         if np.any(np.isnan(bounds)):
             raise ValueError('NaN found in points')
             
-        self._vertices = np.array([])
-        self._triangles = np.array([])
-        self._convex = True
+        # self._vertices = np.array([])
+        # self._triangles = np.array([])
+        # self._convex = True
 
         projections = self.get_projections(bounds)
 
@@ -639,66 +584,6 @@ class PlaneBounded(Plane):
         self._bounds = bounds[chull.vertices]
         self._bounds_projections = projections[chull.vertices]
         
-    def set_vertices_triangles(self, vertices, triangles, flatten=True):
-        """ Flatten points according to plane model, get projections of 
-        flattened points in the model and set desired vertices and triangles.
-
-        Parameters
-        ----------
-        plane : Plane
-            Plane model
-        vertices : array_like, shape (N, 3)
-            Vertices of plane triangulation.
-        triangles : array_like, shape (N, 3)
-            Vertices of plane triangulation.
-        flatten : bool, optional
-            If False, does not flatten points
-
-        """
-        # method = method.lower()
-        # if method == 'convex':
-        #     pass
-        # elif method == 'alpha':
-        #     raise NotImplementedError("Alpha shapes not implemented yet.")
-        # else:
-        #     raise ValueError(
-        #         f"method can be 'convex' or 'alpha', got {method}.")
-
-        # if np.
-        self._mesh = None
-        vertices = np.asarray(vertices)
-        triangles = np.asarray(triangles)
-        
-        if vertices.shape[1] != 3 or triangles.shape[1] != 3:
-            raise ValueError("Invalid shape of 'vertices' and/or 'triangles' "
-                             "array.")
-        
-        if not all([x.is_integer() for x in triangles.flatten()]):
-            raise ValueError("All elements of 'triangles' must be integers.")
-        
-        if (triangles >= len(vertices)).any() or (triangles < 0).any():
-            raise ValueError("Each element in 'triangles' should be an integer"
-                             " between 0 and len(vertices) - 1.")
-
-        if flatten:
-            vertices = self.flatten_points(vertices)
-        if np.any(np.isnan(vertices)):
-            raise ValueError('NaN found in points')
-            
-        self._bounds = np.array([])
-        self._bounds_indices = np.array([])
-        self._vertices = vertices
-        self._triangles = triangles
-        self._convex = False
-
-    # def add_bound_points(self, new_bound_points, flatten=True, method='convex',
-                         # alpha=None):
-    # method : string, optional
-    #     "convex" for convex hull, or "alpha" for alpha shapes.
-    #     Default: "convex"
-    # alpha : float, optional
-    #     Alpha parameter for alpha shapes algorithm. If equal to None,
-    #     calculates the optimal alpha. Default: None
     def add_bound_points(self, new_bound_points, flatten=True):
         """ Add points to current bounds.
 
@@ -710,14 +595,11 @@ class PlaneBounded(Plane):
             If False, does not flatten points
 
         """
-        if not self.is_convex:
-            warnings.warn("Cannot add bounds to concave plane.")
-        else:
-            if flatten:
-                new_bound_points = self.flatten_points(new_bound_points)
-            bounds = np.vstack([self.bounds, new_bound_points])
-            self.set_bounds(bounds, flatten=False)
-            # self.set_bounds(points, flatten, method, alpha)
+        if flatten:
+            new_bound_points = self.flatten_points(new_bound_points)
+        bounds = np.vstack([self.bounds, new_bound_points])
+        self.set_bounds(bounds, flatten=False)
+        # self.set_bounds(points, flatten, method, alpha)
 
     @staticmethod
     def create_circle(center, normal, radius, resolution=30):
@@ -737,7 +619,7 @@ class PlaneBounded(Plane):
         Returns
         -------
         PlaneBounded
-            Fitted circular plane.
+            Circular plane.
         """
 
         def normalize(x): return x / np.linalg.norm(x)
@@ -776,7 +658,7 @@ class PlaneBounded(Plane):
         Returns
         -------
         PlaneBounded
-            Fitted circular plane.
+            Elliptical plane.
         """
         if np.dot(vx, vy) > 1e-5:
             raise ValueError('Axes must be orthogonal.')
@@ -807,7 +689,7 @@ class PlaneBounded(Plane):
         Returns
         -------
         box : list
-            List of planes.
+            List of PlaneBounded instances.
         """
 
         vectors = np.eye(3) * np.array(dimensions) / 2
@@ -871,5 +753,4 @@ class PlaneBounded(Plane):
             return np.array([])
         else:
             return np.vstack(points)
-        
         
