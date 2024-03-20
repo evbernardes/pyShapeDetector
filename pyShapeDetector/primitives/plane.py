@@ -195,9 +195,7 @@ class Plane(Primitive):
         """
         model = np.array(model)
         norm = np.linalg.norm(model[:3])
-        model = Primitive._parse_model_decimals(model / norm, decimals)
-        Primitive.__init__(self, model)
-        self._decimals = decimals
+        Primitive.__init__(self, model / norm, decimals)
         self._holes = []
 
     @staticmethod
