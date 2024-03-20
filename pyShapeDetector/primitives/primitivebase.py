@@ -1172,8 +1172,8 @@ class Primitive(ABC):
             bb1 = self.get_inliers_axis_aligned_bounding_box(slack=distance/2)
             bb2 = other_shape.get_inliers_axis_aligned_bounding_box(slack=distance/2)
         else:
-            bb1 = self.get_inliers_axis_aligned_bounding_box(slack=distance/2)
-            bb2 = other_shape.get_inliers_axis_aligned_bounding_box(slack=distance/2)
+            bb1 = self.get_axis_aligned_bounding_box(slack=distance/2)
+            bb2 = other_shape.get_axis_aligned_bounding_box(slack=distance/2)
         
         test_order = bb2.max_bound - bb1.min_bound >= 0
         if test_order.all():

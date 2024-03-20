@@ -593,7 +593,7 @@ class Plane(Primitive):
         plane.__copy_atributes__(self)
         return plane
 
-    def get_bounded_plane(self, bounds=None):
+    def get_bounded_plane(self, bounds):
         """ Gives bounded version of plane, using input points to define 
         border.
 
@@ -601,7 +601,7 @@ class Plane(Primitive):
 
         Parameters
         ----------
-        points : array_like, shape (N, 3), optional.
+        points : array_like, shape (N, 3).
             Bound points.
 
         Returns
@@ -610,15 +610,6 @@ class Plane(Primitive):
             Bounded version of plane.
         """
         from .planebounded import PlaneBounded
-
-        if bounds is None:
-            try:
-                bounds = self.vertices
-            except AttributeError:
-                bounds = self.inlier_points
-                if len(bounds) == 0:
-                    raise ValueError("If shape has no vertices or inliers, "
-                                     "input points are required.")
 
         plane = PlaneBounded(self.model, bounds)
         Plane.__copy_atributes__(plane, self)
@@ -630,8 +621,10 @@ class Plane(Primitive):
 
         Parameters
         ----------
-        points : array_like, shape (N, 3)
-            Parameters defining the shape model
+        vertices : array_like, shape (N, 3).
+            Vertices for triangles.
+        vertices : array_like, shape (N, 3).
+            Vertices for triangles.
 
         Returns
         -------
