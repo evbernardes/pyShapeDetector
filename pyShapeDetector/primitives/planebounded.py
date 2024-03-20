@@ -108,7 +108,6 @@ class PlaneBounded(Plane):
 
     from_normal_dist
     from_normal_point
-    bound_lines_meshes
     add_holes
     remove_hole
     intersect
@@ -177,7 +176,7 @@ class PlaneBounded(Plane):
         """ Return canonical form for testing. """
         shape = self.copy()
         if np.sign(self.dist) < 0:
-            self.plane._model = -self.plane._model
+            shape.plane._model = -self.plane._model
         return shape
     
     @property
