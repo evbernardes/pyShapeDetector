@@ -180,8 +180,8 @@ class Plane(Primitive):
         """
         Parameters
         ----------
-        model : list or tuple
-            Parameters defining the shape model 
+        model : Primitive or list of 4 values
+            Shape defining plane
         decimals : int, optional
             Number of decimal places to round to (default: 0). If
             decimals is negative, it specifies the number of positions to
@@ -193,6 +193,9 @@ class Plane(Primitive):
             If number of parameters is incompatible with the model of the 
             primitive.
         """
+        if isinstance(model, Primitive):
+            model = model.model
+
         model = np.array(model)
         norm = np.linalg.norm(model[:3])
         super().__init__(model / norm, decimals)

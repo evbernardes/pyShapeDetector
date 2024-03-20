@@ -130,7 +130,6 @@ class PlaneBounded(Plane):
     intersection_bounds
 
     """
-
     _name = 'bounded plane'
     _bounds_indices = np.array([])
     _bounds = np.array([])
@@ -138,12 +137,6 @@ class PlaneBounded(Plane):
     _vertices = np.array([])
     _triangles = np.array([])
     _convex = True
-    _rotatable = []  # no automatic rotation
-
-    @property
-    def model(self):
-        """ Return model. """
-        return self._plane.model
 
     @property
     def surface_area(self):
@@ -172,21 +165,13 @@ class PlaneBounded(Plane):
         return surface_area
     
     @property
-    def canonical(self):
-        """ Return canonical form for testing. """
-        shape = self.copy()
-        if np.sign(self.dist) < 0:
-            shape.plane._model = -self.plane._model
-        return shape
-    
-    @property
     def is_convex(self):
         return self._convex
         
     @property
     def plane(self):
         """ Return internal plane without bounds. """
-        return self._plane
+        return Plane(self.model)
 
     @property
     def bounds(self):
@@ -240,12 +225,12 @@ class PlaneBounded(Plane):
             
         return points
 
-    def __init__(self, planemodel, bounds=None, vertices=None, triangles=None,
+    def __init__(self, model, bounds=None, vertices=None, triangles=None,
                  decimals=None):
         """
         Parameters
         ----------
-        planemodel : Plane or list of 4 values
+        model : Primitive or list of 4 values
             Shape defining plane
         bounds : array_like, shape (N, 3), optional
             Points defining bounds. 
@@ -263,6 +248,8 @@ class PlaneBounded(Plane):
         ValueError
             If number of parameters is incompatible with the model of the 
         """
+        super().__init__(model, decimals)
+
         if bounds is not None:
             if vertices is None and triangles is None:
                 self._convex = True
@@ -276,17 +263,10 @@ class PlaneBounded(Plane):
         else:
             self._convex = False
 
-        if isinstance(planemodel, PlaneBounded):
-            self._plane = planemodel._plane
-        elif isinstance(planemodel, Plane):
-            self._plane = planemodel
-        else:
-            self._plane = Plane(planemodel, decimals=decimals)
-
         if self._convex:
             if bounds is None:
                 # warnings.warn('No input bounds, returning square plane')
-                self = self._plane.get_square_plane(1)
+                self = self.get_square_plane(1)
 
             else:
                 self.set_bounds(bounds, flatten=True)
@@ -294,9 +274,6 @@ class PlaneBounded(Plane):
                     self = None
         else:
             self.set_vertices_triangles(vertices, triangles, flatten=True)
-
-        self._decimals = decimals
-        self._holes = []
 
     @classmethod
     def random(cls, scale=1, decimals=16):
@@ -435,8 +412,8 @@ class PlaneBounded(Plane):
         translation : 1 x 3 array
             Translation vector.
         """
-        Primitive.translate(self, translation)
-        Plane.translate(self._plane, translation)
+        # Primitive.translate(self, translation)
+        Plane.translate(self, translation)
         
         for hole in self.holes:
             hole._translate_points(translation)
@@ -456,8 +433,8 @@ class PlaneBounded(Plane):
         """
         rotation = self._parse_rotation(rotation)
         
-        Primitive.rotate(self, rotation)
-        Plane.rotate(self._plane, rotation)
+        # Primitive.rotate(self, rotation)
+        Plane.rotate(self, rotation)
 
         if self.is_convex:
             self._bounds = rotation.apply(self._bounds)

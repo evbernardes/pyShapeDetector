@@ -315,7 +315,7 @@ class Primitive(ABC):
         """
         Parameters
         ----------
-        model : list or tuple
+        model : Plane or list of 4 values
             Parameters defining the shape model           
         decimals : int, optional
             Number of decimal places to round to (default: 0). If
@@ -328,11 +328,14 @@ class Primitive(ABC):
             If number of parameters is incompatible with the model of the 
             primitive.
         """
+        if isinstance(model, Primitive):
+            model = model.model
+
         model = np.array(model)
+
         if len(model) != self.model_args_n:
             raise ValueError(f'{self.name.capitalize()} primitives take '
                              f'{self.model_args_n} elements, got {model}')
-            
         
         self._model = Primitive._parse_model_decimals(model, decimals)
         self._decimals = decimals
