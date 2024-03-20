@@ -73,9 +73,10 @@ def test_canonical():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         for primitive in all_primitives:
-            shape = get_shape(PlaneBounded, 10)
-            shape2 = shape.canonical
-            assert shape == shape2
+            for _ in range(10):
+                shape = primitive.random(decimals=4)
+                shape2 = shape.canonical
+                assert shape == shape2
 
 
 def test_plane_projections():

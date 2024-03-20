@@ -149,7 +149,7 @@ class Plane(Primitive):
         """ Return canonical form for testing. """
         shape = self.copy()
         if np.sign(self.dist) < 0:
-            self._model = -self._model
+            shape._model = -self._model
         return shape
 
     @property
