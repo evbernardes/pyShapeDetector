@@ -63,8 +63,6 @@ class PlaneBounded(Plane):
     bounds_indices
     bounds_projections
     bound_lines
-    vertices
-    triangles
     bounds_or_vertices
 
     Methods
@@ -136,8 +134,6 @@ class PlaneBounded(Plane):
     _bounds_indices = np.array([])
     _bounds = np.array([])
     _bounds_projections = np.array([])
-    _vertices = np.array([])
-    _triangles = np.array([])
     _convex = True
 
     @property
