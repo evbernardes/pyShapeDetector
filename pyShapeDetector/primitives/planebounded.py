@@ -119,15 +119,15 @@ class PlaneBounded(Plane):
     get_mesh_alphashape
     get_square_plane
     get_square_mesh
+    create_circle
+    create_ellipse
+    create_box
 
     closest_bounds
     contains_projections
     bound_lines_meshes
     set_bounds
     add_bound_points
-    create_circle
-    create_ellipse
-    create_box
     intersection_bounds
     """
     _name = 'bounded plane'
@@ -203,13 +203,19 @@ class PlaneBounded(Plane):
             If number of parameters is incompatible with the model of the 
         """
         super().__init__(model, decimals)
-
+        
         flatten = True
         if bounds is None:
-            warnings.warn('No input bounds, returning square plane')
-            bounds = self.get_square_plane(1).bounds
-            flatten = False
+            if isinstance(model, Plane) and model.has_inliers:
+                warnings.warn('No input bounds, using inliers.')
+                bounds = model.inlier_points
+            else:
+                print('does not have inliers')
+                warnings.warn('No input bounds, returning square plane.')
+                bounds = self.get_square_plane(1).bounds
+                flatten = False
 
+        # super().__init__(model, decimals)
         self.set_bounds(bounds, flatten=flatten)
 
     @classmethod
@@ -502,7 +508,7 @@ class PlaneBounded(Plane):
         distances : np.array
             Distances for each pair.
         """
-        from .planebounded import PlaneBounded
+
         if not isinstance(other_plane, PlaneBounded):
             raise ValueError("Only implemented with other instances of "
                              "PlaneBounded.")
@@ -600,118 +606,6 @@ class PlaneBounded(Plane):
         bounds = np.vstack([self.bounds, new_bound_points])
         self.set_bounds(bounds, flatten=False)
         # self.set_bounds(points, flatten, method, alpha)
-
-    @staticmethod
-    def create_circle(center, normal, radius, resolution=30):
-        """ Creates circular plane.
-
-        Parameters
-        ----------
-        center : 3 x 1 array
-            Center of circle.
-        normal : 3 x 1 array
-            Normal vector of plane.
-        radius : float
-            Radius of circle.
-        resolution : int, optional
-            Number of points defining circular plane.
-
-        Returns
-        -------
-        PlaneBounded
-            Circular plane.
-        """
-
-        def normalize(x): return x / np.linalg.norm(x)
-
-        center = np.array(center)
-        normal = normalize(np.array(normal))
-
-        random_axis = normalize(np.random.random(3))
-        ex = normalize(np.cross(random_axis, normal))
-        ey = normalize(np.cross(normal, ex))
-
-        theta = np.linspace(-np.pi, np.pi, resolution + 1)[None].T
-        points = center + (np.cos(theta) * ex + np.sin(theta) * ey) * radius
-
-        plane = Plane.from_normal_point(normal, center)
-        return plane.get_bounded_plane(points)
-
-    @staticmethod
-    def create_ellipse(center, vx, vy, resolution=30):
-        """ Creates elliptical plane from two vectors. The input vectors are 
-        interpreted as the two axes of the ellipse, multiplied by their radius.
-
-        They must be orthogonal.
-
-        Parameters
-        ----------
-        center : 3 x 1 array
-            Center of circle.
-        vx : 3 x 1 array
-            First axis and multiplied by its semiradius.
-        vy : 3 x 1 array
-            Second axis and multiplied by its semiradius.
-        resolution : int, optional
-            Number of points defining circular plane.
-
-        Returns
-        -------
-        PlaneBounded
-            Elliptical plane.
-        """
-        if np.dot(vx, vy) > 1e-5:
-            raise ValueError('Axes must be orthogonal.')
-
-        center = np.array(center)
-        vx = np.array(vx)
-        vy = np.array(vy)
-        normal = np.cross(vx, vy)
-        normal /= np.linalg.norm(normal)
-
-        theta = np.linspace(-np.pi, np.pi, resolution+1)[None].T
-        points = center + np.cos(theta) * vx + np.sin(theta) * vy
-
-        plane = Plane.from_normal_point(normal, center)
-        return plane.get_bounded_plane(points)
-
-    @staticmethod
-    def create_box(center=[0, 0, 0], dimensions=[1, 1, 1]):
-        """ Gives list of planes that create, together, a closed box.
-
-        Parameters
-        ----------
-        center : array
-            Center point of box
-        dimensions : array
-            Dimensions of box
-
-        Returns
-        -------
-        box : list
-            List of PlaneBounded instances.
-        """
-
-        vectors = np.eye(3) * np.array(dimensions) / 2
-        center = np.array(center)
-        planes = []
-
-        for i, j in permutations([0, 1, 2], 2):
-            k = 3 - i - j
-            sign = int((i-j) * (j-k) * (k-i) / 2)
-            v1, v2, v3 = vectors[[i, j, k]]
-
-            points = center + np.array([
-                + v1 + v2,
-                + v1 - v2,
-                - v1 - v2,
-                - v1 + v2,
-            ])
-
-            plane = Plane.from_normal_point(v3, center + sign * v3)
-            planes.append(plane.get_bounded_plane(points))
-
-        return planes
 
     def intersection_bounds(self, other, within_segment=True, eps=1e-3):
         """ Calculates intersection point between bounding lines.

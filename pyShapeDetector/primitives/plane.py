@@ -5,7 +5,7 @@ Created on Mon Sep 25 15:42:59 2023
 
 @author: ebernardes
 """
-from warnings import warn
+import warnings
 from itertools import permutations, product
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
@@ -109,6 +109,9 @@ class Plane(Primitive):
     get_mesh_alphashape
     get_square_plane
     get_square_mesh
+    create_circle
+    create_ellipse
+    create_box
     """
 
     _fit_n_min = 3
@@ -140,7 +143,7 @@ class Plane(Primitive):
     @property
     def surface_area(self):
         """ For unbounded plane, returns NaN and gives warning """
-        warn('For unbounded planes, the surface area is undefined')
+        warnings.warn('For unbounded planes, the surface area is undefined')
         return float('nan')
 
     @property
@@ -202,9 +205,12 @@ class Plane(Primitive):
             primitive.
         """
         if isinstance(model, Primitive):
+            shape = model
             model = model.model
+            Primitive.__copy_atributes__(self, shape)
+        else:
+            model = np.array(model)
 
-        model = np.array(model)
         norm = np.linalg.norm(model[:3])
         super().__init__(model / norm, decimals)
         self._holes = []
@@ -335,7 +341,7 @@ class Plane(Primitive):
         if slack < 0:
             raise ValueError("Slack must be non-negative.")
             
-        warn("Unbounded planes have infinite axis aligned bounding boxes.")
+        warnings.warn("Unbounded planes have infinite axis aligned bounding boxes.")
         
         eps = 1e-3
         if np.linalg.norm(self.normal - [1, 0, 0]) < eps:
@@ -365,12 +371,12 @@ class Plane(Primitive):
         """
         from .planebounded import PlaneBounded
         
-        if len(self.inlier_points) == 0:
-            warn('No inlier points, returning square plane...')
+        if not self.has_inliers:
+            warnings.warn('No inlier points, returning square plane...')
             return self.get_square_mesh()
 
         bounded_plane = PlaneBounded(self.model, self.inlier_points_flattened)
-        bounded_plane._holes = self._holes
+        # bounded_plane.__copy_atributes__(self)
         mesh = bounded_plane.get_mesh()
 
         return mesh
@@ -480,7 +486,7 @@ class Plane(Primitive):
         """
         from .planebounded import PlaneBounded
         if remove_points and not isinstance(self, PlaneBounded):
-            warn('Option remove_points only works if plane is bounded.')
+            warnings.warn('Option remove_points only works if plane is bounded.')
             remove_points = False
 
         if not isinstance(holes, list):
@@ -746,3 +752,128 @@ class Plane(Primitive):
             Mesh corresponding to the plane.
         """
         return self.get_square_plane(length).get_mesh()
+    
+    @classmethod
+    def create_circle(cls, center, normal, radius, resolution=30):
+        """ Creates circular plane.
+
+        Parameters
+        ----------
+        center : 3 x 1 array
+            Center of circle.
+        normal : 3 x 1 array
+            Normal vector of plane.
+        radius : float
+            Radius of circle.
+        resolution : int, optional
+            Number of points defining circular plane.
+
+        Returns
+        -------
+        Plane
+            Circular plane.
+        """
+
+        def normalize(x): return x / np.linalg.norm(x)
+
+        center = np.array(center)
+        normal = normalize(np.array(normal))
+
+        random_axis = normalize(np.random.random(3))
+        ex = normalize(np.cross(random_axis, normal))
+        ey = normalize(np.cross(normal, ex))
+
+        theta = np.linspace(-np.pi, np.pi, resolution + 1)[None].T
+        points = center + (np.cos(theta) * ex + np.sin(theta) * ey) * radius
+
+        plane_unbounded = Plane.from_normal_point(normal, center)
+        plane_unbounded.set_inliers(points)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            return cls(plane_unbounded)
+
+    @classmethod
+    def create_ellipse(cls, center, vx, vy, resolution=30):
+        """ Creates elliptical plane from two vectors. The input vectors are 
+        interpreted as the two axes of the ellipse, multiplied by their radius.
+
+        They must be orthogonal.
+
+        Parameters
+        ----------
+        center : 3 x 1 array
+            Center of circle.
+        vx : 3 x 1 array
+            First axis and multiplied by its semiradius.
+        vy : 3 x 1 array
+            Second axis and multiplied by its semiradius.
+        resolution : int, optional
+            Number of points defining circular plane.
+
+        Returns
+        -------
+        Plane
+            Elliptical plane.
+        """
+        center = np.array(center)
+        vx = np.array(vx)
+        vy = np.array(vy)
+
+        if np.dot(vx, vy) > 1e-5:
+            raise ValueError('Axes must be orthogonal.')
+
+        normal = np.cross(vx, vy)
+        normal = normal / np.linalg.norm(normal)
+
+        theta = np.linspace(-np.pi, np.pi, resolution+1)[None].T
+        points = center + np.cos(theta) * vx + np.sin(theta) * vy
+
+        plane_unbounded = Plane.from_normal_point(normal, center)
+        plane_unbounded.set_inliers(points)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            return cls(plane_unbounded)
+    
+    @classmethod
+    def create_box(cls, center=[0, 0, 0], dimensions=[1, 1, 1]):
+        """ Gives list of planes that create, together, a closed box.
+
+        Parameters
+        ----------
+        center : array
+            Center point of box
+        dimensions : array
+            Dimensions of box
+
+        Returns
+        -------
+        box : list
+            List of PlaneBounded instances.
+        """
+
+        vectors = np.eye(3) * np.array(dimensions) / 2
+        center = np.array(center)
+        planes = []
+
+        for i, j in permutations([0, 1, 2], 2):
+            k = 3 - i - j
+            sign = int((i-j) * (j-k) * (k-i) / 2)
+            v1, v2, v3 = vectors[[i, j, k]]
+
+            points = center + np.array([
+                + v1 + v2,
+                + v1 - v2,
+                - v1 - v2,
+                - v1 + v2,
+            ])
+
+            plane_unbounded = Plane.from_normal_point(v3, center + sign * v3)
+            plane_unbounded.set_inliers(points)
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                planes.append(cls(plane_unbounded))
+
+        return planes

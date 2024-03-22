@@ -49,13 +49,13 @@ def test_plane_transformations():
 
     plane = Plane.random()
     plane_bounded = plane.get_square_plane(1)
-    plane_triangulated = PlaneTriangulated.from_bounded_plane(plane_bounded)
+    plane_triangulated = PlaneTriangulated.from_plane_with_mesh(plane_bounded)
     assert not plane.has_inliers
     assert not plane_bounded.has_inliers
     assert not plane_triangulated.has_inliers
 
     plane_bounded.set_inliers(points)
-    plane_triangulated = PlaneTriangulated.from_bounded_plane(plane_bounded)
+    plane_triangulated = PlaneTriangulated.from_plane_with_mesh(plane_bounded)
     assert not plane.has_inliers
     assert plane_bounded.has_inliers
     assert plane_triangulated.has_inliers
@@ -92,6 +92,56 @@ def test_init_plane_bounded():
         PlaneBounded(model)
 
     PlaneBounded(model, bounds)
+
+
+def test_plane_circle():
+    center = (0, 0, 0)
+    normal = (0, 0, 1)
+    radius = 1
+
+    plane = Plane.create_circle(center, normal, radius)
+    assert type(plane) is Plane
+
+    plane = PlaneBounded.create_circle(center, normal, radius)
+    assert type(plane) is PlaneBounded
+
+    plane = PlaneTriangulated.create_circle(center, normal, radius)
+    assert type(plane) is PlaneTriangulated
+
+
+def test_plane_ellipse():
+    center = (0, 0, 0)
+    vx = (1, 0, 0)
+    vy = (0, 2, 0)
+
+    plane1 = Plane.create_ellipse(center, vx, vy)
+    assert type(plane1) is Plane
+    print(type(plane1))
+
+    plane2 = PlaneBounded.create_ellipse(center, vx, vy)
+    assert type(plane2) is PlaneBounded
+    print(type(plane2))
+
+    plane3 = PlaneTriangulated.create_ellipse(center, vx, vy)
+    assert type(plane3) is PlaneTriangulated
+    print(type(plane3))
+
+
+def test_plane_box():
+    center = (0, 0, 0)
+    dimensions = (1, 2, 3)
+
+    box = Plane.create_box(center, dimensions)
+    for p in box:
+        assert type(p) is Plane
+
+    box = PlaneBounded.create_box(center, dimensions)
+    for p in box:
+        assert type(p) is PlaneBounded
+
+    box = PlaneTriangulated.create_box(center, dimensions)
+    for p in box:
+        assert type(p) is PlaneTriangulated
 
 
 def test_canonical():
@@ -200,7 +250,7 @@ def test_plane_surface_area_and_volume():
     # get only half of the doubled triangles
     # triangles = triangles[:int(len(triangles) / 2)]
 
-    plane_triangulated = PlaneTriangulated.from_bounded_plane(plane_bounded)
+    plane_triangulated = PlaneTriangulated.from_plane_with_mesh(plane_bounded)
     assert_allclose(plane_triangulated.surface_area, length ** 2)
 
 

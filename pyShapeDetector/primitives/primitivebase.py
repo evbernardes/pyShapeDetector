@@ -330,9 +330,11 @@ class Primitive(ABC):
             primitive.
         """
         if isinstance(model, Primitive):
+            shape = model
             model = model.model
-
-        model = np.array(model)
+            self.__copy_atributes__(shape)
+        else:
+            model = np.array(model)
 
         if len(model) != self.model_args_n:
             raise ValueError(f'{self.name.capitalize()} primitives take '

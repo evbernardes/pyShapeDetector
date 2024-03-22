@@ -115,13 +115,13 @@ class PlaneTriangulated(Plane):
     get_mesh_alphashape
     get_square_plane
     get_square_mesh
-
-    closest_vertices
-    set_vertices_triangles
     create_circle
     create_ellipse
     create_box
-    from_bounded_plane
+
+    closest_vertices
+    set_vertices_triangles
+    from_plane_with_mesh
     """
     _name = 'triangulated plane'
     _vertices = np.array([])
@@ -181,20 +181,25 @@ class PlaneTriangulated(Plane):
             If number of parameters is incompatible with the model of the 
         """
         super().__init__(model, decimals)
-        
+
         flatten = True
-        if vertices is not None and triangles is not None:
-            pass
-        elif vertices is None and triangles is None:
-            warnings.warn('No input vertices/triagles, returning square plane')
-            plane_square = self.get_square_plane(1)
-            vertices = np.asarray(plane_square.mesh.vertices)
-            triangles = np.asarray(plane_square.mesh.triangles)
+        if vertices is None and triangles is None:
+            if isinstance(model, Plane):
+                warnings.warn('No input bounds, using inliers mesh.')
+                mesh = model.mesh
+            else:
+                warnings.warn('No input vertices/triangles, returning square plane')
+                mesh = self.get_square_plane(1).mesh
+            vertices = np.asarray(mesh.vertices)
+            triangles = np.asarray(mesh.triangles)
             flatten = False
 
+        elif vertices is not None or triangles is not None:
+            pass
         elif vertices is None or triangles is None:
             raise ValueError("Either 'vertices' and 'triangles' should be given, or one of them.")
 
+        # super().__init__(model, decimals)
         self.set_vertices_triangles(vertices, triangles, flatten=flatten)
 
     @classmethod
@@ -519,82 +524,10 @@ class PlaneTriangulated(Plane):
         self._vertices = vertices
         self._triangles = triangles
         # self._convex = False
-
-    @staticmethod
-    def create_circle(center, normal, radius, resolution=30):
-        """ Creates circular plane.
-
-        Parameters
-        ----------
-        center : 3 x 1 array
-            Center of circle.
-        normal : 3 x 1 array
-            Normal vector of plane.
-        radius : float
-            Radius of circle.
-        resolution : int, optional
-            Number of points defining circular plane.
-
-        Returns
-        -------
-        PlaneTriangulated
-            Circular plane.
-        """
-
-        from .planebounded import PlaneBounded
-        circle_bounded = PlaneBounded.create_circle(center, normal, radius, resolution)
-        return PlaneTriangulated.from_bounded_plane(circle_bounded)
-
-    @staticmethod
-    def create_ellipse(center, vx, vy, resolution=30):
-        """ Creates elliptical plane from two vectors. The input vectors are 
-        interpreted as the two axes of the ellipse, multiplied by their radius.
-
-        They must be orthogonal.
-
-        Parameters
-        ----------
-        center : 3 x 1 array
-            Center of circle.
-        vx : 3 x 1 array
-            First axis and multiplied by its semiradius.
-        vy : 3 x 1 array
-            Second axis and multiplied by its semiradius.
-        resolution : int, optional
-            Number of points defining circular plane.
-
-        Returns
-        -------
-        PlaneTriangulated
-            Elliptical plane.
-        """
-        from .planebounded import PlaneBounded
-        ellipse_bounded = PlaneBounded.create_circle(center, vx, vy, resolution)
-        return PlaneTriangulated.from_bounded_plane(ellipse_bounded)
-
-    @staticmethod
-    def create_box(center=[0, 0, 0], dimensions=[1, 1, 1]):
-        """ Gives list of planes that create, together, a closed box.
-
-        Parameters
-        ----------
-        center : array
-            Center point of box
-        dimensions : array
-            Dimensions of box
-
-        Returns
-        -------
-        box : list
-            List of PlaneTriangulated instances.
-        """
-        from .planebounded import PlaneBounded
-        planes = PlaneBounded.create_box(center, dimensions)
-        return [PlaneTriangulated.from_bounded_plane(p) for p in planes]
         
     @staticmethod
-    def from_bounded_plane(plane_bounded):
-        """ Convert PlaneBounded instance into PlaneTriangulated instance by
+    def from_plane_with_mesh(plane):
+        """ Convert plane instance's mesh into PlaneTriangulated instance by
 
         By copying the vertices and triangles from its mesh.
 
@@ -607,7 +540,9 @@ class PlaneTriangulated(Plane):
         -------
         PlaneTriangulated
         """
-        mesh = plane_bounded.mesh
+        if not isinstance(plane, Plane):
+            raise TypeError("Can only convert plane meshes into PlaneTriangulated.")
+        mesh = plane.mesh
         vertices = np.asarray(mesh.vertices)
         triangles = np.asarray(mesh.triangles)
-        return plane_bounded.get_triangulated_plane(vertices, triangles)
+        return plane.get_triangulated_plane(vertices, triangles)
