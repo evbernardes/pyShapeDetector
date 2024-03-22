@@ -719,7 +719,6 @@ class Plane(Primitive):
         PlaneBounded
             Square plane
         """
-
         def normalized(x): return x / np.linalg.norm(x)
 
         if np.isclose(self.normal[1], 1, atol=1e-7):
