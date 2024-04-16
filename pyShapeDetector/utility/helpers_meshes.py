@@ -185,7 +185,7 @@ def get_triangle_boundary_indexes(mesh_or_vertices, triangles=None):
     
     return boundary_indexes
 
-def get_loops_from_boundary_indexes(boundary_indexes):
+def get_loop_indexes_from_boundary_indexes(boundary_indexes):
     """ Detect loops in list of tuples.
     
     See: utility.get_triangle_boundary_indexes
@@ -207,7 +207,7 @@ def get_loops_from_boundary_indexes(boundary_indexes):
     def find_tuple_index(lst, value):
         return next((index for index, tup in enumerate(lst) if value in tup), None)
     
-    loops = []
+    loop_indexes = []
     boundary_indexes = copy.copy(boundary_indexes)
     while(len(boundary_indexes) > 0):
         boundary = []
@@ -235,9 +235,9 @@ def get_loops_from_boundary_indexes(boundary_indexes):
             break
         
         # boundaries.append(boundary)
-        loops.append([p[0] for p in boundary])
+        loop_indexes.append([p[0] for p in boundary])
     
-    return loops
+    return loop_indexes
     
 def get_triangle_perimeters(mesh_or_vertices, triangles=None):
     """ Get perimeter of each triangle.
