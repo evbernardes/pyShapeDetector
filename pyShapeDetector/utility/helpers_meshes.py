@@ -137,6 +137,94 @@ def get_triangle_LineSet(mesh_or_vertices, triangles=None):
         triangles[:, [0, 1, 1, 2, 2, 0]].reshape((len(triangles) * 3, 2)))
     return lineset
 
+def get_triangle_boundary_indexes(mesh_or_vertices, triangles=None, 
+                                  detect_loops=False):
+    """ Get tuples defining edge lines in boundary of mesh. 
+    
+    Edges are detected as lines which only belong to a single triangle.
+    
+    Parameters
+    ----------
+    mesh_or_vertices : instance of Open3D.geometry.TriangleMesh or numpy.array
+        If mesh_or_vertices is TriangleMesh, use it to get both vertices and
+        triangles.
+    triangles : np.array, optional
+        If mesh_or_vertices is an array of vertices, triangles is the array
+        of triangles. Should be set to None if mesh_or_vertices is a 
+        TriangleMesh. Default: None.
+    detect_loops : boolean, optional
+        If True, the indexes will be separated into multiple lists forming 
+        loops. Default: False.
+        
+    Returns
+    -------
+    list of tuples instances
+        Each tuple contains the indexes of the two vertices defining each edge
+    """
+    vertices, triangles = _get_vertices_triangles(mesh_or_vertices, triangles)
+    
+    # get tuples containing all possible lines
+    lines = []
+    for triangle in triangles:
+        for i in range(3):
+            line = [triangle[i], triangle[(i+1)%3]]
+            line.sort()
+            lines.append(tuple(line))
+
+    occurences = {}
+    lines.sort()
+    while(len(lines) > 0):
+        line = lines.pop()
+        count = 1
+        
+        while(len(lines) > 0):            
+            if lines[-1] != line:
+                break
+            
+            count += 1
+            line = lines.pop()
+            occurences[line] = count
+
+    boundary_indexes = [k for k, v in occurences.items() if v == 2]
+    
+    if not detect_loops:
+        return boundary_indexes
+    
+    # separating (and ordering) all loops
+    def find_tuple_index(lst, value):
+        return next((index for index, tup in enumerate(lst) if value in tup), None)
+    
+    boundaries = []
+    while(len(boundary_indexes) > 0):
+        boundary = []
+        edge = boundary_indexes.pop()
+        boundary.append(edge)
+        i = 1
+        
+        while(True):        
+            edge = boundary[-1]
+            
+            index = find_tuple_index(boundary_indexes, edge[1])
+            if index is None:
+                index =  find_tuple_index(boundary_indexes, edge[0])
+                
+            if index is None:
+                break
+            
+            edge = boundary_indexes.pop(index)
+            if edge[1] == boundary[-1][1]:
+                edge = edge[::-1]
+                
+            boundary.append(edge)
+        
+        if boundary[-1] == boundary[0]:
+            break
+        
+        boundaries.append(boundary)
+    
+    return boundaries
+    
+
 def get_triangle_perimeters(mesh_or_vertices, triangles=None):
     """ Get perimeter of each triangle.
     

@@ -43,6 +43,7 @@ from .helpers_primitives import (
 from .helpers_meshes import (
     get_triangle_lines,
     get_triangle_LineSet,
+    get_triangle_boundary_indexes,
     get_triangle_points,
     get_triangle_sides,
     get_triangle_perimeters,
