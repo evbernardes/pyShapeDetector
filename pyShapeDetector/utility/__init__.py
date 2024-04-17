@@ -57,7 +57,8 @@ from .helpers_meshes import (
     fuse_meshes,
     remove_big_triangles,
     planes_ressample_and_triangulate,
-    planes_ressample_and_triangulate_gui
+    planes_ressample_and_triangulate_gui,
+    triangulate_earclipping
     )
 
 from .helpers_visualization import (
