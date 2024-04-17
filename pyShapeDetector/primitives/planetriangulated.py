@@ -15,7 +15,9 @@ from open3d.utility import Vector3iVector, Vector3dVector
 
 from pyShapeDetector.utility import (
     fuse_vertices_triangles, 
-    planes_ressample_and_triangulate)
+    planes_ressample_and_triangulate,
+    get_triangle_boundary_indexes,
+    get_loop_indexes_from_boundary_indexes)
 from .primitivebase import Primitive
 from .plane import Plane
 # from alphashape import alphashape
@@ -122,6 +124,7 @@ class PlaneTriangulated(Plane):
     closest_vertices
     set_vertices_triangles
     from_plane_with_mesh
+    get_bounded_planes_from_boundaries
     """
     _name = 'triangulated plane'
     _vertices = np.array([])
@@ -546,3 +549,20 @@ class PlaneTriangulated(Plane):
         vertices = np.asarray(mesh.vertices)
         triangles = np.asarray(mesh.triangles)
         return plane.get_triangulated_plane(vertices, triangles)
+    
+    def get_bounded_planes_from_boundaries(self):
+        """ Convert PlaneTriangulated instance into list of non-convex 
+        PlaneBounded instances.
+
+        Returns
+        -------
+        list of PlaneBounded instances
+        """
+        from .planebounded import PlaneBounded
+        
+        boundary_indexes = get_triangle_boundary_indexes(
+            self.vertices, 
+            self.triangles)
+        loop_indexes = get_loop_indexes_from_boundary_indexes(boundary_indexes)
+
+        return [PlaneBounded(self.model, self.vertices[loop], convex=False) for loop in loop_indexes]
