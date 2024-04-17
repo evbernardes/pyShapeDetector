@@ -16,7 +16,8 @@ from open3d.utility import Vector3iVector, Vector3dVector
 from pyShapeDetector.utility import (
     get_triangle_surface_areas, 
     fuse_vertices_triangles, 
-    planes_ressample_and_triangulate)
+    planes_ressample_and_triangulate,
+    triangulate_earclipping)
 from .primitivebase import Primitive
 from .plane import Plane
 # from alphashape import alphashape
@@ -184,7 +185,7 @@ class PlaneBounded(Plane):
         else:
             return self.inlier_points
 
-    def __init__(self, model, bounds=None, decimals=None):
+    def __init__(self, model, bounds=None, convex=True, decimals=None):
         """
         Parameters
         ----------
@@ -192,6 +193,9 @@ class PlaneBounded(Plane):
             Shape defining plane
         bounds : array_like, shape (N, 3), optional
             Points defining bounds.
+        convex : bool, optinal
+            If True, assumes the bounds are supposed to be convex and use
+            ConvexHull. If False, assume bounds are directly given as a loop.
         decimals : int, optional
             Number of decimal places to round to (default: 0). If
             decimals is negative, it specifies the number of positions to
@@ -209,14 +213,16 @@ class PlaneBounded(Plane):
             if isinstance(model, Plane) and model.has_inliers:
                 warnings.warn('No input bounds, using inliers.')
                 bounds = model.inlier_points
+                convex = False
             else:
                 print('does not have inliers')
                 warnings.warn('No input bounds, returning square plane.')
                 bounds = self.get_square_plane(1).bounds
                 flatten = False
+                convex = False
 
         # super().__init__(model, decimals)
-        self.set_bounds(bounds, flatten=flatten)
+        self.set_bounds(bounds, flatten=flatten, convex=convex)
 
     @classmethod
     def random(cls, scale=1, decimals=16):
@@ -309,7 +315,10 @@ class PlaneBounded(Plane):
             points = np.vstack([points]+points_holes)
             projections = self.get_projections(points)
         
-        triangles = Delaunay(projections).simplices
+        if self.is_convex:
+            triangles = Delaunay(projections).simplices
+        else:
+            triangles = triangulate_earclipping(projections)
 
         for hole in self._holes:
             inside_hole = np.array(
@@ -551,8 +560,8 @@ class PlaneBounded(Plane):
         meshes = [line.get_mesh(radius=radius) for line in lines]
         [mesh.paint_uniform_color(color) for mesh in meshes]
         return meshes
-
-    def set_bounds(self, bounds, flatten=True):
+    
+    def set_bounds(self, bounds, flatten=True, convex=True):
         """ Flatten points according to plane model, get projections of 
         flattened points in the model and compute its boundary using either 
         the convex hull or alpha shapes.
@@ -565,6 +574,9 @@ class PlaneBounded(Plane):
             Points corresponding to the fitted shape.
         flatten : bool, optional
             If False, does not flatten points
+        convex : bool, optinal
+            If True, assumes the bounds are supposed to be convex and use
+            ConvexHull. If False, assume bounds are directly given as a loop.
 
         """
         self._mesh = None
@@ -585,10 +597,17 @@ class PlaneBounded(Plane):
         projections = self.get_projections(bounds)
 
         # if method == 'convex':
-        chull = ConvexHull(projections)
-        self._bounds_indices = chull.vertices
-        self._bounds = bounds[chull.vertices]
-        self._bounds_projections = projections[chull.vertices]
+        if convex:
+            chull = ConvexHull(projections)
+            self._bounds_indices = chull.vertices
+            self._bounds = bounds[chull.vertices]
+            self._bounds_projections = projections[chull.vertices]
+        else:
+            self._bounds_indices = None
+            self._bounds = bounds
+            self._bounds_projections = projections
+            
+        self._convex = convex
         
     def add_bound_points(self, new_bound_points, flatten=True):
         """ Add points to current bounds.
