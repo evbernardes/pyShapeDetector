@@ -543,16 +543,24 @@ class PlaneBounded(Plane):
         array of booleans
             True for points whose projection lies in plane's bounds
         """
+        
         inside = np.array([True] * len(points))
         projections = self.get_projections(points)
-        for i in range(len(points)):
-            point = projections[i]
-            for j in range(1, len(self.bounds_projections)):
-                p1 = self.bounds_projections[j-1]
-                p2 = self.bounds_projections[j]
-                if (point[0] - p1[0]) * (p2[1] - p1[1]) - (point[1] - p1[1]) * (p2[0] - p1[0]) > 0:
-                    inside[i] = False
-                    continue
+        N = len(self.bounds_projections)
+        for j in range(len(points)):
+            point = projections[j]
+            intersections = 0
+            for i in range(1, N):
+                p1 = self.bounds_projections[i]
+                p2 = self.bounds_projections[(i + 1) % N]  # Wrap around to the first point
+                
+                # Check if the ray intersects the edge
+                if (p1[1] > point[1]) != (p2[1] > point[1]) and \
+                   point[0] < (p2[0] - p1[0]) * (point[1] - p1[1]) / (p2[1] - p1[1]) + p1[0]:
+                    intersections += 1
+                    
+            inside[j] = intersections % 2 == 1
+                
         return inside
     
     def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
