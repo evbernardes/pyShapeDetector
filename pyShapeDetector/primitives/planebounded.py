@@ -17,7 +17,10 @@ from pyShapeDetector.utility import (
     get_triangle_surface_areas, 
     fuse_vertices_triangles, 
     planes_ressample_and_triangulate,
-    triangulate_earclipping)
+    triangulate_earclipping,
+    # get_triangle_boundary_indexes,
+    # get_loop_indexes_from_boundary_indexes
+    )
 from .primitivebase import Primitive
 from .plane import Plane
 # from alphashape import alphashape
@@ -208,12 +211,23 @@ class PlaneBounded(Plane):
         """
         super().__init__(model, decimals)
         
+        # from .planetriangulated import PlaneTriangulated
+        
         flatten = True
         if bounds is None:
             if isinstance(model, Plane) and model.has_inliers:
                 warnings.warn('No input bounds, using inliers.')
                 bounds = model.inlier_points
                 convex = False
+            # elif isinstance(model, PlaneTriangulated):
+            #     print("No input bounds, using PlaneTriangulated's boundary.")
+            #     boundary_indexes = get_triangle_boundary_indexes(
+            #         self.vertices, 
+            #         self.triangles)
+            #     loops = get_loop_indexes_from_boundary_indexes(boundary_indexes)
+            #     bounds = self.vertices[loops[0]]
+            #     flatten = False
+            #     convex = False
             else:
                 print('does not have inliers')
                 warnings.warn('No input bounds, returning square plane.')
@@ -611,7 +625,7 @@ class PlaneBounded(Plane):
             self._bounds = bounds[chull.vertices]
             self._bounds_projections = projections[chull.vertices]
         else:
-            self._bounds_indices = None
+            self._bounds_indices = np.array(range(len(bounds)))
             self._bounds = bounds
             self._bounds_projections = projections
             
