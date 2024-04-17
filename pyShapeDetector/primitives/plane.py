@@ -521,11 +521,11 @@ class Plane(Primitive):
                     bounds = hole.bounds
 
                 inside2 = hole.contains_projections(self.bounds)
-                hole = PlaneBounded(model, bounds)
+                hole = PlaneBounded(model, bounds, convex=hole.is_convex)
                 self._bounds = self._bounds[~inside2]
                 self._bounds_projections = self._bounds_projections[~inside2]
             else:
-                hole = PlaneBounded(model, hole.bounds)
+                hole = PlaneBounded(model, hole.bounds, convex=hole.is_convex)
             hole._is_hole = True
             fixed_holes.append(hole)
         self._holes += fixed_holes
