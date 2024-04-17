@@ -608,6 +608,37 @@ def segment_with_region_growing(pcd, residuals=None, mode='knn', k=20, radius=0,
         
     return pcds_segmented
 
+def find_closest_points_indices(points1, points2, n=1):
+    """ Fuses list of pointclouds into a single open3d.geometry.PointCloud 
+    instance.
+    
+    Parameters
+    ----------
+    points1 : N x 3 array or instance of PointCloud
+        First pointcloud.
+    points2 : N x 3 array or instance of PointCloud
+        First pointcloud.
+    n : int, optional
+        Number of pairs. Default=1.
+    
+    Returns
+    -------
+    list of n tuples of indices
+        Pairs of close points.
+    """
+    if isinstance(points1, PointCloud):
+        points1 = points1.points
+    if isinstance(points2, PointCloud):
+        points2 = points2.points
+    points1 = np.asarray(points1)
+    points2 = np.asarray(points2)
+    
+    distances = cdist(points1, points2)
+    min_distance_indices = np.unravel_index(
+        np.argpartition(distances, n, axis=None)[:n], distances.shape)
+    
+    return min_distance_indices
+
 def find_closest_points(points1, points2, n=1):
     """ Fuses list of pointclouds into a single open3d.geometry.PointCloud 
     instance.

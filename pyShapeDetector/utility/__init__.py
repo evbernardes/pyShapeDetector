@@ -21,6 +21,7 @@ from .helpers_pointclouds import (
     segment_by_position, 
     fuse_pointclouds, 
     separate_pointcloud_in_two, 
+    find_closest_points_indices,
     find_closest_points,
     alphashape_2d,
     polygonize_alpha_shape
