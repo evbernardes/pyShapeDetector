@@ -331,14 +331,14 @@ class PlaneBounded(Plane):
 
         #     points = points[idx]
         #     projections = projections[idx]
-        points = self.bounds
+        projections = self.bounds_projections
         holes = self._holes
         
         if self.is_convex:
             
             if len(holes) >= 0:
                 points_holes = [self.flatten_points(hole.bounds) for hole in holes]
-                points = np.vstack([points]+points_holes)
+                points = np.vstack([self.bounds]+points_holes)
                 projections = self.get_projections(points)
         
             triangles = Delaunay(projections).simplices
