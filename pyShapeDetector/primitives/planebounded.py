@@ -133,6 +133,7 @@ class PlaneBounded(Plane):
     get_points_from_projections
     get_mesh_alphashape
     get_square_plane
+    get_rectangular_plane_from_inliers
     get_square_mesh
     create_circle
     create_ellipse
