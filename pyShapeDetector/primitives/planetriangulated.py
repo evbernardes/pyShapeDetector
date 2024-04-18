@@ -116,8 +116,10 @@ class PlaneTriangulated(Plane):
     get_points_from_projections
     get_mesh_alphashape
     get_square_plane
-    get_rectangular_plane_from_inliers
+    get_rectangular_vectors_from_inliers
+    get_rectangular_plane
     get_square_mesh
+    get_rectangular_mesh
     create_circle
     create_ellipse
     create_box

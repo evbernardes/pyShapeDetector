@@ -19,6 +19,9 @@ from alphashape import alphashape
 # from .line import Line
 
 def _get_rectangular_vertices(v1, v2):
+    if abs(v1.dot(v2)) > 1e-8:
+        raise RuntimeError("Vectors are not orthogonal.")
+        
     return np.array([
         -v1 - v2,
         -v1 + v2,
@@ -116,8 +119,10 @@ class Plane(Primitive):
     get_points_from_projections
     get_mesh_alphashape
     get_square_plane
-    get_rectangular_plane_from_inliers
+    get_rectangular_vectors_from_inliers
+    get_rectangular_plane
     get_square_mesh
+    get_rectangular_mesh
     create_circle
     create_ellipse
     create_box
@@ -719,20 +724,82 @@ class Plane(Primitive):
         vertices = self.get_points_from_projections(vertices_2d)
         triangles = np.vstack([triangles, triangles[:, ::-1]])
         return new_TriangleMesh(vertices, triangles)
+    
+    def get_rectangular_vectors_from_inliers(self):
+        """ Gives vectors defining a rectangle that roughly contains the plane.
 
-    def get_square_plane(self, length=1):
+        Returns
+        -------
+        tuple of arrays
+            Two non unit vectors
+        """
+        points = self.inlier_points
+        center = np.median(points, axis=0)
+        delta = points - center
+        cov_matrix = np.cov(delta, rowvar=False)
+        eigval, eigvec = np.linalg.eig(cov_matrix)
+        v1, v2, _ = eigvec
+
+        projs = points.dot(eigvec)
+        V1 = (max(projs[:, 0]) - min(projs[:, 0])) * v1
+        V2 = (max(projs[:, 1]) - min(projs[:, 1])) * v2
+        return np.array([V1, V2])
+    
+    def get_rectangular_plane(self, v1, v2, center=None):
+        """ Gives rectangular plane defined two vectors and its center.
+        
+        Vectors v1 and v2 should not be unit, and instead have lengths equivalent
+        to widths of rectangle.
+        
+        Parameters
+        ----------
+        v1 : arraylike of length 3
+            First vector defining one of the directions, must be orthogonal
+            to v2.
+        v2 : arraylike of length 3
+            Second vector defining one of the directions, must be orthogonal
+            to v1.
+        center : arraylike of length 3, optional
+            Center of rectangle. If not given, either inliers or centroid are 
+            used.
+
+        Returns
+        -------
+        PlaneBounded
+            Rectangular plane
+        """
+        if center is None:
+            if self.has_inliers:
+                center = np.median(self.inlier_points, axis=0)
+            else:
+                center = self.centroid
+                
+        V1, V2 = self.get_rectangular_vectors_from_inliers()
+        vertices = center + _get_rectangular_vertices(V1, V2)
+        return self.get_bounded_plane(vertices)
+    
+    def get_square_plane(self, length, center=None):
         """ Gives square plane defined by four points.
 
         Parameters
         ----------
         length : float, optional
             Length of the sides of the square
+        center : arraylike of length 3, optional
+            Center of rectangle. If not given, either inliers or centroid are 
+            used.
 
         Returns
         -------
         PlaneBounded
             Square plane
         """
+        if center is None:
+            if self.has_inliers:
+                center = np.median(self.inlier_points, axis=0)
+            else:
+                center = self.centroid
+        
         def normalized(x): return x / np.linalg.norm(x)
 
         if np.isclose(self.normal[1], 1, atol=1e-7):
@@ -742,66 +809,49 @@ class Plane(Primitive):
             v1 = normalized(np.cross([0, 1, 0], self.normal))
             v2 = normalized(np.cross(self.normal, v1))
 
-        centroid = self.centroid
-        vertices = centroid + _get_rectangular_vertices(v1, v2)
-
-        return self.get_bounded_plane(vertices)
-    
-    def get_rectangular_plane_from_inliers(self):
-        """ Gives rectangular plane defined inliers.
-
-        Returns
-        -------
-        PlaneBounded
-            Rectangular plane
-        """
-        if not self.has_inliers:
-            raise RuntimeError("Plane instance expected to have inliers.")
-        
-        points = self.inlier_points
-        center = np.mean(points, axis=0)
-        delta = points - center
-        cov_matrix = np.cov(delta, rowvar=False)
-        eigval, eigvec = np.linalg.eig(cov_matrix)
-        v1, v2, v3 = eigvec
-
-        projs = points.dot(eigvec)
-        V1 = (max(projs[:, 0]) - min(projs[:, 0])) * v1
-        V2 = (max(projs[:, 1]) - min(projs[:, 1])) * v2
-
-        vertices = center + _get_rectangular_vertices(V1, V2)
+        vertices = center + _get_rectangular_vertices(v1, v2)
 
         return self.get_bounded_plane(vertices)
 
-    def get_square_mesh(self, length=1):
+    def get_square_mesh(self, length, center=None):
         """ Gives a square mesh that fits the plane model.   
 
         Parameters
         ----------
-        length : float, optional
+        length : float
             Length of the sides of the square
+        center : arraylike of length 3, optional
+            Center of rectangle. If not given, either inliers or centroid are 
+            used.
 
         Returns
         -------
         TriangleMesh
             Mesh corresponding to the plane.
         """
-        return self.get_square_plane(length).get_mesh()
+        return self.get_square_plane(length, center).get_mesh()
     
-    def get_rectangular_mesh_from_(self, length=1):
-        """ Gives a square mesh that fits the plane model.   
+    def get_rectangular_mesh(self, v1, v2, center=None):
+        """ Gives a rectangular mesh that fits the plane model.
 
         Parameters
         ----------
-        length : float, optional
-            Length of the sides of the square
+        v1 : arraylike of length 3
+            First vector defining one of the directions, must be orthogonal
+            to v2.
+        v2 : arraylike of length 3
+            Second vector defining one of the directions, must be orthogonal
+            to v1.
+        center : arraylike of length 3, optional
+            Center of rectangle. If not given, either inliers or centroid are 
+            used.
 
         Returns
         -------
         TriangleMesh
             Mesh corresponding to the plane.
         """
-        return self.get_square_plane(length).get_mesh()
+        return self.get_rectangular_plane(v1, v2, center).get_mesh()
     
     @classmethod
     def create_circle(cls, center, normal, radius, resolution=30):
