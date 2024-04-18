@@ -15,9 +15,9 @@ def draw_geometries(elements, **camera_options):
     
     elements = np.asarray(elements).flatten()
     try:
-        print_points = camera_options.pop('print_points')
+        draw_inliers = camera_options.pop('draw_inliers')
     except KeyError:
-        print_points = False
+        draw_inliers = False
         
     pcds = []
     geometries = []
@@ -30,13 +30,13 @@ def draw_geometries(elements, **camera_options):
         else:
             geometries.append(element)
             
-        if print_points and isinstance(element, Primitive):
+        if draw_inliers and isinstance(element, Primitive):
             pcds.append(element.inlier_PointCloud)
     
     if len(lines) > 0:
         geometries.append(Line.get_LineSet_from_list(lines))
         
-    if print_points:
+    if draw_inliers:
         geometries += pcds
     
     if 'mesh_show_back_face' not in camera_options:
