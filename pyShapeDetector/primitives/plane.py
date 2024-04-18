@@ -506,12 +506,17 @@ class Plane(Primitive):
             if cos_theta < 0:
                 model = -model
 
+            inside1 = self.contains_projections(hole.bounds)
+            if sum(inside1) < 1:
+                print('shape does not contain hole')
+                continue
+
             if remove_points:
-                inside1 = self.contains_projections(hole.bounds)
-                if sum(inside1) < 1:
-                    print('shape does not contain hole')
-                    continue
-                elif sum(~inside1) > 0:
+                # inside1 = self.contains_projections(hole.bounds)
+                # if sum(inside1) < 1:
+                #     print('shape does not contain hole')
+                #     continue
+                if sum(~inside1) > 0:
                     intersections = []
                     for l1, l2 in product(hole.bound_lines, self.bound_lines):
                         if (point := l1.point_from_intersection(l2)) is not None:

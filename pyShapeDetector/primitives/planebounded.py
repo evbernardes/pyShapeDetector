@@ -20,10 +20,20 @@ from pyShapeDetector.utility import (
     triangulate_earclipping,
     # get_triangle_boundary_indexes,
     # get_loop_indexes_from_boundary_indexes
+    find_closest_points_indices,
     )
 from .primitivebase import Primitive
 from .plane import Plane
 # from alphashape import alphashape
+
+def _is_clockwise(bounds):
+    s = 0
+    N = len(bounds)
+    for i in range(N):
+        point = bounds[i]
+        point2 = bounds[(i + 1) % N]
+        s += (point2[0] - point[0]) * (point2[1] + point[1])
+    return s > 0
 
 class PlaneBounded(Plane):
     """
@@ -63,6 +73,7 @@ class PlaneBounded(Plane):
     holes
     is_hole
 
+    is_clockwise
     bounds
     bounds_indices
     bounds_projections
@@ -139,6 +150,7 @@ class PlaneBounded(Plane):
     _bounds = np.array([])
     _bounds_projections = np.array([])
     _convex = True
+    _is_clockwise = None
 
     @property
     def surface_area(self):
@@ -156,6 +168,10 @@ class PlaneBounded(Plane):
             surface_area -= shoelace(hole.bounds_projections)
             
         return surface_area
+    
+    @property
+    def is_clockwise(self):
+        return self._is_clockwise
 
     @property
     def bounds(self):
@@ -229,7 +245,6 @@ class PlaneBounded(Plane):
             #     flatten = False
             #     convex = False
             else:
-                print('does not have inliers')
                 warnings.warn('No input bounds, returning square plane.')
                 bounds = self.get_square_plane(1).bounds
                 flatten = False
@@ -286,7 +301,7 @@ class PlaneBounded(Plane):
 
         plane = Plane.fit(points, normals)
         return plane.get_bounded_plane(points)
-
+    
     def get_mesh(self, **options):
         """ Flatten points and creates a simplified mesh of the plane defined
         by the points at the borders.
@@ -317,27 +332,50 @@ class PlaneBounded(Plane):
             points = points[idx]
             projections = projections[idx]
 
-            # idx_intersections = list(
-                # range(len(points) - len(self._fusion_intersections), len(points)))
-            # idx_intersections_sorted = [
-                # np.where(i == idx)[0][0] for i in idx_intersections]
-
         holes = self._holes
-        has_holes = len(holes) != 0
-        if has_holes:
-            points_holes = [self.flatten_points(hole.bounds) for hole in holes]
-            points = np.vstack([points]+points_holes)
-            projections = self.get_projections(points)
         
         if self.is_convex:
+            
+            if len(holes) >= 0:
+                points_holes = [self.flatten_points(hole.bounds) for hole in holes]
+                points = np.vstack([points]+points_holes)
+                projections = self.get_projections(points)
+        
             triangles = Delaunay(projections).simplices
-        else:
-            triangles = triangulate_earclipping(projections)
 
-        for hole in self._holes:
-            inside_hole = np.array(
-                [hole.contains_projections(p).all() for p in points[triangles]])
-            triangles = triangles[~inside_hole]
+            for hole in self._holes:
+                inside_hole = np.array(
+                    [hole.contains_projections(p).all() for p in points[triangles]])
+                triangles = triangles[~inside_hole]
+                
+        else:
+            for hole in holes:
+                i, j = find_closest_points_indices(projections, hole.bounds_projections, 1)
+                i = i[0]
+                j = j[0]
+                
+                # print(f"plane clockwise = {self.is_clockwise}")                
+                # print(f"hole clockwise = {hole.is_clockwise}")
+                
+                hole_projections = hole.bounds_projections
+                # Not sure about this one, shouldn't it be reverse then?
+                if self.is_clockwise != hole.is_clockwise:
+                    # print(f"switched!")
+                    hole_projections = hole_projections[::-1]
+                
+                hole_projections_switched = np.vstack([
+                    hole_projections[j:],
+                    hole_projections[:j+1]])
+                
+                projections = np.vstack([
+                    projections[:i+1],
+                    hole_projections_switched,
+                    projections[i:]])
+                
+                # area_hole += hole.surface_area
+                
+            points = self.get_points_from_projections(projections)
+            triangles = triangulate_earclipping(projections)
 
         areas = get_triangle_surface_areas(points, triangles)
         triangles = triangles[areas > 0]
@@ -348,8 +386,74 @@ class PlaneBounded(Plane):
         mesh = TriangleMesh()
         mesh.vertices = Vector3dVector(points)
         mesh.triangles = Vector3iVector(triangles)
+        
+        # print(f"Area diff = {(self.surface_area - area_hole) - mesh.get_surface_area()}")
 
         return mesh
+
+    # def get_mesh(self, **options):
+    #     """ Flatten points and creates a simplified mesh of the plane defined
+    #     by the points at the borders.
+
+    #     Parameters
+    #     ----------
+    #     points : N x 3 array
+    #         Points corresponding to the fitted shape.
+
+    #     Returns
+    #     -------
+    #     TriangleMesh
+    #         Mesh corresponding to the plane.
+    #     """
+
+    #     if len(self._fusion_intersections) == 0:
+    #         points = self.bounds
+    #         projections = self.bounds_projections
+    #         # idx_intersections_sorted = []
+    #     else:
+    #         points = np.vstack([self.bounds, self._fusion_intersections])
+    #         projections = self.get_projections(points)
+
+    #         angles = projections - projections.mean(axis=0)
+    #         angles = np.arctan2(*angles.T) + np.pi
+    #         idx = np.argsort(angles)
+
+    #         points = points[idx]
+    #         projections = projections[idx]
+
+    #         # idx_intersections = list(
+    #             # range(len(points) - len(self._fusion_intersections), len(points)))
+    #         # idx_intersections_sorted = [
+    #             # np.where(i == idx)[0][0] for i in idx_intersections]
+
+    #     holes = self._holes
+    #     has_holes = len(holes) != 0
+    #     if has_holes:
+    #         points_holes = [self.flatten_points(hole.bounds) for hole in holes]
+    #         points = np.vstack([points]+points_holes)
+    #         projections = self.get_projections(points)
+        
+    #     if self.is_convex:
+    #         triangles = Delaunay(projections).simplices
+    #     else:
+    #         triangles = triangulate_earclipping(projections)
+
+    #     for hole in self._holes:
+    #         inside_hole = np.array(
+    #             [hole.contains_projections(p).all() for p in points[triangles]])
+    #         triangles = triangles[~inside_hole]
+
+    #     areas = get_triangle_surface_areas(points, triangles)
+    #     triangles = triangles[areas > 0]
+
+    #     # needed to make plane visible from both sides
+    #     # triangles = np.vstack([triangles, triangles[:, ::-1]])
+
+    #     mesh = TriangleMesh()
+    #     mesh.vertices = Vector3dVector(points)
+    #     mesh.triangles = Vector3iVector(triangles)
+
+    #     return mesh
     
     def __copy_atributes__(self, shape_original):
         super().__copy_atributes__(shape_original)
@@ -629,6 +733,7 @@ class PlaneBounded(Plane):
             self._bounds = bounds
             self._bounds_projections = projections
             
+        self._is_clockwise = _is_clockwise(self._bounds_projections)
         self._convex = convex
         
     def add_bound_points(self, new_bound_points, flatten=True):
