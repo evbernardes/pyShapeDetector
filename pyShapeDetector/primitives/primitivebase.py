@@ -957,7 +957,9 @@ class Primitive(ABC):
         self._inlier_colors = shape_original._inlier_colors.copy()
         self._metrics = shape_original._metrics.copy()
         self._color = shape_original._color.copy()
-        self._mesh = copy.copy(shape_original._mesh)
+        # So that mesh can be recreated when getting different versions of primitives
+        # Example: an unbounded version from a bounded version
+        # self._mesh = copy.copy(shape_original._mesh)
         self._decimals = shape_original._decimals
     
     def __copy__(self):
