@@ -11,6 +11,7 @@ Created on Wed Dec  6 14:59:38 2023
 import copy
 import open3d as o3d
 import numpy as np
+from itertools import product
 from scipy.spatial import Delaunay
 from open3d.geometry import TriangleMesh
 from open3d.utility import Vector3dVector, Vector3iVector
@@ -306,6 +307,110 @@ def get_triangle_circumradius(mesh_or_vertices, triangles=None):
     return sides.prod(axis=1) / np.sqrt(
         perimeters * (perimeters[:, np.newaxis] - 2 * sides).prod(axis=1))
 
+def get_rectangular_grid(vectors, center, eps, return_perimeter = False, grid_type = "triangular"):
+    """ Gives rectangular grid defined two vectors and its center.
+    
+    Vectors v1 and v2 should not be unit, and instead have lengths equivalent
+    to widths of rectangle.
+    
+    Available grid types: "regular" and "triangular".
+    
+    If `return_perimeter` is set to True, also return the expected perimeter
+    of each triangle.
+    
+    Parameters
+    ----------
+    vectors : arraylike of shape (2, 3)
+        The two orthogonal unit vectors defining the rectangle plane.
+    center : arraylike of length 3, optional
+        Center of rectangle. If not given, either inliers or centroid are 
+        used.
+    eps : float
+        Distance between two points in first dimension (and also second 
+        dimension for regular grids).
+    return_perimeter : boolean, optional
+        If True, return tuple containing both grid and calculated perimeter.
+        Default: False.
+    grid_type : str, optional
+        Type of grid, can be "triangular" or "regular". Default: "triangular".
+
+    See also:
+        select_grid_points
+
+    Returns
+    -------
+    numpy.array
+        Grid points
+        
+    float
+        Perimeter of one triangle
+    """
+    if grid_type not in ["regular", "triangular"]:
+        raise ValueError("Possible grid types are 'regular' and 'triangular', "
+                         f"got '{grid_type}'.")
+    
+    lengths = np.linalg.norm(vectors, axis=1)
+    
+    # get unit vectors
+    vx, vy = vectors / lengths[:, np.newaxis]
+
+    n = [int(n) for n in np.ceil(lengths / eps) + 2]
+    length_slack = (lengths + eps) / 2
+    
+    h = eps * np.sqrt(3) / 2
+    array_x = np.linspace(0, 2 * length_slack[0], n[0]) - length_slack[0]
+    
+    if grid_type == "regular":
+        array_y = np.linspace(0, 2 * length_slack[1], n[1]) - length_slack[1]
+        x_ = vx * array_x[np.newaxis].T
+        y_ = vy * array_y[np.newaxis].T
+        grid_lines = [px + py for px, py in product(x_, y_)]
+        perimeter = (2 + np.sqrt(2)) * eps
+        
+    elif grid_type == "triangular":
+        x, y = -lengths / 2
+        line = vx * array_x[np.newaxis].T + vy * y
+        i = 0
+        grid_lines = []
+        y = -h * 2
+        while y <= lengths[1] + h:
+            y += h
+            i += 1
+            dx = (i % 2) * eps / 2
+            grid_lines.append(line + dx * vx + vy * y)
+        grid_lines = np.vstack(grid_lines)
+        perimeter = 3 * eps
+    
+    if return_perimeter:
+        return center + np.array(grid_lines), perimeter
+    return center + np.array(grid_lines)
+
+def select_grid_points(grid, points, max_distance):
+    """
+    Select points from grid that are close enough to at least some point in the
+    points array.
+    
+    See: get_rectangular_grid
+
+    Parameters
+    ----------
+    grid : numpy array
+        Array of grid points.
+    points : numpy array
+        Array of points (most likely, inlier points).
+    max_distance : float
+        Max distance.
+
+    Returns
+    -------
+    numpy array
+        Selected points.
+    """
+    diff = points[:, np.newaxis, :] - grid[np.newaxis, :, :]
+    # test = np.min(np.sum(diff * diff, axis=2), axis=0) <= (eps) ** 2
+    test = np.min(np.linalg.norm(diff, axis=2), axis=0) <= max_distance
+    return grid[test]
+
 def new_TriangleMesh(vertices, triangles, double_triangles=False):
     """ Creates Open3d.geometry.TriangleMesh instance from vertices and triangles.
 
@@ -362,7 +467,7 @@ def fuse_meshes(meshes):
     vertices_list = [np.array(mesh.vertices) for mesh in meshes]
     triangles_list = [np.array(mesh.triangles) for mesh in meshes]
     vertices, triangles = fuse_vertices_triangles(vertices_list, triangles_list)
-    return new_TriangleMesh(vertices, triangles)
+    return new_TriangleMesh(vertices, triangles)  
 
 def paint_by_type(elements, shapes):
     """ Paint each pointcloud/mesh with a color according to shape type.

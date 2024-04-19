@@ -51,6 +51,8 @@ from .helpers_meshes import (
     get_triangle_perimeters,
     get_triangle_surface_areas,
     get_triangle_circumradius,
+    get_rectangular_grid,
+    select_grid_points,
     new_TriangleMesh,
     clean_crop, 
     paint_by_type,
