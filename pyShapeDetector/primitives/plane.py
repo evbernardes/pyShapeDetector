@@ -24,9 +24,9 @@ def _get_rectangular_vertices(v1, v2):
         
     return np.array([
         -v1 - v2,
-        -v1 + v2,
+        +v1 - v2,
         +v1 + v2,
-        +v1 - v2]) / 2
+        -v1 + v2]) / 2
     
 
 class Plane(Primitive):
@@ -522,7 +522,7 @@ class Plane(Primitive):
 
             inside1 = self.contains_projections(hole.bounds)
             if sum(inside1) < 1:
-                print('shape does not contain hole')
+                warnings.warn('shape does not contain hole')
                 continue
 
             if remove_points:
