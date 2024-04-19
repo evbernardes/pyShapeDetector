@@ -130,6 +130,7 @@ class PlaneBounded(Plane):
     get_unbounded_plane
     get_bounded_plane
     get_triangulated_plane
+    get_triangulated_plane_from_grid
     get_projections
     get_points_from_projections
     get_mesh_alphashape

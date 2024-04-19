@@ -13,7 +13,13 @@ from scipy.spatial.transform import Rotation
 from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector, Vector3dVector
 
-from pyShapeDetector.utility import get_rotation_from_axis, get_triangle_surface_areas
+from pyShapeDetector.utility import (
+    get_rotation_from_axis, 
+    get_triangle_surface_areas,
+    get_rectangular_grid,
+    select_grid_points,
+    get_triangle_perimeters)
+
 from .primitivebase import Primitive
 from alphashape import alphashape
 # from .line import Line
@@ -115,6 +121,7 @@ class Plane(Primitive):
     get_unbounded_plane
     get_bounded_plane
     get_triangulated_plane
+    get_triangulated_plane_from_grid
     get_projections
     get_points_from_projections
     get_mesh_alphashape
@@ -660,6 +667,79 @@ class Plane(Primitive):
 
         plane = PlaneTriangulated(self.model, vertices, triangles)
         Plane.__copy_atributes__(plane, self)
+        return plane
+    
+    def get_triangulated_plane_from_grid(self, grid_width, max_point_dist=None, 
+                                         perimeter_eps=1e-3, grid_type = "triangular",
+                                         return_rect_grid=False):
+        """
+        Experimental method of triangulating plane with a grid.
+        
+        First, find a rectangle that contains all inliers.
+        
+        Second, create a grid inside this rectangle according to `grid_width`
+        and `grid_type` parameters.
+        
+        Third, remove all grid points that aren't close enough to the inlier 
+        points, according to `max_point_dist`.
+        
+        Finally, triangulate remaining grid points and remove all triangles 
+        with perimeter bigger than `perimeter + perimeter_eps` where `perimeter`
+        is the theoretical perimeter of each triangle depending on the grid type,
+        and `perimeter_eps` is a small slack value.        
+        
+        Parameters
+        ----------
+        grid_width : float
+            Distance between two points in first dimension (and also second 
+            dimension for regular grids).
+        max_point_dist : float, optional
+            Max distance allowed between grid points and inlier points. If not 
+            given, same value for "grid_width" will be used.
+        perimeter_eps : float, option
+            Small slack value added to perimeter testing. Default: 1e-3.
+        grid_type : str, optional
+            Type of grid, can be "triangular" or "regular". Default: "triangular".
+        return_rect_grid : boolean, optional
+            If True, tuple containing rectangular plane and grid. Default: False.
+            
+        Return
+        ------
+        PlaneTriangulated
+            PlaneTriangulated instance from grid
+
+        """
+        if not self.has_inliers:
+            raise RuntimeError("Plane has no inliers.")
+        
+        from .planetriangulated import PlaneTriangulated
+        
+        # Get rectangular plane
+        vectors, center = self.get_rectangular_vectors_from_inliers(return_center=True)
+        # plane_rect = self.get_rectangular_plane(vectors, center)
+        
+        # grid inside rectangle and select nearby points
+        grid, perimeter = get_rectangular_grid(vectors, center, grid_width, return_perimeter=True)
+        grid = self.flatten_points(grid)
+        grid_selected = select_grid_points(grid, self.inlier_points_flattened, max_point_dist)
+        
+        # triangulate and remove big triangles
+        projections = self.get_projections(grid_selected)
+        triangles = Delaunay(projections).simplices
+        perimeters = get_triangle_perimeters(grid_selected, triangles)
+        select = perimeters < perimeter + perimeter_eps
+        triangles = triangles[select]
+        
+        plane = PlaneTriangulated(self.model, grid_selected, triangles)
+        plane.set_inliers(
+            self.inlier_points,
+            self.inlier_normals,
+            self.inlier_colors,
+            )
+        
+        if return_rect_grid:
+            plane_rect = self.get_rectangular_plane(vectors, center)
+            return plane, plane_rect, grid
         return plane
 
     def get_projections(self, points):

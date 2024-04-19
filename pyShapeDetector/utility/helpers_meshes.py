@@ -307,7 +307,7 @@ def get_triangle_circumradius(mesh_or_vertices, triangles=None):
     return sides.prod(axis=1) / np.sqrt(
         perimeters * (perimeters[:, np.newaxis] - 2 * sides).prod(axis=1))
 
-def get_rectangular_grid(vectors, center, eps, return_perimeter = False, grid_type = "triangular"):
+def get_rectangular_grid(vectors, center, grid_width, return_perimeter = False, grid_type = "triangular"):
     """ Gives rectangular grid defined two vectors and its center.
     
     Vectors v1 and v2 should not be unit, and instead have lengths equivalent
@@ -325,7 +325,7 @@ def get_rectangular_grid(vectors, center, eps, return_perimeter = False, grid_ty
     center : arraylike of length 3, optional
         Center of rectangle. If not given, either inliers or centroid are 
         used.
-    eps : float
+    grid_width : float
         Distance between two points in first dimension (and also second 
         dimension for regular grids).
     return_perimeter : boolean, optional
@@ -354,10 +354,10 @@ def get_rectangular_grid(vectors, center, eps, return_perimeter = False, grid_ty
     # get unit vectors
     vx, vy = vectors / lengths[:, np.newaxis]
 
-    n = [int(n) for n in np.ceil(lengths / eps) + 2]
-    length_slack = (lengths + eps) / 2
+    n = [int(n) for n in np.ceil(lengths / grid_width) + 2]
+    length_slack = (lengths + grid_width) / 2
     
-    h = eps * np.sqrt(3) / 2
+    h = grid_width * np.sqrt(3) / 2
     array_x = np.linspace(0, 2 * length_slack[0], n[0]) - length_slack[0]
     
     if grid_type == "regular":
@@ -365,7 +365,7 @@ def get_rectangular_grid(vectors, center, eps, return_perimeter = False, grid_ty
         x_ = vx * array_x[np.newaxis].T
         y_ = vy * array_y[np.newaxis].T
         grid_lines = [px + py for px, py in product(x_, y_)]
-        perimeter = (2 + np.sqrt(2)) * eps
+        perimeter = (2 + np.sqrt(2)) * grid_width
         
     elif grid_type == "triangular":
         x, y = -lengths / 2
@@ -376,19 +376,22 @@ def get_rectangular_grid(vectors, center, eps, return_perimeter = False, grid_ty
         while y <= lengths[1] + h:
             y += h
             i += 1
-            dx = (i % 2) * eps / 2
+            dx = (i % 2) * grid_width / 2
             grid_lines.append(line + dx * vx + vy * y)
         grid_lines = np.vstack(grid_lines)
-        perimeter = 3 * eps
+        perimeter = 3 * grid_width
     
     if return_perimeter:
         return center + np.array(grid_lines), perimeter
     return center + np.array(grid_lines)
 
-def select_grid_points(grid, points, max_distance):
+def select_grid_points(grid, inlier_points, max_distance):
     """
     Select points from grid that are close enough to at least some point in the
-    points array.
+    inlier_points points array.
+    
+    Attention: Consider flattening both "grid" and "inlier_points" to the 
+    desired surface.
     
     See: get_rectangular_grid
 
@@ -396,17 +399,17 @@ def select_grid_points(grid, points, max_distance):
     ----------
     grid : numpy array
         Array of grid points.
-    points : numpy array
+    inlier_points : numpy array
         Array of points (most likely, inlier points).
     max_distance : float
-        Max distance.
+        Max distance allowed between grid points and inlier points.
 
     Returns
     -------
     numpy array
         Selected points.
     """
-    diff = points[:, np.newaxis, :] - grid[np.newaxis, :, :]
+    diff = inlier_points[:, np.newaxis, :] - grid[np.newaxis, :, :]
     # test = np.min(np.sum(diff * diff, axis=2), axis=0) <= (eps) ** 2
     test = np.min(np.linalg.norm(diff, axis=2), axis=0) <= max_distance
     return grid[test]
