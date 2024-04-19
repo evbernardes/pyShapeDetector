@@ -725,12 +725,17 @@ class Plane(Primitive):
         triangles = np.vstack([triangles, triangles[:, ::-1]])
         return new_TriangleMesh(vertices, triangles)
     
-    def get_rectangular_vectors_from_inliers(self):
+    def get_rectangular_vectors_from_inliers(self, return_center=False):
         """ Gives vectors defining a rectangle that roughly contains the plane.
+        
+        Parameters
+        ----------
+        return_center : boolean, optional
+            If True, return tuple containing both vectors and calculated center.
 
         Returns
         -------
-        tuple of arrays
+        numpy.array of shape (2, 3)
             Two non unit vectors
         """
         points = self.inlier_points
@@ -743,9 +748,12 @@ class Plane(Primitive):
         projs = points.dot(eigvec)
         V1 = (max(projs[:, 0]) - min(projs[:, 0])) * v1
         V2 = (max(projs[:, 1]) - min(projs[:, 1])) * v2
+        
+        if return_center:
+            return np.array([V1, V2]), center
         return np.array([V1, V2])
     
-    def get_rectangular_plane(self, v1, v2, center=None):
+    def get_rectangular_plane(self, vectors, center=None):
         """ Gives rectangular plane defined two vectors and its center.
         
         Vectors v1 and v2 should not be unit, and instead have lengths equivalent
@@ -753,7 +761,7 @@ class Plane(Primitive):
         
         Parameters
         ----------
-        v1 : arraylike of length 3
+        vectors : arraylike of shape (2, 3)
             First vector defining one of the directions, must be orthogonal
             to v2.
         v2 : arraylike of length 3
@@ -774,7 +782,7 @@ class Plane(Primitive):
             else:
                 center = self.centroid
                 
-        V1, V2 = self.get_rectangular_vectors_from_inliers()
+        V1, V2 = vectors
         vertices = center + _get_rectangular_vertices(V1, V2)
         return self.get_bounded_plane(vertices)
     
