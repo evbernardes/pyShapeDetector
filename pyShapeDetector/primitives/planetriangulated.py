@@ -553,9 +553,14 @@ class PlaneTriangulated(Plane):
         triangles = np.asarray(mesh.triangles)
         return plane.get_triangulated_plane(vertices, triangles)
     
-    def get_bounded_planes_from_boundaries(self):
+    def get_bounded_planes_from_boundaries(self, detect_holes=False):
         """ Convert PlaneTriangulated instance into list of non-convex 
         PlaneBounded instances.
+
+        Parameters
+        ----------
+        detect_holes : boolean, optional
+            If True, try to detect holes. Default: False.
 
         Returns
         -------
@@ -566,6 +571,52 @@ class PlaneTriangulated(Plane):
         boundary_indexes = get_triangle_boundary_indexes(
             self.vertices, 
             self.triangles)
+        
         loop_indexes = get_loop_indexes_from_boundary_indexes(boundary_indexes)
 
-        return [PlaneBounded(self.model, self.vertices[loop], convex=False) for loop in loop_indexes]
+        planes = [PlaneBounded(self.model, self.vertices[loop], convex=False) for loop in loop_indexes]
+        
+        # if detect_holes:
+        #     with warnings.catch_warnings():
+        #         warnings.simplefilter("ignore")
+        #         for p1, p2 in combinations(planes, 2):
+        #             p1.add_holes(p2)
+        #             p2.add_holes(p1)
+        
+        if detect_holes:
+            N = len(planes)
+            fuse_dict = {key: [] for key in range(N)}
+            
+            for i, j in combinations(range(N), 2):
+                if np.all(planes[i].contains_projections(planes[j].bounds)):
+                    fuse_dict[i].append(j)
+                elif np.all(planes[j].contains_projections(planes[i].bounds)):
+                    fuse_dict[j].append(i)
+            
+            all_holes = []
+            for key in fuse_dict:
+                all_holes += fuse_dict[key]
+            
+            if len(all_holes) != len(set(all_holes)):
+                raise RuntimeError("Error while detecting holes, same hole "
+                                    "detected for same plane.")
+                
+            for key, idxs in fuse_dict.items():
+                for idx in idxs:
+                    # print(f"Adding {idx} to {key}")
+                    planes[key].add_holes(planes[idx])
+        
+        return planes
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
