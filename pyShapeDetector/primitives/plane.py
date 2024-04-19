@@ -741,10 +741,12 @@ class Plane(Primitive):
         points = self.inlier_points
         # center = np.median(points, axis=0)
         center = (np.max(points, axis=0) + np.min(points, axis=0)) / 2
-        delta = points - center
+        delta = self.flatten_points(points - center)
+        # delta = self.get_projections(points - center)
         cov_matrix = np.cov(delta, rowvar=False)
         eigval, eigvec = np.linalg.eig(cov_matrix)
         v1, v2, _ = eigvec
+        # v1, v2 = eigvec
 
         projs = delta.dot(eigvec)
         # V1 = (max(projs[:, 0]) - min(projs[:, 0])) * v1
@@ -752,9 +754,12 @@ class Plane(Primitive):
         V1 = 2 * max(abs(projs[:, 0])) * v1
         V2 = 2 * max(abs(projs[:, 1])) * v2
         
+        vectors = np.array([V1, V2])
+        # vectors = self.get_points_from_projections(np.vstack([V1, V2]))
+        
         if return_center:
-            return np.array([V1, V2]), center
-        return np.array([V1, V2])
+            return vectors, center
+        return vectors
     
     def get_rectangular_plane(self, vectors, center=None):
         """ Gives rectangular plane defined two vectors and its center.
