@@ -387,7 +387,7 @@ class Plane(Primitive):
         
         if not self.has_inliers:
             warnings.warn('No inlier points, returning square plane...')
-            return self.get_square_mesh()
+            return self.get_square_mesh(1)
 
         bounded_plane = PlaneBounded(self.model, self.inlier_points_flattened)
         # bounded_plane.__copy_atributes__(self)
