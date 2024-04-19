@@ -553,7 +553,7 @@ class PlaneTriangulated(Plane):
         triangles = np.asarray(mesh.triangles)
         return plane.get_triangulated_plane(vertices, triangles)
     
-    def get_bounded_planes_from_boundaries(self, detect_holes=False):
+    def get_bounded_planes_from_boundaries(self, detect_holes=False, add_inliers=False):
         """ Convert PlaneTriangulated instance into list of non-convex 
         PlaneBounded instances.
 
@@ -561,6 +561,8 @@ class PlaneTriangulated(Plane):
         ----------
         detect_holes : boolean, optional
             If True, try to detect holes. Default: False.
+        add_inliers : boolean, optional
+            If True, add inlier points.
 
         Returns
         -------
@@ -575,6 +577,14 @@ class PlaneTriangulated(Plane):
         loop_indexes = get_loop_indexes_from_boundary_indexes(boundary_indexes)
 
         planes = [PlaneBounded(self.model, self.vertices[loop], convex=False) for loop in loop_indexes]
+        
+        if add_inliers:
+            for plane in planes:
+                inside = plane.contains_projections(self.inlier_points)
+                plane.set_inliers(
+                    self.inlier_points[inside],
+                    self.inlier_normals[inside],
+                    self.inlier_colors[inside])
         
         # if detect_holes:
         #     with warnings.catch_warnings():
