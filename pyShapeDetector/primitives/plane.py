@@ -719,7 +719,7 @@ class Plane(Primitive):
         # plane_rect = self.get_rectangular_plane(vectors, center)
         
         # grid inside rectangle and select nearby points
-        grid, perimeter = get_rectangular_grid(vectors, center, grid_width, return_perimeter=True)
+        grid, perimeter = get_rectangular_grid(vectors, center, grid_width, grid_type=grid_type, return_perimeter=True)
         grid = self.flatten_points(grid)
         grid_selected = select_grid_points(grid, self.inlier_points_flattened, max_point_dist)
         
