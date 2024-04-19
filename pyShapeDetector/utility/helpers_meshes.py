@@ -213,7 +213,6 @@ def get_loop_indexes_from_boundary_indexes(boundary_indexes):
         boundary = []
         edge = boundary_indexes.pop()
         boundary.append(edge)
-        i = 1
         
         while(True):        
             edge = boundary[-1]
