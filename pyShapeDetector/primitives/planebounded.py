@@ -78,6 +78,7 @@ class PlaneBounded(Plane):
     bounds_indices
     bounds_projections
     bound_lines
+    bound_LineSet
     bounds_or_vertices
 
     Methods
@@ -195,6 +196,13 @@ class PlaneBounded(Plane):
         """ Lines defining bounds. """
         from .line import Line
         return Line.from_bounds(self.bounds)
+    
+
+    @property
+    def bound_LineSet(self):
+        """ Lines defining bounds. """
+        from .line import Line
+        return Line.get_LineSet_from_list(self.bound_lines)
     
     @property
     def bounds_or_vertices(self):            
