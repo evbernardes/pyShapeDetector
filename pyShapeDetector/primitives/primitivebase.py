@@ -589,7 +589,7 @@ class Primitive(ABC):
             
         return array
     
-    def set_inliers(self, points_or_pointcloud, normals=None, colors=None):
+    def set_inliers(self, points_or_pointcloud, normals=None, colors=None, flatten=False):
         """ Set inlier points to shape.
         
         If normals or/and colors are given, they must have the same shape as
@@ -603,6 +603,8 @@ class Primitive(ABC):
             Inlier point normals.
         colors : optional, N x 3 array
             Colors of inlier points.
+        flatten : boolean, optional
+            If True, flatten inlier points.
         """
         
         if isinstance(points_or_pointcloud, PointCloud):
@@ -621,6 +623,9 @@ class Primitive(ABC):
         num_points = len(points)
         normals = Primitive._set_and_check_3d_array(normals, 'inlier normals', num_points)
         colors = Primitive._set_and_check_3d_array(colors, 'inlier colors', num_points)
+
+        if flatten:
+            points = self.flatten_points(points)
 
         self._inlier_points = points
         self._inlier_normals = normals
