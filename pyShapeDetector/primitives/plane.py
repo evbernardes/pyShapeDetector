@@ -739,15 +739,18 @@ class Plane(Primitive):
             Two non unit vectors
         """
         points = self.inlier_points
-        center = np.median(points, axis=0)
+        # center = np.median(points, axis=0)
+        center = (np.max(points, axis=0) + np.min(points, axis=0)) / 2
         delta = points - center
         cov_matrix = np.cov(delta, rowvar=False)
         eigval, eigvec = np.linalg.eig(cov_matrix)
         v1, v2, _ = eigvec
 
-        projs = points.dot(eigvec)
-        V1 = (max(projs[:, 0]) - min(projs[:, 0])) * v1
-        V2 = (max(projs[:, 1]) - min(projs[:, 1])) * v2
+        projs = delta.dot(eigvec)
+        # V1 = (max(projs[:, 0]) - min(projs[:, 0])) * v1
+        # V2 = (max(projs[:, 1]) - min(projs[:, 1])) * v2
+        V1 = 2 * max(abs(projs[:, 0])) * v1
+        V2 = 2 * max(abs(projs[:, 1])) * v2
         
         if return_center:
             return np.array([V1, V2]), center
@@ -762,11 +765,7 @@ class Plane(Primitive):
         Parameters
         ----------
         vectors : arraylike of shape (2, 3)
-            First vector defining one of the directions, must be orthogonal
-            to v2.
-        v2 : arraylike of length 3
-            Second vector defining one of the directions, must be orthogonal
-            to v1.
+            The two orthogonal unit vectors defining the rectangle plane.
         center : arraylike of length 3, optional
             Center of rectangle. If not given, either inliers or centroid are 
             used.
@@ -778,7 +777,9 @@ class Plane(Primitive):
         """
         if center is None:
             if self.has_inliers:
-                center = np.median(self.inlier_points, axis=0)
+                points = self.inlier_points
+                # center = np.median(self.inlier_points, axis=0)
+                center = (np.max(points, axis=0) + np.min(points, axis=0)) / 2
             else:
                 center = self.centroid
                 
