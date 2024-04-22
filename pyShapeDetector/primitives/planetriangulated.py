@@ -419,7 +419,7 @@ class PlaneTriangulated(Plane):
         if not ignore_extra_data:
             if force_concave:
                 vertices, triangles = planes_ressample_and_triangulate(
-                    shapes, ressample_density, ressample_radius_ratio, double_triangles=True)
+                    shapes, ressample_density, ressample_radius_ratio, double_triangles=False)
                 shape.set_vertices_triangles(vertices, triangles)
                 
             elif not all_convex:
