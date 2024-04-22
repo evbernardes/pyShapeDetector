@@ -597,8 +597,7 @@ class PlaneTriangulated(Plane):
         #             p1.add_holes(p2)
         #             p2.add_holes(p1)
         
-        if detect_holes:
-            N = len(planes)
+        if detect_holes and (N := len(planes)) > 1:
             fuse_dict = {key: [] for key in range(N)}
             
             for i, j in combinations(range(N), 1):
