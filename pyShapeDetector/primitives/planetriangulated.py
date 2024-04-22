@@ -596,7 +596,6 @@ class PlaneTriangulated(Plane):
         #         for p1, p2 in combinations(planes, 2):
         #             p1.add_holes(p2)
         #             p2.add_holes(p1)
-        
         if detect_holes and (N := len(planes)) > 1:
             fuse_dict = {key: [] for key in range(N)}
             
@@ -607,17 +606,24 @@ class PlaneTriangulated(Plane):
                     fuse_dict[j].append(i)
             
             all_holes = []
-            for key in fuse_dict:
+            all_hole_idxs = []
+            for key, idxs in fuse_dict.items():
                 all_holes += fuse_dict[key]
+                all_hole_idxs += idxs
             
             if len(all_holes) != len(set(all_holes)):
+                # this shouldn't happen, just in case...
                 raise RuntimeError("Error while detecting holes, same hole "
-                                    "detected for same plane.")
+                                   "detected for same plane.")
                 
             for key, idxs in fuse_dict.items():
                 for idx in idxs:
                     # print(f"Adding {idx} to {key}")
                     planes[key].add_holes(planes[idx])
+                    
+            all_hole_idxs.sort()
+            for i in all_hole_idxs[::-1]:
+                planes.pop(i)
         
         return planes
         
