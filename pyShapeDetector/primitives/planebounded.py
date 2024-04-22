@@ -388,6 +388,8 @@ class PlaneBounded(Plane):
                     hole_projections_switched,
                     projections[i:]])
                 
+                # area_hole += hole.surface_area
+                
             points = self.get_points_from_projections(projections)
             triangles = triangulate_earclipping(projections)
 
