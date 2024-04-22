@@ -576,6 +576,9 @@ class PlaneTriangulated(Plane):
             self.triangles)
         
         loop_indexes = get_loop_indexes_from_boundary_indexes(boundary_indexes)
+        
+        # for loop in loop_indexes:
+        #     assert len(loop) == len(set(loop))
 
         planes = [PlaneBounded(self.model, self.vertices[loop], convex=False) for loop in loop_indexes]
         
@@ -598,7 +601,7 @@ class PlaneTriangulated(Plane):
             N = len(planes)
             fuse_dict = {key: [] for key in range(N)}
             
-            for i, j in combinations(range(N), 2):
+            for i, j in combinations(range(N), 1):
                 if np.all(planes[i].contains_projections(planes[j].bounds)):
                     fuse_dict[i].append(j)
                 elif np.all(planes[j].contains_projections(planes[i].bounds)):

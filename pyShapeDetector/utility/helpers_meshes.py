@@ -180,7 +180,8 @@ def get_triangle_boundary_indexes(mesh_or_vertices, triangles=None):
             
             count += 1
             line = lines.pop()
-            occurences[line] = count
+            
+        occurences[line] = count
 
     boundary_indexes = [k for k, v in occurences.items() if v == 2]
     
