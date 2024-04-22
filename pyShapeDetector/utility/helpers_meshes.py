@@ -183,7 +183,9 @@ def get_triangle_boundary_indexes(mesh_or_vertices, triangles=None):
             
         occurences[line] = count
 
-    boundary_indexes = [k for k, v in occurences.items() if v == 2]
+    # should be 1, except if triangles are doubled.
+    min_value = min(occurences.values())
+    boundary_indexes = [k for k, v in occurences.items() if v == min_value]
     
     return boundary_indexes
 

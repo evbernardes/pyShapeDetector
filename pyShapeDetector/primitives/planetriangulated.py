@@ -600,7 +600,7 @@ class PlaneTriangulated(Plane):
         if detect_holes and (N := len(planes)) > 1:
             fuse_dict = {key: [] for key in range(N)}
             
-            for i, j in combinations(range(N), 1):
+            for i, j in combinations(range(N), 2):
                 if np.all(planes[i].contains_projections(planes[j].bounds)):
                     fuse_dict[i].append(j)
                 elif np.all(planes[j].contains_projections(planes[i].bounds)):
