@@ -388,22 +388,22 @@ class PlaneBounded(Plane):
                     hole_projections_switched,
                     projections[i:]])
                 
-                # area_hole += hole.surface_area
-                
             points = self.get_points_from_projections(projections)
             triangles = triangulate_earclipping(projections)
 
         areas = get_triangle_surface_areas(points, triangles)
         triangles = triangles[areas > 0]
 
-        # needed to make plane visible from both sides
-        # triangles = np.vstack([triangles, triangles[:, ::-1]])
-
         mesh = TriangleMesh()
         mesh.vertices = Vector3dVector(points)
         mesh.triangles = Vector3iVector(triangles)
         
-        # print(f"Area diff = {(self.surface_area - area_hole) - mesh.get_surface_area()}")
+        # if this fails, the ear-clipping triangulation with holes failed
+        # try:
+        #     np.testing.assert_almost_equal(mesh.get_surface_area(),
+        #                                    self.surface_area)
+        # except:
+        #     print(f"Area diff = {self.surface_area - mesh.get_surface_area()}")
 
         return mesh
 
