@@ -361,23 +361,24 @@ class PlaneBounded(Plane):
                 triangles = triangles[~inside_hole]
                 
         else:
+            if not self.is_clockwise:
+                projections = projections[::-1]
+            
             for hole in holes:
                 
-                if not self.is_clockwise:
-                    projections = projections[::-1]
+                hole_projections = hole.bounds_projections
                 
-                i, j = find_closest_points_indices(projections, hole.bounds_projections, 1)
+                # Not sure about this one, shouldn't it be reverse then?
+                if hole.is_clockwise:
+                    # print(f"switched!")
+                    hole_projections = hole_projections[::-1]
+                
+                i, j = find_closest_points_indices(projections, hole_projections, 1)
                 i = i[0]
                 j = j[0]
                 
                 # print(f"plane clockwise = {self.is_clockwise}")                
                 # print(f"hole clockwise = {hole.is_clockwise}")
-                
-                hole_projections = hole.bounds_projections
-                # Not sure about this one, shouldn't it be reverse then?
-                if hole.is_clockwise:
-                    # print(f"switched!")
-                    hole_projections = hole_projections[::-1]
                 
                 hole_projections_switched = np.vstack([
                     hole_projections[j:],
