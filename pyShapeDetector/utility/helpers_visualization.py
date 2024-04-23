@@ -11,20 +11,36 @@ from open3d import visualization
 # from pyShapeDetector.primitives import Primitive, Line
 
 def draw_geometries(elements, **camera_options):
-    from pyShapeDetector.primitives import Primitive, Line
+    from pyShapeDetector.primitives import Primitive, Line, Plane, PlaneBounded
     
     elements = np.asarray(elements).flatten()
+        
     try:
         draw_inliers = camera_options.pop('draw_inliers')
     except KeyError:
         draw_inliers = False
+    
+    try:
+        draw_boundary_lines = camera_options.pop('draw_boundary_lines')
+    except KeyError:
+        draw_boundary_lines = False
+    
+    try:
+        draw_planes = camera_options.pop('draw_planes')
+    except KeyError:
+        draw_planes = True
         
     pcds = []
     geometries = []
     lines = []
+    boundary_lines = []
+    hole_boundary_lines = []
     for element in elements:
         if isinstance(element, Line):
             lines.append(element)
+        elif isinstance(element, Plane):
+            if draw_planes:
+                geometries.append(element.mesh)
         elif isinstance(element, Primitive):
             geometries.append(element.mesh)
         else:
@@ -32,6 +48,18 @@ def draw_geometries(elements, **camera_options):
             
         if draw_inliers and isinstance(element, Primitive):
             pcds.append(element.inlier_PointCloud)
+            
+        if draw_boundary_lines and isinstance(element, PlaneBounded):
+            boundary_LineSet = element.bound_LineSet
+            boundary_LineSet.paint_uniform_color((1, 0, 0))
+            boundary_lines.append(boundary_LineSet)
+            
+        if draw_boundary_lines and isinstance(element, Plane):
+            for hole in element.holes:
+                hole_boundary_LineSet = hole.bound_LineSet
+                hole_boundary_LineSet.paint_uniform_color((0, 0, 1))
+                hole_boundary_lines.append(hole_boundary_LineSet)
+                
     
     if len(lines) > 0:
         geometries.append(Line.get_LineSet_from_list(lines))
@@ -41,6 +69,9 @@ def draw_geometries(elements, **camera_options):
     
     if 'mesh_show_back_face' not in camera_options:
         camera_options['mesh_show_back_face'] = True
+        
+    if draw_boundary_lines:
+        geometries += boundary_lines + hole_boundary_lines
         
     visualization.draw_geometries(geometries, **camera_options)
     
