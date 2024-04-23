@@ -13,6 +13,7 @@ import open3d as o3d
 import numpy as np
 from itertools import product
 from scipy.spatial import Delaunay
+from scipy.spatial.distance import cdist
 from open3d.geometry import TriangleMesh
 from open3d.utility import Vector3dVector, Vector3iVector
 from open3d.visualization import draw_geometries_with_key_callbacks
@@ -469,9 +470,8 @@ def select_grid_points(grid, inlier_points, max_distance):
     numpy array
         Selected points.
     """
-    diff = inlier_points[:, np.newaxis, :] - grid[np.newaxis, :, :]
-    # test = np.min(np.sum(diff * diff, axis=2), axis=0) <= (eps) ** 2
-    test = np.min(np.linalg.norm(diff, axis=2), axis=0) <= max_distance
+    distances = cdist(inlier_points, grid)
+    test = np.any(distances <= max_distance, axis=0)
     return grid[test]
 
 def new_TriangleMesh(vertices, triangles, double_triangles=False):
