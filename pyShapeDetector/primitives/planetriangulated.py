@@ -17,7 +17,8 @@ from pyShapeDetector.utility import (
     fuse_vertices_triangles, 
     planes_ressample_and_triangulate,
     get_triangle_boundary_indexes,
-    get_loop_indexes_from_boundary_indexes)
+    get_loop_indexes_from_boundary_indexes,
+    simplify_loop_with_angle)
 from .primitivebase import Primitive
 from .plane import Plane
 # from alphashape import alphashape
@@ -554,9 +555,18 @@ class PlaneTriangulated(Plane):
         triangles = np.asarray(mesh.triangles)
         return plane.get_triangulated_plane(vertices, triangles)
     
-    def get_bounded_planes_from_boundaries(self, detect_holes=False, add_inliers=False):
+    def get_bounded_planes_from_boundaries(self, detect_holes=False,
+                                           add_inliers=False,
+                                           angle_colinear=0,
+                                           colinear_recursive=True):
         """ Convert PlaneTriangulated instance into list of non-convex 
         PlaneBounded instances.
+        
+        If `detect_holes` is set to True, when planes are detected inside some
+        other, they will be added as holes instead.
+        
+        If a small positive `angle_colinear` value is given, two subsequent 
+        boundary lines will be fused into one when they are almost colinear.
 
         Parameters
         ----------
@@ -564,6 +574,11 @@ class PlaneTriangulated(Plane):
             If True, try to detect holes. Default: False.
         add_inliers : boolean, optional
             If True, add inlier points.
+        angle_colinear : float, optional
+            Small angle value for assuming two lines are colinear. Default: 0
+        colinear_recursive : boolean, optional
+            If False, only try to simplify loop once. If True, try to simplify
+            it until no more simplification is possible. Default: True.
 
         Returns
         -------
@@ -579,6 +594,10 @@ class PlaneTriangulated(Plane):
         
         # for loop in loop_indexes:
         #     assert len(loop) == len(set(loop))
+        if angle_colinear != 0:
+            for i in range(len(loop_indexes)):
+                loop_indexes[i] = simplify_loop_with_angle(
+                    self.vertices, loop_indexes[i], angle_colinear, colinear_recursive)
 
         planes = [PlaneBounded(self.model, self.vertices[loop], convex=False) for loop in loop_indexes]
         
@@ -590,12 +609,6 @@ class PlaneTriangulated(Plane):
                     self.inlier_normals[inside],
                     self.inlier_colors[inside])
         
-        # if detect_holes:
-        #     with warnings.catch_warnings():
-        #         warnings.simplefilter("ignore")
-        #         for p1, p2 in combinations(planes, 2):
-        #             p1.add_holes(p2)
-        #             p2.add_holes(p1)
         if detect_holes and (N := len(planes)) > 1:
             fuse_dict = {key: [] for key in range(N)}
             

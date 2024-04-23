@@ -46,6 +46,7 @@ from .helpers_meshes import (
     get_triangle_LineSet,
     get_triangle_boundary_indexes,
     get_loop_indexes_from_boundary_indexes,
+    simplify_loop_with_angle,
     get_triangle_points,
     get_triangle_sides,
     get_triangle_perimeters,

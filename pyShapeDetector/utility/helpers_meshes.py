@@ -241,6 +241,63 @@ def get_loop_indexes_from_boundary_indexes(boundary_indexes):
         loop_indexes.append([p[0] for p in boundary])
     
     return loop_indexes
+
+def simplify_loop_with_angle(vertices, loop_indexes, angle_colinear, colinear_recursive=True):
+    """ For each consecutive line in boundary points, simplify it if they are
+    almost colinear.
+    
+    For example, defining:
+        line1 = (vertices[loop_indexes[0]], vertices[loop_indexes[1]])
+        line2 = (vertices[loop_indexes[1]], vertices[loop_indexes[2]])
+    If angle(line1, line2) < angle_colinear, then loop_indexes[1] is removed
+    from loop_indexes.
+    
+    Parameters
+    ----------
+    vertices : array_like of shape (N, 3)
+        List of all points.
+    loop_indexes : list
+        Ordered indices defining which points in `vertices` define the loop.
+    angle_colinear : float, optional
+        Small angle value for assuming two lines are colinear
+    colinear_recursive : boolean, optional
+        If False, only try to simplify loop once. If True, try to simplify
+        it until no more simplification is possible. Default: True.
+            
+    Returns
+    -------
+    list
+        Simplified loop.
+    """
+    if angle_colinear <= 0:
+        raise ValueError("angle_colinear must be a positive value, "
+                         f"got {angle_colinear}")
+    
+    from pyShapeDetector.primitives import Line
+    
+    cos_angle_colinear = np.cos(angle_colinear)
+    vertices = np.array(vertices)
+    loop_indexes = np.array(loop_indexes)
+    
+    count = -1
+    while count != 0:
+        bounds = vertices[loop_indexes]
+        lines = Line.from_bounds(bounds)
+        keep = []
+        N = len(lines)
+        for i in range(N):
+            line1 = lines[i]
+            line2 = lines[(i + 1) % len(lines)]
+            # for bigger angle, smaller dot product/cossine
+            keep.append(line1.axis.dot(line2.axis) < cos_angle_colinear)
+        loop_indexes = loop_indexes[keep]
+        if colinear_recursive:
+            count = N - sum(keep)
+        else:
+            count = 0
+        # print(f"N = {N}, keep = {sum(keep)}")
+        
+    return list(loop_indexes)
     
 def get_triangle_perimeters(mesh_or_vertices, triangles=None):
     """ Get perimeter of each triangle.
