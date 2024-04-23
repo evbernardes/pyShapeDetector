@@ -367,13 +367,13 @@ def get_triangle_circumradius(mesh_or_vertices, triangles=None):
     return sides.prod(axis=1) / np.sqrt(
         perimeters * (perimeters[:, np.newaxis] - 2 * sides).prod(axis=1))
 
-def get_rectangular_grid(vectors, center, grid_width, return_perimeter = False, grid_type = "triangular"):
+def get_rectangular_grid(vectors, center, grid_width, return_perimeter = False, grid_type = "hexagonal"):
     """ Gives rectangular grid defined two vectors and its center.
     
     Vectors v1 and v2 should not be unit, and instead have lengths equivalent
     to widths of rectangle.
     
-    Available grid types: "regular" and "triangular".
+    Available grid types: "regular" and "hexagonal".
     
     If `return_perimeter` is set to True, also return the expected perimeter
     of each triangle.
@@ -392,7 +392,7 @@ def get_rectangular_grid(vectors, center, grid_width, return_perimeter = False, 
         If True, return tuple containing both grid and calculated perimeter.
         Default: False.
     grid_type : str, optional
-        Type of grid, can be "triangular" or "regular". Default: "triangular".
+        Type of grid, can be "hexagonal" or "regular". Default: "hexagonal".
 
     See also:
         select_grid_points
@@ -405,8 +405,8 @@ def get_rectangular_grid(vectors, center, grid_width, return_perimeter = False, 
     float
         Perimeter of one triangle
     """
-    if grid_type not in ["regular", "triangular"]:
-        raise ValueError("Possible grid types are 'regular' and 'triangular', "
+    if grid_type not in ["regular", "hexagonal"]:
+        raise ValueError("Possible grid types are 'regular' and 'hexagonal', "
                          f"got '{grid_type}'.")
     
     lengths = np.linalg.norm(vectors, axis=1)
@@ -427,7 +427,7 @@ def get_rectangular_grid(vectors, center, grid_width, return_perimeter = False, 
         grid_lines = [px + py for px, py in product(x_, y_)]
         perimeter = (2 + np.sqrt(2)) * grid_width
         
-    elif grid_type == "triangular":
+    elif grid_type == "hexagonal":
         x, y = -lengths / 2
         line = vx * array_x[np.newaxis].T + vy * y
         i = 0

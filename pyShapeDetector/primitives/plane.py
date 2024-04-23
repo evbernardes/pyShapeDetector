@@ -670,7 +670,7 @@ class Plane(Primitive):
         return plane
     
     def get_triangulated_plane_from_grid(self, grid_width, max_point_dist=None, 
-                                         perimeter_eps=1e-3, grid_type = "triangular",
+                                         perimeter_eps=1e-3, grid_type = "hexagonal",
                                          return_rect_grid=False):
         """
         Experimental method of triangulating plane with a grid.
@@ -699,7 +699,7 @@ class Plane(Primitive):
         perimeter_eps : float, option
             Small slack value added to perimeter testing. Default: 1e-3.
         grid_type : str, optional
-            Type of grid, can be "triangular" or "regular". Default: "triangular".
+            Type of grid, can be "hexagonal" or "regular". Default: "hexagonal".
         return_rect_grid : boolean, optional
             If True, tuple containing rectangular plane and grid. Default: False.
             
