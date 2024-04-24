@@ -672,8 +672,8 @@ class Plane(Primitive):
         return plane
     
     def get_triangulated_plane_from_grid(self, grid_width, max_point_dist=None, 
-                                         perimeter_eps=1e-3, grid_type = "hexagonal",
-                                         return_rect_grid=False):
+                                         grid_type = "hexagonal", perimeter_multiplier=1,
+                                         return_rect_grid=False, perimeter_eps=1e-3):
         """
         Experimental method of triangulating plane with a grid.
         
@@ -686,9 +686,9 @@ class Plane(Primitive):
         points, according to `max_point_dist`.
         
         Finally, triangulate remaining grid points and remove all triangles 
-        with perimeter bigger than `perimeter + perimeter_eps` where `perimeter`
-        is the theoretical perimeter of each triangle depending on the grid type,
-        and `perimeter_eps` is a small slack value.        
+        with perimeter bigger than `perimeter_multiplier * perimeter + perimeter_eps` 
+        where `perimeter` is the theoretical perimeter of each triangle 
+        depending on the grid type, and `perimeter_eps` is a small slack value.        
         
         Parameters
         ----------
@@ -698,12 +698,15 @@ class Plane(Primitive):
         max_point_dist : float, optional
             Max distance allowed between grid points and inlier points. If not 
             given, same value for "grid_width" will be used.
-        perimeter_eps : float, option
-            Small slack value added to perimeter testing. Default: 1e-3.
         grid_type : str, optional
             Type of grid, can be "hexagonal" or "regular". Default: "hexagonal".
+        perimeter_multiplier : float, option
+            Multiplies expected perimeter to create cutout value. Cannot be 
+            smaller than 1. Default: 1.
         return_rect_grid : boolean, optional
             If True, tuple containing rectangular plane and grid. Default: False.
+        perimeter_eps : float, option
+            Small slack value added to perimeter testing. Default: 1e-3.
             
         Return
         ------
@@ -711,10 +714,18 @@ class Plane(Primitive):
             PlaneTriangulated instance from grid
 
         """
+        
         if not self.has_inliers:
             raise RuntimeError("Plane has no inliers.")
         
         from .planetriangulated import PlaneTriangulated
+        
+        if perimeter_multiplier < 1:
+            raise ValueError("perimeter_multiplier cannot be smaller than 1, "
+                             f"got {perimeter_multiplier}")
+                             
+        if perimeter_eps < 0:
+            raise ValueError(f"perimeter_eps has to be non-negative, got {perimeter_eps}")
         
         # Get rectangular plane
         vectors, center = self.get_rectangular_vectors_from_inliers(return_center=True)
@@ -729,7 +740,7 @@ class Plane(Primitive):
         projections = self.get_projections(grid_selected)
         triangles = Delaunay(projections).simplices
         perimeters = get_triangle_perimeters(grid_selected, triangles)
-        select = perimeters < perimeter + perimeter_eps
+        select = perimeters < perimeter_multiplier * perimeter + perimeter_eps
         triangles = triangles[select]
         
         plane = PlaneTriangulated(self.model, grid_selected, triangles)
