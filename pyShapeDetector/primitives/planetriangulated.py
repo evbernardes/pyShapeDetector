@@ -556,7 +556,7 @@ class PlaneTriangulated(Plane):
         return plane.get_triangulated_plane(vertices, triangles)
     
     def get_bounded_planes_from_boundaries(self, detect_holes=False,
-                                           add_inliers=False,
+                                           add_inliers=True,
                                            angle_colinear=0,
                                            colinear_recursive=True):
         """ Convert PlaneTriangulated instance into list of non-convex 
