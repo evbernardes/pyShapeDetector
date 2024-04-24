@@ -99,7 +99,10 @@ class Primitive(ABC):
     translate
     rotate
     align
+    __put_attributes_in_dict__
     save
+    __get_attributes_from_dict__
+    load
     load
     check_bbox_intersection
     check_inlier_distance
@@ -1085,6 +1088,13 @@ class Primitive(ABC):
                 self.rotate(rotation)
                 break
     
+    def __put_attributes_in_dict__(self, data):
+        data['name'] = self.name,
+        data['model'] = self.model.tolist()
+        data['inlier_points'] = self.inlier_points.tolist()
+        data['inlier_normals'] = self.inlier_normals.tolist()
+        data['inlier_colors'] = self.inlier_colors.tolist()
+    
     def save(self, path):
         """ Saves shape to JSON file.
         
@@ -1100,18 +1110,15 @@ class Primitive(ABC):
             path.unlink()
         
         f = open(path, 'w')
-        data = {
-            'name': self.name,
-            'model': self.model.tolist(),
-            'inlier_points': self.inlier_points.tolist(),
-            'inlier_normals': self.inlier_normals.tolist(),
-            'inlier_colors': self.inlier_colors.tolist()}
-        if self.name == 'bounded plane':
-            data['bounds'] = self.bounds.tolist()
-            data['_fusion_intersections'] = self._fusion_intersections.tolist()
-            data['hole_bounds'] = [h.bounds.tolist() for h in self.holes]
+        data = {}
+        self.__data_to_dict__(data)
         json.dump(data, f)
         f.close()
+    
+    def __get_attributes_from_dict__(self, data):
+        self._inlier_points = np.array(data['inlier_points'])
+        self._inlier_normals = np.array(data['inlier_normals'])
+        self._inlier_colors = np.array(data['inlier_colors'])
     
     @staticmethod
     def load(path):
@@ -1133,22 +1140,13 @@ class Primitive(ABC):
         f = open(path, 'r')
         data = json.load(f)
         name = data['name']
-        model = data['model']
         primitive = dict_primitives[name]
-        if name == 'bounded plane':
-            shape = primitive(model, np.array(data['bounds']))
-            shape._fusion_intersections = np.array(data['_fusion_intersections'])
+        
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            shape = primitive(data['model'])
             
-            hole_bounds = data['hole_bounds']
-            holes = [primitive(shape.model, bounds) for bounds in hole_bounds]
-            shape.add_holes(holes)
-            
-        else:
-            shape = primitive(model)
-
-        shape._inlier_points = np.array(data['inlier_points'])
-        shape._inlier_normals = np.array(data['inlier_normals'])
-        shape._inlier_colors = np.array(data['inlier_colors'])
+        shape.__get_attributes_from_dict__(data)
 
         f.close()
         return shape

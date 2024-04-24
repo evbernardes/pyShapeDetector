@@ -58,7 +58,7 @@ class PlaneBounded(Plane):
     inlier_colors
     inlier_PointCloud
     inlier_PointCloud_flattened
-    metricsd
+    metrics
     axis_spherical
     axis_cylindrical
     bbox
@@ -115,7 +115,9 @@ class PlaneBounded(Plane):
     translate
     rotate
     align
+    __put_attributes_in_dict__
     save
+    __get_attributes_from_dict__
     load
     check_bbox_intersection
     check_inlier_distance
@@ -505,6 +507,37 @@ class PlaneBounded(Plane):
         super().rotate(rotation)
 
         self._bounds = rotation.apply(self._bounds)    
+        
+    def __put_attributes_in_dict__(self, data):
+        super().__put_attributes_in_dict__(data)
+        
+        # additional PlaneBounded related data:
+        data['bounds'] = self.bounds.tolist()
+        data['_fusion_intersections'] = self._fusion_intersections.tolist()
+        data['hole_bounds'] = [h.bounds.tolist() for h in self.holes]
+        data['convex'] = self.is_convex
+        data['hole_convex'] = [h.is_convex for h in self.holes]
+        
+    def __get_attributes_from_dict__(self, data):
+        super().__get_attributes_from_dict__(data)
+        
+        # additional PlaneBounded related data:
+        convex = data.get('convex', True)
+        self.set_bounds(data['bounds'], convex=convex)
+        self._fusion_intersections = np.array(data['_fusion_intersections'])
+        
+        hole_bounds = data['hole_bounds']
+        try:
+            hole_convex = data['hole_convex']
+        except KeyError:
+            hole_convex = [True] * len(hole_bounds)
+            
+            holes = []
+            for bounds, convex in zip(hole_bounds, hole_convex):
+                holes.append(
+                    PlaneBounded(self.model, bounds, convex=convex))
+                
+            self.add_holes(holes)
                 
     # def get_inliers_axis_aligned_bounding_box(self, slack=0, num_sample=15):
     #     """ If the shape includes inlier points, returns the minimum and 

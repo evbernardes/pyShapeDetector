@@ -99,7 +99,9 @@ class PlaneTriangulated(Plane):
     translate
     rotate
     align
+    __put_attributes_in_dict__
     save
+    __get_attributes_from_dict__
     load
     check_bbox_intersection
     check_inlier_distance
@@ -365,6 +367,19 @@ class PlaneTriangulated(Plane):
         min_bound = np.min(self.vertices, axis=0)
         max_bound = np.max(self.vertices, axis=0)
         return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
+    
+    def __put_attributes_in_dict__(self, data):
+        super().__put_attributes_in_dict__(data)
+        
+        # additional PlaneTriangulated related data:
+        data['vertices'] = self.vertices.tolist()
+        data['triangles'] = self.triangles.tolist()
+        
+    def __get_attributes_from_dict__(self, data):
+        super().__get_attributes_from_dict__(data)
+        
+        # additional PlaneTriangulated related data:
+        self.set_vertices_triangles(data['vertices'], data['triangles'])
                 
     @staticmethod
     def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=1e-3,

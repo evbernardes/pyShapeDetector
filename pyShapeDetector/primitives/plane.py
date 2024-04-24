@@ -107,7 +107,9 @@ class Plane(Primitive):
     translate
     rotate
     align
+    __put_attributes_in_dict__
     save
+    __get_attributes_from_dict__
     load
     check_bbox_intersection
     check_inlier_distance
