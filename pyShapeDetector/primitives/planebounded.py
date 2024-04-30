@@ -350,7 +350,6 @@ class PlaneBounded(Plane):
         holes = self._holes
         
         if self.is_convex:
-            
             if len(holes) >= 0:
                 points_holes = [self.flatten_points(hole.bounds) for hole in holes]
                 points = np.vstack([self.bounds]+points_holes)
@@ -483,6 +482,7 @@ class PlaneBounded(Plane):
         self._bounds = shape_original._bounds.copy()
         self._bounds_projections = shape_original._bounds_projections.copy()
         self._fusion_intersections = shape_original._fusion_intersections.copy()
+        self._convex = shape_original._convex
 
     def translate(self, translation):
         """ Translate the shape.

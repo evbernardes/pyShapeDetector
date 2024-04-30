@@ -207,6 +207,9 @@ def test_copy_planebounded():
         )
         shape.add_holes(hole)
 
+        assert shape.is_convex
+        assert shape.copy().is_convex
+
         for shape_copy in [shape.copy(), copy.copy(shape)]:
             assert shape == shape_copy
             assert id(shape) != id(shape_copy)
