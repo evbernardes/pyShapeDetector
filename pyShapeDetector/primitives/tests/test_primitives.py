@@ -401,7 +401,7 @@ def test_translate_and_rotate():
 
     # testing both Plane and PlaneBounded
     plane = Plane.from_normal_point(vector, position)
-    shapes = [plane, plane.get_square_plane()]
+    shapes = [plane, plane.get_square_plane(1)]
     for p in shapes:
         p.set_inliers(inlier_points, inlier_normals)
         p.translate(translation)
