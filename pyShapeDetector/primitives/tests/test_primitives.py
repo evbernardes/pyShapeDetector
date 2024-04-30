@@ -254,6 +254,43 @@ def test_plane_surface_area_and_volume():
     assert_allclose(plane_triangulated.surface_area, length ** 2)
 
 
+def test_planebounded_contains_projections():
+    for n in range(3, 7):
+        length = np.random.random() * 10
+        plane = Plane.random()
+        square_small = plane.get_polygon_plane(n, length)
+        square_big = plane.get_polygon_plane(n, length * 2)
+        square_small.color = (0, 0, 0)
+        points_small = square_small.sample_points_uniformly(10000)
+        points_big = square_big.sample_points_uniformly(10000)
+
+        small_inside_small = square_small.contains_projections(points_small)
+        small_inside_big = square_big.contains_projections(points_small)
+        big_inside_small = square_small.contains_projections(points_big)
+        big_inside_big = square_big.contains_projections(points_big)
+
+        assert np.all(small_inside_small)
+        assert np.all(small_inside_big)
+        assert not np.all(big_inside_small)
+        assert np.any(big_inside_small)
+        assert np.all(big_inside_big)
+
+        # "donut" is the points of the big square that are not in the small square
+        donut = points_big[~big_inside_small]
+        donut_inside_small = square_small.contains_projections(donut)
+        donut_inside_big = square_big.contains_projections(donut)
+        assert not np.any(donut_inside_small)
+        assert np.all(donut_inside_big)
+
+        # "inside both" are the points of the big square that should also be in the 
+        # small square
+        inside_both = points_big[big_inside_small]
+        inside_both_inside_small = square_small.contains_projections(inside_both)
+        inside_both_inside_big = square_big.contains_projections(inside_both)
+        assert np.all(inside_both_inside_small)
+        assert np.all(inside_both_inside_big)
+
+
 def test_fit():
     # testing Cylinder separately
     for i in range(5):

@@ -715,24 +715,41 @@ class PlaneBounded(Plane):
             True for points whose projection lies in plane's bounds
         """
         
-        inside = np.array([True] * len(points))
+        # inside = np.array([True] * len(points))
+        inside = []
         projections = self.get_projections(points)
         N = len(self.bounds_projections)
-        for j in range(len(points)):
-            point = projections[j]
+        for projection in projections:
+            # x, y = projection
+            # p1x, p1y = self.bounds_projections[0]
+            
+            # inside_ = False
+            # for i in range(1, N + 1):
+            #     p2x, p2y = self.bounds_projections[i % N]
+            #     if y > min(p1y, p2y):
+            #         if y <= max(p1y, p2y):
+            #             if x <= max(p1x, p2x):
+            #                 if p1y != p2y:
+            #                     xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+            #                 if p1x == p2x or x <= xinters:
+            #                     inside_ = not inside_
+            #     p1x, p1y = p2x, p2y
+            
+            # inside.append(inside_)
+                
             intersections = 0
-            for i in range(1, N):
+            for i in range(N):
                 p1 = self.bounds_projections[i]
                 p2 = self.bounds_projections[(i + 1) % N]  # Wrap around to the first point
                 
                 # Check if the ray intersects the edge
-                if (p1[1] > point[1]) != (p2[1] > point[1]) and \
-                   point[0] < (p2[0] - p1[0]) * (point[1] - p1[1]) / (p2[1] - p1[1]) + p1[0]:
+                if (p1[1] > projection[1]) != (p2[1] > projection[1]) and \
+                    projection[0] < (p2[0] - p1[0]) * (projection[1] - p1[1]) / (p2[1] - p1[1]) + p1[0]:
                     intersections += 1
                     
-            inside[j] = intersections % 2 == 1
+            inside.append(intersections % 2 == 1)
                 
-        return inside
+        return np.array(inside)
     
     def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
         lines = self.bound_lines
