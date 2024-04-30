@@ -916,7 +916,8 @@ class Plane(Primitive):
             v1 = normalized(np.cross([0, 1, 0], self.normal))
             v2 = normalized(np.cross(self.normal, v1))
 
-        vertices = center + _get_rectangular_vertices(v1, v2)
+        vertices = center + _get_rectangular_vertices(length * v1, 
+                                                      length * v2)
 
         return self.get_bounded_plane(vertices)
 
