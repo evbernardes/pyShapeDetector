@@ -940,6 +940,8 @@ class Plane(Primitive):
         PlaneBounded
             Square plane
         """
+        
+        # TODO: Replace as an internal call to get_polygon_plane?
         if center is None:
             if self.has_inliers:
                 center = np.median(self.inlier_points, axis=0)
