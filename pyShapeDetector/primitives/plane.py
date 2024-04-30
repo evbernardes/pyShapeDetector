@@ -127,6 +127,7 @@ class Plane(Primitive):
     get_projections
     get_points_from_projections
     get_mesh_alphashape
+    get_polygon_plane
     get_square_plane
     get_rectangular_vectors_from_inliers
     get_rectangular_plane
@@ -885,12 +886,50 @@ class Plane(Primitive):
         vertices = center + _get_rectangular_vertices(V1, V2)
         return self.get_bounded_plane(vertices)
     
+    def get_polygon_plane(self, sides, radius, center=None):
+        """ Gives plane defined by regular polygon points.
+
+        Parameters
+        ----------
+        sides : int
+            Number of sides of polygon
+        radius : float
+            Distance from center of polygon to any of its points
+        center : arraylike of length 3, optional
+            Center of rectangle. If not given, either inliers or centroid are 
+            used.
+
+        Returns
+        -------
+        PlaneBounded
+            Polygonal plane
+        """
+        if sides < 3 or not isinstance(sides, int):
+            raise ValueError(f"sides must be an int bigger than 2, got {sides}")
+        
+        if center is None:
+            if self.has_inliers:
+                center = np.median(self.inlier_points, axis=0)
+            else:
+                center = self.centroid
+                
+        # Calculate the central angle between each vertex
+        central_angle = 2 * np.pi / sides
+        
+        # Initialize a list to store the coordinates of the points
+        points = []
+        
+        x = np.cos(central_angle * np.arange(sides))
+        y = np.sin(central_angle * np.arange(sides))
+        points = self.get_points_from_projections(radius * np.vstack([x, y]).T)
+        return self.get_bounded_plane(center + points)
+    
     def get_square_plane(self, length, center=None):
         """ Gives square plane defined by four points.
 
         Parameters
         ----------
-        length : float, optional
+        length : float
             Length of the sides of the square
         center : arraylike of length 3, optional
             Center of rectangle. If not given, either inliers or centroid are 
