@@ -593,8 +593,7 @@ class PlaneBounded(Plane):
         return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
                 
     @staticmethod
-    def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=1e-3,
-             **extra_options):
+    def fuse(shapes, detector=None, ignore_extra_data=False, **extra_options):
         """ Find weigthed average of shapes, where the weight is the fitness
         metric.
         
@@ -609,66 +608,24 @@ class PlaneBounded(Plane):
             Used to recompute metrics. Default: None.
         ignore_extra_data : boolean, optional
             If True, ignore everything and only fuse model. Default: False.
-        line_intersection_eps : float, optional
-            Distance for detection of intersection between planes. Default: 0.001.
-        force_concave : boolean, optional.
-            If True, the fused plane will be concave regardless of inputs.
-            Default: True.
-        ressample_density : float, optional
-            Default: 1.5
-        ressample_radius_ratio : float, optional
-            Default: 1.2
             
         Returns
         -------
         PlaneBounded
             Averaged PlaneBounded instance.    
         """
-        force_concave = extra_options.get('force_concave', True)
-        ressample_density = extra_options.get('ressample_density', 1.5)
-        ressample_radius_ratio = extra_options.get('ressample_radius_ratio', 1.2)
+        plane_unbounded = Plane.fuse(shapes, detector, ignore_extra_data)
+        bounds = np.vstack([s.bounds for s in shapes])
         
-        if len(shapes) == 1:
-            return shapes[0]
-        elif isinstance(shapes, Primitive):
-            return shapes
-        
-        shape = Plane.fuse(shapes, detector, ignore_extra_data)
-        
-        is_convex = np.array([shape.is_convex for shape in shapes])
-        all_convex = is_convex.all()
-        if not all_convex and is_convex.any():
-            force_concave = True
-            # raise ValueError("If 'force_concave' is False, PlaneBounded "
-            #                  "instances should either all be convex or "
-            #                  "all non convex.")
-        
-        if not ignore_extra_data:
-            if force_concave:
-                vertices, triangles = planes_ressample_and_triangulate(
-                    shapes, ressample_density, ressample_radius_ratio, double_triangles=True)
-                shape = shape.get_triangulated_plane(vertices, triangles)
-                
-            elif not all_convex:
-                vertices = [shape.vertices for shape in shapes]
-                triangles = [shape.triangles for shape in shapes]
-                vertices, triangles = fuse_vertices_triangles(vertices, triangles)                                       
-                shape = shape.get_triangulated_plane(vertices, triangles)
-                
-            else:
-                bounds = np.vstack([shape.bounds for shape in shapes])
-                shape.set_bounds(bounds)
+        if not np.all([s.is_convex for s in shapes]):
+            warnings.warn("Non-convex PlaneBounded instance detected, fused "
+                          "plane will be convex.")
             
-                intersections = []
-                for plane1, plane2 in combinations(shapes, 2):
-                    points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
-                    if len(points) > 0:
-                        intersections.append(points)
-                
-                # temporary hack, saving intersections for mesh generation
-                if len(intersections) > 0:
-                    shape._fusion_intersections = np.vstack(intersections)
-        
+        shape = PlaneBounded(plane_unbounded.model, bounds)
+        if not ignore_extra_data:
+            shape.set_inliers(plane_unbounded)
+            shape.metrics = plane_unbounded.metrics
+            
         return shape
     
     def closest_bounds(self, other_plane, n=1):

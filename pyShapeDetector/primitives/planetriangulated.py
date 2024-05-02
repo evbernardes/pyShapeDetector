@@ -412,56 +412,69 @@ class PlaneTriangulated(Plane):
             
         Returns
         -------
-        PlaneBounded
-            Averaged PlaneBounded instance.    
+        PlaneTriangulated
+            Averaged PlaneTriangulated instance.    
         """
+        plane_unbounded = Plane.fuse(shapes, detector, ignore_extra_data)
         
-        force_concave = extra_options.get('force_concave', True)
-        ressample_density = extra_options.get('ressample_density', 1.5)
-        ressample_radius_ratio = extra_options.get('ressample_radius_ratio', 1.2)
+        vertices_list = [plane_unbounded.flatten_points(s.vertices) for s in shapes]    
+        triangles_list = [s.triangles for s in shapes]
         
-        if len(shapes) == 1:
-            return shapes[0]
-        elif isinstance(shapes, Primitive):
-            return shapes
+        vertices, triangles = fuse_vertices_triangles(vertices_list, triangles_list)
         
-        shape = Plane.fuse(shapes, detector, ignore_extra_data)
-        
-        is_convex = np.array([shape.is_convex for shape in shapes])
-        all_convex = is_convex.all()
-        if not all_convex and is_convex.any():
-            force_concave = True
-            # raise ValueError("If 'force_concave' is False, PlaneBounded "
-            #                  "instances should either all be convex or "
-            #                  "all non convex.")
-        
+        shape = PlaneTriangulated(plane_unbounded.model, vertices, triangles)
         if not ignore_extra_data:
-            if force_concave:
-                vertices, triangles = planes_ressample_and_triangulate(
-                    shapes, ressample_density, ressample_radius_ratio, double_triangles=False)
-                shape.set_vertices_triangles(vertices, triangles)
-                
-            elif not all_convex:
-                vertices = [shape.vertices for shape in shapes]
-                triangles = [shape.triangles for shape in shapes]
-                vertices, triangles = fuse_vertices_triangles(vertices, triangles)                                       
-                shape.set_vertices_triangles(vertices, triangles)
-                
-            else:
-                bounds = np.vstack([shape.bounds for shape in shapes])
-                shape.set_bounds(bounds)
+            shape.set_inliers(plane_unbounded)
+            shape.metrics = plane_unbounded.metrics
             
-                intersections = []
-                for plane1, plane2 in combinations(shapes, 2):
-                    points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
-                    if len(points) > 0:
-                        intersections.append(points)
-                
-                # temporary hack, saving intersections for mesh generation
-                if len(intersections) > 0:
-                    shape._fusion_intersections = np.vstack(intersections)
-        
         return shape
+        
+        # force_concave = extra_options.get('force_concave', True)
+        # ressample_density = extra_options.get('ressample_density', 1.5)
+        # ressample_radius_ratio = extra_options.get('ressample_radius_ratio', 1.2)
+        
+        # if len(shapes) == 1:
+        #     return shapes[0]
+        # elif isinstance(shapes, Primitive):
+        #     return shapes
+        
+        # shape = Plane.fuse(shapes, detector, ignore_extra_data)
+        
+        # is_convex = np.array([shape.is_convex for shape in shapes])
+        # all_convex = is_convex.all()
+        # if not all_convex and is_convex.any():
+        #     force_concave = True
+        #     # raise ValueError("If 'force_concave' is False, PlaneBounded "
+        #     #                  "instances should either all be convex or "
+        #     #                  "all non convex.")
+        
+        # if not ignore_extra_data:
+        #     if force_concave:
+        #         vertices, triangles = planes_ressample_and_triangulate(
+        #             shapes, ressample_density, ressample_radius_ratio, double_triangles=False)
+        #         shape.set_vertices_triangles(vertices, triangles)
+                
+        #     elif not all_convex:
+        #         vertices = [shape.vertices for shape in shapes]
+        #         triangles = [shape.triangles for shape in shapes]
+        #         vertices, triangles = fuse_vertices_triangles(vertices, triangles)                                       
+        #         shape.set_vertices_triangles(vertices, triangles)
+                
+        #     else:
+        #         bounds = np.vstack([shape.bounds for shape in shapes])
+        #         shape.set_bounds(bounds)
+            
+        #         intersections = []
+        #         for plane1, plane2 in combinations(shapes, 2):
+        #             points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
+        #             if len(points) > 0:
+        #                 intersections.append(points)
+                
+        #         # temporary hack, saving intersections for mesh generation
+        #         if len(intersections) > 0:
+        #             shape._fusion_intersections = np.vstack(intersections)
+        
+        # return shape
     
     def closest_vertices(self, other_plane, n=1):
         """ Returns n pairs of closest bound points with a second plane.
@@ -615,7 +628,7 @@ class PlaneTriangulated(Plane):
                 loop_indexes[i] = simplify_loop_with_angle(
                     self.vertices, loop_indexes[i], angle_colinear, colinear_recursive)
 
-        planes = [PlaneBounded(self.model, self.vertices[loop], convex=False) for loop in loop_indexes]
+        planes = [PlaneBounded(self, self.vertices[loop], convex=False) for loop in loop_indexes]
         
         if detect_holes and (N := len(planes)) > 1:
             fuse_dict = {key: [] for key in range(N)}
