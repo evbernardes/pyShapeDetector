@@ -416,43 +416,6 @@ class PlaneTriangulated(Plane):
             Averaged PlaneBounded instance.    
         """
         
-        # grid_width = extra_options.get('grid_width', None)
-        
-        # if grid_width is None:
-        #     grid_width = average_nearest_dist(shapes[0].inlier_points, k=15)
-            
-        # max_point_dist = extra_options.get('max_point_dist', grid_width)
-        # perimeter_multiplier = extra_options.get('perimeter_multiplier', 1.2)
-        # perimeter_eps = extra_options.get('perimeter_eps', 1e-3)
-        # angle_colinear = extra_options.get('angle_colinear', 0)
-        
-        # plane_fused = Plane.fuse(shapes, detector, ignore_extra_data, **extra_options)
-        
-        # planes = plane_fused.get_bounded_planes_from_grid(
-        #     grid_width=grid_width, 
-        #     max_point_dist=max_point_dist, 
-        #     grid_type = "hexagonal", 
-        #     perimeter_multiplier=perimeter_multiplier,
-        #     return_rect_grid=False, 
-        #     perimeter_eps=perimeter_eps,
-        #     detect_holes=True,
-        #     add_inliers=False,
-        #     angle_colinear=angle_colinear,
-        #     colinear_recursive=False)
-        
-        # if len(planes) == 1:
-        #     plane = planes[0]
-        # else:
-        #     warnings.warn(f"{len(planes)} planes found, returning biggest.")
-        #     i = np.argmax([p.surface_area for p in planes])
-        #     plane = planes[i]
-        
-        # plane.set_inliers(plane_fused.inlier_points,
-        #                   plane_fused.inlier_normals,
-        #                   plane_fused.inlier_colors)
-        
-        # return plane
-        
         force_concave = extra_options.get('force_concave', True)
         ressample_density = extra_options.get('ressample_density', 1.5)
         ressample_radius_ratio = extra_options.get('ressample_radius_ratio', 1.2)
