@@ -608,7 +608,6 @@ class PlaneTriangulated(Plane):
         
         loop_indexes = get_loop_indexes_from_boundary_indexes(boundary_indexes)
         
-        
         if angle_colinear != 0:
             for i in range(len(loop_indexes)):
                 loop_indexes[i] = simplify_loop_with_angle(
