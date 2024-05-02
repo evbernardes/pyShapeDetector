@@ -7,7 +7,7 @@ Created on Wed Dec  6 14:59:38 2023
 
 @author: ebernardes
 """
-
+import warnings
 import copy
 import open3d as o3d
 import numpy as np
@@ -446,7 +446,7 @@ def get_rectangular_grid(vectors, center, grid_width, return_perimeter = False, 
         return center + np.array(grid_lines), perimeter
     return center + np.array(grid_lines)
 
-def select_grid_points(grid, inlier_points, max_distance):
+def select_grid_points(grid, inlier_points, max_distance, cores=6):
     """
     Select points from grid that are close enough to at least some point in the
     inlier_points points array.
@@ -470,8 +470,36 @@ def select_grid_points(grid, inlier_points, max_distance):
     numpy array
         Selected points.
     """
-    distances = cdist(inlier_points, grid)
-    test = np.any(distances <= max_distance, axis=0)
+    import multiprocessing
+    
+    if cores > (cpu_count := multiprocessing.cpu_count()):
+        warnings.warn(f'Only {cpu_count} available, {cores} required.'
+                       ' limiting to max availability.')
+        cores = cpu_count
+        
+    grid_split = np.array_split(grid, cores)
+    
+    # distances = cdist(inlier_points, grid)
+    def _select_points(i, data):
+        dist = cdist(inlier_points, grid_split[i])
+        data[i] = np.any(dist <= max_distance, axis=0)
+    
+    # Create processes and queues
+    manager = multiprocessing.Manager()
+    data = manager.dict()
+    
+    processes = [multiprocessing.Process(
+        target=_select_points, args=(i, data)) for i in range(cores)]
+    
+    # Start all processes
+    for process in processes:
+        process.start()
+        
+    # Wait until all processes are finished
+    for process in processes:
+        process.join()
+    
+    test = np.hstack([data[i] for i in range(cores)])
     return grid[test]
 
 def new_TriangleMesh(vertices, triangles, double_triangles=False):
