@@ -13,6 +13,22 @@ from open3d.geometry import PointCloud, AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
 from scipy.spatial.transform import Rotation
 from pyShapeDetector.utility import clean_crop, get_rotation_from_axis, new_PointCloud
+
+def _set_and_check_3d_array(input_array, name='array', num_points=None):
+    if input_array is None or len(input_array) == 0:
+        return np.array([])
+    
+    array = np.asarray(input_array)
+    if array.shape == (3, ):
+        array = np.reshape(array, (1,3))
+    elif array.shape[1] != 3:
+        raise ValueError('Invalid shape for {name}, must be a single'
+                         ' point or an array of shape (N, 3), got '
+                         f'{array.shape}')
+    if num_points is not None and len(array) != num_points:
+        raise ValueError(f'Expected shape of array is ({num_points}, 3), got {array.shape}.')
+        
+    return array
     
 class Primitive(ABC):
     """
@@ -575,23 +591,6 @@ class Primitive(ABC):
         pcd_flattened.colors = pcd.colors
         return pcd_flattened
     
-    @staticmethod
-    def _set_and_check_3d_array(input_array, name='array', num_points=None):
-        if input_array is None or len(input_array) == 0:
-            return np.array([])
-        
-        array = np.asarray(input_array)
-        if array.shape == (3, ):
-            array = np.reshape(array, (1,3))
-        elif array.shape[1] != 3:
-            raise ValueError('Invalid shape for {name}, must be a single'
-                             ' point or an array of shape (N, 3), got '
-                             f'{array.shape}')
-        if num_points is not None and len(array) != num_points:
-            raise ValueError(f'Expected shape of array is ({num_points}, 3), got {array.shape}.')
-            
-        return array
-    
     def set_inliers(self, points_or_pointcloud, normals=None, colors=None, 
                     flatten=False, color_shape=False):
         """ Set inlier points to shape.
@@ -635,10 +634,10 @@ class Primitive(ABC):
         else:
             points = points_or_pointcloud
             
-        points = Primitive._set_and_check_3d_array(points, 'inlier points')
+        points = _set_and_check_3d_array(points, 'inlier points')
         num_points = len(points)
-        normals = Primitive._set_and_check_3d_array(normals, 'inlier normals', num_points)
-        colors = Primitive._set_and_check_3d_array(colors, 'inlier colors', num_points)
+        normals = _set_and_check_3d_array(normals, 'inlier normals', num_points)
+        colors = _set_and_check_3d_array(colors, 'inlier colors', num_points)
 
         if flatten:
             points = self.flatten_points(points)
@@ -668,7 +667,7 @@ class Primitive(ABC):
         new_points : N x 3 array
             New inlier points.
         """
-        new_points = Primitive._set_and_check_3d_array(new_points, 'inlier points')
+        new_points = _set_and_check_3d_array(new_points, 'inlier points')
         num_points = len(new_points)
         
         new_colors = np.repeat(self.color, num_points).reshape(num_points, 3)
