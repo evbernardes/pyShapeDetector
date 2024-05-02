@@ -602,30 +602,20 @@ class PlaneTriangulated(Plane):
         """
         from .planebounded import PlaneBounded
         
-        from time import time
-        
-        s = time()
         boundary_indexes = get_triangle_boundary_indexes(
             self.vertices, 
             self.triangles)
-        print(f"get_triangle_boundary_indexes = {time() - s:.2f}")
         
-        s = time()
         loop_indexes = get_loop_indexes_from_boundary_indexes(boundary_indexes)
-        print(f"get_loop_indexes_from_boundary_indexes = {time() - s:.2f}")
         
         
         if angle_colinear != 0:
-            s = time()
             for i in range(len(loop_indexes)):
                 loop_indexes[i] = simplify_loop_with_angle(
                     self.vertices, loop_indexes[i], angle_colinear, colinear_recursive)
-            print(f"simplify_loop_with_angle = {time() - s:.2f}")
-        
 
         planes = [PlaneBounded(self.model, self.vertices[loop], convex=False) for loop in loop_indexes]
         
-        s = time()
         if detect_holes and (N := len(planes)) > 1:
             fuse_dict = {key: [] for key in range(N)}
             
@@ -654,17 +644,18 @@ class PlaneTriangulated(Plane):
             all_hole_idxs.sort()
             for i in all_hole_idxs[::-1]:
                 planes.pop(i)
-        print(f"detect_holes = {time() - s:.2f}")
+        
+        idx = np.argsort([p.surface_area for p in planes])[::-1]
+        planes = np.array(planes)[idx].tolist()
         
         time_ = 0
         if add_inliers:
             inlier_points = self.inlier_points
             inlier_normals = self.inlier_normals
             inlier_colors = self.inlier_colors
+            projections = self.get_projections(inlier_points)
             for plane in planes:
-                s = time()
-                inside = plane.contains_projections(inlier_points)
-                time_ += time() - s
+                inside = plane.contains_projections(projections, input_is_2D=True)
                 plane.set_inliers(
                     inlier_points[inside],
                     inlier_normals[inside],
@@ -672,7 +663,7 @@ class PlaneTriangulated(Plane):
                 inlier_points = inlier_points[~inside]
                 inlier_normals = inlier_normals[~inside]
                 inlier_colors = inlier_colors[~inside]
-        print(f"contains_projections = {time_:.2f}")
+                projections = projections[~inside]
         
         return planes
         
