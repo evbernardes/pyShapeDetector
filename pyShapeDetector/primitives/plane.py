@@ -818,7 +818,7 @@ class Plane(Primitive):
         select = perimeters < perimeter_multiplier * perimeter + perimeter_eps
         triangles = triangles[select]
         
-        plane = PlaneTriangulated(self.model, grid_selected, triangles)
+        plane = PlaneTriangulated(self, grid_selected, triangles)
         plane.set_inliers(
             self.inlier_points,
             self.inlier_normals,
