@@ -592,7 +592,8 @@ class Primitive(ABC):
             
         return array
     
-    def set_inliers(self, points_or_pointcloud, normals=None, colors=None, flatten=False):
+    def set_inliers(self, points_or_pointcloud, normals=None, colors=None, 
+                    flatten=False, color_shape=False):
         """ Set inlier points to shape.
         
         If normals or/and colors are given, they must have the same shape as
@@ -600,14 +601,16 @@ class Primitive(ABC):
         
         Parameters
         ----------
-        points_or_pointcloud : N x 3 array or instance of open3d.geometry.PointCloud
-            Inlier points.
+        points_or_pointcloud : N x 3 array or instance of open3d.geometry.PointCloud or Primitive
+            Inlier points, pointcloud or shape containing points.
         normals : optional, N x 3 array
             Inlier point normals.
         colors : optional, N x 3 array
             Colors of inlier points.
         flatten : boolean, optional
-            If True, flatten inlier points.
+            If True, flatten inlier points. Default: False.
+        color_shape : boolean, optional
+            If True, use inliers mean color for shape. Default: False.
         """
         
         if isinstance(points_or_pointcloud, PointCloud):
@@ -619,6 +622,16 @@ class Primitive(ABC):
             points = points_or_pointcloud.points
             normals = points_or_pointcloud.normals
             colors = points_or_pointcloud.colors
+            
+        elif isinstance(points_or_pointcloud, Primitive):
+            if normals is not None or colors is not None:
+                raise TypeError("If PointCloud is given as input, normals and "
+                                "colors are taken from it, and not accepted "
+                                "as input.")
+                
+            points = points_or_pointcloud.inlier_points
+            normals = points_or_pointcloud.inlier_normals
+            colors = points_or_pointcloud.inlier_colors
         else:
             points = points_or_pointcloud
             
@@ -633,7 +646,7 @@ class Primitive(ABC):
         self._inlier_points = points
         self._inlier_normals = normals
         self._inlier_colors = colors
-        if len(colors) > 0:
+        if color_shape and (len(colors) > 0):
             self.color = np.median(colors, axis=0)
             
     def add_inliers(self, new_points):
