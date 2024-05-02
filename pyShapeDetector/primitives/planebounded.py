@@ -700,14 +700,18 @@ class PlaneBounded(Plane):
 
         return closest_points, distances
 
-    def contains_projections(self, points):
+    def contains_projections(self, points, input_is_2D=False):
         """ For each point in points, check if its projection on the plane lies
         inside of the plane's bounds. 
 
         Parameters
         ----------
-        points : N x 3 array
-            N input points 
+        points : N x 3 array (or N x 2 array)
+            N input points if input_is_2D is False, or N 2D projections if
+            input_is_2D is True.
+        input_is_2D : boolean
+            If False, calculate projections from points. If True, uses input 
+            directly.
 
         Returns
         -------
@@ -717,37 +721,30 @@ class PlaneBounded(Plane):
         
         # inside = np.array([True] * len(points))
         inside = []
-        projections = self.get_projections(points)
-        N = len(self.bounds_projections)
+        points = np.atleast_2d(points)
+        if points.shape[1] == 3:
+            if input_is_2D:
+                raise ValueError("For 3D input points, input_is_2D must be False.")
+            projections = self.get_projections(points)
+        elif points.shape[1] == 2:
+            if not input_is_2D:
+                raise ValueError("For 2D input projections, input_is_2D must be True.")
+            projections = points
+            
+        # N = len(self.bounds_projections)
+        bounds = self.bounds_projections
+        bounds_shifted = np.roll(bounds, -1, axis=0)
+        diff = bounds_shifted - bounds
         for projection in projections:
-            # x, y = projection
-            # p1x, p1y = self.bounds_projections[0]
             
-            # inside_ = False
-            # for i in range(1, N + 1):
-            #     p2x, p2y = self.bounds_projections[i % N]
-            #     if y > min(p1y, p2y):
-            #         if y <= max(p1y, p2y):
-            #             if x <= max(p1x, p2x):
-            #                 if p1y != p2y:
-            #                     xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
-            #                 if p1x == p2x or x <= xinters:
-            #                     inside_ = not inside_
-            #     p1x, p1y = p2x, p2y
+            diff1 = projection - bounds
+            diff2 = projection - bounds_shifted
             
-            # inside.append(inside_)
-                
-            intersections = 0
-            for i in range(N):
-                p1 = self.bounds_projections[i]
-                p2 = self.bounds_projections[(i + 1) % N]  # Wrap around to the first point
-                
-                # Check if the ray intersects the edge
-                if (p1[1] > projection[1]) != (p2[1] > projection[1]) and \
-                    projection[0] < (p2[0] - p1[0]) * (projection[1] - p1[1]) / (p2[1] - p1[1]) + p1[0]:
-                    intersections += 1
-                    
-            inside.append(intersections % 2 == 1)
+            test = np.logical_and(
+                (diff1[:, 1] < 0) != (diff2[:, 1] < 0),
+                projection[0] < diff[:, 0] * diff1[:, 1] / diff[:, 1] + bounds[:, 0])
+
+            inside.append(np.sum(test) % 2 == 1)
                 
         return np.array(inside)
     
