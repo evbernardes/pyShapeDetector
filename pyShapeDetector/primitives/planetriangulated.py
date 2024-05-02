@@ -648,7 +648,6 @@ class PlaneTriangulated(Plane):
         idx = np.argsort([p.surface_area for p in planes])[::-1]
         planes = np.array(planes)[idx].tolist()
         
-        time_ = 0
         if add_inliers:
             inlier_points = self.inlier_points
             inlier_normals = self.inlier_normals
