@@ -471,36 +471,21 @@ def select_grid_points(grid, inlier_points, max_distance, cores=6):
         Selected points.
     """
     import multiprocessing
+    from .helpers_internal import parallelize
     
     if cores > (cpu_count := multiprocessing.cpu_count()):
         warnings.warn(f'Only {cpu_count} available, {cores} required.'
                        ' limiting to max availability.')
         cores = cpu_count
         
-    grid_split = np.array_split(grid, cores)
-    
     max_distance_squared = max_distance * max_distance
     
-    def _select_points(i, data):
-        dist_squared = cdist(inlier_points, grid_split[i], 'sqeuclidean')
-        data[i] = np.any(dist_squared <= max_distance_squared, axis=0)
+    @parallelize(6)
+    def select_points(grid):
+        dist_squared = cdist(inlier_points, grid, 'sqeuclidean')
+        return np.any(dist_squared <= max_distance_squared, axis=0)
     
-    # Create processes and queues
-    manager = multiprocessing.Manager()
-    data = manager.dict()
-    
-    processes = [multiprocessing.Process(
-        target=_select_points, args=(i, data)) for i in range(cores)]
-    
-    # Start all processes
-    for process in processes:
-        process.start()
-        
-    # Wait until all processes are finished
-    for process in processes:
-        process.join()
-    
-    selected_idxs = np.hstack([data[i] for i in range(cores)])
+    selected_idxs = select_points(grid)
     return grid[selected_idxs]
 
 def new_TriangleMesh(vertices, triangles, double_triangles=False):
