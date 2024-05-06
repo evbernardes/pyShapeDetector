@@ -214,6 +214,7 @@ class Primitive(ABC):
         if self._mesh is None:
             self._mesh = self.get_mesh()
             self._mesh.paint_uniform_color(self.color)
+            self._mesh.compute_triangle_normals()
         
         return self._mesh
     
@@ -1123,7 +1124,7 @@ class Primitive(ABC):
         
         f = open(path, 'w')
         data = {}
-        self.__data_to_dict__(data)
+        self.__put_attributes_in_dict__(data)
         json.dump(data, f)
         f.close()
     
