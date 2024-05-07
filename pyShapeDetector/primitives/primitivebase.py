@@ -1102,7 +1102,7 @@ class Primitive(ABC):
                 break
     
     def __put_attributes_in_dict__(self, data):
-        data['name'] = self.name,
+        data['name'] = self.name
         data['model'] = self.model.tolist()
         data['inlier_points'] = self.inlier_points.tolist()
         data['inlier_normals'] = self.inlier_normals.tolist()
