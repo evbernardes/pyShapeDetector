@@ -126,15 +126,15 @@ class RANSAC_Base(ABC):
         
         limit = PrimitiveLimits(limit)
         
-        if self._opt._num_samples and primitive.fit_n_min:
-            raise ValueError(f'{primitive.name}s need a minimum of '
-                             f'{primitive.fit_n_min} for fitting, but current'
+        if self._opt._num_samples and self._opt._num_samples < primitive._fit_n_min:
+            raise ValueError(f'{primitive._name}s need a minimum of '
+                             f'{primitive._fit_n_min} for fitting, but current '
                              f'num_samples option is set to {self._opt._num_samples}'
                              '. Either raise the value on the options, or set '
                              'it to None.')
             
         if not limit.check_compatibility(primitive):
-            raise ValueError(f"Primitive of type {primitive.name} is "
+            raise ValueError(f"Primitive of type {primitive} is "
                              "incompatible with PrimitiveLimits instance.")
             
         self._primitives.append(primitive)
