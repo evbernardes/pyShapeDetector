@@ -156,7 +156,7 @@ def _get_partitions(num_shapes, pairs):
 
 def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, 
                           bbox_intersection=None, inlier_max_distance=None,
-                          legacy=False):
+                          legacy=False, return_partitions=False):
     """ Detect shapes with similar model and group.
     
     See: fuse_shape_groups
@@ -177,7 +177,8 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
         Default: None.
     legacy : bool, optional
         Uses legacy implementation of `group_similar_shapes`. Default: False
-    return_partitions : 
+    return_partitions :  bool, optional
+        If True, return sets defining partitions. Default: False.
         
     Returns
     -------
@@ -210,13 +211,14 @@ def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02,
     # Step 3: get sublists of shapes from partitions
     # shape_groups = [[shapes[i] for i in partition] for partition in partitions]
     
-    # shape_groups = []
-    # for partition in partitions:
-    #     group = [shapes[i] for i in partition]
-    #     shape_groups.append(group)
-        
-    # return shape_groups, partitions
-    return partitions
+    shape_groups = []
+    for partition in partitions:
+        group = [shapes[i] for i in partition]
+        shape_groups.append(group)
+    if return_partitions:
+        return shape_groups, partitions
+    return shape_groups
+    # return [list(group) for group in partitions]
 
 def fuse_shape_groups(shapes_lists, **fuse_options):
     """ Find weigthed average of shapes, where the weight is the fitness
