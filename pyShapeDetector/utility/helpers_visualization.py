@@ -77,11 +77,11 @@ def draw_geometries(elements, **camera_options):
     
 def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
                          
-    lookat = camera_options.get('lookat')
-    up = camera_options.get('up')
-    front = camera_options.get('front')
-    zoom = camera_options.get('zoom')
-    draw_inliers = camera_options.get('draw_inliers', False)
+    lookat = camera_options.pop('lookat', None)
+    up = camera_options.pop('up', None)
+    front = camera_options.pop('front', None)
+    zoom = camera_options.pop('zoom', None)
+    # draw_inliers = camera_options.pop('draw_inliers', False)
     
     has_options = not any(v is None for v in [lookat, up, front, zoom])
     
@@ -103,11 +103,12 @@ def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
         objs_right[i].translate(translate)
         
     if not has_options:
-        draw_geometries(objs_right + objs_left, draw_inliers=draw_inliers)
+        draw_geometries(objs_right + objs_left, **camera_options)
     else:
-        draw_geometries(objs_right + objs_left, draw_inliers=draw_inliers,
+        draw_geometries(objs_right + objs_left,
                         lookat=lookat,
                         up=up,
                         front=front,
-                        zoom=zoom
+                        zoom=zoom,
+                        **camera_options
                         )
