@@ -235,6 +235,21 @@ def test_deepcopy():
         assert id(shapes[0].inlier_points) != id(shapes_copy[0].inlier_points)
 
 
+def test_get_rectangular_vectors_from_inliers():
+    for i in range(5):
+        plane = Plane.random()
+        plane.set_inliers(np.random.random([100, 3]), flatten=True)
+
+        (V1, V2), center = plane.get_rectangular_vectors_from_inliers(True)
+        
+        # making vectors slightly bigger for boundary points
+        V1 *= 1 + 1e-7
+        V2 *= 1 + 1e-7
+        plane_rect = plane.get_rectangular_plane((V1, V2), center)
+
+        assert np.all(plane_rect.contains_projections(plane.inlier_points))
+
+
 def test_plane_surface_area_and_volume():
     model = np.random.rand(4)
     plane = Plane(model)
