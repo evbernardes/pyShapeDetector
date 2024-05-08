@@ -409,42 +409,62 @@ def get_rectangular_grid(vectors, center, grid_width, return_perimeter = False, 
     if grid_type not in ["regular", "hexagonal"]:
         raise ValueError("Possible grid types are 'regular' and 'hexagonal', "
                          f"got '{grid_type}'.")
-    
+    eps = 1e-8
     lengths = np.linalg.norm(vectors, axis=1)
     
     # get unit vectors
     vx, vy = vectors / lengths[:, np.newaxis]
 
-    n = [int(n) for n in np.ceil(lengths / grid_width) + 2]
-    length_slack = (lengths + grid_width) / 2
+    n = []
+    for length in lengths:
+        ratio = length / grid_width
+        n.append(int(np.floor(ratio)) + int(ratio % 1 > eps))
     
-    h = grid_width * np.sqrt(3) / 2
-    array_x = np.linspace(0, 2 * length_slack[0], n[0]) - length_slack[0]
+    def get_range(length, width):
+        array = np.arange(stop=length, step=width) - length / 2
+        assert abs(width - (array[1] - array[0])) < eps
+        
+        # adding last point if needed
+        if (length / width) % 1 > eps:
+            # array = np.hstack([array, array[-1] + grid_width]) 
+            array = np.hstack([array, length / 2])
+            
+        return array
     
     if grid_type == "regular":
-        array_y = np.linspace(0, 2 * length_slack[1], n[1]) - length_slack[1]
+        array_x = get_range(lengths[0], grid_width)
+        array_y = get_range(lengths[1], grid_width)
+        
         x_ = vx * array_x[np.newaxis].T
         y_ = vy * array_y[np.newaxis].T
-        grid_lines = [px + py for px, py in product(x_, y_)]
+        # grid_lines = [px + py for px, py in product(x_, y_)]
+        grid_lines = [x_ + py for py in y_]
+        grid = np.vstack(grid_lines)
+
         perimeter = (2 + np.sqrt(2)) * grid_width
         
     elif grid_type == "hexagonal":
-        x, y = -lengths / 2
-        line = vx * array_x[np.newaxis].T + vy * y
-        i = 0
-        grid_lines = []
-        y = -h * 2
-        while y <= lengths[1] + h:
-            y += h
-            i += 1
-            dx = (i % 2) * grid_width / 2
-            grid_lines.append(line + dx * vx + vy * y)
-        grid_lines = np.vstack(grid_lines)
+        h = grid_width * np.sqrt(3) / 2
+        
+        array_x = get_range(lengths[0], grid_width)
+        array_y = get_range(lengths[1], h)
+        
+        x_ = vx * array_x[np.newaxis].T
+        y_ = vy * array_y[np.newaxis].T
+        # grid_lines = [px + py for px, py in product(x_, y_)]
+        grid_lines = [x_ + py for py in y_]
+        for i in range(len(grid_lines)):
+            if i % 2 == 1:
+                grid_lines[i] += vx * grid_width / 2
+                grid_lines[i] = np.vstack([-vx * lengths[0]/2, grid_lines[i][:-1] ])
+
         perimeter = 3 * grid_width
     
+    grid = np.vstack(grid_lines)
+    
     if return_perimeter:
-        return center + np.array(grid_lines), perimeter
-    return center + np.array(grid_lines)
+        return center + grid, perimeter
+    return center + grid
 
 def select_grid_points(grid, inlier_points, max_distance, cores=6):
     """
