@@ -907,13 +907,16 @@ class Plane(Primitive):
         triangles = np.vstack([triangles, triangles[:, ::-1]])
         return new_TriangleMesh(vertices, triangles)
     
-    def get_rectangular_vectors_from_inliers(self, return_center=False):
+    def get_rectangular_vectors_from_inliers(self, return_center=False, use_PCA=True):
         """ Gives vectors defining a rectangle that roughly contains the plane.
         
         Parameters
         ----------
         return_center : boolean, optional
             If True, return tuple containing both vectors and calculated center.
+        use_PCA : boolean, optional
+            If True, use PCA to detect vectors (better for rectangles). If False,
+            use eigenvectors from covariance matrix. Default: True.
 
         Returns
         -------
@@ -927,11 +930,17 @@ class Plane(Primitive):
         
         delta_projection, rot = self.get_projections(delta, return_rotation=True)
         
-        cov_matrix = np.cov(delta_projection, rowvar=False)
-        eigval, eigvec = np.linalg.eig(cov_matrix)
+        if use_PCA:
+            from sklearn.decomposition import PCA
+            pca = PCA(n_components=2)
+            pca.fit(delta_projection)
+            v1, v2 = pca.components_
+        else:
+            cov_matrix = np.cov(delta_projection, rowvar=False)
+            _, (v1, v2) = np.linalg.eig(cov_matrix)
         
-        v1 = rot.T @ np.hstack([eigvec[0], 0])
-        v2 = rot.T @ np.hstack([eigvec[1], 0])
+        v1 = rot.T @ np.hstack([v1, 0])
+        v2 = rot.T @ np.hstack([v2, 0])
         
         V1 = 2 * max(abs(delta.dot(v1))) * v1
         V2 = 2 * max(abs(delta.dot(v2))) * v2
