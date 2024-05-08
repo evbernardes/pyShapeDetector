@@ -22,7 +22,7 @@ from pyShapeDetector.utility import (
 
 from .primitivebase import Primitive
 from alphashape import alphashape
-# from .line import Line
+# from .line import Line    
 
 def _get_rectangular_vertices(v1, v2):
     if abs(v1.dot(v2)) > 1e-8:
@@ -832,7 +832,7 @@ class Plane(Primitive):
             return plane, plane_rect, grid
         return plane
 
-    def get_projections(self, points):
+    def get_projections(self, points, return_rotation=False):
         """ Get 2D projections of points in plane.
 
         See: get_points_from_projections
@@ -841,6 +841,8 @@ class Plane(Primitive):
         ----------
         points : array_like, shape (N, 3)
             Points corresponding to the fitted shape.
+        return_rotation : boolean, optional
+            If True, return rotation matrix. Default: False.
 
         Returns
         -------
@@ -851,9 +853,13 @@ class Plane(Primitive):
         if points.shape[1] != 3:
             raise ValueError("Input points must be 3D.")
         rot = get_rotation_from_axis([0, 0, 1], self.normal)
-        return (rot @ points.T).T[:, :2]
+        projections = (rot @ points.T).T[:, :2]
+        
+        if return_rotation:
+            return projections, rot
+        return projections
 
-    def get_points_from_projections(self, projections):
+    def get_points_from_projections(self, projections, return_rotation=False):
         """ Get 3D points from 2D projections in plane.
 
         See: get_projections
@@ -862,6 +868,8 @@ class Plane(Primitive):
         ----------
         projections : array_like, shape (N, 2)
             2D projections of boundary points in plane
+        return_rotation : boolean, optional
+            If True, return rotation matrix. Default: False.
 
         Returns
         -------
@@ -877,7 +885,11 @@ class Plane(Primitive):
         proj_z = (rot @ self.centroid)[2]
         projections_3D = np.vstack([projections.T, np.repeat(proj_z, N)]).T
 
-        return (rot.T @ projections_3D.T).T
+        points = (rot.T @ projections_3D.T).T
+    
+        if return_rotation:
+            return points, rot.T
+        return points
 
     def get_mesh_alphashape(self, points, alpha=None):
         """ Flatten input points and creates a simplified mesh of the plane 
