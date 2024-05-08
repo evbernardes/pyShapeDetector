@@ -8,12 +8,13 @@ Created on Wed Feb 28 10:59:02 2024
 import numpy as np
 import copy
 from open3d import visualization
+from .helpers_pointclouds import new_PointCloud
 # from pyShapeDetector.primitives import Primitive, Line
 
 def draw_geometries(elements, **camera_options):
     from pyShapeDetector.primitives import Primitive, Line, Plane, PlaneBounded
     
-    elements = np.asarray(elements).flatten()
+    # elements = np.asarray(elements).flatten()
         
     try:
         draw_inliers = camera_options.pop('draw_inliers')
@@ -43,6 +44,12 @@ def draw_geometries(elements, **camera_options):
                 geometries.append(element.mesh)
         elif isinstance(element, Primitive):
             geometries.append(element.mesh)
+        elif isinstance(element, np.ndarray):
+            if len(element.shape) != 2 or element.shape[1] != 3:
+                raise ValueError("3D arrays are interpreted as PointClouds, "
+                                 "but they need to have a shape of (N, 3), got "
+                                 f"{element.shape}.")
+            geometries.append(new_PointCloud(element))
         else:
             geometries.append(element)
             
