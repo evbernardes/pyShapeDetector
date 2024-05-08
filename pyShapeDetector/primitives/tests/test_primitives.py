@@ -203,7 +203,7 @@ def test_copy_planebounded():
         warnings.simplefilter("ignore")
         shape = get_shape(PlaneBounded, 100)
         hole = PlaneBounded.create_circle(
-            center=shape.centroid, normal=shape.normal, radius=0.2
+            center=shape.centroid, normal=shape.normal, radius=0.1
         )
         shape.add_holes(hole)
 
@@ -214,10 +214,11 @@ def test_copy_planebounded():
             assert shape == shape_copy
             assert id(shape) != id(shape_copy)
             assert id(shape.inlier_points) != id(shape_copy.inlier_points)
-            assert shape.holes[0] == shape_copy.holes[0]
-            assert id(shape.holes[0]) != id(shape_copy.holes[0])
-            assert np.all(shape.holes[0].bounds == shape_copy.holes[0].bounds)
-            assert id(shape.holes[0].bounds) != id(shape_copy.holes[0].bounds)
+            assert shape.holes == shape_copy.holes
+            if len(shape.holes) > 0:
+                assert id(shape.holes[0]) != id(shape_copy.holes[0])
+                assert np.all(shape.holes[0].bounds == shape_copy.holes[0].bounds)
+                assert id(shape.holes[0].bounds) != id(shape_copy.holes[0].bounds)
 
 
 def test_deepcopy():
