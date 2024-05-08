@@ -24,8 +24,8 @@ from .primitivebase import Primitive
 from alphashape import alphashape
 # from .line import Line    
 
-def _get_rectangular_vertices(v1, v2):
-    if abs(v1.dot(v2)) > 1e-8:
+def _get_rectangular_vertices(v1, v2, eps=1e-8):
+    if abs(v1.dot(v2)) > eps:
         raise RuntimeError("Vectors are not orthogonal.")
         
     return np.array([
