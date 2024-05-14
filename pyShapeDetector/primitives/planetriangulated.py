@@ -590,7 +590,7 @@ class PlaneTriangulated(Plane):
                                            add_inliers=True,
                                            angle_colinear=0,
                                            colinear_recursive=True,
-                                           min_inliers=2):
+                                           min_inliers=1):
         """ Convert PlaneTriangulated instance into list of non-convex 
         PlaneBounded instances.
         
@@ -613,7 +613,7 @@ class PlaneTriangulated(Plane):
             it until no more simplification is possible. Default: True.
         min_inliers : int, optional
             If add_inliers is True, remove planes with less inliers than this
-            value. Default: 2.
+            value. Default: 1.
 
         Returns
         -------
@@ -624,6 +624,9 @@ class PlaneTriangulated(Plane):
         boundary_indexes = get_triangle_boundary_indexes(
             self.vertices, 
             self.triangles)
+        
+        if not isinstance(min_inliers, int) or (min_inliers < 1):
+            raise ValueError("min_inliers must be a positive integer, got {min_inliers}.")
         
         loop_indexes = get_loop_indexes_from_boundary_indexes(boundary_indexes)
         
