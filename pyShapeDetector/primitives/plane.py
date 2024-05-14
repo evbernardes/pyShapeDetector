@@ -680,7 +680,7 @@ class Plane(Primitive):
                                      add_inliers=True,
                                      angle_colinear=0,
                                      colinear_recursive=True,
-                                     remove_empty_planes=True):
+                                     min_inliers=2):
         """
         Experimental method of triangulating plane with a grid.
 
@@ -716,9 +716,9 @@ class Plane(Primitive):
         colinear_recursive : boolean, optional
             If False, only try to simplify loop once. If True, try to simplify
             it until no more simplification is possible. Default: True.
-        remove_empty_planes : boolean, optional
-            If add_inliers and remove_empty_planes are True, remove planes
-            without inliers at the end.
+        min_inliers : int, optional
+            If add_inliers is True, remove planes with less inliers than this
+            value. Default: 2.
             
         Return
         ------
@@ -744,7 +744,7 @@ class Plane(Primitive):
             add_inliers=add_inliers, 
             angle_colinear=angle_colinear, 
             colinear_recursive=colinear_recursive,
-            remove_empty_planes=remove_empty_planes)
+            min_inliers=min_inliers)
         
         if return_rect_grid:
             return planes, plane_rect, grid

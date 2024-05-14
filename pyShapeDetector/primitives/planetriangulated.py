@@ -590,7 +590,7 @@ class PlaneTriangulated(Plane):
                                            add_inliers=True,
                                            angle_colinear=0,
                                            colinear_recursive=True,
-                                           remove_empty_planes=True):
+                                           min_inliers=2):
         """ Convert PlaneTriangulated instance into list of non-convex 
         PlaneBounded instances.
         
@@ -611,9 +611,9 @@ class PlaneTriangulated(Plane):
         colinear_recursive : boolean, optional
             If False, only try to simplify loop once. If True, try to simplify
             it until no more simplification is possible. Default: True.
-        remove_empty_planes : boolean, optional
-            If add_inliers and remove_empty_planes are True, remove planes
-            without inliers at the end.
+        min_inliers : int, optional
+            If add_inliers is True, remove planes with less inliers than this
+            value. Default: 2.
 
         Returns
         -------
@@ -689,21 +689,8 @@ class PlaneTriangulated(Plane):
                     inlier_colors = inlier_colors[~inside]
                     projections = projections[~inside]
                     
-                    if remove_empty_planes:
-                        has_inliers = [plane.has_inliers for plane in planes]
-                        planes = np.array(planes)[has_inliers].tolist()
-        
+                    num_inliers = np.array([len(p.inlier_points) for p in planes])
+                    planes = np.array(planes)[num_inliers > min_inliers].tolist()
+                    
         return planes
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
