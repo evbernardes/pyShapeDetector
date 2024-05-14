@@ -589,7 +589,8 @@ class PlaneTriangulated(Plane):
     def get_bounded_planes_from_boundaries(self, detect_holes=False,
                                            add_inliers=True,
                                            angle_colinear=0,
-                                           colinear_recursive=True):
+                                           colinear_recursive=True,
+                                           remove_empty_planes=True):
         """ Convert PlaneTriangulated instance into list of non-convex 
         PlaneBounded instances.
         
@@ -610,6 +611,9 @@ class PlaneTriangulated(Plane):
         colinear_recursive : boolean, optional
             If False, only try to simplify loop once. If True, try to simplify
             it until no more simplification is possible. Default: True.
+        remove_empty_planes : boolean, optional
+            If add_inliers and remove_empty_planes are True, remove planes
+            without inliers at the end.
 
         Returns
         -------
@@ -663,22 +667,27 @@ class PlaneTriangulated(Plane):
         planes = np.array(planes)[idx].tolist()
         
         if add_inliers:
-            inlier_points = self.inlier_points
-            inlier_normals = self.inlier_normals
-            inlier_colors = self.inlier_colors
-            projections = self.get_projections(inlier_points)
-            for plane in planes:
-                if len(projections) == 0:
-                    break
-                inside = plane.contains_projections(projections, input_is_2D=True)
-                plane.set_inliers(
-                    inlier_points[inside],
-                    inlier_normals[inside],
-                    inlier_colors[inside])
-                inlier_points = inlier_points[~inside]
-                inlier_normals = inlier_normals[~inside]
-                inlier_colors = inlier_colors[~inside]
-                projections = projections[~inside]
+            if not self.has_inliers:
+                warnings.warn("Option 'add_inliers' is True but plane has no "
+                              "inliers, ignoring...")
+            
+            else:
+                inlier_points = self.inlier_points
+                inlier_normals = self.inlier_normals
+                inlier_colors = self.inlier_colors
+                projections = self.get_projections(inlier_points)
+                for plane in planes:
+                    if len(projections) == 0:
+                        break
+                    inside = plane.contains_projections(projections, input_is_2D=True)
+                    plane.set_inliers(
+                        inlier_points[inside],
+                        inlier_normals[inside],
+                        inlier_colors[inside])
+                    inlier_points = inlier_points[~inside]
+                    inlier_normals = inlier_normals[~inside]
+                    inlier_colors = inlier_colors[~inside]
+                    projections = projections[~inside]
         
         return planes
         
