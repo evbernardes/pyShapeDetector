@@ -679,7 +679,8 @@ class Plane(Primitive):
                                      detect_holes=False,
                                      add_inliers=True,
                                      angle_colinear=0,
-                                     colinear_recursive=True):
+                                     colinear_recursive=True,
+                                     remove_empty_planes=True):
         """
         Experimental method of triangulating plane with a grid.
 
@@ -715,7 +716,9 @@ class Plane(Primitive):
         colinear_recursive : boolean, optional
             If False, only try to simplify loop once. If True, try to simplify
             it until no more simplification is possible. Default: True.
-        
+        remove_empty_planes : boolean, optional
+            If add_inliers and remove_empty_planes are True, remove planes
+            without inliers at the end.
             
         Return
         ------
@@ -740,7 +743,8 @@ class Plane(Primitive):
             detect_holes=detect_holes, 
             add_inliers=add_inliers, 
             angle_colinear=angle_colinear, 
-            colinear_recursive=colinear_recursive)
+            colinear_recursive=colinear_recursive,
+            remove_empty_planes=remove_empty_planes)
         
         if return_rect_grid:
             return planes, plane_rect, grid
@@ -951,15 +955,17 @@ class Plane(Primitive):
             return vectors, center
         return vectors
     
-    def get_rectangular_plane(self, vectors, center=None):
+    def get_rectangular_plane(self, vectors=None, center=None):
         """ Gives rectangular plane defined two vectors and its center.
         
         Vectors v1 and v2 should not be unit, and instead have lengths equivalent
         to widths of rectangle.
         
+        If no vectors are given, calculate them with get_rectangular_vectors_from_inliers.
+        
         Parameters
         ----------
-        vectors : arraylike of shape (2, 3)
+        vectors : arraylike of shape (2, 3), optional
             The two orthogonal unit vectors defining the rectangle plane.
         center : arraylike of length 3, optional
             Center of rectangle. If not given, either inliers or centroid are 
@@ -970,6 +976,11 @@ class Plane(Primitive):
         PlaneBounded
             Rectangular plane
         """
+        if vectors is None:                
+            vectors, center_rect = self.get_rectangular_vectors_from_inliers(return_center=True)
+            if center is None:
+                center = center_rect
+        
         if center is None:
             if self.has_inliers:
                 points = self.inlier_points

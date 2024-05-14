@@ -688,6 +688,10 @@ class PlaneTriangulated(Plane):
                     inlier_normals = inlier_normals[~inside]
                     inlier_colors = inlier_colors[~inside]
                     projections = projections[~inside]
+                    
+                    if remove_empty_planes:
+                        has_inliers = [plane.has_inliers for plane in planes]
+                        planes = np.array(planes)[has_inliers].tolist()
         
         return planes
         
