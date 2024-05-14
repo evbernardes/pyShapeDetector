@@ -94,9 +94,18 @@ def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
     
     if not isinstance(objs_left, list):
         objs_left = [objs_left]
-    objs_left = copy.deepcopy(objs_left)
+    
     if not isinstance(objs_right, list):
         objs_right = [objs_right]
+    
+    # precalculating meshes just in case
+    for elem in objs_left+objs_right:
+        try:
+            elem.mesh
+        except AttributeError:
+            pass
+        
+    objs_left = copy.deepcopy(objs_left)
     objs_right = copy.deepcopy(objs_right)
     
     if has_options:
