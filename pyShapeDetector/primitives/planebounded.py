@@ -538,12 +538,12 @@ class PlaneBounded(Plane):
         except KeyError:
             hole_convex = [True] * len(hole_bounds)
             
-            holes = []
-            for bounds, convex in zip(hole_bounds, hole_convex):
-                holes.append(
-                    PlaneBounded(self.model, bounds, convex=convex))
-                
-            self.add_holes(holes)
+        holes = []
+        for bounds, convex in zip(hole_bounds, hole_convex):
+            holes.append(
+                PlaneBounded(self.model, bounds, convex=convex))
+            
+        self.add_holes(holes)
                 
     # def get_inliers_axis_aligned_bounding_box(self, slack=0, num_sample=15):
     #     """ If the shape includes inlier points, returns the minimum and 
