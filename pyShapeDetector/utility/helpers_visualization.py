@@ -36,6 +36,10 @@ def draw_geometries(elements, **camera_options):
     lines = []
     boundary_lines = []
     hole_boundary_lines = []
+    
+    if not isinstance(elements, (list, tuple)):
+        elements = [elements]
+    
     for element in elements:
         if isinstance(element, Line):
             lines.append(element)
