@@ -543,7 +543,9 @@ class PlaneBounded(Plane):
             holes.append(
                 PlaneBounded(self.model, bounds, convex=convex))
             
-        self.add_holes(holes)
+        # no need to remove points, as they were already tested when creating
+        # the plane
+        self.add_holes(holes, remove_points=False)
                 
     # def get_inliers_axis_aligned_bounding_box(self, slack=0, num_sample=15):
     #     """ If the shape includes inlier points, returns the minimum and 
