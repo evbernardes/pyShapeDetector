@@ -420,8 +420,9 @@ class Plane(Primitive):
         self._model = Plane.from_normal_point(
             self.normal, centroid).model
             
-        for hole in self.holes:
-            hole._translate_points(translation)
+        if not self.is_hole and len(self.holes) > 0:
+            for hole in self.holes:
+                hole.translate(translation)
 
     def rotate(self, rotation):
         """ Rotate the shape.
