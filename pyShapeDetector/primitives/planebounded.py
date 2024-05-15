@@ -365,6 +365,7 @@ class PlaneBounded(Plane):
                     inside_hole = np.array(
                         [hole.contains_projections(p, input_is_2D=True).all() for p in triangles_center])
                     triangles = triangles[~inside_hole]
+                    triangles_center = triangles_center[~inside_hole]
                 
         else:
             if not self.is_clockwise:
@@ -701,9 +702,12 @@ class PlaneBounded(Plane):
             diff1 = projection - bounds
             diff2 = projection - bounds_shifted
             
-            test = np.logical_and(
-                (diff1[:, 1] < 0) != (diff2[:, 1] < 0),
-                projection[0] < diff[:, 0] * diff1[:, 1] / diff[:, 1] + bounds[:, 0])
+            with warnings.catch_warnings():
+                # Divisions by zero lead to infs that give correct comparisons
+                warnings.simplefilter("ignore")
+                test = np.logical_and(
+                    (diff1[:, 1] < 0) != (diff2[:, 1] < 0),
+                    projection[0] < diff[:, 0] * diff1[:, 1] / diff[:, 1] + bounds[:, 0])
 
             inside.append(np.sum(test) % 2 == 1)
                 

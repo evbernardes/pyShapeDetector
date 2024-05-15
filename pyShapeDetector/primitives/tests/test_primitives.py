@@ -314,10 +314,17 @@ def test_planebounded_convex_tringulation():
     plane = Plane([0, 0, 1, 0]).get_square_plane(10)
     area_no_holes = plane.surface_area
 
-    hole1 = plane.get_square_plane(5)
-    plane.add_holes(hole1)
+    hole1 = plane.get_square_plane(2)
+    hole2 = hole1.copy()
+    hole1.translate([-2, 0, 0])
+    hole2.translate([2, 0, 0])
 
+    plane.add_holes([hole1])
     assert_allclose(plane.surface_area, area_no_holes - hole1.surface_area)
+
+    plane.add_holes([hole2])
+    assert_allclose(plane.surface_area, area_no_holes - hole1.surface_area - hole2.surface_area)
+
     assert_allclose(plane.surface_area, plane.mesh.get_surface_area())
 
 
