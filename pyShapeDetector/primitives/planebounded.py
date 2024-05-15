@@ -21,6 +21,7 @@ from pyShapeDetector.utility import (
     # get_triangle_boundary_indexes,
     # get_loop_indexes_from_boundary_indexes
     find_closest_points_indices,
+    get_triangle_points,
     )
 from .primitivebase import Primitive
 from .plane import Plane
@@ -357,10 +358,13 @@ class PlaneBounded(Plane):
         
             triangles = Delaunay(projections).simplices
 
-            for hole in self._holes:
-                inside_hole = np.array(
-                    [hole.contains_projections(p).all() for p in points[triangles]])
-                triangles = triangles[~inside_hole]
+            if len(self._holes) > 0:
+                triangles_center = get_triangle_points(projections, triangles).mean(axis=1)
+                
+                for hole in self._holes:
+                    inside_hole = np.array(
+                        [hole.contains_projections(p, input_is_2D=True).all() for p in triangles_center])
+                    triangles = triangles[~inside_hole]
                 
         else:
             if not self.is_clockwise:

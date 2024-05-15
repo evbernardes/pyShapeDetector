@@ -310,6 +310,17 @@ def test_planebounded_contains_projections():
         assert np.all(inside_both_inside_big)
 
 
+def test_planebounded_convex_tringulation():
+    plane = Plane([0, 0, 1, 0]).get_square_plane(10)
+    area_no_holes = plane.surface_area
+
+    hole1 = plane.get_square_plane(5)
+    plane.add_holes(hole1)
+
+    assert_allclose(plane.surface_area, area_no_holes - hole1.surface_area)
+    assert_allclose(plane.surface_area, plane.mesh.get_surface_area())
+
+
 def test_fit():
     # testing Cylinder separately
     for i in range(5):
