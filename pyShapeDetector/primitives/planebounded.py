@@ -374,7 +374,6 @@ class PlaneBounded(Plane):
                 projections = projections[::-1]
             
             for hole in holes:
-                
                 hole_projections = hole.bounds_projections
                 
                 # Not sure about this one, shouldn't it be reverse then?
@@ -386,20 +385,25 @@ class PlaneBounded(Plane):
                 i = i[0]
                 j = j[0]
                 
-                # print(f"plane clockwise = {self.is_clockwise}")                
-                # print(f"hole clockwise = {hole.is_clockwise}")
+                hole_projections_rolled = np.vstack([
+                    np.roll(hole_projections, -j, axis=0), hole_projections[j]])
                 
-                hole_projections_switched = np.vstack([
-                    hole_projections[j:],
-                    hole_projections[:j+1]])
+                # hole_projections_rolled = np.vstack([
+                    # hole_projections[j:],
+                    # hole_projections[:j+1]])
                 
                 projections = np.vstack([
-                    projections[:i+1],
-                    hole_projections_switched,
-                    projections[i:]])
+                    hole_projections_rolled,
+                    np.roll(projections, -i, axis=0),
+                    projections[i]])
+                
+                # projections = np.vstack([
+                #     projections[:i+1],
+                #     hole_projections_rolled,
+                #     projections[i:]])
                 
                 # area_hole += hole.surface_area
-                
+            
             points = self.get_points_from_projections(projections)
             triangles = triangulate_earclipping(projections)
 
@@ -416,7 +420,6 @@ class PlaneBounded(Plane):
         #                                    self.surface_area)
         # except:
         #     print(f"Area diff = {self.surface_area - mesh.get_surface_area()}")
-
         return mesh
 
     # def get_mesh(self, **options):
