@@ -606,31 +606,34 @@ class Plane(Primitive):
             raise ValueError("Shape has no holes.")
         
         if len(self.holes) == 1:
-            warnings.warn("Shape only has one hole, returning it.")
-            return self.holes[0]
+            # warnings.warn("Shape only has one hole, returning it.")
+            bounds = self.holes[0].bounds
+            if self.holes[0].is_clockwise:
+                bounds = bounds[::-1]
         
-        idx = {}
-        holes = self.holes
-        for i, j in combinations(range(len(holes)), 2):
-            h1 = holes[i]
-            h2 = holes[j]
-            idx[find_closest_points(h1.bounds_projections, h2.bounds_projections)[1][0]] = (i, j)
-            
-        distances = np.sort(list(idx.keys()))
-        ordered = []
-        for d in distances:
-            ordered += [i for i in idx[d] if i not in ordered]
+        else:
+            idx = {}
+            holes = self.holes
+            for i, j in combinations(range(len(holes)), 2):
+                h1 = holes[i]
+                h2 = holes[j]
+                idx[find_closest_points(h1.bounds_projections, h2.bounds_projections)[1][0]] = (i, j)
+                
+            distances = np.sort(list(idx.keys()))
+            ordered = []
+            for d in distances:
+                ordered += [i for i in idx[d] if i not in ordered]
 
-        holes_ordered = np.array(holes)[ordered]
-        bounds = holes_ordered[0].bounds
-        if holes_ordered[0].is_clockwise:
-            bounds = bounds[::-1]
-            
-        for hole in holes_ordered[1:]:
-            bounds_new = hole.bounds
-            if hole.is_clockwise:
-                bounds_new = bounds_new[::-1]
-            bounds = _fuse_loops(bounds, bounds_new)
+            holes_ordered = np.array(holes)[ordered]
+            bounds = holes_ordered[0].bounds
+            if holes_ordered[0].is_clockwise:
+                bounds = bounds[::-1]
+                
+            for hole in holes_ordered[1:]:
+                bounds_new = hole.bounds
+                if hole.is_clockwise:
+                    bounds_new = bounds_new[::-1]
+                bounds = _fuse_loops(bounds, bounds_new)
         
         return self.get_bounded_plane(bounds, convex=False)
 
