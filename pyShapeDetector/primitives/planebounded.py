@@ -20,12 +20,29 @@ from pyShapeDetector.utility import (
     triangulate_earclipping,
     # get_triangle_boundary_indexes,
     # get_loop_indexes_from_boundary_indexes
+    find_closest_points,
     find_closest_points_indices,
     get_triangle_points,
     )
 from .primitivebase import Primitive
 from .plane import Plane
 # from alphashape import alphashape
+
+def _fuse_loops(loop1, loop2):
+    i, j = find_closest_points_indices(loop1, loop2, 1)
+    i = i[0]
+    j = j[0]
+    
+    loop2_rolled = np.vstack([
+        np.roll(loop2, -j, axis=0), loop2[j]])
+    
+    loop_full = np.vstack([
+        loop2_rolled,
+        np.roll(loop1, -i, axis=0),
+        loop1[i]])
+    
+    return loop_full
+    
 
 def _is_clockwise(bounds):
     s = 0
@@ -380,29 +397,10 @@ class PlaneBounded(Plane):
                 if hole.is_clockwise:
                     # print(f"switched!")
                     hole_projections = hole_projections[::-1]
+                    
+                projections = _fuse_loops(projections, hole_projections)
                 
-                i, j = find_closest_points_indices(projections, hole_projections, 1)
-                i = i[0]
-                j = j[0]
-                
-                hole_projections_rolled = np.vstack([
-                    np.roll(hole_projections, -j, axis=0), hole_projections[j]])
-                
-                # hole_projections_rolled = np.vstack([
-                    # hole_projections[j:],
-                    # hole_projections[:j+1]])
-                
-                projections = np.vstack([
-                    hole_projections_rolled,
-                    np.roll(projections, -i, axis=0),
-                    projections[i]])
-                
-                # projections = np.vstack([
-                #     projections[:i+1],
-                #     hole_projections_rolled,
-                #     projections[i:]])
-                
-                # area_hole += hole.surface_area
+                # # area_hole += hole.surface_area
             
             points = self.get_points_from_projections(projections)
             triangles = triangulate_earclipping(projections)
