@@ -693,7 +693,7 @@ class Plane(Primitive):
         plane.__copy_atributes__(self)
         return plane
 
-    def get_bounded_plane(self, bounds, convex=False):
+    def get_bounded_plane(self, bounds, convex=True):
         """ Gives bounded version of plane, using input points to define 
         border.
 
