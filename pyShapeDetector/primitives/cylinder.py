@@ -33,6 +33,8 @@ class Cylinder(Primitive):
     color
     mesh
     has_inliers
+    inlier_mean
+    inlier_median
     inlier_points
     inlier_points_flattened
     inlier_normals

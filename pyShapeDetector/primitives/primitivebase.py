@@ -65,6 +65,8 @@ class Primitive(ABC):
     color
     mesh
     has_inliers
+    inlier_mean
+    inlier_median
     inlier_points
     inlier_points_flattened
     inlier_normals
@@ -229,6 +231,18 @@ class Primitive(ABC):
     @property
     def has_inliers(self):
         return len(self._inlier_points) > 0
+    
+    @property
+    def inlier_mean(self):
+        if not self.has_inliers:
+            raise ValueError("Shape has no inliers.")
+        return self.inlier_points.mean(axis=0)
+    
+    @property
+    def inlier_median(self):
+        if not self.has_inliers:
+            raise ValueError("Shape has no inliers.")
+        return np.median(self.inlier_points, axis=0)
         
     @property
     def inlier_points(self):
