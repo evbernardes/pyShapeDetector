@@ -6,7 +6,7 @@ Created on Mon Sep 25 15:42:59 2023
 @author: ebernardes
 """
 import warnings
-from itertools import permutations, product
+from itertools import permutations, product, combinations
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
 from scipy.spatial.transform import Rotation
@@ -18,11 +18,28 @@ from pyShapeDetector.utility import (
     get_triangle_surface_areas,
     get_rectangular_grid,
     select_grid_points,
-    get_triangle_perimeters)
+    get_triangle_perimeters,
+    find_closest_points,
+    find_closest_points_indices)
 
 from .primitivebase import Primitive
 from alphashape import alphashape
 # from .line import Line    
+
+def _fuse_loops(loop1, loop2):
+    i, j = find_closest_points_indices(loop1, loop2, 1)
+    i = i[0]
+    j = j[0]
+    
+    loop2_rolled = np.vstack([
+        np.roll(loop2, -j, axis=0), loop2[j]])
+    
+    loop_full = np.vstack([
+        loop2_rolled,
+        np.roll(loop1, -i, axis=0),
+        loop1[i]])
+    
+    return loop_full
 
 def _get_rectangular_vertices(v1, v2, eps=1e-8):
     if abs(v1.dot(v2)) > eps:
@@ -121,6 +138,7 @@ class Plane(Primitive):
     from_normal_point
     add_holes
     remove_hole
+    get_fused_holes
     intersect
     get_unbounded_plane
     get_bounded_plane
@@ -571,6 +589,50 @@ class Plane(Primitive):
             Index of hole to be removed.
         """
         self._holes.pop(idx)
+        
+    def get_fused_holes(self):
+        """ Fuse bounds of all holes into single PlaneBounded instance.
+
+        Raises
+        ------
+        ValueError
+            When shape has no holes
+
+        Returns
+        -------
+        PlaneBounded
+        """
+        if len(self.holes) == 0:
+            raise ValueError("Shape has no holes.")
+        
+        if len(self.holes) == 1:
+            warnings.warn("Shape only has one hole, returning it.")
+            return self.holes[0]
+        
+        idx = {}
+        holes = self.holes
+        for i, j in combinations(range(len(holes)), 2):
+            h1 = holes[i]
+            h2 = holes[j]
+            idx[find_closest_points(h1.bounds_projections, h2.bounds_projections)[1][0]] = (i, j)
+            
+        distances = np.sort(list(idx.keys()))
+        ordered = []
+        for d in distances:
+            ordered += [i for i in idx[d] if i not in ordered]
+
+        holes_ordered = np.array(holes)[ordered]
+        bounds = holes_ordered[0].bounds
+        if holes_ordered[0].is_clockwise:
+            bounds = bounds[::-1]
+            
+        for hole in holes_ordered[1:]:
+            bounds_new = hole.bounds
+            if hole.is_clockwise:
+                bounds_new = bounds_new[::-1]
+            bounds = _fuse_loops(bounds, bounds_new)
+        
+        return self.get_bounded_plane(bounds, convex=False)
 
     def intersect(self, other_plane, separated=False, intersect_parallel=False,
                   eps_angle=np.deg2rad(0.9), eps_distance=1e-2):
@@ -631,7 +693,7 @@ class Plane(Primitive):
         plane.__copy_atributes__(self)
         return plane
 
-    def get_bounded_plane(self, bounds):
+    def get_bounded_plane(self, bounds, convex=False):
         """ Gives bounded version of plane, using input points to define 
         border.
 
@@ -641,6 +703,9 @@ class Plane(Primitive):
         ----------
         points : array_like, shape (N, 3).
             Bound points.
+        convex : bool, optinal
+            If True, assumes the bounds are supposed to be convex and use
+            ConvexHull. If False, assume bounds are directly given as a loop.
 
         Returns
         -------
@@ -649,7 +714,7 @@ class Plane(Primitive):
         """
         from .planebounded import PlaneBounded
 
-        plane = PlaneBounded(self.model, bounds)
+        plane = PlaneBounded(self.model, bounds, convex)
         Plane.__copy_atributes__(plane, self)
         return plane
     

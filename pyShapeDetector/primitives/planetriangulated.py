@@ -113,6 +113,7 @@ class PlaneTriangulated(Plane):
     from_normal_point
     add_holes
     remove_hole
+    get_fused_holes
     intersect
     get_unbounded_plane
     get_bounded_plane

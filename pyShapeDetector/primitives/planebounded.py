@@ -6,7 +6,7 @@ Created on Thu Feb 15 10:15:09 2024
 @author: ebernardes
 """
 import warnings
-from itertools import permutations, product, combinations
+from itertools import product
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
 # from scipy.spatial.transform import Rotation
@@ -15,34 +15,18 @@ from open3d.utility import Vector3iVector, Vector3dVector
 
 from pyShapeDetector.utility import (
     get_triangle_surface_areas, 
-    fuse_vertices_triangles, 
-    planes_ressample_and_triangulate,
+    # fuse_vertices_triangles, 
+    # planes_ressample_and_triangulate,
     triangulate_earclipping,
     # get_triangle_boundary_indexes,
     # get_loop_indexes_from_boundary_indexes
-    find_closest_points,
-    find_closest_points_indices,
+    # find_closest_points,
+    # find_closest_points_indices,
     get_triangle_points,
     )
-from .primitivebase import Primitive
+# from .primitivebase import Primitive
 from .plane import Plane
 # from alphashape import alphashape
-
-def _fuse_loops(loop1, loop2):
-    i, j = find_closest_points_indices(loop1, loop2, 1)
-    i = i[0]
-    j = j[0]
-    
-    loop2_rolled = np.vstack([
-        np.roll(loop2, -j, axis=0), loop2[j]])
-    
-    loop_full = np.vstack([
-        loop2_rolled,
-        np.roll(loop1, -i, axis=0),
-        loop1[i]])
-    
-    return loop_full
-    
 
 def _is_clockwise(bounds):
     s = 0
@@ -147,6 +131,7 @@ class PlaneBounded(Plane):
     from_normal_point
     add_holes
     remove_hole
+    get_fused_holes
     intersect
     closest_bounds
     get_unbounded_plane
@@ -390,17 +375,11 @@ class PlaneBounded(Plane):
             if not self.is_clockwise:
                 projections = projections[::-1]
             
-            for hole in holes:
-                hole_projections = hole.bounds_projections
+            if not self.is_hole and len(self.holes) > 0:
                 
-                # Not sure about this one, shouldn't it be reverse then?
-                if hole.is_clockwise:
-                    # print(f"switched!")
-                    hole_projections = hole_projections[::-1]
-                    
-                projections = _fuse_loops(projections, hole_projections)
-                
-                # # area_hole += hole.surface_area
+                from .plane import _fuse_loops
+                fused_hole = self.get_fused_holes()
+                projections = _fuse_loops(projections, fused_hole.bounds_projections)
             
             points = self.get_points_from_projections(projections)
             triangles = triangulate_earclipping(projections)
