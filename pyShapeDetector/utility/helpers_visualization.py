@@ -11,10 +11,28 @@ from open3d import visualization
 from .helpers_pointclouds import new_PointCloud
 # from pyShapeDetector.primitives import Primitive, Line
 
-def draw_geometries(elements, **camera_options):
-    from pyShapeDetector.primitives import Primitive, Line, Plane, PlaneBounded
+def _treat_up_normal(camera_options):
     
-    # elements = np.asarray(elements).flatten()
+    normal = camera_options.pop('normal', None)
+    up = camera_options.get('up', None)
+    
+    if normal is not None and  up is not None:
+            raise ValueError("Cannot enter both 'front' and 'normal'")
+    
+    elif normal is not None:
+        x = np.cross(np.random.random(3), normal)
+        x /= np.linalg.norm(x)
+        # camera_options['up'] = np.cross(normal, x)
+        camera_options['up'] = x
+    
+    elif 'up' in camera_options:
+        camera_options['up'] = up
+
+def draw_geometries(elements, **camera_options):
+    
+    from pyShapeDetector.primitives import Primitive, Line, Plane, PlaneBounded
+
+    _treat_up_normal(camera_options)
         
     try:
         draw_inliers = camera_options.pop('draw_inliers')
@@ -87,12 +105,12 @@ def draw_geometries(elements, **camera_options):
     visualization.draw_geometries(geometries, **camera_options)
     
 def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
-                         
+                  
+    _treat_up_normal(camera_options)       
     lookat = camera_options.pop('lookat', None)
     up = camera_options.pop('up', None)
     front = camera_options.pop('front', None)
     zoom = camera_options.pop('zoom', None)
-    # draw_inliers = camera_options.pop('draw_inliers', False)
     
     has_options = not any(v is None for v in [lookat, up, front, zoom])
     
