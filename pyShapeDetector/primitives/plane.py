@@ -456,8 +456,7 @@ class Plane(Primitive):
         self._fusion_intersections = shape_original._fusion_intersections.copy()
         self._is_hole = shape_original._is_hole
         if not shape_original.is_hole:
-            holes = [h.copy() for h in shape_original._holes]
-            self._holes = holes
+            self._holes = [h.copy() for h in shape_original._holes]
 
     # def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
     #     lines = self.bound_lines
