@@ -33,6 +33,7 @@ def draw_geometries(elements, **camera_options):
     from pyShapeDetector.primitives import Primitive, Line, Plane, PlaneBounded
 
     _treat_up_normal(camera_options)
+    _ = camera_options.pop('dist', None)
         
     try:
         draw_inliers = camera_options.pop('draw_inliers')
@@ -126,7 +127,7 @@ def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
             elem.mesh
         except AttributeError:
             pass
-        
+
     objs_left = copy.deepcopy(objs_left)
     objs_right = copy.deepcopy(objs_right)
     
