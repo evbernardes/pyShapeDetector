@@ -488,7 +488,7 @@ class PlaneBounded(Plane):
         self._bounds_indices = shape_original._bounds_indices.copy()
         self._bounds = shape_original._bounds.copy()
         self._bounds_projections = shape_original._bounds_projections.copy()
-        self._fusion_intersections = shape_original._fusion_intersections.copy()
+        self._is_clockwise = _is_clockwise(self._bounds_projections)
         self._convex = shape_original._convex
 
     def translate(self, translation):
