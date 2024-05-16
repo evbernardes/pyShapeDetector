@@ -822,7 +822,8 @@ class Plane(Primitive):
         
     def get_triangulated_plane_from_grid(self, grid_width, max_point_dist=None, 
                                          grid_type = "hexagonal", perimeter_multiplier=1,
-                                         return_rect_grid=False, perimeter_eps=1e-3):
+                                         return_rect_grid=False, perimeter_eps=1e-3,
+                                         only_inside=False, add_boundary=False):
         """
         Experimental method of triangulating plane with a grid.
         
@@ -854,8 +855,13 @@ class Plane(Primitive):
             smaller than 1. Default: 1.
         return_rect_grid : boolean, optional
             If True, tuple containing rectangular plane and grid. Default: False.
-        perimeter_eps : float, option
+        perimeter_eps : float, optional
             Small slack value added to perimeter testing. Default: 1e-3.
+        only_inside : boolean, optional
+            If True, remove grid points not contained in original convex 
+            boundary. Default: False.
+        add_boundary : boolean, optional
+            If True, add convex boundary points to grid. Default: False.
             
         Return
         ------
@@ -886,6 +892,14 @@ class Plane(Primitive):
         
         # TODO: slowest thing here is this:
         grid_selected = select_grid_points(grid, self.inlier_points_flattened, max_point_dist)
+        
+        if only_inside:
+            grid_selected = grid_selected[self.contains_projections(grid_selected)]
+            
+        if add_boundary:
+            chull = ConvexHull(self.get_projections(self.inlier_points))
+            grid_selected = np.vstack(
+                [grid_selected, self.inlier_points[chull.vertices]])
         
         # triangulate and remove big triangles
         projections = self.get_projections(grid_selected)
