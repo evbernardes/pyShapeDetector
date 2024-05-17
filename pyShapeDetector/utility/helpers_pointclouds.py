@@ -208,7 +208,7 @@ def read_point_cloud(filepath, down_sample=None, estimate_normals=False):
 
     return pcds
 
-def paint_random(elements):
+def paint_random(elements, paint_inliers=False):
     """ Paint each pointcloud/mesh with a different random color.
     
     Parameters
@@ -226,7 +226,8 @@ def paint_random(elements):
         color = np.random.random(3)
         if isinstance(element, Primitive):
             element._color = color
-            element._inlier_colors[:] = color
+            if paint_inliers:
+                element._inlier_colors[:] = color
         else:
             element.paint_uniform_color(color)
             
