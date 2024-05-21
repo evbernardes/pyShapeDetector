@@ -633,7 +633,7 @@ class PlaneTriangulated(Plane):
             self.triangles)
         
         if not isinstance(min_inliers, int) or (min_inliers < 1):
-            raise ValueError("min_inliers must be a positive integer, got {min_inliers}.")
+            raise ValueError(f"min_inliers must be a positive integer, got {min_inliers}.")
         
         loop_indexes = get_loop_indexes_from_boundary_indexes(boundary_indexes)
         
