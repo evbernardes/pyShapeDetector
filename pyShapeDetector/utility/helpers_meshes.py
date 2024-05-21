@@ -270,7 +270,7 @@ def simplify_loop_with_angle(vertices, loop_indexes, angle_colinear, colinear_re
     list
         Simplified loop.
     """
-    if angle_colinear <= 0:
+    if angle_colinear < 0:
         raise ValueError("angle_colinear must be a positive value, "
                          f"got {angle_colinear}")
     
