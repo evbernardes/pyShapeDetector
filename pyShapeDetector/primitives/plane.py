@@ -750,6 +750,7 @@ class Plane(Primitive):
                                      add_inliers=True,
                                      angle_colinear=0,
                                      colinear_recursive=True,
+                                     contract_bounds=False,
                                      min_inliers=1):
         """
         Experimental method of triangulating plane with a grid.
@@ -786,6 +787,8 @@ class Plane(Primitive):
         colinear_recursive : boolean, optional
             If False, only try to simplify loop once. If True, try to simplify
             it until no more simplification is possible. Default: True.
+        contract_bounds : boolean, optional
+            If True, contract bounds to closest inlier points. Default: False.
         min_inliers : int, optional
             If add_inliers is True, remove planes with less inliers than this
             value. Default: 1.
@@ -814,6 +817,7 @@ class Plane(Primitive):
             add_inliers=add_inliers, 
             angle_colinear=angle_colinear, 
             colinear_recursive=colinear_recursive,
+            contract_bounds=contract_bounds,
             min_inliers=min_inliers)
         
         if return_rect_grid:

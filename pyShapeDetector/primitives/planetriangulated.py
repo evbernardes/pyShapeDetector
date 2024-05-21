@@ -593,6 +593,7 @@ class PlaneTriangulated(Plane):
                                            add_inliers=True,
                                            angle_colinear=0,
                                            colinear_recursive=True,
+                                           contract_bounds=False,
                                            min_inliers=1):
         """ Convert PlaneTriangulated instance into list of non-convex 
         PlaneBounded instances.
@@ -610,10 +611,13 @@ class PlaneTriangulated(Plane):
         add_inliers : boolean, optional
             If True, add inlier points.
         angle_colinear : float, optional
-            Small angle value for assuming two lines are colinear. Default: 0
+            Small angle value for assuming two lines are colinear. If None is 
+            given, then no simplification is done. Default: 0.
         colinear_recursive : boolean, optional
             If False, only try to simplify loop once. If True, try to simplify
             it until no more simplification is possible. Default: True.
+        contract_bounds : boolean, optional
+            If True, contract bounds to closest inlier points. Default: False.
         min_inliers : int, optional
             If add_inliers is True, remove planes with less inliers than this
             value. Default: 1.
@@ -633,12 +637,16 @@ class PlaneTriangulated(Plane):
         
         loop_indexes = get_loop_indexes_from_boundary_indexes(boundary_indexes)
         
-        if angle_colinear != 0:
+        if angle_colinear is not None:
             for i in range(len(loop_indexes)):
                 loop_indexes[i] = simplify_loop_with_angle(
                     self.vertices, loop_indexes[i], angle_colinear, colinear_recursive)
 
         planes = [PlaneBounded(self, self.vertices[loop], convex=False) for loop in loop_indexes]
+        
+        if contract_bounds:
+            for p in planes:
+                p.contract_bounds()
         
         if detect_holes and (N := len(planes)) > 1:
             fuse_dict = {key: [] for key in range(N)}

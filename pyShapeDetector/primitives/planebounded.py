@@ -21,7 +21,7 @@ from pyShapeDetector.utility import (
     # get_triangle_boundary_indexes,
     # get_loop_indexes_from_boundary_indexes
     # find_closest_points,
-    # find_closest_points_indices,
+    find_closest_points_indices,
     get_triangle_points,
     simplify_loop_with_angle,
     )
@@ -159,6 +159,7 @@ class PlaneBounded(Plane):
     add_bound_points
     intersection_bounds
     simplify_bounds_colinear
+    contract_bounds
     """
     _name = 'bounded plane'
     _bounds_indices = np.array([])
@@ -829,4 +830,34 @@ class PlaneBounded(Plane):
         
         bounds_new = self.bounds[indices]
         self.set_bounds(bounds_new, flatten=False, convex=self.is_convex)
+        
+    def contract_bounds(self, points=None, contract_holes=True):
+        """
+        Replace each plane bound with the closest point on the input points.
+        If no input is used, use internal inlier points.
+        
+        Parameters
+        ----------
+        points : N x 3 array, optional
+            Points used to replace bounds. If None is given, use inliers.
+        contract_holes : boolean, 
+        """
+        if points is None:
+            points = self.inlier_points
+            if len(points) == 0:
+                raise RuntimeError("Plane has no inliers, and no input points "
+                                   "were given.")
+        
+        indices = [
+            find_closest_points_indices([p], points)[1][0] for p in self.bounds
+            ]
+
+        indices_unique = []
+        for i in indices:
+            if i in indices_unique:
+                continue
+            indices_unique.append(i)
+        
+        bounds_new = points[indices_unique]
+        self.set_bounds(bounds_new, flatten=False, convex=self.is_convex)            
         
