@@ -743,9 +743,15 @@ class Plane(Primitive):
         Plane.__copy_atributes__(plane, self)
         return plane
     
-    def get_bounded_planes_from_grid(self, grid_width, max_point_dist=None, 
-                                     grid_type = "hexagonal", perimeter_multiplier=1,
-                                     return_rect_grid=False, perimeter_eps=1e-3,
+    def get_bounded_planes_from_grid(self, 
+                                     grid_width, 
+                                     max_point_dist=None, 
+                                     grid_type = "hexagonal", 
+                                     perimeter_multiplier=1,
+                                     return_rect_grid=False, 
+                                     perimeter_eps=1e-3,
+                                     only_inside=False, 
+                                     add_boundary=False,
                                      detect_holes=False,
                                      add_inliers=True,
                                      angle_colinear=0,
@@ -778,6 +784,11 @@ class Plane(Primitive):
             If True, tuple containing rectangular plane and grid. Default: False.
         perimeter_eps : float, option
             Small slack value added to perimeter testing. Default: 1e-3.
+        only_inside : boolean, optional
+            If True, remove grid points not contained in original convex 
+            boundary. Default: False.
+        add_boundary : boolean, optional
+            If True, add convex boundary points to grid. Default: False.
         detect_holes : boolean, optional
             If True, try to detect holes. Default: False.
         add_inliers : boolean, optional
@@ -805,7 +816,9 @@ class Plane(Primitive):
             grid_type=grid_type, 
             perimeter_multiplier=perimeter_multiplier, 
             perimeter_eps=perimeter_eps, 
-            return_rect_grid=return_rect_grid)
+            return_rect_grid=return_rect_grid,
+            only_inside=only_inside,
+            add_boundary=add_boundary)
         
         if return_rect_grid:
             plane_triangulated, plane_rect, grid = result
