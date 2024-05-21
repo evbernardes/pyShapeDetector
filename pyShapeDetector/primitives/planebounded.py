@@ -23,6 +23,7 @@ from pyShapeDetector.utility import (
     # find_closest_points,
     # find_closest_points_indices,
     get_triangle_points,
+    simplify_loop_with_angle,
     )
 # from .primitivebase import Primitive
 from .plane import Plane
@@ -157,6 +158,7 @@ class PlaneBounded(Plane):
     set_bounds
     add_bound_points
     intersection_bounds
+    simplify_bounds_colinear
     """
     _name = 'bounded plane'
     _bounds_indices = np.array([])
@@ -809,4 +811,20 @@ class PlaneBounded(Plane):
             return np.array([])
         else:
             return np.vstack(points)
+        
+    def simplify_bounds_colinear(self, angle_colinear=0, colinear_recursive=True):
+        """
+        Simplify bounds be removing some if they are colinear (or almost colinear).
+        
+        angle_colinear : float, optional
+            Small angle value for assuming two lines are colinear. Default: 0
+        colinear_recursive : boolean, optional
+            If False, only try to simplify loop once. If True, try to simplify
+            it until no more simplification is possible. Default: True.
+        """
+        indices = simplify_loop_with_angle(
+            self.bounds, range(len(self.bounds)), angle_colinear, colinear_recursive)
+        
+        bounds_new = self.bounds[indices]
+        self.set_bounds(bounds_new, flatten=False, convex=self.is_convex)
         
