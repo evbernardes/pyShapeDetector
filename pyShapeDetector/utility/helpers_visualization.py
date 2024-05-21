@@ -17,7 +17,7 @@ def _treat_up_normal(camera_options):
     up = camera_options.get('up', None)
     
     if normal is not None and  up is not None:
-            raise ValueError("Cannot enter both 'front' and 'normal'")
+            raise ValueError("Cannot enter both 'up' and 'normal'")
     
     elif normal is not None:
         x = np.cross(np.random.random(3), normal)
@@ -32,7 +32,7 @@ def draw_geometries(elements, **camera_options):
     
     from pyShapeDetector.primitives import Primitive, Line, Plane, PlaneBounded
 
-    _treat_up_normal(camera_options)
+    # _treat_up_normal(camera_options)
     _ = camera_options.pop('dist', None)
         
     try:
@@ -107,7 +107,7 @@ def draw_geometries(elements, **camera_options):
     
 def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
                   
-    _treat_up_normal(camera_options)       
+    # _treat_up_normal(camera_options)       
     lookat = camera_options.pop('lookat', None)
     up = camera_options.pop('up', None)
     front = camera_options.pop('front', None)
