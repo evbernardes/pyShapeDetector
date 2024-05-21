@@ -816,6 +816,8 @@ class PlaneBounded(Plane):
         """
         Simplify bounds be removing some if they are colinear (or almost colinear).
         
+        Parameters
+        ----------
         angle_colinear : float, optional
             Small angle value for assuming two lines are colinear. Default: 0
         colinear_recursive : boolean, optional
