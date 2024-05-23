@@ -1121,6 +1121,7 @@ class Primitive(ABC):
         data['inlier_points'] = self.inlier_points.tolist()
         data['inlier_normals'] = self.inlier_normals.tolist()
         data['inlier_colors'] = self.inlier_colors.tolist()
+        data['color'] = self.color.tolist()
     
     def save(self, path):
         """ Saves shape to JSON file.
@@ -1146,6 +1147,7 @@ class Primitive(ABC):
         self._inlier_points = np.array(data['inlier_points'])
         self._inlier_normals = np.array(data['inlier_normals'])
         self._inlier_colors = np.array(data['inlier_colors'])
+        self.color = data['color']
     
     @staticmethod
     def load(path):
