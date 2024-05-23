@@ -60,7 +60,9 @@ def draw_geometries(elements, **camera_options):
         elements = [elements]
     
     for element in elements:
-        if isinstance(element, Line):
+        if hasattr(element, 'as_open3d'):
+            geometries.append(element.as_open3d)
+        elif isinstance(element, Line):
             lines.append(element)
         elif isinstance(element, Plane):
             if draw_planes:
