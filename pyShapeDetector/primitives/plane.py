@@ -68,6 +68,10 @@ class Plane(Primitive):
     canonical
     color
     mesh
+    inliers
+    inliers_flattened
+    inliers
+    inliers_flattened
     has_inliers
     inlier_mean
     inlier_median
@@ -75,8 +79,6 @@ class Plane(Primitive):
     inlier_points_flattened
     inlier_normals
     inlier_colors
-    inlier_PointCloud
-    inlier_PointCloud_flattened
     metrics
     axis_spherical
     axis_cylindrical
@@ -420,7 +422,7 @@ class Plane(Primitive):
             warnings.warn('No inlier points, returning square plane...')
             return self.get_square_mesh(1)
 
-        bounded_plane = PlaneBounded(self.model, self.inlier_points_flattened)
+        bounded_plane = PlaneBounded(self.model, self.inliers_flattened.points)
         # bounded_plane.__copy_atributes__(self)
         mesh = bounded_plane.get_mesh()
 

@@ -190,11 +190,11 @@ def test_copy_regular():
         shape_copy = shape.copy()
         assert shape == shape_copy
         assert id(shape) != id(shape_copy)
-        assert id(shape.inlier_points) != id(shape_copy.inlier_points)
+        assert id(shape.inliers.points) != id(shape_copy.inliers.points)
         shape_copy = copy.copy(shape)
         assert shape == shape_copy
         assert id(shape) != id(shape_copy)
-        assert id(shape.inlier_points) != id(shape_copy.inlier_points)
+        assert id(shape.inliers.points) != id(shape_copy.inliers.points)
 
 
 def test_copy_planebounded():
@@ -213,7 +213,7 @@ def test_copy_planebounded():
         for shape_copy in [shape.copy(), copy.copy(shape)]:
             assert shape == shape_copy
             assert id(shape) != id(shape_copy)
-            assert id(shape.inlier_points) != id(shape_copy.inlier_points)
+            assert id(shape.inliers.points) != id(shape_copy.inliers.points)
             assert shape.holes == shape_copy.holes
             if len(shape.holes) > 0:
                 assert id(shape.holes[0]) != id(shape_copy.holes[0])
@@ -228,12 +228,12 @@ def test_deepcopy():
 
         assert shapes[0] == shapes_copy[0]
         assert shapes[1] == shapes_copy[1]
-        assert_allclose(shapes[0].inlier_points, shapes_copy[0].inlier_points)
-        assert_allclose(shapes[0].inlier_points, shapes_copy[0].inlier_points)
+        assert_allclose(shapes[0].inliers.points, shapes_copy[0].inliers.points)
+        assert_allclose(shapes[0].inliers.points, shapes_copy[0].inliers.points)
         assert id(shapes[0]) != id(shapes_copy[1])
         assert id(shapes[1]) != id(shapes_copy[1])
-        assert id(shapes[0].inlier_points) != id(shapes_copy[0].inlier_points)
-        assert id(shapes[0].inlier_points) != id(shapes_copy[0].inlier_points)
+        assert id(shapes[0].inliers.points) != id(shapes_copy[0].inliers.points)
+        assert id(shapes[0].inliers.points) != id(shapes_copy[0].inliers.points)
 
 
 def test_get_rectangular_vectors_from_inliers():
@@ -248,7 +248,7 @@ def test_get_rectangular_vectors_from_inliers():
         V2 *= 1 + 1e-7
         plane_rect = plane.get_rectangular_plane((V1, V2), center)
 
-        assert np.all(plane_rect.contains_projections(plane.inlier_points))
+        assert np.all(plane_rect.contains_projections(plane.inliers.points))
 
 
 def test_plane_surface_area_and_volume():
@@ -333,7 +333,7 @@ def test_fit():
     for i in range(5):
         shape = get_shape(Cylinder, 1000, canonical=True)
         shape_fit = Cylinder.fit(
-            shape.inlier_points, normals=shape.inlier_normals).canonical
+            shape.inliers.points, normals=shape.inliers.normals).canonical
         # test axis instead of vector for direct fit
         assert_allclose(shape.axis, shape_fit.axis, rtol=1e-2, atol=1e-2)
         assert_allclose(shape.radius, shape_fit.radius, rtol=1e-2, atol=1e-2)
@@ -341,7 +341,7 @@ def test_fit():
     # # testing Cone separately
     # for i in range(5):
     #     shape = get_shape(Cone, 10000, canonical=True)
-        # pcd = shape.inlier_PointCloud
+        # pcd = shape.inliers
     #     shape_fit = Cone.fit(pcd.points, normals=pcd.normals).canonical
     #     assert_allclose(shape.appex, shape_fit.appex, rtol=1e-1, atol=1e-1)
     #     assert_allclose(shape.half_angle, shape_fit.half_angle, rtol=1e-1, atol=1e-1)
@@ -353,7 +353,7 @@ def test_fit():
         for i in range(5):
             shape = get_shape(primitive, 100, canonical=True)
             shape_fit = primitive.fit(
-                shape.inlier_points, normals=shape.inlier_normals).canonical
+                shape.inliers.points, normals=shape.inliers.normals).canonical
             assert_allclose(shape.model, shape_fit.model, rtol=1e-2, atol=1e-2)
 
 
@@ -361,7 +361,7 @@ def test_distances():
     for primitive in all_primitives_regular:
         for i in range(5):
             shape = get_shape(primitive, 100, canonical=False)
-            distances = shape.get_distances(shape.inlier_points)
+            distances = shape.get_distances(shape.inliers.points)
             # assert_allclose(rmse(distances), 0, atol=1e-2)
             assert_allclose(distances, 0, atol=1e-1)
 
@@ -485,8 +485,8 @@ def test_translate_and_rotate():
     inlier_normals = rotation.apply(inlier_normals)
 
     for s in shapes:
-        assert_allclose(s.inlier_points, inlier_points)
-        assert_allclose(s.inlier_normals, inlier_normals)
+        assert_allclose(s.inliers.points, inlier_points)
+        assert_allclose(s.inliers.normals, inlier_normals)
         
         
 # def test_bounding_box_bounds():
@@ -508,7 +508,7 @@ def test_axis_aligned_bounding_box_no_planes():
     num_samples = 1000
     for primitive in all_primitives_regular_bounded:
         shape = get_shape(Sphere, num_samples)
-        pcd = shape.inlier_PointCloud.crop(shape.bbox)
+        pcd = shape.inliers.crop(shape.bbox)
         assert len(pcd.points) == num_samples
         
         

@@ -26,6 +26,8 @@ class Sphere(Primitive):
     canonical
     color
     mesh
+    inliers
+    inliers_flattened
     has_inliers
     inlier_mean
     inlier_median
@@ -33,8 +35,6 @@ class Sphere(Primitive):
     inlier_points_flattened
     inlier_normals
     inlier_colors
-    inlier_PointCloud
-    inlier_PointCloud_flattened
     metrics
     axis_spherical
     axis_cylindrical

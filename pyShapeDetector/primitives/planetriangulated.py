@@ -39,6 +39,8 @@ class PlaneTriangulated(Plane):
     canonical
     color
     mesh
+    inliers
+    inliers_flattened
     has_inliers
     inlier_mean
     inlier_median
@@ -46,9 +48,7 @@ class PlaneTriangulated(Plane):
     inlier_points_flattened
     inlier_normals
     inlier_colors
-    inlier_PointCloud
-    inlier_PointCloud_flattened
-    metricsd
+    metrics
     axis_spherical
     axis_cylindrical
     bbox

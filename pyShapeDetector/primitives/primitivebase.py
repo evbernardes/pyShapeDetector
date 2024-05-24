@@ -67,6 +67,8 @@ class Primitive(ABC):
     canonical
     color
     mesh
+    inliers
+    inliers_flattened
     has_inliers
     inlier_mean
     inlier_median
@@ -74,8 +76,6 @@ class Primitive(ABC):
     inlier_points_flattened
     inlier_normals
     inlier_colors
-    inlier_PointCloud
-    inlier_PointCloud_flattened
     metrics
     axis_spherical
     axis_cylindrical
@@ -237,8 +237,7 @@ class Primitive(ABC):
     
     @property
     def inliers_flattened(self):
-        points = self.flatten_points(self.inliers.points)
-        return PointCloud.from_points_normals_colors(points,
+        return PointCloud.from_points_normals_colors(self.inlier_points_flattened,
                                                      self.inliers.normals,
                                                      self.inliers.colors)
 
@@ -266,7 +265,7 @@ class Primitive(ABC):
     @property
     def inlier_points_flattened(self):
         """ Convenience attribute that can be set to save inlier points """
-        return self.inliers_flattened.points
+        return self.flatten_points(self.inliers.points)
         
     @property
     def inlier_normals(self):
@@ -277,16 +276,6 @@ class Primitive(ABC):
     def inlier_colors(self):
         """ Convenience attribute that can be set to save inlier colors """
         return self.inliers.colors
-    
-    @property
-    def inlier_PointCloud(self):
-        """ Creates Open3D.geometry.PointCloud object from inlier points. """
-        return self.inliers
-    
-    @property
-    def inlier_PointCloud_flattened(self):
-        """ Creates Open3D.geometry.PointCloud object from inlier points. """
-        return self.inliers_flattened
 
     @property
     def metrics(self):
