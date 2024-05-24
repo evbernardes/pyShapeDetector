@@ -5,7 +5,8 @@ Created on Thu May 23 10:00:58 2024
 
 @author: ebernardes
 """
-
+import copy
+import functools
 import numpy as np
 from open3d import utility
 
@@ -18,6 +19,9 @@ converters = {
     (3, float): utility.Vector3dVector,
     (4, int): utility.Vector4iVector,
     }
+
+empty_3d_array = np.array([])
+empty_3d_array.shape = (0, 3)
 
 def _convert_args_to_numpy(args):
     if isinstance(args, (list, tuple)):
@@ -38,6 +42,9 @@ def _convert_args_to_open3d(*args, **kwargs):
         if isinstance(arg, (list, tuple)):
             arg = np.array(arg)
         
+        if isinstance(arg, np.ndarray) and arg.shape == (0, ):
+            arg = empty_3d_array
+        
         if isinstance(arg, np.ndarray):
             
             dtype = int if (arg.dtype == int) else float if (arg.dtype == float) else None
@@ -52,6 +59,8 @@ def _convert_args_to_open3d(*args, **kwargs):
     return tuple(args), kwargs
 
 def result_as_numpy(func):
+    @functools.wraps(func)
+    
     def wrapper(*args, **kwargs):
         return _convert_args_to_numpy(func(*args, **kwargs))
     return wrapper
@@ -60,6 +69,7 @@ def args_to_open3d(func):
     if func is None:
         return None
     
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         args, kwargs = _convert_args_to_open3d(*args, **kwargs)
         return func(*args, **kwargs)
@@ -69,13 +79,14 @@ def to_open3d_and_back(func):
     if func is None:
         return None
     
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         args, kwargs = _convert_args_to_open3d(*args, **kwargs)
         return _convert_args_to_numpy(func(*args, **kwargs))
     return wrapper
 
 def link_to_open3d_geometry(original_class):
-    def _copy_from_open3d(cls):
+    def decorator(cls):
         
         setattr(cls, '__open3d_class__', original_class)
 
@@ -88,30 +99,41 @@ def link_to_open3d_geometry(original_class):
         # removing two last subclasses, 'object' and 'pybind11_object'
         for subclass in original_class.__mro__[:-2]:
             for attr_name, attr_value in subclass.__dict__.items():
-                if attr_name == '__init__':
+                if attr_name == '__init__' or attr_name in cls.__mro__[0].__dict__ or attr_name in cls.__mro__[1].__dict__:
+                    print(f'not copying {attr_name}')
                     continue
 
-                if attr_name not in cls.__mro__[0].__dict__:
-                    if callable(attr_value):
-                        setattr(cls, attr_name, to_open3d_and_back(attr_value))
+                # if attr_name not in cls.__mro__[0].__dict__:
+                if callable(attr_value):
+                    print(f'copying {attr_name}')
+                    setattr(cls, attr_name, to_open3d_and_back(attr_value))
+                
+                elif isinstance(attr_value, property):
+                    print(f'copying {attr_name}')
+                    # Apply decorators to the original getter and setter functions                        
+                    getter = to_open3d_and_back(attr_value.fget)
+                    setter = args_to_open3d(attr_value.fset)
                     
-                    elif isinstance(attr_value, property):
-                        
-                        # Apply decorators to the original getter and setter functions                        
-                        getter = to_open3d_and_back(attr_value.fget)
-                        setter = args_to_open3d(attr_value.fset)
-                        
-                        # Create a new property with the decorated getter and setter functions
-                        new_property = property(getter, setter, attr_value.fdel, attr_value.__doc__)
-                        
-                        setattr(cls, attr_name, new_property)
-                    else:
-                        setattr(cls, attr_name, attr_value)
+                    # Create a new property with the decorated getter and setter functions
+                    new_property = property(getter, setter, attr_value.fdel, attr_value.__doc__)
+                    
+                    setattr(cls, attr_name, new_property)
+                else:
+                    setattr(cls, attr_name, attr_value)
         return cls
-    return _copy_from_open3d
+    return decorator
 
 class Open3D_Geometry():
     
     @property
     def as_open3d(self):
         return self._open3d
+    
+    def __copy__(self, *args):
+        _open3d = copy.copy(self.as_open3d)
+        return type(self)(_open3d)
+    
+    def __deepcopy__(self, *args):
+        _open3d = copy.deepcopy(self.as_open3d)
+        return type(self)(_open3d)
+        # return "test"
