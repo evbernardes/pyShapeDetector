@@ -541,7 +541,7 @@ def test_axis_aligned_bounding_box_planes():
     #         assert len(pcd.points) == num_samples
 
 if __name__ == "__main__":
-    test_plane_transformations()
+    # test_plane_transformations()
     # test_distances()
     # test_equal()
     # test_bounding_box_bounds()
