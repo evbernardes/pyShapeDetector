@@ -137,6 +137,7 @@ def link_to_open3d_geometry(original_class):
     return decorator
 
 class Open3D_Geometry():
+    __open3d_class__ = None
     
     @property
     def as_open3d(self):
@@ -150,3 +151,7 @@ class Open3D_Geometry():
         _open3d = copy.deepcopy(self.as_open3d)
         return type(self)(_open3d)
         # return "test"
+        
+    @classmethod
+    def is_instance_or_open3d(cls, elem):
+        return isinstance(elem, (cls, cls.__open3d_class__))
