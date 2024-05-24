@@ -256,7 +256,7 @@ class PlaneBounded(Plane):
         if bounds is None:
             if isinstance(model, Plane) and model.has_inliers:
                 warnings.warn('No input bounds, using inliers.')
-                bounds = model.inlier_points
+                bounds = model.inliers.points
                 convex = False
             # elif isinstance(model, PlaneTriangulated):
             #     print("No input bounds, using PlaneTriangulated's boundary.")

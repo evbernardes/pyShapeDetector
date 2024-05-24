@@ -172,7 +172,7 @@ class PlaneTriangulated(Plane):
         if len(self.vertices) > 0:
             return self.vertices
         else:
-            return self.inlier_points
+            return self.inliers.points
 
     def __init__(self, model, vertices=None, triangles=None,
                  decimals=None):

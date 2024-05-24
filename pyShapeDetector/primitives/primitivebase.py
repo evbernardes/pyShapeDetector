@@ -9,10 +9,13 @@ import warnings
 import copy
 from abc import ABC, abstractmethod
 import numpy as np
-from open3d.geometry import PointCloud, AxisAlignedBoundingBox
+# from open3d.geometry import PointCloud, AxisAlignedBoundingBox
+from open3d.geometry import PointCloud as open3d_PointCloud
+from open3d.geometry import AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
 from scipy.spatial.transform import Rotation
 from pyShapeDetector.utility import clean_crop, get_rotation_from_axis, new_PointCloud
+from pyShapeDetector.geometry import PointCloud
 
 def _set_and_check_3d_array(input_array, name='array', num_points=None):
     if input_array is None or len(input_array) == 0:
@@ -126,14 +129,14 @@ class Primitive(ABC):
     check_inlier_distance
     fuse
     """
-    _inlier_points = np.asarray([])
-    _inlier_normals = np.asarray([])
-    _inlier_colors = np.asarray([])
-    # _inlier_indices = np.asarray([])
+    # _inlier_points = np.asarray([])
+    # _inlier_normals = np.asarray([])
+    # _inlier_colors = np.asarray([])
     _metrics = {}
     _color = None
     _mesh = None
     _decimals = None
+    # _inliers = None
     
     @property
     def fit_n_min(self):
@@ -191,8 +194,8 @@ class Primitive(ABC):
     @property
     def color(self):
         if self._color is None:
-            if len(self.inlier_colors) > 0:
-                self._color = np.median(self.inlier_colors, axis=0)
+            if len(self.inliers.colors) > 0:
+                self._color = np.median(self.inliers.colors, axis=0)
             else:
                 seed = int(str(abs(hash(self.name)))[:9])
                 self._color = np.random.seed(seed)
@@ -227,56 +230,63 @@ class Primitive(ABC):
             raise ValueError("Meshes must be of type "
                              "open3d.geometry.TriangleMesh.")
         self._mesh = new_mesh
+        
+    @property
+    def inliers(self):
+        return self._inliers
+    
+    @property
+    def inliers_flattened(self):
+        points = self.flatten_points(self.inliers.points)
+        return PointCloud.from_points_normals_colors(points,
+                                                     self.inliers.normals,
+                                                     self.inliers.colors)
 
     @property
     def has_inliers(self):
-        return len(self._inlier_points) > 0
+        return len(self.inliers.points) > 0
     
     @property
     def inlier_mean(self):
         if not self.has_inliers:
             raise ValueError("Shape has no inliers.")
-        return self.inlier_points.mean(axis=0)
+        return self.inliers.points.mean(axis=0)
     
     @property
     def inlier_median(self):
         if not self.has_inliers:
             raise ValueError("Shape has no inliers.")
-        return np.median(self.inlier_points, axis=0)
+        return np.median(self.inliers.points, axis=0)
         
     @property
     def inlier_points(self):
         """ Convenience attribute that can be set to save inlier points """
-        return self._inlier_points
+        return self.inliers.points
         
     @property
     def inlier_points_flattened(self):
         """ Convenience attribute that can be set to save inlier points """
-        return self.flatten_points(self.inlier_points)
+        return self.inliers_flattened.points
         
     @property
     def inlier_normals(self):
         """ Convenience attribute that can be set to save inlier normals """
-        return self._inlier_normals
+        return self.inliers.normals
         
     @property
     def inlier_colors(self):
         """ Convenience attribute that can be set to save inlier colors """
-        return self._inlier_colors
+        return self.inliers.colors
     
     @property
     def inlier_PointCloud(self):
         """ Creates Open3D.geometry.PointCloud object from inlier points. """
-        return new_PointCloud(self.inlier_points, 
-                              self.inlier_normals, 
-                              self.inlier_colors)
+        return self.inliers
     
     @property
     def inlier_PointCloud_flattened(self):
         """ Creates Open3D.geometry.PointCloud object from inlier points. """
-        return new_PointCloud(self.inlier_points_flattened, 
-                              self.inlier_normals, 
-                              self.inlier_colors)
+        return self.inliers_flattened
 
     @property
     def metrics(self):
@@ -375,6 +385,7 @@ class Primitive(ABC):
                              f'{self.model_args_n} elements, got {model}')
         
         self._model = Primitive._parse_model_decimals(model, decimals)
+        self._inliers = PointCloud()
         self._decimals = decimals
         
     @classmethod
@@ -548,7 +559,7 @@ class Primitive(ABC):
         ----------
         points : N x 3 array
             N input points 
-        normals : N x 3 array
+        normals : N x 3 arrayopen3d
             N normal vectors
             
         Raises
@@ -627,25 +638,25 @@ class Primitive(ABC):
             If True, use inliers mean color for shape. Default: False.
         """
         
-        if isinstance(points_or_pointcloud, PointCloud):
+        if isinstance((pcd := points_or_pointcloud), (PointCloud, open3d_PointCloud)):
             if normals is not None or colors is not None:
                 raise TypeError("If PointCloud is given as input, normals and "
                                 "colors are taken from it, and not accepted "
                                 "as input.")
                 
-            points = points_or_pointcloud.points
-            normals = points_or_pointcloud.normals
-            colors = points_or_pointcloud.colors
+            points = pcd.points
+            normals = pcd.normals
+            colors = pcd.colors
             
-        elif isinstance(points_or_pointcloud, Primitive):
+        elif isinstance((shape := points_or_pointcloud), Primitive):
             if normals is not None or colors is not None:
                 raise TypeError("If PointCloud is given as input, normals and "
                                 "colors are taken from it, and not accepted "
                                 "as input.")
                 
-            points = points_or_pointcloud.inlier_points
-            normals = points_or_pointcloud.inlier_normals
-            colors = points_or_pointcloud.inlier_colors
+            points = shape.inliers.points
+            normals = shape.inliers.normals
+            colors = shape.inliers.colors
         else:
             points = points_or_pointcloud
             
@@ -657,9 +668,14 @@ class Primitive(ABC):
         if flatten:
             points = self.flatten_points(points)
 
-        self._inlier_points = points
-        self._inlier_normals = normals
-        self._inlier_colors = colors
+        # self._inlier_points = points
+        # self._inlier_normals = normals
+        # self._inlier_colors = colors
+        self.inliers.points = points
+        if len(normals) > 0:
+            self.inliers.normals = normals
+        if len(colors) > 0:
+            self.inliers.colors = colors
         if color_shape and (len(colors) > 0):
             self.color = np.median(colors, axis=0)
             
@@ -687,15 +703,15 @@ class Primitive(ABC):
         
         new_colors = np.repeat(self.color, num_points).reshape(num_points, 3)
         
-        self._inlier_points = np.vstack([self._inlier_points, new_points])
+        self.inliers.points = np.vstack([self.inliers.points, new_points])
         
-        if len(self.inlier_normals) > 0:
+        if len(self.inliers.normals) > 0:
             new_normals = self.get_normals(new_points)
-            self._inlier_normals = np.vstack([self._inlier_normals, new_normals])
+            self.inliers.normals = np.vstack([self.inliers.normals, new_normals])
             
-        if len(self.inlier_colors) > 0:
+        if len(self.inliers.colors) > 0:
             new_colors = np.repeat(self.color, num_points).reshape(num_points, 3)
-            self._inlier_colors = np.vstack([self._inlier_colors, new_colors])    
+            self.inliers.colors = np.vstack([self.inliers.colors, new_colors])    
             
     def closest_inliers(self, other_shape, n=1):
         """ Returns n pairs of closest inlier points with a second shape.
@@ -720,7 +736,7 @@ class Primitive(ABC):
         from pyShapeDetector.utility import find_closest_points
         
         closest_points, distances = find_closest_points(
-            self.inlier_points, other_shape.inlier_points, n)
+            self.inliers.points, other_shape.inliers.points, n)
         
         return closest_points, distances
     
@@ -749,7 +765,7 @@ class Primitive(ABC):
             Average nearest dist.
         """        
         from pyShapeDetector.utility import average_nearest_dist
-        return average_nearest_dist(self.inlier_points, k, leaf_size)
+        return average_nearest_dist(self.inliers.points, k, leaf_size)
     
     def get_inliers_axis_aligned_bounding_box(self, slack=0, num_sample=15):
         """ If the shape includes inlier points, returns the minimum and 
@@ -773,8 +789,8 @@ class Primitive(ABC):
         """        
         slack = abs(slack)
         
-        if len(self.inlier_points) > 0:
-            points = self.inlier_points
+        if len(self.inliers.points) > 0:
+            points = self.inliers.points
         else:
             points = np.array(
                 self.sample_points_uniformly(num_sample).points)
@@ -883,7 +899,8 @@ class Primitive(ABC):
             raise ValueError("Number of points must be a non-negative number.")
             
         mesh = self.get_mesh()
-        pcd = mesh.sample_points_uniformly(number_of_points, use_triangle_normal)
+        pcd = PointCloud()
+        pcd._open3d = mesh.sample_points_uniformly(number_of_points, use_triangle_normal)
         pcd.normals = Vector3dVector(self.get_normals(pcd.points))
         return pcd
     
@@ -952,7 +969,7 @@ class Primitive(ABC):
         """
         
         if points is None:
-            points = self.inlier_points
+            points = self.inliers.points
         
         if len(points) == 0:
             raise ValueError('No points given, and no inlier points.')
@@ -987,9 +1004,10 @@ class Primitive(ABC):
         return compare.all()
     
     def __copy_atributes__(self, shape_original):
-        self._inlier_points = shape_original._inlier_points.copy()
-        self._inlier_normals = shape_original._inlier_normals.copy()
-        self._inlier_colors = shape_original._inlier_colors.copy()
+        # self.inliers.points = shape_original.inliers.points.copy()
+        # self.inliers.normals = shape_original.inliers.normals.copy()
+        # self.inliers.colors = shape_original.inliers.colors.copy()
+        self._inliers = copy.copy(shape_original.inliers)
         self._metrics = shape_original._metrics.copy()
         self._color = shape_original._color.copy()
         # So that mesh can be recreated when getting different versions of primitives
@@ -1019,8 +1037,8 @@ class Primitive(ABC):
     
     def _translate_points(self, translation):
         """ Internal helper function for translation"""
-        if len(self._inlier_points) > 0:
-            self._inlier_points = self._inlier_points + translation
+        if len(self.inliers.points) > 0:
+            self.inliers.points = self.inliers.points + translation
     
     def translate(self, translation):
         """ Translate the shape.
@@ -1063,10 +1081,10 @@ class Primitive(ABC):
     
     def _rotate_points_normals(self, rotation):
         """ Internal helper function for rotation"""
-        if len(self._inlier_points) > 0:
-            self._inlier_points = rotation.apply(self._inlier_points)
-        if len(self._inlier_normals) > 0:
-            self._inlier_normals = rotation.apply(self._inlier_normals)
+        if len(self.inliers.points) > 0:
+            self.inliers.points = rotation.apply(self.inliers.points)
+        if len(self.inliers.normals) > 0:
+            self.inliers.normals = rotation.apply(self.inliers.normals)
         
     def rotate(self, rotation):
         """ Rotate the shape.
@@ -1118,7 +1136,7 @@ class Primitive(ABC):
     def __put_attributes_in_dict__(self, data):
         data['name'] = self.name
         data['model'] = self.model.tolist()
-        data['inlier_points'] = self.inlier_points.tolist()
+        data['inlier_points'] = self.inliers.points.tolist()
         data['inlier_normals'] = self.inlier_normals.tolist()
         data['inlier_colors'] = self.inlier_colors.tolist()
         if self.color is not None:
@@ -1145,9 +1163,9 @@ class Primitive(ABC):
         f.close()
     
     def __get_attributes_from_dict__(self, data):
-        self._inlier_points = np.array(data['inlier_points'])
-        self._inlier_normals = np.array(data['inlier_normals'])
-        self._inlier_colors = np.array(data['inlier_colors'])
+        self.inliers.points = np.array(data['inlier_points'])
+        self.inliers.normals = np.array(data['inlier_normals'])
+        self.inliers.colors = np.array(data['inlier_colors'])
         color = data.get('color')
         if color is not None:
             self.color = color
@@ -1249,7 +1267,7 @@ class Primitive(ABC):
         if distance <= 0:
             raise ValueError("Distance must be positive.")
             
-        if len(self.inlier_points) == 0 or len(other_shape.inlier_points) == 0:
+        if len(self.inliers.points) == 0 or len(other_shape.inliers.points) == 0:
             raise RuntimeError("Both shapes must have inlier points.")
         
         _, dist = self.closest_inliers(other_shape)
@@ -1302,9 +1320,9 @@ class Primitive(ABC):
             shape = primitive(model)
         
         if not ignore_extra_data:
-            points = np.vstack([shape.inlier_points for shape in shapes])
-            normals = np.vstack([shape.inlier_normals for shape in shapes])
-            colors = np.vstack([shape.inlier_colors for shape in shapes])
+            points = np.vstack([shape.inliers.points for shape in shapes])
+            normals = np.vstack([shape.inliers.normals for shape in shapes])
+            colors = np.vstack([shape.inliers.colors for shape in shapes])
             if points.shape[1] == 0:
                 points = None
             if normals.shape[1] == 0 or len(normals) < len(points):

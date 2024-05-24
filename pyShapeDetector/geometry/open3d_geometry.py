@@ -99,17 +99,16 @@ def link_to_open3d_geometry(original_class):
         # removing two last subclasses, 'object' and 'pybind11_object'
         for subclass in original_class.__mro__[:-2]:
             for attr_name, attr_value in subclass.__dict__.items():
+                
+                # checking if already exists ir Open3D_Geometry or its child
                 if attr_name == '__init__' or attr_name in cls.__mro__[0].__dict__ or attr_name in cls.__mro__[1].__dict__:
-                    print(f'not copying {attr_name}')
                     continue
 
                 # if attr_name not in cls.__mro__[0].__dict__:
                 if callable(attr_value):
-                    print(f'copying {attr_name}')
                     setattr(cls, attr_name, to_open3d_and_back(attr_value))
                 
                 elif isinstance(attr_value, property):
-                    print(f'copying {attr_name}')
                     # Apply decorators to the original getter and setter functions                        
                     getter = to_open3d_and_back(attr_value.fget)
                     setter = args_to_open3d(attr_value.fset)
