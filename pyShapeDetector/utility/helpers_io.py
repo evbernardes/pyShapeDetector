@@ -10,8 +10,8 @@ import copy
 from pathlib import Path
 import shutil
 from open3d import visualization
-from open3d.geometry import PointCloud
 from open3d.io import write_point_cloud
+from pyShapeDetector.geometry import PointCloud
 
 def check_existance(outdir, remove_dir):
     if outdir.exists() and remove_dir:
@@ -52,7 +52,7 @@ def save_elements(outdir, elems, start=None, order_func=None, reverse=True, remo
         
     from pyShapeDetector.primitives import Primitive
     
-    if isinstance(elems[0], PointCloud):
+    if isinstance(elems[0], (PointCloud, PointCloud.__open3d_class__)):
         if start is None:
             start = 'pcd'
         extension = 'ply'
