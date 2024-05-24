@@ -21,6 +21,14 @@ def check_existance(outdir, remove_dir):
         
     if not outdir.exists():
         outdir.mkdir()
+        
+def save_ask(outdir):
+    val = input(f'Save at {outdir}? (y)es, (N)o, (o)ther name. ').lower()
+    if val == 'y':
+        return outdir
+    elif val == 'o':
+        return (outdir.parent / input('Enter dir:\n'))
+    return None
 
 def save_elements(outdir, elems, start=None, order_func=None, reverse=True, remove_dir=True):
     check_existance(outdir, remove_dir)
@@ -29,7 +37,6 @@ def save_elements(outdir, elems, start=None, order_func=None, reverse=True, remo
     if not isinstance(elems, (list, tuple)):
         elems = [elems]
         single = True
-    
     
     num_digits = len(str(len(elems)))
     
@@ -75,11 +82,7 @@ def save_elements(outdir, elems, start=None, order_func=None, reverse=True, remo
     
 def ask_and_save(outdir, elems, start=None, order_func=None, reverse=True, remove_dir=True):
     
-    val = input(f'Save at {outdir}? (y)es, (N)o, (o)ther name. ').lower()
-    if val == 'y':
+    outdir = save_ask(outdir)
+    if outdir is not None:
         save_elements(outdir, elems, start, order_func, reverse, remove_dir)
-    elif val == 'o':
-        outdir = (outdir.parent / input('Enter dir:\n'))
-        save_elements(outdir, elems, start, order_func, reverse, remove_dir)
-    else:
-        pass
+
