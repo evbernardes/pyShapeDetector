@@ -28,6 +28,25 @@ from .open3d_geometry import (
 
 @link_to_open3d_geometry(open3d_PointCloud)
 class PointCloud(Open3D_Geometry):
+    """
+    PointCloud class that uses Open3D.geometry.PointCloud internally.
+    
+    Almost every method and property are automatically copied and decorated.
+    
+    Methods
+    -------
+    from_points_normals_colors
+    fuse_pointclouds
+    average_nearest_dist
+    write_point_cloud
+    read_point_cloud
+    segment_dbscan
+    separate_pointcloud_in_two
+    segment_by_position
+    segment_with_region_growing
+    find_closest_points_indices
+    find_closest_points
+    """
     
     def from_points_normals_colors(element, normals=[], colors=[]):
         """ Creates PointCloud instance from points, normals or colors.
