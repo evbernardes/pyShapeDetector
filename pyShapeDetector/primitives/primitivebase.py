@@ -14,7 +14,7 @@ from open3d.geometry import PointCloud as open3d_PointCloud
 from open3d.geometry import AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
 from scipy.spatial.transform import Rotation
-from pyShapeDetector.utility import clean_crop, get_rotation_from_axis, new_PointCloud
+from pyShapeDetector.utility import clean_crop, get_rotation_from_axis
 from pyShapeDetector.geometry import PointCloud
 
 def _set_and_check_3d_array(input_array, name='array', num_points=None):
@@ -721,10 +721,8 @@ class Primitive(ABC):
         """
         if not isinstance(other_shape, Primitive):
             raise ValueError("other_shape must be a Primitive.")
-            
-        from pyShapeDetector.utility import find_closest_points
         
-        closest_points, distances = find_closest_points(
+        closest_points, distances = PointCloud.find_closest_points(
             self.inliers.points, other_shape.inliers.points, n)
         
         return closest_points, distances
@@ -752,9 +750,8 @@ class Primitive(ABC):
         -------
         float
             Average nearest dist.
-        """        
-        from pyShapeDetector.utility import average_nearest_dist
-        return average_nearest_dist(self.inliers.points, k, leaf_size)
+        """
+        return self.inliers.average_nearest_dist(k, leaf_size)
     
     def get_inliers_axis_aligned_bounding_box(self, slack=0, num_sample=15):
         """ If the shape includes inlier points, returns the minimum and 

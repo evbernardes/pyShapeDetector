@@ -8,8 +8,31 @@ Created on Wed Feb 28 10:59:02 2024
 import numpy as np
 import copy
 from open3d import visualization
-from .helpers_pointclouds import new_PointCloud
+from pyShapeDetector.geometry import PointCloud
 # from pyShapeDetector.primitives import Primitive, Line
+
+def paint_random(elements, paint_inliers=False):
+    """ Paint each pointcloud/mesh with a different random color.
+    
+    Parameters
+    ----------
+    elements : list of geomery elements
+        Elements to be painted
+    """
+    
+    from pyShapeDetector.primitives import Primitive
+    
+    if not isinstance(elements, list):
+        elements = [elements]
+
+    for element in elements:
+        color = np.random.random(3)
+        if isinstance(element, Primitive):
+            element._color = color
+            if paint_inliers:
+                element._inlier_colors[:] = color
+        else:
+            element.paint_uniform_color(color)
 
 def _treat_up_normal(camera_options):
     
@@ -74,7 +97,8 @@ def draw_geometries(elements, **camera_options):
                 raise ValueError("3D arrays are interpreted as PointClouds, "
                                  "but they need to have a shape of (N, 3), got "
                                  f"{element.shape}.")
-            geometries.append(new_PointCloud(element))
+            pcd = PointCloud.from_points_normals_colors(element)
+            geometries.append(pcd.as_open3d)
         else:
             geometries.append(element)
             

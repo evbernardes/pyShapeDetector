@@ -8,9 +8,9 @@ Created on Thu May 23 10:00:58 2024
 import copy
 import functools
 import numpy as np
-from open3d import utility
+from open3d import geometry, utility
 
-converters = {
+converters_vector = {
     (1, int): utility.IntVector,
     (1, float): utility.DoubleVector,
     (2, int): utility.Vector2iVector,
@@ -24,12 +24,25 @@ empty_3d_array = np.array([])
 empty_3d_array.shape = (0, 3)
 
 def _convert_args_to_numpy(args):
+    
+    from .pointcloud import PointCloud
+    from .trianglemesh import TriangleMesh
+
+    converters_classes = {
+        geometry.PointCloud: PointCloud,
+        geometry.TriangleMesh: TriangleMesh,
+        }
+
     if isinstance(args, (list, tuple)):
         for i, value in enumerate(args):
             args[i] = _convert_args_to_numpy(value)
     
-    elif type(args) in converters.values():
+    elif type(args) in converters_vector.values():
         return np.asarray(args)
+    
+    elif type(args) in converters_classes:
+        return converters_classes[type(args)](args)
+
     return args
 
 def _convert_args_to_open3d(*args, **kwargs):
@@ -51,10 +64,11 @@ def _convert_args_to_open3d(*args, **kwargs):
             
             if (dim := arg.ndim) > 1:
                 dim = arg.shape[1]
+            else:
                 arg = arg.tolist() 
             
-            if (dim, dtype) in converters:
-                args[i] = converters[dim, dtype](arg)
+            if (dim, dtype) in converters_vector:
+                args[i] = converters_vector[dim, dtype](arg)
                 
     return tuple(args), kwargs
 

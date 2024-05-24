@@ -12,16 +12,11 @@ from scipy.spatial import ConvexHull, Delaunay
 # from scipy.spatial.transform import Rotation
 from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector, Vector3dVector
+from pyShapeDetector.geometry import PointCloud
 
 from pyShapeDetector.utility import (
-    get_triangle_surface_areas, 
-    # fuse_vertices_triangles, 
-    # planes_ressample_and_triangulate,
+    get_triangle_surface_areas,
     triangulate_earclipping,
-    # get_triangle_boundary_indexes,
-    # get_loop_indexes_from_boundary_indexes
-    # find_closest_points,
-    find_closest_points_indices,
     get_triangle_points,
     simplify_loop_with_angle,
     )
@@ -644,9 +639,7 @@ class PlaneBounded(Plane):
             raise ValueError("Only implemented with other instances of "
                              "PlaneBounded.")
 
-        from pyShapeDetector.utility import find_closest_points
-
-        closest_points, distances = find_closest_points(
+        closest_points, distances = PointCloud.find_closest_points(
             self.bounds, other_plane.bounds, n)
 
         return closest_points, distances
@@ -850,9 +843,11 @@ class PlaneBounded(Plane):
                 raise RuntimeError("Plane has no inliers, and no input points "
                                    "were given.")
         
-        indices = [
-            find_closest_points_indices([p], points)[1][0] for p in self.bounds
-            ]
+        indices = []
+        for p in self.bounds:
+            indices.append(
+                PointCloud.find_closest_points_indices([p], points)[1][0]
+            )
 
         indices_unique = []
         for i in indices:

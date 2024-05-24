@@ -12,8 +12,6 @@ import shutil
 from open3d import visualization
 from open3d.geometry import PointCloud
 from open3d.io import write_point_cloud
-from .helpers_pointclouds import new_PointCloud
-
 
 def check_existance(outdir, remove_dir):
     if outdir.exists() and remove_dir:
@@ -74,7 +72,7 @@ def save_elements(outdir, elems, start=None, order_func=None, reverse=True, remo
             out_path = outdir / f"{start}_{i_corrected}.{extension}"
         
         if isinstance(elem, PointCloud):
-            write_point_cloud(str(out_path), elem)
+            elem.write_point_cloud(out_path) 
         elif isinstance(elem, Primitive):
             elem.save(out_path)
         

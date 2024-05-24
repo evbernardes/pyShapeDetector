@@ -70,23 +70,6 @@ from .multidetector import MultiDetector
 from .primitivelimits import PrimitiveLimits
 from .detector_options import DetectorOptions
 
-from .helpers_pointclouds import (
-    new_PointCloud,
-    write_point_cloud, 
-    read_point_cloud, 
-    paint_random,
-    average_nearest_dist,
-    segment_with_region_growing, 
-    segment_dbscan, 
-    segment_by_position, 
-    fuse_pointclouds, 
-    separate_pointcloud_in_two, 
-    find_closest_points_indices,
-    find_closest_points,
-    alphashape_2d,
-    polygonize_alpha_shape
-    )
-
 from .helpers_primitives import (
     get_rotation_from_axis, 
     # _get_partitions,
@@ -122,10 +105,13 @@ from .helpers_meshes import (
     remove_big_triangles,
     planes_ressample_and_triangulate,
     planes_ressample_and_triangulate_gui,
-    triangulate_earclipping
+    triangulate_earclipping,
+    alphashape_2d,
+    polygonize_alpha_shape
     )
 
 from .helpers_visualization import (
+    paint_random,
     draw_geometries,
     draw_two_columns
     )

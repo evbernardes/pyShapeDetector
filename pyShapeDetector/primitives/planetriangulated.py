@@ -12,16 +12,15 @@ from scipy.spatial import ConvexHull, Delaunay
 # from scipy.spatial.transform import Rotation
 from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector, Vector3dVector
+from pyShapeDetector.geometry import PointCloud
 
 from pyShapeDetector.utility import (
     fuse_vertices_triangles, 
-    planes_ressample_and_triangulate,
     get_triangle_boundary_indexes,
     get_loop_indexes_from_boundary_indexes,
     simplify_loop_with_angle)
-from .primitivebase import Primitive
+# from .primitivebase import Primitive
 from .plane import Plane
-# from alphashape import alphashape
 
 class PlaneTriangulated(Plane):
     """
@@ -501,9 +500,7 @@ class PlaneTriangulated(Plane):
             raise ValueError("Only implemented with other instances of "
                              "PlaneBounded.")
 
-        from pyShapeDetector.utility import find_closest_points
-
-        closest_points, distances = find_closest_points(
+        closest_points, distances = PointCloud.find_closest_points(
             self.vertices, other_plane.vertices, n)
 
         return closest_points, distances

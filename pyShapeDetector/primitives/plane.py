@@ -12,22 +12,20 @@ from scipy.spatial import ConvexHull, Delaunay
 from scipy.spatial.transform import Rotation
 from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
 from open3d.utility import Vector3iVector, Vector3dVector
+from pyShapeDetector.geometry import PointCloud
 
 from pyShapeDetector.utility import (
-    get_rotation_from_axis, 
-    get_triangle_surface_areas,
+    get_rotation_from_axis,
     get_rectangular_grid,
     select_grid_points,
-    get_triangle_perimeters,
-    find_closest_points,
-    find_closest_points_indices)
+    get_triangle_perimeters)
 
 from .primitivebase import Primitive
-from alphashape import alphashape
+# from alphashape import alphashape
 # from .line import Line    
 
 def _fuse_loops(loop1, loop2):
-    i, j = find_closest_points_indices(loop1, loop2, 1)
+    i, j = PointCloud.find_closest_points_indices(loop1, loop2, 1)
     i = i[0]
     j = j[0]
     
@@ -619,7 +617,7 @@ class Plane(Primitive):
             for i, j in combinations(range(len(holes)), 2):
                 h1 = holes[i]
                 h2 = holes[j]
-                idx[find_closest_points(h1.bounds_projections, h2.bounds_projections)[1][0]] = (i, j)
+                idx[PointCloud.find_closest_points(h1.bounds_projections, h2.bounds_projections)[1][0]] = (i, j)
                 
             distances = np.sort(list(idx.keys()))
             ordered = []
