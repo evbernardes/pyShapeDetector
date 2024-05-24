@@ -15,13 +15,28 @@ from open3d.io import write_point_cloud
 from .helpers_pointclouds import new_PointCloud
 
 
-def check_existance(outdir):
-    if outdir.exists():
+def check_existance(outdir, remove_dir):
+    if outdir.exists() and remove_dir:
         shutil.rmtree(outdir)
-    outdir.mkdir()
+        
+    if not outdir.exists():
+        outdir.mkdir()
+        
+def save_ask(outdir):
+    val = input(f'Save at {outdir}? (y)es, (N)o, (o)ther name. ').lower()
+    if val == 'y':
+        return outdir
+    elif val == 'o':
+        return (outdir.parent / input('Enter dir:\n'))
+    return None
 
-def save_elements(outdir, elems, start=None, order_func=None, reverse=True):
-    check_existance(outdir)
+def save_elements(outdir, elems, start=None, order_func=None, reverse=True, remove_dir=True):
+    check_existance(outdir, remove_dir)
+    
+    single = False
+    if not isinstance(elems, (list, tuple)):
+        elems = [elems]
+        single = True
     
     num_digits = len(str(len(elems)))
     
@@ -48,27 +63,26 @@ def save_elements(outdir, elems, start=None, order_func=None, reverse=True):
             start = 'shape'
         extension = 'json'
     else:
-        raise ValueError("Not implemented for elements of type {type(elems[0])}.")
+        raise ValueError(f"Not implemented for elements of type {type(elems[0])}.")
         
     for i, elem in enumerate(elems):
         
-        i_corrected = '0'*(num_digits - len(str(i))) + str(i)
-        out_i = outdir / f"{start}_{i_corrected}.{extension}"
+        if single:
+            out_path = outdir / f"{start}.{extension}"
+        else:
+            i_corrected = '0'*(num_digits - len(str(i))) + str(i)
+            out_path = outdir / f"{start}_{i_corrected}.{extension}"
         
         if isinstance(elem, PointCloud):
-            write_point_cloud(str(out_i), elem)
+            write_point_cloud(str(out_path), elem)
         elif isinstance(elem, Primitive):
-            elem.save(out_i)
+            elem.save(out_path)
         
-    print('All elements saved.')
+    print('All elements saved.\n')
     
-def ask_and_save(outdir, elems, start=None, order_func=None, reverse=True):
+def ask_and_save(outdir, elems, start=None, order_func=None, reverse=True, remove_dir=True):
     
-    val = input(f'Save at {outdir}? (y)es, (N)o, (o)ther name. ').lower()
-    if val == 'y':
-        save_elements(outdir, elems, start, order_func, reverse)
-    elif val == 'o':
-        outdir = (outdir.parent / input('Enter dir:\n'))
-        save_elements(outdir, elems, start, order_func, reverse)
-    else:
-        pass
+    outdir = save_ask(outdir)
+    if outdir is not None:
+        save_elements(outdir, elems, start, order_func, reverse, remove_dir)
+
