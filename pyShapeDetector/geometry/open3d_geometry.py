@@ -9,15 +9,22 @@ Created on Thu May 23 10:00:58 2024
 import numpy as np
 from open3d import utility
 
-def _in_module(value, module):
-    return type(value).__module__ == module.__name__
+converters = {
+    (1, int): utility.IntVector,
+    (1, float): utility.DoubleVector,
+    (2, int): utility.Vector2iVector,
+    (2, float): utility.Vector2dVector,
+    (3, int): utility.Vector3iVector,
+    (3, float): utility.Vector3dVector,
+    (4, int): utility.Vector4iVector,
+    }
 
 def _convert_args_to_numpy(args):
     if isinstance(args, (list, tuple)):
         for i, value in enumerate(args):
             args[i] = _convert_args_to_numpy(value)
     
-    elif _in_module(args, utility):
+    elif type(args) in converters.values():
         return np.asarray(args)
     return args
 
@@ -32,21 +39,15 @@ def _convert_args_to_open3d(*args, **kwargs):
             arg = np.array(arg)
         
         if isinstance(arg, np.ndarray):
-            if arg.ndim > 2:
-                continue
             
-            if arg.ndim == 1:
-                if arg.dtype == int:
-                    args[i] = utility.IntVector(arg.tolist())
-                else:
-                    args[i] = utility.DoubleVector(arg.tolist())
-                    
-            if arg.ndim == 2:
-                d = 'i' if arg.dtype == int else 'd'
-                class_name = f'Vector{arg.shape[1]}{d}Vector'
-                
-                converter = getattr(utility, class_name, lambda x: x)
-                args[i] = converter(arg)
+            dtype = int if (arg.dtype == int) else float if (arg.dtype == float) else None
+            
+            if (dim := arg.ndim) > 1:
+                dim = arg.shape[1]
+                arg = arg.tolist() 
+            
+            if (dim, dtype) in converters:
+                args[i] = converters[dim, dtype](arg)
                 
     return tuple(args), kwargs
 
