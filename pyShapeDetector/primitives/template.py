@@ -10,9 +10,8 @@ import random
 import copy
 import numpy as np
 import open3d as o3d
-from open3d.geometry import TriangleMesh, PointCloud
-from open3d.utility import Vector3iVector, Vector3dVector
 
+from pyShapeDetector.geometry import TriangleMesh, PointCloud
 from .primitivebase import Primitive
     
 class Template(Primitive):

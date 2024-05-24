@@ -6,7 +6,8 @@ Created on Mon Sep 25 15:42:59 2023
 @author: ebernardes
 """
 import numpy as np
-from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
+from open3d.geometry import AxisAlignedBoundingBox
+from pyShapeDetector.geometry import TriangleMesh
 
 from .primitivebase import Primitive
     

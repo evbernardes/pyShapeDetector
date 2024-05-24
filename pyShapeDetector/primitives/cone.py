@@ -7,11 +7,11 @@ Created on Fri Oct  6 15:57:08 2023
 """
 import warnings
 import numpy as np
-from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
-from open3d.utility import Vector3iVector, Vector3dVector
+from open3d.geometry import AxisAlignedBoundingBox
 
 from pyShapeDetector.utility import get_rotation_from_axis
 from pyShapeDetector.methods import RANSAC_Classic
+from pyShapeDetector.geometry import TriangleMesh
 from .primitivebase import Primitive
 from .plane import Plane
 # from .cylinder import Cylinder
@@ -440,7 +440,7 @@ class Cone(Primitive):
         mesh = TriangleMesh.create_cone(
             # radius=self.radius, height=self.height, resolution=100, split=100)
             radius=self.radius, height=self.height, resolution=resolution, split=100)
-        mesh.vertices = Vector3dVector(-np.asarray(mesh.vertices))
+        mesh.vertices = -np.asarray(mesh.vertices)
         # mesh.translate(-mesh.get_center())
         
         mesh.rotate(self.rotation_from_axis)
@@ -457,7 +457,7 @@ class Cone(Primitive):
             triangles = np.array(
                 [t for t in triangles if not np.any(np.isin(base_vertices, t))])
             # triangles = np.vstack([triangles, triangles[:, ::-1]])
-            mesh.triangles = Vector3iVector(triangles)
+            mesh.triangles = triangles
         # center = mesh.get_center()
         # mesh.translate()
         

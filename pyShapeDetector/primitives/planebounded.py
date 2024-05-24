@@ -10,9 +10,8 @@ from itertools import product
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
 # from scipy.spatial.transform import Rotation
-from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
-from open3d.utility import Vector3iVector, Vector3dVector
-from pyShapeDetector.geometry import PointCloud
+from open3d.geometry import AxisAlignedBoundingBox
+from pyShapeDetector.geometry import PointCloud, TriangleMesh
 
 from pyShapeDetector.utility import (
     get_triangle_surface_areas,
@@ -387,9 +386,7 @@ class PlaneBounded(Plane):
         areas = get_triangle_surface_areas(points, triangles)
         triangles = triangles[areas > 0]
 
-        mesh = TriangleMesh()
-        mesh.vertices = Vector3dVector(points)
-        mesh.triangles = Vector3iVector(triangles)
+        mesh = TriangleMesh(points, triangles)
         
         # if this fails, the ear-clipping triangulation with holes failed
         # try:

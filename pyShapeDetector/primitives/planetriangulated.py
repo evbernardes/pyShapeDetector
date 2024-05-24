@@ -8,11 +8,10 @@ Created on Thu Feb 15 10:15:09 2024
 import warnings
 from itertools import permutations, product, combinations
 import numpy as np
-from scipy.spatial import ConvexHull, Delaunay
+# from scipy.spatial import ConvexHull, Delaunay
 # from scipy.spatial.transform import Rotation
-from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
-from open3d.utility import Vector3iVector, Vector3dVector
-from pyShapeDetector.geometry import PointCloud
+from open3d.geometry import AxisAlignedBoundingBox
+from pyShapeDetector.geometry import PointCloud, TriangleMesh
 
 from pyShapeDetector.utility import (
     fuse_vertices_triangles, 
@@ -284,9 +283,7 @@ class PlaneTriangulated(Plane):
         TriangleMesh
             Mesh corresponding to the plane.
         """
-        mesh = TriangleMesh()
-        mesh.vertices = Vector3dVector(self.vertices)
-        mesh.triangles = Vector3iVector(self.triangles)
+        mesh = TriangleMesh(self.vertices, self.triangles)
 
         return mesh
     

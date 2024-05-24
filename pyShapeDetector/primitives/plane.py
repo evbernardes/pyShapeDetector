@@ -10,9 +10,8 @@ from itertools import permutations, product, combinations
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
 from scipy.spatial.transform import Rotation
-from open3d.geometry import TriangleMesh, AxisAlignedBoundingBox
-from open3d.utility import Vector3iVector, Vector3dVector
-from pyShapeDetector.geometry import PointCloud
+from open3d.geometry import AxisAlignedBoundingBox
+from pyShapeDetector.geometry import PointCloud, TriangleMesh
 
 from pyShapeDetector.utility import (
     get_rotation_from_axis,
@@ -1298,7 +1297,7 @@ class Plane(Primitive):
         """ Gives list of planes that create, together, a closed box.
 
         Parameters
-        ----------
+        ----------plane_unbounded
         center : array
             Center point of box
         dimensions : array

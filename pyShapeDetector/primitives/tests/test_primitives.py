@@ -15,11 +15,10 @@ from itertools import combinations
 
 from scipy.spatial.transform import Rotation
 
-from open3d.geometry import PointCloud, AxisAlignedBoundingBox
-from open3d.utility import Vector3dVector
-
 from pyShapeDetector.primitives import (
     Plane, PlaneBounded, PlaneTriangulated, Sphere, Cylinder, Cone, Line)
+
+from pyShapeDetector.geometry import PointCloud
 
 all_primitives_regular = [Plane, Sphere, Cylinder, Cone]
 all_primitives = all_primitives_regular + [PlaneBounded, PlaneTriangulated, Line]
@@ -190,11 +189,14 @@ def test_copy_regular():
         shape_copy = shape.copy()
         assert shape == shape_copy
         assert id(shape) != id(shape_copy)
-        assert id(shape.inliers.points) != id(shape_copy.inliers.points)
+        assert id(shape.inliers) != id(shape_copy.inliers)
+        # assert id(shape.inliers.points) != id(shape_copy.inliers.points)
+        
         shape_copy = copy.copy(shape)
         assert shape == shape_copy
         assert id(shape) != id(shape_copy)
-        assert id(shape.inliers.points) != id(shape_copy.inliers.points)
+        assert id(shape.inliers) != id(shape_copy.inliers)
+        # assert id(shape.inliers.points) != id(shape_copy.inliers.points)
 
 
 def test_copy_planebounded():
@@ -401,7 +403,7 @@ def test_normals_flatten_plane():
         points = np.random.rand(1000, 3)
         points_flattened = shape.flatten_points(points)
         # distances = shape.get_distances(points_flattened)
-        pcd_flattened = PointCloud(Vector3dVector(points_flattened))
+        pcd_flattened = PointCloud(points_flattened)
         pcd_flattened.estimate_normals()
         normals = pcd_flattened.normals
         angles = shape.get_angles(points_flattened, normals)
@@ -416,7 +418,7 @@ def test_normals_flatten_others():
             points = np.random.rand(1000, 3)
             points_flattened = shape.flatten_points(points)
             # distances = shape.get_distances(points_flattened)
-            pcd_flattened = PointCloud(Vector3dVector(points_flattened))
+            pcd_flattened = PointCloud(points_flattened)
             pcd_flattened.estimate_normals()
             normals = pcd_flattened.normals
             angles = shape.get_angles(points_flattened, normals)
@@ -538,7 +540,8 @@ def test_axis_aligned_bounding_box_planes():
     #         pcd = plane.inlier_PointCloud.crop(plane.bbox)
     #         assert len(pcd.points) == num_samples
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
+    test_plane_transformations()
     # test_distances()
     # test_equal()
     # test_bounding_box_bounds()

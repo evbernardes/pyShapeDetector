@@ -7,8 +7,7 @@ Created on Fri Oct  6 15:57:08 2023
 """
 import warnings
 import numpy as np
-from open3d.geometry import TriangleMesh#, AxisAlignedBoundingBox
-from open3d.utility import Vector3iVector
+from pyShapeDetector.geometry import TriangleMesh
 # from skspatial.objects.cylinder import Cylinder as skcylinder
 
 from pyShapeDetector.utility import get_rotation_from_axis
@@ -372,7 +371,7 @@ class Cylinder(Primitive):
             triangles = np.array(
                 [t for t in triangles if 0 not in t and 1 not in t])
             # triangles = np.vstack([triangles, triangles[:, ::-1]])
-            mesh.triangles = Vector3iVector(triangles)
+            mesh.triangles = triangles
         
         mesh.rotate(self.rotation_from_axis)
         mesh.translate(self.center)

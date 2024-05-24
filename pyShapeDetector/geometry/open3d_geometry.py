@@ -60,7 +60,12 @@ def _convert_args_to_open3d(*args, **kwargs):
         
         if isinstance(arg, np.ndarray):
             
-            dtype = int if (arg.dtype == int) else float if (arg.dtype == float) else None
+            if np.issubdtype(arg.dtype, np.integer):
+                dtype = int
+            elif np.issubdtype(arg.dtype, np.floating):
+                dtype = float
+            else:
+                dtype = None
             
             if (dim := arg.ndim) > 1:
                 dim = arg.shape[1]

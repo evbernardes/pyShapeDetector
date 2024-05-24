@@ -10,10 +10,9 @@ import copy
 from abc import ABC, abstractmethod
 import numpy as np
 from open3d.geometry import AxisAlignedBoundingBox
-from open3d.utility import Vector3dVector
 from scipy.spatial.transform import Rotation
 from pyShapeDetector.utility import clean_crop, get_rotation_from_axis
-from pyShapeDetector.geometry import PointCloud
+from pyShapeDetector.geometry import PointCloud, TriangleMesh
 
 def _set_and_check_3d_array(input_array, name='array', num_points=None):
     if input_array is None or len(input_array) == 0:
@@ -223,11 +222,15 @@ class Primitive(ABC):
     
     @mesh.setter
     def mesh(self, new_mesh):
-        from open3d.geometry import TriangleMesh
-        if not isinstance(new_mesh, TriangleMesh):
+
+        if isinstance(new_mesh, TriangleMesh):
+            self._mesh = new_mesh
+        elif isinstance(new_mesh, TriangleMesh.__open3d_class__):
+            self._mesh = TriangleMesh(new_mesh)
+            
+        else:
             raise ValueError("Meshes must be of type "
                              "open3d.geometry.TriangleMesh.")
-        self._mesh = new_mesh
         
     @property
     def inliers(self):
@@ -599,8 +602,8 @@ class Primitive(ABC):
             Pointcloud with points flattened
             
         """
-        pcd_flattened = PointCloud()
-        pcd_flattened.points = Vector3dVector(self.flatten_points(pcd.points))
+        pcd_flattened = PointCloud(self.flatten_points(pcd.points))
+        pcd_flattened.normals = pcd.normals
         pcd_flattened.colors = pcd.colors
         return pcd_flattened
     
@@ -882,10 +885,9 @@ class Primitive(ABC):
         if number_of_points <= 0:
             raise ValueError("Number of points must be a non-negative number.")
             
-        mesh = self.get_mesh()
-        pcd = PointCloud()
-        pcd._open3d = mesh.sample_points_uniformly(number_of_points, use_triangle_normal)
-        pcd.normals = Vector3dVector(self.get_normals(pcd.points))
+        mesh = self.mesh
+        pcd = mesh.sample_points_uniformly(number_of_points, use_triangle_normal)
+        pcd.normals = self.get_normals(pcd.points)
         return pcd
     
     def sample_PointCloud_density(self, density=1, 
@@ -959,8 +961,7 @@ class Primitive(ABC):
             raise ValueError('No points given, and no inlier points.')
             
         mesh = self.get_mesh()
-        points_flattened = self.flatten_points(points)
-        pcd = PointCloud(Vector3dVector(points_flattened))
+        pcd = PointCloud(self.flatten_points(points))
         bb = pcd.get_axis_aligned_bounding_box()
         bb = AxisAlignedBoundingBox(bb.min_bound - [eps]*3, 
                                     bb.max_bound + [eps]*3)
@@ -988,10 +989,15 @@ class Primitive(ABC):
         return compare.all()
     
     def __copy_atributes__(self, shape_original):
-        # self.inliers.points = shape_original.inliers.points.copy()
-        # self.inliers.normals = shape_original.inliers.normals.copy()
-        # self.inliers.colors = shape_original.inliers.colors.copy()
-        self._inliers = copy.copy(shape_original.inliers)
+        
+        try:
+            self.set_inliers(
+                shape_original.inliers.points, 
+                shape_original.inliers.normals,
+                shape_original.inliers.colors)
+        except AttributeError:
+            pass
+        
         self._metrics = shape_original._metrics.copy()
         self._color = shape_original._color.copy()
         # So that mesh can be recreated when getting different versions of primitives
