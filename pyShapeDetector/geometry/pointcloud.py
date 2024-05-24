@@ -263,7 +263,7 @@ class PointCloud(Open3D_Geometry):
         pcds_segmented = []
         for label in set(labels) - {-1}:
             idx = np.where(labels == label)[0]
-            pcd_ = pcd.select_by_index(idx)
+            pcd_ = self.select_by_index(idx)
             # if len(pcd_.points) >= min_points:
             pcds_segmented.append(pcd_)
             

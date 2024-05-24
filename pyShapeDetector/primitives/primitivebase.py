@@ -648,7 +648,7 @@ class Primitive(ABC):
             colors = shape.inliers.colors
         else:
             points = points_or_pointcloud
-            
+        
         points = _set_and_check_3d_array(points, 'inlier points')
         num_points = len(points)
         normals = _set_and_check_3d_array(normals, 'inlier normals', num_points)
