@@ -395,7 +395,7 @@ class PointCloud(Open3D_Geometry):
             if debug and i is not None:
                 print(f'Process {i+1} entering...')
             
-            pcd_tree = KDTreeFlann(pcd)
+            pcd_tree = KDTreeFlann(pcd.as_open3d)
             num_points = len(pcd.points)
             labels = np.repeat(0, num_points)
             normals = np.asarray(pcd.normals)
@@ -589,9 +589,7 @@ class PointCloud(Open3D_Geometry):
         return pcds_segmented
     
     def _get_points(points):
-        if isinstance(points, PointCloud):
-            return points.points
-        elif isinstance(points, open3d_PointCloud):
+        if PointCloud.is_instance_or_open3d(points):
             return np.asarray(points.points)
         elif isinstance(points, np.ndarray):
             return points

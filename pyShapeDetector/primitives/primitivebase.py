@@ -9,8 +9,6 @@ import warnings
 import copy
 from abc import ABC, abstractmethod
 import numpy as np
-# from open3d.geometry import PointCloud, AxisAlignedBoundingBox
-from open3d.geometry import PointCloud as open3d_PointCloud
 from open3d.geometry import AxisAlignedBoundingBox
 from open3d.utility import Vector3dVector
 from scipy.spatial.transform import Rotation
@@ -627,7 +625,7 @@ class Primitive(ABC):
             If True, use inliers mean color for shape. Default: False.
         """
         
-        if isinstance((pcd := points_or_pointcloud), (PointCloud, open3d_PointCloud)):
+        if PointCloud.is_instance_or_open3d(pcd := points_or_pointcloud):
             if normals is not None or colors is not None:
                 raise TypeError("If PointCloud is given as input, normals and "
                                 "colors are taken from it, and not accepted "
