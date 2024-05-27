@@ -547,3 +547,87 @@ class TriangleMesh(Open3D_Geometry):
             L += len(vertices_list[i])
         return vertices, np.vstack(triangles)
     
+    # def alphashape_2d(projections, alpha):
+    #     """ Compute the alpha shape (concave hull) of a set of 2D points. If the number
+    #     of points in the input is three or less, the convex hull is returned to the
+    #     user.
+    
+    #     Parameters
+    #     ----------
+    #     projections : array_like, shape (N, 2)
+    #         Points corresponding to the 2D projections in the plane.
+        
+    #     Returns
+    #     -------
+    #     vertices : np.array_like, shape (N, 2)
+    #         Boundary points in computed shape.
+            
+    #     triangles : np.array shape (N, 3)
+    #         Indices of each triangle.
+    #     """
+    #     projections = np.asarray(projections)
+    #     if projections.shape[1] != 2:
+    #         raise ValueError("Input points must be 2D.")
+    
+    #     # If given a triangle for input, or an alpha value of zero or less,
+    #     # return the convex hull.
+    #     if len(projections) < 4 or (alpha is not None and not callable(
+    #             alpha) and alpha <= 0):
+            
+    #         convex_hull = ConvexHull(projections)
+    #         return convex_hull.points, convex_hull.simplices
+    
+    #     # Determine alpha parameter if one is not given
+    #     if alpha is None:
+    #         try:
+    #             from optimizealpha import optimizealpha
+    #         except ImportError:
+    #             from .optimizealpha import optimizealpha
+    #         alpha = optimizealpha(projections)
+    
+    #     vertices = np.array(projections)
+    
+    #     # Create a set to hold unique edges of simplices that pass the radius
+    #     # filtering
+    #     edges = set()
+    
+    #     # Create a set to hold unique edges of perimeter simplices.
+    #     # Whenever a simplex is found that passes the radius filter, its edges
+    #     # will be inspected to see if they already exist in the `edges` set.  If an
+    #     # edge does not already exist there, it will be added to both the `edges`
+    #     # set and the `permimeter_edges` set.  If it does already exist there, it
+    #     # will be removed from the `perimeter_edges` set if found there.  This is
+    #     # taking advantage of the property of perimeter edges that each edge can
+    #     # only exist once.
+    #     perimeter_edges = set()
+    
+    #     for point_indices, circumradius in alphasimplices(vertices):
+    #         if callable(alpha):
+    #             resolved_alpha = alpha(point_indices, circumradius)
+    #         else:
+    #             resolved_alpha = alpha
+    
+    #         # Radius filter
+    #         if circumradius < 1.0 / resolved_alpha:
+    #             for edge in itertools.combinations(
+    #                     # point_indices, r=coords.shape[-1]):
+    #                     point_indices, 3):
+    #                 if all([e not in edges for e in itertools.combinations(
+    #                         edge, r=len(edge))]):
+    #                     edges.add(edge)
+    #                     perimeter_edges.add(edge)
+    #                 else:
+    #                     perimeter_edges -= set(itertools.combinations(
+    #                         edge, r=len(edge)))
+        
+    #     triangles = np.array(list(perimeter_edges))
+    #     return vertices, triangles
+    
+    
+    # def polygonize_alpha_shape(vertices, edges):
+    #     # Create the resulting polygon from the edge points
+    #     m = MultiLineString([vertices[np.array(edge)] for edge in edges])
+    #     triangles = list(polygonize(m))
+    #     result = unary_union(triangles)
+    #     return result   
+    

@@ -19,161 +19,21 @@ from open3d.utility import Vector3dVector, Vector3iVector
 from open3d.visualization import draw_geometries_with_key_callbacks
 from .helpers_primitives import fuse_shape_groups
 
-def _get_vertices_triangles(mesh_or_vertices, triangles=None):
-    """ Helper function to deal with inputs. """
-    if isinstance(mesh_or_vertices, TriangleMesh):
-        if triangles is not None:
-            raise ValueError("Input is either a single mesh, or an array of "
-                             "vertices and one array of triangles.")
-        vertices = np.asarray(mesh_or_vertices.vertices)
-        triangles = np.asarray(mesh_or_vertices.triangles)
-    else:
-        if triangles is None:
-            raise ValueError("If vertices are given as first input instead of "
-                             "a mesh, then triangles must be given.")
-        vertices = np.asarray(mesh_or_vertices)
-        triangles = np.asarray(triangles)
-    return vertices, triangles
-
-# def get_rectangular_grid(vectors, center, grid_width, return_perimeter = False, grid_type = "hexagonal"):
-#     """ Gives rectangular grid defined two vectors and its center.
-    
-#     Vectors v1 and v2 should not be unit, and instead have lengths equivalent
-#     to widths of rectangle.
-    
-#     Available grid types: "regular" and "hexagonal".
-    
-#     If `return_perimeter` is set to True, also return the expected perimeter
-#     of each triangle.
-    
-#     Parameters
-#     ----------
-#     vectors : arraylike of shape (2, 3)
-#         The two orthogonal unit vectors defining the rectangle plane.
-#     center : arraylike of length 3, optional
-#         Center of rectangle. If not given, either inliers or centroid are 
-#         used.
-#     grid_width : float
-#         Distance between two points in first dimension (and also second 
-#         dimension for regular grids).
-#     return_perimeter : boolean, optional
-#         If True, return tuple containing both grid and calculated perimeter.
-#         Default: False.
-#     grid_type : str, optional
-#         Type of grid, can be "hexagonal" or "regular". Default: "hexagonal".
-
-#     See also:
-#         select_grid_points
-
-#     Returns
-#     -------
-#     numpy.array
-#         Grid points
-        
-#     float
-#         Perimeter of one triangle
-#     """
-#     if grid_type not in ["regular", "hexagonal"]:
-#         raise ValueError("Possible grid types are 'regular' and 'hexagonal', "
-#                          f"got '{grid_type}'.")
-#     eps = 1e-8
-#     lengths = np.linalg.norm(vectors, axis=1)
-    
-#     # get unit vectors
-#     vx, vy = vectors / lengths[:, np.newaxis]
-
-#     n = []
-#     for length in lengths:
-#         ratio = length / grid_width
-#         n.append(int(np.floor(ratio)) + int(ratio % 1 > eps))
-    
-#     def get_range(length, width):
-#         array = np.arange(stop=length, step=width) - length / 2
-#         assert abs(width - (array[1] - array[0])) < eps
-        
-#         # adding last point if needed
-#         if (length / width) % 1 > eps:
-#             # array = np.hstack([array, array[-1] + grid_width]) 
-#             array = np.hstack([array, length / 2])
-            
-#         return array
-    
-#     if grid_type == "regular":
-#         array_x = get_range(lengths[0], grid_width)
-#         array_y = get_range(lengths[1], grid_width)
-        
-#         x_ = vx * array_x[np.newaxis].T
-#         y_ = vy * array_y[np.newaxis].T
-#         # grid_lines = [px + py for px, py in product(x_, y_)]
-#         grid_lines = [x_ + py for py in y_]
-#         grid = np.vstack(grid_lines)
-
-#         perimeter = (2 + np.sqrt(2)) * grid_width
-        
-#     elif grid_type == "hexagonal":
-#         h = grid_width * np.sqrt(3) / 2
-        
-#         array_x = get_range(lengths[0], grid_width)
-#         array_y = get_range(lengths[1], h)
-        
-#         x_ = vx * array_x[np.newaxis].T
-#         y_ = vy * array_y[np.newaxis].T
-#         # grid_lines = [px + py for px, py in product(x_, y_)]
-#         grid_lines = [x_ + py for py in y_]
-#         for i in range(len(grid_lines)):
-#             if i % 2 == 1:
-#                 grid_lines[i] += vx * grid_width / 2
-#                 grid_lines[i] = np.vstack([-vx * lengths[0]/2, grid_lines[i][:-1] ])
-
-#         perimeter = 3 * grid_width
-    
-#     grid = np.vstack(grid_lines)
-    
-#     if return_perimeter:
-#         return center + grid, perimeter
-#     return center + grid
-
-# def select_grid_points(grid, inlier_points, max_distance, cores=6):
-#     """
-#     Select points from grid that are close enough to at least some point in the
-#     inlier_points points array.
-    
-#     Attention: Consider flattening both "grid" and "inlier_points" to the 
-#     desired surface.
-    
-#     See: get_rectangular_grid
-
-#     Parameters
-#     ----------
-#     grid : numpy array
-#         Array of grid points.
-#     inlier_points : numpy array
-#         Array of points (most likely, inlier points).
-#     max_distance : float
-#         Max distance allowed between grid points and inlier points.
-
-#     Returns
-#     -------
-#     numpy array
-#         Selected points.
-#     """
-#     import multiprocessing
-#     from .helpers_internal import parallelize
-    
-#     if cores > (cpu_count := multiprocessing.cpu_count()):
-#         warnings.warn(f'Only {cpu_count} available, {cores} required.'
-#                        ' limiting to max availability.')
-#         cores = cpu_count
-        
-#     max_distance_squared = max_distance * max_distance
-    
-#     @parallelize(6)
-#     def select_points(grid):
-#         dist_squared = cdist(inlier_points, grid, 'sqeuclidean')
-#         return np.any(dist_squared <= max_distance_squared, axis=0)
-    
-#     selected_idxs = select_points(grid)
-#     return grid[selected_idxs]
+# def _get_vertices_triangles(mesh_or_vertices, triangles=None):
+#     """ Helper function to deal with inputs. """
+#     if isinstance(mesh_or_vertices, TriangleMesh):
+#         if triangles is not None:
+#             raise ValueError("Input is either a single mesh, or an array of "
+#                              "vertices and one array of triangles.")
+#         vertices = np.asarray(mesh_or_vertices.vertices)
+#         triangles = np.asarray(mesh_or_vertices.triangles)
+#     else:
+#         if triangles is None:
+#             raise ValueError("If vertices are given as first input instead of "
+#                              "a mesh, then triangles must be given.")
+#         vertices = np.asarray(mesh_or_vertices)
+#         triangles = np.asarray(triangles)
+#     return vertices, triangles
 
 # def remove_big_triangles(vertices, triangles, radius_ratio):
 #     vertices = np.asarray(vertices)
@@ -216,7 +76,8 @@ def planes_ressample_and_triangulate(planes, density, radius_ratio=None, double_
     triangles = Delaunay(projections).simplices
     
     if radius_ratio is not None:
-        triangles = remove_big_triangles(vertices, triangles, radius_ratio)
+        circumradiuses = TriangleMesh(vertices, triangles).get_triangle_circumradius()
+        triangles = triangles[circumradiuses < radius_ratio * np.mean(circumradiuses)]
         
     if double_triangles:
         triangles = np.vstack([triangles, triangles[:, ::-1]])
@@ -369,86 +230,4 @@ def planes_ressample_and_triangulate_gui(planes, translation_ratio = 0.055,
     
     return out_data
 
-def alphashape_2d(projections, alpha):
-    """ Compute the alpha shape (concave hull) of a set of 2D points. If the number
-    of points in the input is three or less, the convex hull is returned to the
-    user.
 
-    Parameters
-    ----------
-    projections : array_like, shape (N, 2)
-        Points corresponding to the 2D projections in the plane.
-    
-    Returns
-    -------
-    vertices : np.array_like, shape (N, 2)
-        Boundary points in computed shape.
-        
-    triangles : np.array shape (N, 3)
-        Indices of each triangle.
-    """
-    projections = np.asarray(projections)
-    if projections.shape[1] != 2:
-        raise ValueError("Input points must be 2D.")
-
-    # If given a triangle for input, or an alpha value of zero or less,
-    # return the convex hull.
-    if len(projections) < 4 or (alpha is not None and not callable(
-            alpha) and alpha <= 0):
-        
-        convex_hull = ConvexHull(projections)
-        return convex_hull.points, convex_hull.simplices
-
-    # Determine alpha parameter if one is not given
-    if alpha is None:
-        try:
-            from optimizealpha import optimizealpha
-        except ImportError:
-            from .optimizealpha import optimizealpha
-        alpha = optimizealpha(projections)
-
-    vertices = np.array(projections)
-
-    # Create a set to hold unique edges of simplices that pass the radius
-    # filtering
-    edges = set()
-
-    # Create a set to hold unique edges of perimeter simplices.
-    # Whenever a simplex is found that passes the radius filter, its edges
-    # will be inspected to see if they already exist in the `edges` set.  If an
-    # edge does not already exist there, it will be added to both the `edges`
-    # set and the `permimeter_edges` set.  If it does already exist there, it
-    # will be removed from the `perimeter_edges` set if found there.  This is
-    # taking advantage of the property of perimeter edges that each edge can
-    # only exist once.
-    perimeter_edges = set()
-
-    for point_indices, circumradius in alphasimplices(vertices):
-        if callable(alpha):
-            resolved_alpha = alpha(point_indices, circumradius)
-        else:
-            resolved_alpha = alpha
-
-        # Radius filter
-        if circumradius < 1.0 / resolved_alpha:
-            for edge in itertools.combinations(
-                    # point_indices, r=coords.shape[-1]):
-                    point_indices, 3):
-                if all([e not in edges for e in itertools.combinations(
-                        edge, r=len(edge))]):
-                    edges.add(edge)
-                    perimeter_edges.add(edge)
-                else:
-                    perimeter_edges -= set(itertools.combinations(
-                        edge, r=len(edge)))
-    
-    triangles = np.array(list(perimeter_edges))
-    return vertices, triangles
-
-
-def polygonize_alpha_shape(vertices, edges):
-    # Create the resulting polygon from the edge points
-    m = MultiLineString([vertices[np.array(edge)] for edge in edges])
-    triangles = list(polygonize(m))
-    result = unary_union(triangles)
-    return result   
