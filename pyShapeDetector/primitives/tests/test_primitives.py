@@ -540,7 +540,7 @@ def test_axis_aligned_bounding_box_planes():
     #         pcd = plane.inlier_PointCloud.crop(plane.bbox)
     #         assert len(pcd.points) == num_samples
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     # test_plane_transformations()
     # test_distances()
     # test_equal()
