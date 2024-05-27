@@ -15,8 +15,9 @@ from pyShapeDetector.geometry import PointCloud, TriangleMesh
 
 from pyShapeDetector.utility import (
     get_rotation_from_axis,
-    get_rectangular_grid,
-    select_grid_points)
+    # get_rectangular_grid,
+    # select_grid_points
+    )
 
 from .primitivebase import Primitive
 # from alphashape import alphashape
@@ -902,11 +903,14 @@ class Plane(Primitive):
         # plane_rect = self.get_rectangular_plane(vectors, center)
         
         # grid inside rectangle and select nearby points
-        grid, perimeter = get_rectangular_grid(vectors, center, grid_width, grid_type=grid_type, return_perimeter=True)
-        grid = self.flatten_points(grid)
+        grid, perimeter = PointCloud.get_rectangular_grid(
+            vectors, center, grid_width, grid_type=grid_type, return_perimeter=True)
+        
+        # flattening, just in case
+        grid.points = self.flatten_points(grid.points)
         
         # TODO: slowest thing here is this:
-        grid_selected = select_grid_points(grid, self.inlier_points_flattened, max_point_dist)
+        grid_selected = grid.select_nearby_points(self.inlier_points_flattened, max_point_dist)
         
         if only_inside:
             grid_selected = grid_selected[self.contains_projections(grid_selected)]

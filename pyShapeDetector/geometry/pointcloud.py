@@ -84,25 +84,6 @@ class PointCloud(Open3D_Geometry):
         pcd.colors = colors
         return pcd
     pass
-
-    @classmethod
-    def fuse_pointclouds(cls, pcds):
-        """ Fuses list of pointclouds into a single PointCloud instance.
-        
-        Parameters
-        ----------
-        pcds : list
-            Input pointclouds.
-        
-        Returns
-        -------
-        PointCloud
-            Fused point cloud.
-        """
-        pcd_full = cls()
-        for pcd in pcds:
-            pcd_full += pcd
-        return pcd_full
     
     def average_nearest_dist(self, k=15, leaf_size=40):
         """ Calculates the K nearest neighbors and returns the average distance 
@@ -653,3 +634,166 @@ class PointCloud(Open3D_Geometry):
                 distances[min_distance_indices[0][i], min_distance_indices[1][i]])
         
         return closest_points, min_distances
+    
+    def select_nearby_points(self, inlier_points, max_distance, cores=6):
+        """
+        Return PointCloud containing points that are close enough to at 
+        least some point in the inlier_points points array.
+        
+        Attention: Consider flattening both "grid" and "inlier_points" to the 
+        desired surface.
+        
+        See: get_rectangular_grid
+
+        Parameters
+        ----------
+        inlier_points : numpy array
+            Array of points (most likely, inlier points).
+        max_distance : float
+            Max distance allowed between grid points and inlier points.
+
+        Returns
+        -------
+        numpy array
+            Selected points.
+        """
+        import multiprocessing
+        from pyShapeDetector.utility import parallelize
+        
+        if cores > (cpu_count := multiprocessing.cpu_count()):
+            warn(f'Only {cpu_count} available, {cores} required.'
+                        ' limiting to max availability.')
+            cores = cpu_count
+            
+        max_distance_squared = max_distance * max_distance
+
+        if PointCloud.is_instance_or_open3d(inlier_points):
+            inlier_points = np.asarray(inlier_points.points)
+        
+        @parallelize(6)
+        def select_points(grid):
+            dist_squared = cdist(inlier_points, grid, 'sqeuclidean')
+            return np.any(dist_squared <= max_distance_squared, axis=0)
+        
+        selected_idxs = select_points(self.points)
+        return PointCloud(self.points[selected_idxs])
+    
+    @classmethod
+    def get_rectangular_grid(cls, vectors, center, grid_width, 
+                             return_perimeter = False, grid_type = "hexagonal"):
+        """ Gives rectangular grid defined two vectors and its center.
+        
+        Vectors v1 and v2 should not be unit, and instead have lengths equivalent
+        to widths of rectangle.
+        
+        Available grid types: "regular" and "hexagonal".
+        
+        If `return_perimeter` is set to True, also return the expected perimeter
+        of each triangle.
+        
+        Parameters
+        ----------
+        vectors : arraylike of shape (2, 3)
+            The two orthogonal unit vectors defining the rectangle plane.
+        center : arraylike of length 3, optional
+            Center of rectangle. If not given, either inliers or centroid are 
+            used.
+        grid_width : float
+            Distance between two points in first dimension (and also second 
+            dimension for regular grids).
+        return_perimeter : boolean, optional
+            If True, return tuple containing both grid and calculated perimeter.
+            Default: False.
+        grid_type : str, optional
+            Type of grid, can be "hexagonal" or "regular". Default: "hexagonal".
+
+        See also:
+            select_grid_points
+
+        Returns
+        -------
+        PointCloud
+            Grid points
+            
+        float
+            Perimeter of one triangle
+        """
+        if grid_type not in ["regular", "hexagonal"]:
+            raise ValueError("Possible grid types are 'regular' and 'hexagonal', "
+                            f"got '{grid_type}'.")
+        eps = 1e-8
+        lengths = np.linalg.norm(vectors, axis=1)
+        
+        # get unit vectors
+        vx, vy = vectors / lengths[:, np.newaxis]
+
+        n = []
+        for length in lengths:
+            ratio = length / grid_width
+            n.append(int(np.floor(ratio)) + int(ratio % 1 > eps))
+        
+        def get_range(length, width):
+            array = np.arange(stop=length, step=width) - length / 2
+            assert abs(width - (array[1] - array[0])) < eps
+            
+            # adding last point if needed
+            if (length / width) % 1 > eps:
+                # array = np.hstack([array, array[-1] + grid_width]) 
+                array = np.hstack([array, length / 2])
+                
+            return array
+        
+        if grid_type == "regular":
+            array_x = get_range(lengths[0], grid_width)
+            array_y = get_range(lengths[1], grid_width)
+            
+            x_ = vx * array_x[np.newaxis].T
+            y_ = vy * array_y[np.newaxis].T
+            # grid_lines = [px + py for px, py in product(x_, y_)]
+            grid_lines = [x_ + py for py in y_]
+            grid = np.vstack(grid_lines)
+
+            perimeter = (2 + np.sqrt(2)) * grid_width
+            
+        elif grid_type == "hexagonal":
+            h = grid_width * np.sqrt(3) / 2
+            
+            array_x = get_range(lengths[0], grid_width)
+            array_y = get_range(lengths[1], h)
+            
+            x_ = vx * array_x[np.newaxis].T
+            y_ = vy * array_y[np.newaxis].T
+            # grid_lines = [px + py for px, py in product(x_, y_)]
+            grid_lines = [x_ + py for py in y_]
+            for i in range(len(grid_lines)):
+                if i % 2 == 1:
+                    grid_lines[i] += vx * grid_width / 2
+                    grid_lines[i] = np.vstack([-vx * lengths[0]/2, grid_lines[i][:-1] ])
+
+            perimeter = 3 * grid_width
+        
+        grid = np.vstack(grid_lines)
+        pcd = cls(grid + center)
+        
+        if return_perimeter:
+            return pcd, perimeter
+        return pcd
+
+    @classmethod
+    def fuse_pointclouds(cls, pcds):
+        """ Fuses list of pointclouds into a single PointCloud instance.
+        
+        Parameters
+        ----------
+        pcds : list
+            Input pointclouds.
+        
+        Returns
+        -------
+        PointCloud
+            Fused point cloud.
+        """
+        pcd_full = cls()
+        for pcd in pcds:
+            pcd_full += pcd
+        return pcd_full
