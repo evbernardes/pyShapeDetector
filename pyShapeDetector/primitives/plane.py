@@ -48,7 +48,6 @@ def _get_rectangular_vertices(v1, v2, eps=1e-8):
         +v1 + v2,
         -v1 + v2]) / 2
     
-
 class Plane(Primitive):
     """
     Plane primitive.
