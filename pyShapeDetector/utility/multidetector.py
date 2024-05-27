@@ -13,8 +13,6 @@ import numpy as np
 from open3d.geometry import PointCloud
 from open3d.utility import Vector3dVector
 
-from .helpers_primitives import group_similar_shapes, fuse_shape_groups
-
 #%% Parameters and input
 
 class MultiDetector():
@@ -199,9 +197,11 @@ class MultiDetector():
             #     print(f'- {name}: {times[name]:.3f}s')
             
         if fuse_shapes:
-            shapes_lists = group_similar_shapes(shapes_detected, 
+            from pyShapeDetector.primitives import Primitive
+            
+            shapes_lists = Primitive.group_similar_shapes(shapes_detected, 
                                                 rtol=rtol, atol=atol)
-            shapes_detected = fuse_shape_groups(shapes_lists, detector)
+            shapes_detected = Primitive.fuse_shape_groups(shapes_lists, detector)
             # metrics_detected = [s.metrics for s in shapes_detected]
             
             pcds_inliers = []
