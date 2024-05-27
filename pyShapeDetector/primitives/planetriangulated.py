@@ -134,6 +134,7 @@ class PlaneTriangulated(Plane):
     create_circle
     create_ellipse
     create_box
+    get_plane_intersections
 
     closest_vertices
     set_vertices_triangles

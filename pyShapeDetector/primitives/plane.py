@@ -160,6 +160,7 @@ class Plane(Primitive):
     create_circle
     create_ellipse
     create_box
+    get_plane_intersections
     """
 
     _fit_n_min = 3
@@ -1366,3 +1367,115 @@ class Plane(Primitive):
                 planes.append(cls(plane_unbounded))
 
         return planes
+    
+    @staticmethod
+    def get_plane_intersections(
+        shapes, bbox_intersection=None, inlier_max_distance=None,
+        length_max=None, distance_max=None, ignore=None, 
+        intersect_parallel=False, eps_angle=np.deg2rad(5.0), 
+        eps_distance=1e-2):
+        """ For every possible pair of neighboring bounded planes, calculate their
+        intersection and return dictionary of all intersection lines.
+        
+        Checking bbox_intersection is much quicker than checking inlier_max_distance,
+        which is why it is a good idea to check both.
+        
+        See: group_shape_groups, fuse_shape_groups, glue_nearby_planes
+        
+        Parameters
+        ----------
+        shapes : list of shapes
+            List containing all shapes.  
+        bbox_intersection : float, optional
+            Max distance between planes.
+        inlier_max_distance : float, optional
+            Max distance between points in shapes. If None, ignore this test.
+            Default: None.
+        length_max : float, optional
+            If a value is given, limits lenghts of intersection lines. 
+            Default: None.
+        distance_max : float, optional
+            If a value is given, limits the distance of intersections. 
+            Default: None.
+        ignore : list of booleans, optional
+            If a list of booleans is given, ignore every ith plane in shapes if
+            the ith value of 'ignore' is True.
+        intersect_parallel : boolean, optional
+            If True, try to intersect parallel planes too. Default: False.
+        eps_angle : float, optional
+            Minimal angle (in radians) between normals necessary for detecting
+            whether planes are parallel. Default: 0.08726646259971647 (5 degrees).
+        eps_distance : float, optional
+            When planes are parallel, eps_distance is used to detect if the 
+            planes are close enough to each other in the dimension aligned
+            with their axes. Default: 1e-2.
+        
+        Returns
+        -------
+        dict
+            Dictionary of intersections.
+        """
+        # if bbox_intersection is None and inlier_max_distance is None:
+        #     raise ValueError("bbox_intersection and inlier_max_distance cannot "
+        #                      "both be equal to None.")
+        
+        from pyShapeDetector.primitives import Plane, PlaneBounded, Line
+        
+        if length_max is not None and length_max <= 0:
+            raise ValueError(f"'length_max' must be a positive float, got {length_max}." )    
+        
+        if ignore is None:
+            ignore = [False] * len(shapes)
+            
+        if len(ignore) != len(shapes):
+            raise ValueError("'ignore' must be a list of booleans the size of 'shapes'.")
+        
+        lines = []
+        intersections = {}
+        num_shapes = len(shapes)
+    
+        for i, j in combinations(range(num_shapes), 2):
+        
+            if not isinstance(shapes[i], Plane) or not isinstance(shapes[j], Plane):
+                continue
+            
+            # if not shapes[i].is_convex or not shapes[j].is_convex:
+            #     continue
+            
+            if ignore[i] or ignore[j]:
+                continue
+            
+            both_bounded = isinstance(shapes[i], PlaneBounded) and isinstance(shapes[j], PlaneBounded)
+            
+            if both_bounded and not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
+                continue
+            
+            if both_bounded and not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
+                continue
+            
+            line = Line.from_plane_intersection(
+                shapes[i], shapes[j], intersect_parallel=intersect_parallel,
+                eps_angle=eps_angle, eps_distance=eps_distance)
+            
+            if line is None:
+                continue
+            
+            if length_max is not None and line.length > length_max:
+                continue
+            
+            if distance_max is not None:
+                # TODO: bounds_or_vertices should be changed for bounds if we are 
+                # sure that it will never be implemented for non convex planes
+                points = shapes[i].bounds_or_vertices
+    
+                if min(line.get_distances(points)) > distance_max:
+                    continue
+                    # continue
+                if min(line.get_distances(points)) > distance_max:
+                    continue
+                    # continue
+            
+            lines.append(line)            
+            intersections[i, j] = line
+            
+        return intersections

@@ -144,6 +144,7 @@ class PlaneBounded(Plane):
     create_circle
     create_ellipse
     create_box
+    get_plane_intersections
 
     closest_bounds
     contains_projections
@@ -153,6 +154,7 @@ class PlaneBounded(Plane):
     intersection_bounds
     simplify_bounds_colinear
     contract_bounds
+    glue_planes_with_intersections
     """
     _name = 'bounded plane'
     _bounds_indices = np.array([])
@@ -755,11 +757,14 @@ class PlaneBounded(Plane):
             If False, does not flatten points
 
         """
-        if flatten:
-            new_bound_points = self.flatten_points(new_bound_points)
-        bounds = np.vstack([self.bounds, new_bound_points])
-        self.set_bounds(bounds, flatten=False)
-        # self.set_bounds(points, flatten, method, alpha)
+        if self.is_convex is not True:
+            warn("Non convex plane detected, not implemented yet.")
+        
+        else:
+            if flatten:
+                new_bound_points = self.flatten_points(new_bound_points)
+            bounds = np.vstack([self.bounds, new_bound_points])
+            self.set_bounds(bounds, flatten=False)
 
     def intersection_bounds(self, other, within_segment=True, eps=1e-3):
         """ Calculates intersection point between bounding lines.
@@ -851,6 +856,68 @@ class PlaneBounded(Plane):
         
         bounds_new = points[indices_unique]
         self.set_bounds(bounds_new, flatten=False, convex=self.is_convex)
+        
+    @staticmethod
+    def glue_planes_with_intersections(shapes, intersections, fit_separated=False):
+        """ Glue shapes using intersections in a dict.
+        
+        Also returns dictionary of all intersection lines.
+        
+        See: group_shape_groups, fuse_shape_groups, find_plane_intersections, glue_nearby_planes
+        
+        Parameters
+        ----------
+        shapes : list of shapes
+            List containing all shapes to be glued.
+        intersections : dict
+            Dictionary with keys of type `(i, j)` and values of type Primitive.Line.
+        fit_separated : bool, optional
+            If True, find projections separated for each shape. Default: True.
+        
+        Returns
+        -------
+        list of Line instances
+            Only intersections that were actually used
+        """
+        
+        # new_intersections = {}
+        lines = []
+            
+        for (i, j), line in intersections.items():
+            
+            if not isinstance(shapes[i], PlaneBounded) or not isinstance(shapes[j], PlaneBounded):
+                # del intersections[i, j]
+                continue
+            
+            if not shapes[i].is_convex or not shapes[j].is_convex:
+                continue
+            
+            # new_intersections[i, j] = line
+            lines.append(line)
+            
+            if fit_separated:
+                lines_ij = [line.get_line_fitted_to_projections(shapes[i].bounds),
+                            line.get_line_fitted_to_projections(shapes[j].bounds)]
+            
+            if not fit_separated:
+                projections = np.array([
+                    line.projections_limits_from_points(shapes[i].bounds),
+                    line.projections_limits_from_points(shapes[j].bounds)])
+                
+                points = line.points_from_projections([
+                        projections.min(axis=1).max(),
+                        projections.max(axis=1).min()])
+                
+                lines_ij = [line.get_fitted_to_points(points)] * 2
+    
+            for shape, line_ in zip([shapes[i], shapes[j]], lines_ij):
+                # line_ = line.get_line_fitted_to_projections(shape.bounds)
+                # TODO: add vertices too?
+                shape.add_bound_points([line_.beginning, line_.ending])
+                shape.add_inliers([line_.beginning, line_.ending])
+                # new_points = [line.beginning, line.ending]
+                
+        return lines
 
     # @classmethod
     # def planes_ressample_and_triangulate(cls, planes, density, radius_ratio=None):
