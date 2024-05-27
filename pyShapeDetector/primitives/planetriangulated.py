@@ -127,6 +127,7 @@ class PlaneTriangulated(Plane):
     get_rectangular_plane
     get_square_mesh
     get_rectangular_mesh
+    cut_with_cylinders
     create_circle
     create_ellipse
     create_box

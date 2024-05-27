@@ -153,6 +153,7 @@ class Plane(Primitive):
     get_rectangular_plane
     get_square_mesh
     get_rectangular_mesh
+    cut_with_cylinders
     create_circle
     create_ellipse
     create_box
@@ -1211,6 +1212,32 @@ class Plane(Primitive):
             Mesh corresponding to the plane.
         """
         return self.get_rectangular_plane(v1, v2, center).get_mesh()
+    
+    def cut_with_cylinders(shapes, radius_min, total_cut=False, eps=0):
+        """ Isolates planes and cylinders. For every plane and cylinder 
+        combination, check if cylinder cuts plane and, if it does, add a hole.
+        
+        Parameters
+        ----------
+        shapes : list of shapes
+            List containing all shapes.
+        radius_min : float
+            Only isolates cylinders with radius below this threshold.
+        total_cut : boolean, optional
+            When True, only accepts cuts when either the top of the bottom 
+            completely cuts the plane. Default: False.
+        eps : float, optional
+            Adds some backlash to top and bottom of cylinder. Default: 0.
+        """
+        from pyShapeDetector.primitives import Plane, Cylinder
+        
+        cylinders = [s for s in shapes if isinstance(s, Cylinder) and s.radius < radius_min + eps]
+    
+        for s in shapes:
+            if not isinstance(s, Cylinder):
+                warn(f"Ignoring shape of type {type(s)} (not a Cylinder).")
+            elif s.radius < radius_min + eps and c.cuts(self, total_cut=total_cut, eps=eps):
+                self.add_holes(c.project_to_plane(self))
     
     @classmethod
     def create_circle(cls, center, normal, radius, resolution=30):
