@@ -89,9 +89,9 @@ def draw_geometries(elements, **camera_options):
             lines.append(element)
         elif isinstance(element, Plane):
             if draw_planes:
-                geometries.append(element.mesh)
+                geometries.append(element.mesh.as_open3d)
         elif isinstance(element, Primitive):
-            geometries.append(element.mesh)
+            geometries.append(element.mesh.as_open3d)
         elif isinstance(element, np.ndarray):
             if len(element.shape) != 2 or element.shape[1] != 3:
                 raise ValueError("3D arrays are interpreted as PointClouds, "
