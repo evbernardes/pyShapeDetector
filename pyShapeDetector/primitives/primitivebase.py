@@ -6,7 +6,6 @@ Created on Mon Sep 25 15:42:59 2023
 @author: ebernardes
 """
 import warnings
-import copy
 from abc import ABC, abstractmethod
 import numpy as np
 from open3d.geometry import AxisAlignedBoundingBox
