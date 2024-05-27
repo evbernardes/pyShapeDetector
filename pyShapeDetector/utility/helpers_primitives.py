@@ -79,233 +79,232 @@ def get_rotation_from_axis(axis_origin, axis):
         
 #     return sublists
 
-def _get_partitions_legacy(num_shapes, pairs):
-    new_indices = np.array(range(num_shapes))
-    for pair, result in pairs.items():
-        i, j = pair
+# def _get_partitions_legacy(num_shapes, pairs):
+#     new_indices = np.array(range(num_shapes))
+#     for pair, result in pairs.items():
+#         i, j = pair
         
-        if new_indices[j] != j:
-            continue
+#         if new_indices[j] != j:
+#             continue
             
-        if result:
-            new_indices[j] = i
+#         if result:
+#             new_indices[j] = i
         
-    partitions = []
-    for index in set(new_indices):
-        partition = set([i for i in np.where(new_indices == index)[0]])
-        partitions.append(partition)            
-    return partitions
+#     partitions = []
+#     for index in set(new_indices):
+#         partition = set([i for i in np.where(new_indices == index)[0]])
+#         partitions.append(partition)            
+#     return partitions
 
-def _get_partitions(num_shapes, pairs):
-    # Step 2: graph-based partitions from pairs
-    partitions = []
-    added_indices = set()
-    for pair, result in pairs.items():
+# def _get_partitions(num_shapes, pairs):
+#     # Step 2: graph-based partitions from pairs
+#     partitions = []
+#     added_indices = set()
+#     for pair, result in pairs.items():
         
-        if pair[0] in added_indices and pair[1] in added_indices:
-            if not result:
-                continue
+#         if pair[0] in added_indices and pair[1] in added_indices:
+#             if not result:
+#                 continue
             
-            i0 = np.where([pair[0] in p for p in partitions])[0][0]
-            partition = partitions.pop(i0)
+#             i0 = np.where([pair[0] in p for p in partitions])[0][0]
+#             partition = partitions.pop(i0)
             
-            # both added in same partitions
-            if pair[1] in partition:
-                partitions.append(partition)
+#             # both added in same partitions
+#             if pair[1] in partition:
+#                 partitions.append(partition)
          
-            # fuse partitions
-            else:
-               i1 = np.where([pair[1] in p for p in partitions])[0][0]
-               partitions[i1] |= partition
+#             # fuse partitions
+#             else:
+#                i1 = np.where([pair[1] in p for p in partitions])[0][0]
+#                partitions[i1] |= partition
         
-        # Check if pair passes the test
-        elif result:
-            if len(partitions) == 0:
-                partitions.append(set(pair))
-                added_indices.add(pair[0])
-                added_indices.add(pair[1])
-            else:
-                for partition in partitions:
-                    if pair[1] in partition:
-                        partition.add(pair[0])
-                        added_indices.add(pair[0])
-                        break
-                    if pair[0] in partition:
-                        partition.add(pair[1])
-                        added_indices.add(pair[1])
-                        # added_to_partition = True
-                        break
+#         # Check if pair passes the test
+#         elif result:
+#             if len(partitions) == 0:
+#                 partitions.append(set(pair))
+#                 added_indices.add(pair[0])
+#                 added_indices.add(pair[1])
+#             else:
+#                 for partition in partitions:
+#                     if pair[1] in partition:
+#                         partition.add(pair[0])
+#                         added_indices.add(pair[0])
+#                         break
+#                     if pair[0] in partition:
+#                         partition.add(pair[1])
+#                         added_indices.add(pair[1])
+#                         # added_to_partition = True
+#                         break
 
-        else:
-            # Add single-element partitions for elements that failed the test
-            if pair[0] not in added_indices and pair[1] not in added_indices:
-                partitions.append({pair[0]})
-                partitions.append({pair[1]})
-                added_indices.add(pair[0])
-                added_indices.add(pair[1])
+#         else:
+#             # Add single-element partitions for elements that failed the test
+#             if pair[0] not in added_indices and pair[1] not in added_indices:
+#                 partitions.append({pair[0]})
+#                 partitions.append({pair[1]})
+#                 added_indices.add(pair[0])
+#                 added_indices.add(pair[1])
                 
-    for i in range(num_shapes):
-        if i not in added_indices:
-            partitions.append({i})
+#     for i in range(num_shapes):
+#         if i not in added_indices:
+#             partitions.append({i})
                 
-    if (num_test := sum(len(p) for p in partitions)) != num_shapes:
-        print(f"This shouldn't have happened, implementation error: {num_test} != {num_shapes}")
-        assert False
+#     if (num_test := sum(len(p) for p in partitions)) != num_shapes:
+#         print(f"This shouldn't have happened, implementation error: {num_test} != {num_shapes}")
+#         assert False
         
-    return partitions
+#     return partitions
 
-def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, 
-                          bbox_intersection=None, inlier_max_distance=None,
-                          legacy=False, return_partitions=False):
-    """ Detect shapes with similar model and group.
+# def group_similar_shapes(shapes, rtol=1e-02, atol=1e-02, 
+#                           bbox_intersection=None, inlier_max_distance=None,
+#                           legacy=False, return_partitions=False):
+#     """ Detect shapes with similar model and group.
     
-    See: fuse_shape_groups
+#     See: fuse_shape_groups
     
-    Parameters
-    ----------
-    shapes : list of shapes
-        List containing all shapes.    
-    rtol : float, optional
-        The relative tolerance parameter. Default: 1e-02.
-    atol : float, optional
-        The absolute tolerance parameter. Default: 1e-02.
-    bbox_intersection : float, optional
-        Max distance between inlier bounding boxes. If None, ignore this test.
-        Default: None.
-    inlier_max_distance : float, optional
-        Max distance between points in shapes. If None, ignore this test.
-        Default: None.
-    legacy : bool, optional
-        Uses legacy implementation of `group_similar_shapes`. Default: False
-    return_partitions :  bool, optional
-        If True, return sets defining partitions. Default: False.
+#     Parameters
+#     ----------
+#     shapes : list of shapes
+#         List containing all shapes.    
+#     rtol : float, optional
+#         The relative tolerance parameter. Default: 1e-02.
+#     atol : float, optional
+#         The absolute tolerance parameter. Default: 1e-02.
+#     bbox_intersection : float, optional
+#         Max distance between inlier bounding boxes. If None, ignore this test.
+#         Default: None.
+#     inlier_max_distance : float, optional
+#         Max distance between points in shapes. If None, ignore this test.
+#         Default: None.
+#     legacy : bool, optional
+#         Uses legacy implementation of `group_similar_shapes`. Default: False
+#     return_partitions :  bool, optional
+#         If True, return sets defining partitions. Default: False.
         
-    Returns
-    -------
-    list of lists
-        Grouped shapes
-    list of sets
-        Index partitions defining the shape groups.
-    """
+#     Returns
+#     -------
+#     list of lists
+#         Grouped shapes
+#     list of sets
+#         Index partitions defining the shape groups.
+#     """
      
-    def _test(i, j):
-        if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
-            return False
-        if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
-            return False
-        if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
-            return False
-        return True
+#     def _test(i, j):
+#         if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
+#             return False
+#         if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
+#             return False
+#         if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
+#             return False
+#         return True
     
-    # Step 1: check all pairs
-    shape_pairs = combinations(range(len(shapes)), 2)
-    pairs = {pair: _test(*pair) for pair in shape_pairs}
+#     # Step 1: check all pairs
+#     shape_pairs = combinations(range(len(shapes)), 2)
+#     pairs = {pair: _test(*pair) for pair in shape_pairs}
     
-    # Step 2: partitions from pairs
-    if legacy:
-        partitions = _get_partitions_legacy(len(shapes), pairs)
-    else:
-        # graph-based 
-        partitions = _get_partitions(len(shapes), pairs)
+#     # Step 2: partitions from pairs
+#     if legacy:
+#         partitions = _get_partitions_legacy(len(shapes), pairs)
+#     else:
+#         # graph-based 
+#         partitions = _get_partitions(len(shapes), pairs)
                 
-    # Step 3: get sublists of shapes from partitions
-    # shape_groups = [[shapes[i] for i in partition] for partition in partitions]
+#     # Step 3: get sublists of shapes from partitions
+#     # shape_groups = [[shapes[i] for i in partition] for partition in partitions]
     
-    shape_groups = []
-    for partition in partitions:
-        group = [shapes[i] for i in partition]
-        shape_groups.append(group)
-    if return_partitions:
-        return shape_groups, partitions
-    return shape_groups
-    # return [list(group) for group in partitions]
+#     shape_groups = []
+#     for partition in partitions:
+#         group = [shapes[i] for i in partition]
+#         shape_groups.append(group)
+#     if return_partitions:
+#         return shape_groups, partitions
+#     return shape_groups
 
-def fuse_shape_groups(shapes_lists, **fuse_options):
-    """ Find weigthed average of shapes, where the weight is the fitness
-    metric.
+# def fuse_shape_groups(shapes_lists, **fuse_options):
+#     """ Find weigthed average of shapes, where the weight is the fitness
+#     metric.
     
-    If a detector is given, use it to compute the metrics of the resulting
-    average shapes.
+#     If a detector is given, use it to compute the metrics of the resulting
+#     average shapes.
     
-    See: group_similar_shapes
+#     See: group_similar_shapes
     
-    Parameters
-    ----------
-    shapes_lists : list of list shapes
-        Grouped shapes.
-    detector : instance of some Detector, optional
-        Used to recompute metrics.
-    ignore_extra_data : boolean, optional
-        If True, ignore everything and only fuse model. Default: False.
-    line_intersection_eps : float, optional
-        Distance for detection of intersection between planes. Default: 0.001.
+#     Parameters
+#     ----------
+#     shapes_lists : list of list shapes
+#         Grouped shapes.
+#     detector : instance of some Detector, optional
+#         Used to recompute metrics.
+#     ignore_extra_data : boolean, optional
+#         If True, ignore everything and only fuse model. Default: False.
+#     line_intersection_eps : float, optional
+#         Distance for detection of intersection between planes. Default: 0.001.
         
-    Extra parameters for PlaneBounded
-    ---------------------------------
-    force_concave : boolean, optional.
-        If True, the fused plane will be concave regardless of inputs.
-        Default: True.
-    ressample_density : float, optional
-        Default: 1.5
-    ressample_radius_ratio : float, optional
-        Default: 1.2
+#     Extra parameters for PlaneBounded
+#     ---------------------------------
+#     force_concave : boolean, optional.
+#         If True, the fused plane will be concave regardless of inputs.
+#         Default: True.
+#     ressample_density : float, optional
+#         Default: 1.5
+#     ressample_radius_ratio : float, optional
+#         Default: 1.2
         
-    Returns
-    -------
-    list
-        Average shapes.    
-    """
-    fused_shapes = []
-    for sublist in shapes_lists:
-        primitive = type(sublist[0])
-        fused_shape = primitive.fuse(
-            sublist, **fuse_options)
+#     Returns
+#     -------
+#     list
+#         Average shapes.    
+#     """
+#     fused_shapes = []
+#     for sublist in shapes_lists:
+#         primitive = type(sublist[0])
+#         fused_shape = primitive.fuse(
+#             sublist, **fuse_options)
         
-        num_points = sum(len(s.inlier_points) for s in sublist)
-        if num_points != len(fused_shape.inlier_points):
-            pass
+#         num_points = sum(len(s.inlier_points) for s in sublist)
+#         if num_points != len(fused_shape.inlier_points):
+#             pass
         
-        fused_shapes.append(fused_shape)
+#         fused_shapes.append(fused_shape)
         
-    return fused_shapes
+#     return fused_shapes
 
-def fuse_similar_shapes(shapes, rtol=1e-02, atol=1e-02, 
-                        bbox_intersection=None, inlier_max_distance=None,
-                        legacy=False, **fuse_options):
-    """ Detect shapes with similar model and fuse them.
+# def fuse_similar_shapes(shapes, rtol=1e-02, atol=1e-02, 
+#                         bbox_intersection=None, inlier_max_distance=None,
+#                         legacy=False, **fuse_options):
+#     """ Detect shapes with similar model and fuse them.
     
-    If a detector is given, use it to compute the metrics of the resulting
-    average shapes.
+#     If a detector is given, use it to compute the metrics of the resulting
+#     average shapes.
     
-    For extra fuse options, see: fuse_shape_groups
+#     For extra fuse options, see: fuse_shape_groups
     
-    See: group_shape_groups
+#     See: group_shape_groups
     
-    Parameters
-    ----------
-    shapes : list of shapes
-        List containing all shapes.
-    rtol : float, optional
-        The relative tolerance parameter. Default: 1e-02.
-    atol : float, optional
-        The absolute tolerance parameter. Default: 1e-02.
-    bbox_intersection : float, optional
-        Max distance between inlier bounding boxes. If None, ignore this test.
-        Default: None.
-    inlier_max_distance : float, optional
-        Max distance between points in shapes. If None, ignore this test.
-        Default: None.
+#     Parameters
+#     ----------
+#     shapes : list of shapes
+#         List containing all shapes.
+#     rtol : float, optional
+#         The relative tolerance parameter. Default: 1e-02.
+#     atol : float, optional
+#         The absolute tolerance parameter. Default: 1e-02.
+#     bbox_intersection : float, optional
+#         Max distance between inlier bounding boxes. If None, ignore this test.
+#         Default: None.
+#     inlier_max_distance : float, optional
+#         Max distance between points in shapes. If None, ignore this test.
+#         Default: None.
     
-    Returns
-    -------
-    list
-        Average shapes.
-    """
-    partitions = group_similar_shapes(
-        shapes, rtol, atol, bbox_intersection, inlier_max_distance, legacy)
-    shape_groups = [[shapes[i] for i in partition] for partition in partitions]
+#     Returns
+#     -------
+#     list
+#         Average shapes.
+#     """
+#     partitions = group_similar_shapes(
+#         shapes, rtol, atol, bbox_intersection, inlier_max_distance, legacy)
+#     shape_groups = [[shapes[i] for i in partition] for partition in partitions]
     
-    return fuse_shape_groups(shape_groups, **fuse_options)
+#     return fuse_shape_groups(shape_groups, **fuse_options)
 
 def find_plane_intersections(
         shapes, bbox_intersection=None, inlier_max_distance=None,
@@ -503,59 +502,4 @@ def glue_nearby_planes(shapes, fit_separated=False, **options):
     """
     intersections = find_plane_intersections(shapes, **options)
     return glue_planes_with_intersections(shapes, intersections)
-
-def cut_planes_with_cylinders(shapes, radius_min, total_cut=False, eps=0):
-    """ Isolates planes and cylinders. For every plane and cylinder 
-    combination, check if cylinder cuts plane and, if it does, add a hole.
-    
-    Parameters
-    ----------
-    shapes : list of shapes
-        List containing all shapes.
-    radius_min : float
-        Only isolates cylinders with radius below this threshold.
-    total_cut : boolean, optional
-        When True, only accepts cuts when either the top of the bottom 
-        completely cuts the plane. Default: False.
-    eps : float, optional
-        Adds some backlash to top and bottom of cylinder. Default: 0.
-    
-    """
-    planes = [s for s in shapes if s.name == 'plane' or s.name == 'bounded plane']
-    cylinders = [s for s in shapes if s.name == 'cylinder' and s.radius < radius_min + eps]
-
-    for c, p in product(cylinders, planes):
-        if c.cuts(p, total_cut=total_cut, eps=eps):
-            p.add_holes(c.project_to_plane(p))
-                
-def get_meshes(shapes, crop_types=['sphere', 'cone'], paint_random=False):
-    """ Returns meshes from shapes.
-    
-    Parameters
-    ----------
-    crop_types : list of strings, optional
-        Define type of primitives that should be cropped according to their
-        inlier points. Default: ['sphere', 'cone']
-    paint_random: boolean, optional
-        When positive, paint each mesh with a different random color.
-    
-    Returns
-    -------
-    list
-        List of meshes.
-    """
-    meshes = []
-    for shape in shapes:
-        if shape.name in crop_types:
-            mesh = shape.get_cropped_mesh()
-        else:
-            mesh = shape.get_mesh()
-        if paint_random:
-            mesh.paint_uniform_color(np.random.random(3))
-        else:
-            mesh.paint_uniform_color(shape.color)
-
-        meshes.append(mesh)
-
-    return meshes
                 

@@ -86,6 +86,9 @@ class Sphere(Primitive):
     check_bbox_intersection
     check_inlier_distance
     fuse
+    group_similar_shapes
+    fuse_shape_groups
+    fuse_similar_shapes
     
     from_center_radius
     """

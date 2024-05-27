@@ -98,6 +98,9 @@ class Cylinder(Primitive):
     check_bbox_intersection
     check_inlier_distance
     fuse
+    group_similar_shapes
+    fuse_shape_groups
+    fuse_similar_shapes
     
     from_base_vector_radius
     from_center_half_vector_radius

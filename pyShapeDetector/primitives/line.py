@@ -98,6 +98,9 @@ class Line(Primitive):
     check_bbox_intersection
     check_inlier_distance
     fuse 
+    group_similar_shapes
+    fuse_shape_groups
+    fuse_similar_shapes
     
     from_point_vector
     from_two_points

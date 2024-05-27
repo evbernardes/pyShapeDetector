@@ -100,6 +100,9 @@ class Cone(Primitive):
     check_bbox_intersection
     check_inlier_distance
     fuse
+    group_similar_shapes
+    fuse_shape_groups
+    fuse_similar_shapes
     
     from_appex_top_radius
     from_appex_vector_radius
