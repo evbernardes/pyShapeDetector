@@ -16,8 +16,7 @@ from pyShapeDetector.geometry import PointCloud, TriangleMesh
 from pyShapeDetector.utility import (
     get_rotation_from_axis,
     get_rectangular_grid,
-    select_grid_points,
-    get_triangle_perimeters)
+    select_grid_points)
 
 from .primitivebase import Primitive
 # from alphashape import alphashape
@@ -920,7 +919,7 @@ class Plane(Primitive):
         # triangulate and remove big triangles
         projections = self.get_projections(grid_selected)
         triangles = Delaunay(projections).simplices
-        perimeters = get_triangle_perimeters(grid_selected, triangles)
+        perimeters = TriangleMesh(grid_selected, triangles).get_triangle_perimeters()
         select = perimeters < perimeter_multiplier * perimeter + perimeter_eps
         triangles = triangles[select]
         

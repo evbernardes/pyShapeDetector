@@ -11,8 +11,7 @@ import numpy as np
 from scipy.spatial import Delaunay
 
 from pyShapeDetector.primitives import Plane, PlaneBounded
-from pyShapeDetector.utility import (
-    get_triangle_boundary_indexes)
+from pyShapeDetector.geometry import TriangleMesh
 
 def test_get_triangle_boundary_indexes():
     plane = Plane.random()
@@ -24,7 +23,9 @@ def test_get_triangle_boundary_indexes():
     proj = plane.get_projections(vertices)
     triangles = Delaunay(proj).simplices
 
-    boundary_indexes = get_triangle_boundary_indexes(vertices, triangles)
+    mesh = TriangleMesh(vertices, triangles)
+
+    boundary_indexes = mesh.get_triangle_boundary_indexes()
 
     assert len(boundary_indexes) == 4
 

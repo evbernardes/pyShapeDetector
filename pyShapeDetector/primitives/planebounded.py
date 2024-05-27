@@ -12,13 +12,6 @@ from scipy.spatial import ConvexHull, Delaunay
 # from scipy.spatial.transform import Rotation
 from open3d.geometry import AxisAlignedBoundingBox
 from pyShapeDetector.geometry import PointCloud, TriangleMesh
-
-from pyShapeDetector.utility import (
-    get_triangle_surface_areas,
-    triangulate_earclipping,
-    get_triangle_points,
-    simplify_loop_with_angle,
-    )
 # from .primitivebase import Primitive
 from .plane import Plane
 # from alphashape import alphashape
@@ -362,7 +355,7 @@ class PlaneBounded(Plane):
             triangles = Delaunay(projections).simplices
 
             if len(self._holes) > 0:
-                triangles_center = get_triangle_points(projections, triangles).mean(axis=1)
+                triangles_center = projections[triangles].mean(axis=1)
                 
                 for hole in self._holes:
                     inside_hole = np.array(
@@ -381,9 +374,9 @@ class PlaneBounded(Plane):
                 projections = _fuse_loops(projections, fused_hole.bounds_projections)
             
             points = self.get_points_from_projections(projections)
-            triangles = triangulate_earclipping(projections)
+            triangles = TriangleMesh.triangulate_earclipping(projections).triangles
 
-        areas = get_triangle_surface_areas(points, triangles)
+        areas = TriangleMesh(points, triangles).get_triangle_surface_areas()
         triangles = triangles[areas > 0]
 
         mesh = TriangleMesh(points, triangles)
@@ -817,7 +810,7 @@ class PlaneBounded(Plane):
             If False, only try to simplify loop once. If True, try to simplify
             it until no more simplification is possible. Default: True.
         """
-        indices = simplify_loop_with_angle(
+        indices = TriangleMesh.simplify_loop_with_angle(
             self.bounds, range(len(self.bounds)), angle_colinear, colinear_recursive)
         
         bounds_new = self.bounds[indices]

@@ -149,7 +149,7 @@ def _get_partitions(num_shapes, pairs):
             partitions.append({i})
                 
     if (num_test := sum(len(p) for p in partitions)) != num_shapes:
-        print(f"This shouldn't have happened, implementatino error: {num_test} != {num_shapes}")
+        print(f"This shouldn't have happened, implementation error: {num_test} != {num_shapes}")
         assert False
         
     return partitions

@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from open3d.geometry import AxisAlignedBoundingBox
 from scipy.spatial.transform import Rotation
-from pyShapeDetector.utility import clean_crop, get_rotation_from_axis
+from pyShapeDetector.utility import get_rotation_from_axis
 from pyShapeDetector.geometry import PointCloud, TriangleMesh
 
 def _set_and_check_3d_array(input_array, name='array', num_points=None):
@@ -966,7 +966,7 @@ class Primitive(ABC):
         bb = AxisAlignedBoundingBox(bb.min_bound - [eps]*3, 
                                     bb.max_bound + [eps]*3)
         # return mesh.crop(bb)
-        return clean_crop(mesh, bb)
+        return mesh.clean_crop(bb)
     
     def is_similar_to(self, other_shape, rtol=1e-02, atol=1e-02):
         """ Check if shapes represent same model.

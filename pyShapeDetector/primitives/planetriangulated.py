@@ -13,11 +13,11 @@ import numpy as np
 from open3d.geometry import AxisAlignedBoundingBox
 from pyShapeDetector.geometry import PointCloud, TriangleMesh
 
-from pyShapeDetector.utility import (
-    fuse_vertices_triangles, 
-    get_triangle_boundary_indexes,
-    get_loop_indexes_from_boundary_indexes,
-    simplify_loop_with_angle)
+# from pyShapeDetector.utility import (
+#     # fuse_vertices_triangles, 
+#     # get_triangle_boundary_indexes,
+#     get_loop_indexes_from_boundary_indexes,
+#     )
 # from .primitivebase import Primitive
 from .plane import Plane
 
@@ -419,7 +419,8 @@ class PlaneTriangulated(Plane):
         vertices_list = [plane_unbounded.flatten_points(s.vertices) for s in shapes]    
         triangles_list = [s.triangles for s in shapes]
         
-        vertices, triangles = fuse_vertices_triangles(vertices_list, triangles_list)
+        vertices, triangles = TriangleMesh.fuse_vertices_triangles(
+            vertices_list, triangles_list)
         
         shape = PlaneTriangulated(plane_unbounded.model, vertices, triangles)
         if not ignore_extra_data:
@@ -622,18 +623,16 @@ class PlaneTriangulated(Plane):
         """
         from .planebounded import PlaneBounded
         
-        boundary_indexes = get_triangle_boundary_indexes(
-            self.vertices, 
-            self.triangles)
+        boundary_indexes = self.mesh.get_triangle_boundary_indexes()
         
         if not isinstance(min_inliers, int) or (min_inliers < 1):
             raise ValueError(f"min_inliers must be a positive integer, got {min_inliers}.")
         
-        loop_indexes = get_loop_indexes_from_boundary_indexes(boundary_indexes)
+        loop_indexes = TriangleMesh.get_loop_indexes_from_boundary_indexes(boundary_indexes)
         
         if angle_colinear is not None:
             for i in range(len(loop_indexes)):
-                loop_indexes[i] = simplify_loop_with_angle(
+                loop_indexes[i] = TriangleMesh.simplify_loop_with_angle(
                     self.vertices, loop_indexes[i], angle_colinear, colinear_recursive)
 
         planes = [PlaneBounded(self, self.vertices[loop], convex=False) for loop in loop_indexes]
