@@ -11,7 +11,7 @@ from open3d import visualization
 from pyShapeDetector.geometry import PointCloud
 # from pyShapeDetector.primitives import Primitive, Line
 
-def paint_random(elements, paint_inliers=False):
+def paint_random(elements, paint_inliers=False, return_copy=False):
     """ Paint each pointcloud/mesh with a different random color.
     
     Parameters
@@ -21,6 +21,9 @@ def paint_random(elements, paint_inliers=False):
     """
     
     from pyShapeDetector.primitives import Primitive
+    
+    if return_copy:
+        elements = copy.deepcopy(elements)
     
     if not isinstance(elements, list):
         elements = [elements]
@@ -33,6 +36,9 @@ def paint_random(elements, paint_inliers=False):
                 element._inlier_colors[:] = color
         else:
             element.paint_uniform_color(color)
+            
+    if return_copy:
+        return elements
 
 def _treat_up_normal(camera_options):
     
