@@ -89,6 +89,7 @@ class Plane(Primitive):
     centroid
     holes
     is_hole
+    parallel_vectors
 
     Methods
     ------- 
@@ -172,6 +173,7 @@ class Plane(Primitive):
     _color = np.array([0, 0, 1])
     _is_hole = False
     _convex = None
+    _parallel_vectors = None
 
     @property
     def equation(self):
@@ -233,7 +235,27 @@ class Plane(Primitive):
     
     @property
     def is_hole(self):
-        return self._is_hole        
+        return self._is_hole
+    
+    @property
+    def parallel_vectors(self):
+        if self._parallel_vectors is not None:
+            return self._parallel_vectors
+        
+        elif self.has_inliers:
+            self._parallel_vectors = self.get_rectangular_vectors_from_inliers(normalized=True)
+            
+        else:
+            while True:
+                random_vector = np.random.random(3)
+                if abs(random_vector.dot(self.normal)) > 1e-3:
+                    continue
+                
+            vy = random_vector / np.linalg.norm(random_vector)
+            vx = np.cross(vy, self.normal)
+            self._parallel_vectors = np.hstack([vx, vy])
+            
+        return self._parallel_vectors
 
     def __init__(self, model, decimals=None):
         """
@@ -370,6 +392,33 @@ class Plane(Primitive):
             Nx3 array containing normal vectors.
         """
         return np.tile(self.normal, (len(points), 1))
+    
+    def set_inliers(self, points_or_pointcloud, normals=None, colors=None, 
+                    flatten=False, color_shape=False):
+        """ Set inlier points to shape.
+        
+        If normals or/and colors are given, they must have the same shape as
+        the input points.
+        
+        Parameters
+        ----------
+        points_or_pointcloud : N x 3 array or instance of open3d.geometry.PointCloud or Primitive
+            Inlier points, pointcloud or shape containing points.
+        normals : optional, N x 3 array
+            Inlier point normals.
+        colors : optional, N x 3 array
+            Colors of inlier points.
+        flatten : boolean, optional
+            If True, flatten inlier points. Default: False.
+        color_shape : boolean, optional
+            If True, use inliers mean color for shape. Default: False.
+        """
+        
+        super().set_inliers(
+            points_or_pointcloud=points_or_pointcloud, 
+            normals=None, colors=None,  flatten=False, color_shape=False)
+        
+        self._parallel_vectors = None
     
     def get_axis_aligned_bounding_box(self, slack=0):
         """ Returns an axis-aligned bounding box of the primitive.
@@ -1058,9 +1107,13 @@ class Plane(Primitive):
         v1 = rot.T @ np.hstack([v1, 0])
         v2 = rot.T @ np.hstack([v2, 0])
         
-        if not normalized:
-            V1 = 2 * max(abs(delta.dot(v1))) * v1
-            V2 = 2 * max(abs(delta.dot(v2))) * v2
+
+        V1 = 2 * max(abs(delta.dot(v1))) * v1
+        V2 = 2 * max(abs(delta.dot(v2))) * v2
+        
+        if normalized:
+            V1 /= np.linalg.norm(V1)
+            V2 /= np.linalg.norm(V2)
         
         vectors = np.array([V1, V2])
         

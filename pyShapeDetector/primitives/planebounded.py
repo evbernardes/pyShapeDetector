@@ -66,6 +66,7 @@ class PlaneBounded(Plane):
     centroid
     holes
     is_hole
+    parallel_vectors
 
     is_clockwise
     bounds

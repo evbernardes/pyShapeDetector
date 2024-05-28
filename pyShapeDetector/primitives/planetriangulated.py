@@ -60,6 +60,7 @@ class PlaneTriangulated(Plane):
     centroid
     holes
     is_hole
+    parallel_vectors
 
     vertices
     triangles
