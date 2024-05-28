@@ -564,7 +564,7 @@ class PointCloud(Open3D_Geometry):
             m, s = divmod(time.time() - time_start, 60)
             h, m = divmod(m, 60)
             print(f'\n{len(pcds_segmented)} point clouds found')
-            print(f'Algorithm took {m} minutes and {s} seconds')
+            print(f'Algorithm took {m} minutes and {int(s)} seconds')
             print(f'{num_ungroupped} ungroupped points')
             
         return pcds_segmented
@@ -575,7 +575,6 @@ class PointCloud(Open3D_Geometry):
         elif isinstance(points, np.ndarray):
             return points
         
-        print('hmm')
         assert False # shouldn't happen
     
     def find_closest_points_indices(self, other_points, n=1):
