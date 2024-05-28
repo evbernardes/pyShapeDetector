@@ -233,7 +233,7 @@ class Plane(Primitive):
     
     @property
     def is_hole(self):
-        return self._is_hole
+        return self._is_hole        
 
     def __init__(self, model, decimals=None):
         """
@@ -1021,7 +1021,7 @@ class Plane(Primitive):
         triangles = np.vstack([triangles, triangles[:, ::-1]])
         return new_TriangleMesh(vertices, triangles)
     
-    def get_rectangular_vectors_from_inliers(self, return_center=False, use_PCA=True):
+    def get_rectangular_vectors_from_inliers(self, return_center=False, use_PCA=True, normalized=False):
         """ Gives vectors defining a rectangle that roughly contains the plane.
         
         Parameters
@@ -1031,6 +1031,8 @@ class Plane(Primitive):
         use_PCA : boolean, optional
             If True, use PCA to detect vectors (better for rectangles). If False,
             use eigenvectors from covariance matrix. Default: True.
+        normalized : boolean, optional
+            If True, return normalized vectors. Default: False.
 
         Returns
         -------
@@ -1056,8 +1058,9 @@ class Plane(Primitive):
         v1 = rot.T @ np.hstack([v1, 0])
         v2 = rot.T @ np.hstack([v2, 0])
         
-        V1 = 2 * max(abs(delta.dot(v1))) * v1
-        V2 = 2 * max(abs(delta.dot(v2))) * v2
+        if not normalized:
+            V1 = 2 * max(abs(delta.dot(v1))) * v1
+            V2 = 2 * max(abs(delta.dot(v2))) * v2
         
         vectors = np.array([V1, V2])
         
