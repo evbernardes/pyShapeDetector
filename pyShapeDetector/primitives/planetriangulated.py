@@ -298,30 +298,34 @@ class PlaneTriangulated(Plane):
         self._vertices = shape_original._vertices.copy()
         self._triangles = shape_original._triangles.copy()
 
-    def translate(self, translation):
+    def translate(self, translation, translate_inliers=True):
         """ Translate the shape.
 
         Parameters
         ----------
         translation : 1 x 3 array
             Translation vector.
+        translate_inliers : boolean, optional
+            If True, also translate inliers. Default: True.
         """
         # Primitive.translate(self, translation)
-        super().translate(translation)
+        super().translate(translation, translate_inliers=translate_inliers)
         self._vertices = self._vertices + translation
 
-    def rotate(self, rotation):
+    def rotate(self, rotation, rotate_inliers=True):
         """ Rotate the shape.
 
         Parameters
         ----------
         rotation : 3 x 3 rotation matrix or scipy.spatial.transform.Rotation
             Rotation matrix.
+        rotate_inliers : boolean, optional
+            If True, also rotate inliers. Default: True.
         """
         rotation = self._parse_rotation(rotation)
         super().rotate(rotation)
 
-        self._vertices = rotation.apply(self._vertices)        
+        self._vertices = rotation.apply(self._vertices, rotate_inliers=rotate_inliers)        
                 
     # def get_inliers_axis_aligned_bounding_box(self, slack=0, num_sample=15):
     #     """ If the shape includes inlier points, returns the minimum and 

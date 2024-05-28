@@ -1109,13 +1109,15 @@ class Primitive(ABC):
         if len(self.inliers.points) > 0:
             self.inliers.points = self.inliers.points + translation
     
-    def translate(self, translation):
+    def translate(self, translation, translate_inliers=True):
         """ Translate the shape.
         
         Parameters
         ----------
         translation : 1 x 3 array
             Translation vector.
+        translate_inliers : boolean, optional
+            If True, also translate inliers. Default: True.
         """
         # if not hasattr(self, '_translatable'):
         #     raise NotImplementedError('Shapes of type {shape.name} do not '
@@ -1124,7 +1126,9 @@ class Primitive(ABC):
             
         if len(self._translatable) != 0:
             self._model[self._translatable] += translation
-        self._translate_points(translation)
+
+        if translate_inliers:
+            self._translate_points(translation)
         
         if self._mesh is not None:
             self._mesh.translate(translation)
@@ -1155,13 +1159,15 @@ class Primitive(ABC):
         if len(self.inliers.normals) > 0:
             self.inliers.normals = rotation.apply(self.inliers.normals)
         
-    def rotate(self, rotation):
+    def rotate(self, rotation, rotate_inliers=True):
         """ Rotate the shape.
         
         Parameters
         ----------
         rotation : 3 x 3 rotation matrix or scipy.spatial.transform.Rotation
             Rotation matrix.
+        rotate_inliers : boolean, optional
+            If True, also rotate inliers. Default: True.
         """
         # if not hasattr(self, '_rotatable'):
         #     raise NotImplementedError('Shapes of type {shape.name} do not '
@@ -1178,7 +1184,8 @@ class Primitive(ABC):
             self._model[self._translatable] = rotation.apply(
                 self.model[self._translatable])
         
-        self._rotate_points_normals(rotation)
+        if rotate_inliers:
+            self._rotate_points_normals(rotation)
         
         if self._mesh is not None:
             self._mesh.rotate(rotation.as_matrix())

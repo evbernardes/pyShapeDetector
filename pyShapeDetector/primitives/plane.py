@@ -478,15 +478,17 @@ class Plane(Primitive):
 
         return mesh
 
-    def translate(self, translation):
+    def translate(self, translation, translate_inliers=True):
         """ Translate the shape.
 
         Parameters
         ----------
         translation : 1 x 3 array
             Translation vector.
+        translate_inliers : boolean, optional
+            If True, also translate inliers. Default: True.
         """
-        super().translate(translation)
+        super().translate(translation, translate_inliers=translate_inliers)
 
         centroid = self.centroid + translation
         self._model = Plane.from_normal_point(
@@ -496,13 +498,15 @@ class Plane(Primitive):
             for hole in self.holes:
                 hole.translate(translation)
 
-    def rotate(self, rotation):
+    def rotate(self, rotation, rotate_inliers=True):
         """ Rotate the shape.
 
         Parameters
         ----------
         rotation : 3 x 3 rotation matrix or scipy.spatial.transform.Rotation
             Rotation matrix.
+        rotate_inliers : boolean, optional
+            If True, also rotate inliers. Default: True.
         """
 
         centroid = rotation.apply(self.centroid)
@@ -511,7 +515,7 @@ class Plane(Primitive):
         rotation = Primitive._parse_rotation(rotation)
         
         # for everything else
-        super().rotate(rotation)
+        super().rotate(rotation, rotate_inliers=rotate_inliers)
         
         # only for model
         self._model = Plane.from_normal_point(normal, centroid).model
