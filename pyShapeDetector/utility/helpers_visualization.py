@@ -109,7 +109,7 @@ def draw_geometries(elements, **camera_options):
             geometries.append(element)
             
         if draw_inliers and isinstance(element, Primitive):
-            pcds.append(element.inlier_PointCloud)
+            pcds.append(element.inliers.as_open3d)
             
         if draw_boundary_lines and isinstance(element, PlaneBounded):
             boundary_LineSet = element.bound_LineSet
