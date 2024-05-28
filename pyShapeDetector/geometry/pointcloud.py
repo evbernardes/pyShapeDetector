@@ -574,6 +574,8 @@ class PointCloud(Open3D_Geometry):
             return np.asarray(points.points)
         elif isinstance(points, np.ndarray):
             return points
+        
+        print('hmm')
         assert False # shouldn't happen
     
     def find_closest_points_indices(self, other_points, n=1):

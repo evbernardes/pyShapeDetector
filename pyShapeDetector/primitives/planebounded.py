@@ -380,7 +380,7 @@ class PlaneBounded(Plane):
                 projections = _fuse_loops(projections, fused_hole.bounds_projections)
             
             points = self.get_points_from_projections(projections)
-            triangles = TriangleMesh.triangulate_earclipping(projections).triangles
+            triangles = TriangleMesh.triangulate_earclipping(projections)
 
         areas = TriangleMesh(points, triangles).get_triangle_surface_areas()
         triangles = triangles[areas > 0]
@@ -845,7 +845,7 @@ class PlaneBounded(Plane):
         indices = []
         for p in self.bounds:
             indices.append(
-                PointCloud.find_closest_points_indices([p], points)[1][0]
+                PointCloud([p]).find_closest_points_indices(points)[1][0]
             )
 
         indices_unique = []

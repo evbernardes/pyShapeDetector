@@ -366,6 +366,11 @@ class TriangleMesh(Open3D_Geometry):
     
         Implementation Reference:
             - https://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
+            
+        Returns
+        -------
+        Numpy array
+            Defines triangles
         """
         import math
         import sys
@@ -472,7 +477,7 @@ class TriangleMesh(Open3D_Geometry):
         triangles = np.array(
             [[np.where(original_polygon == p)[0][0] for p in t] for t in triangles])
                         
-        return cls(polygon, triangles)
+        return triangles
 
     @staticmethod    
     def simplify_loop_with_angle(vertices, loop_indexes, angle_colinear, colinear_recursive=True):

@@ -914,24 +914,24 @@ class Plane(Primitive):
         grid.points = self.flatten_points(grid.points)
         
         # TODO: slowest thing here is this:
-        grid_selected = grid.select_nearby_points(self.inlier_points_flattened, max_point_dist)
+        grid_points_selected = grid.select_nearby_points(self.inlier_points_flattened, max_point_dist).points
         
         if only_inside:
-            grid_selected = grid_selected[self.contains_projections(grid_selected)]
+            grid_points_selected = grid_points_selected[self.contains_projections(grid_points_selected)]
             
         if add_boundary:
             chull = ConvexHull(self.get_projections(self.inlier_points))
-            grid_selected = np.vstack(
-                [grid_selected, self.inlier_points[chull.vertices]])
+            grid_points_selected = np.vstack(
+                [grid_points_selected, self.inlier_points[chull.vertices]])
         
         # triangulate and remove big triangles
-        projections = self.get_projections(grid_selected)
+        projections = self.get_projections(grid_points_selected)
         triangles = Delaunay(projections).simplices
-        perimeters = TriangleMesh(grid_selected, triangles).get_triangle_perimeters()
+        perimeters = TriangleMesh(grid_points_selected, triangles).get_triangle_perimeters()
         select = perimeters < perimeter_multiplier * perimeter + perimeter_eps
         triangles = triangles[select]
         
-        plane = PlaneTriangulated(self, grid_selected, triangles)
+        plane = PlaneTriangulated(self, grid_points_selected, triangles)
         plane.set_inliers(
             self.inlier_points,
             self.inlier_normals,
@@ -960,6 +960,9 @@ class Plane(Primitive):
         projections : array_like, shape (N, 2)
             2D projections of boundary points in plane
         """
+        if PointCloud.is_instance_or_open3d(points):
+            points = np.asarray(points.points)
+        
         points = np.asarray(points)
         if points.shape[1] != 3:
             raise ValueError("Input points must be 3D.")

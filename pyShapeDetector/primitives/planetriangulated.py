@@ -644,7 +644,7 @@ class PlaneTriangulated(Plane):
         
         if contract_bounds:
             for p in planes:
-                p.contract_bounds()
+                p.contract_bounds(self.inliers.points)
         
         if detect_holes and (N := len(planes)) > 1:
             fuse_dict = {key: [] for key in range(N)}

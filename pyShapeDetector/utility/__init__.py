@@ -5,26 +5,12 @@ Created on Tue Sep 26 16:02:34 2023
 
 Collection of useful methods.
 
-PointCloud-related 
-------------------
-new_PointCloud
-write_point_cloud
-read_point_cloud
-paint_random
-average_nearest_dist
-segment_with_region_growing
-segment_dbscan
-segment_by_position
-fuse_pointclouds
-separate_pointcloud_in_two
-find_closest_points_indices
-find_closest_points
-alphashape_2d
-polygonize_alpha_shape
+Internal
+
 
 Math-related
 -----------------
-get_rotation_from_axis
+parallelize
     
 Visualization-related
 ---------------------
@@ -45,6 +31,10 @@ ask_and_save
 from .multidetector import MultiDetector
 from .primitivelimits import PrimitiveLimits
 from .detector_options import DetectorOptions
+
+from .helpers_internal import (
+    parallelize,
+    )
 
 from .helpers_math import (
     get_rotation_from_axis
