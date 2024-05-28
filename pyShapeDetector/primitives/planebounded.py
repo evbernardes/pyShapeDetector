@@ -253,7 +253,7 @@ class PlaneBounded(Plane):
             if isinstance(model, Plane) and model.has_inliers:
                 warnings.warn('No input bounds, using inliers.')
                 bounds = model.inliers.points
-                convex = False
+                convex = True
             # elif isinstance(model, PlaneTriangulated):
             #     print("No input bounds, using PlaneTriangulated's boundary.")
             #     boundary_indexes = get_triangle_boundary_indexes(
@@ -267,7 +267,7 @@ class PlaneBounded(Plane):
                 warnings.warn('No input bounds, returning square plane.')
                 bounds = self.get_square_plane(1).bounds
                 flatten = False
-                convex = False
+                convex = True
 
         # super().__init__(model, decimals)
         self.set_bounds(bounds, flatten=flatten, convex=convex)
