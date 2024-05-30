@@ -183,3 +183,27 @@ def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
                         zoom=zoom,
                         **camera_options
                         )
+        
+def draw_and_ask(elements, return_not_selected=False, **camera_options):
+    if not isinstance(elements, (list, tuple)):
+        elements = [elements]
+
+    window_name = camera_options.get('window_name', '')
+    if window_name != '':
+        window_name += '_'
+
+    N = len(elements)
+    indices_selected = []
+    indices_not_selected = []
+    for i, element in enumerate(elements):
+        camera_options['window_name'] = window_name + f'{i+1}/{N}'
+        draw_geometries(element, **camera_options)
+        out = input(f'Get element {i+1}/{N}? (y)es, (N)o: ').lower()
+        if out == 'y' or out == 'yes':
+            indices_selected.append(i)
+        elif return_not_selected:
+            indices_not_selected.append(i)
+
+    if return_not_selected:
+        return indices_selected, indices_not_selected
+    return indices_selected
