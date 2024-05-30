@@ -9,14 +9,12 @@ Created on Wed Sep 20 15:30:28 2023
 import copy
 import time
 import numpy as np
-from open3d.geometry import PointCloud
 
 class MultiDetector():
     
     def __init__(self, detectors, pcds, points_min=500, shapes_per_cluster=20,
                  debug=0, compare_metric='fitness', metric_min=0.1, 
-                 normals_reestimate=False, 
-                 fuse_shapes=False, rtol=1e-02, atol=1e-02):
+                 normals_reestimate=False, fuse_shapes=False):
     
         if not isinstance(detectors, list):
             detectors = [detectors]
@@ -33,14 +31,10 @@ class MultiDetector():
         
         # Start:
         self._shapes_detected = None
-        self._metrics_detected = None
-        # self._meshes_detected = None
-        self._pcds_inliers = None
         self._pcds_rest = None
         self._finished = False
         
-        self.run(debug, compare_metric, metric_min, normals_reestimate,
-                 fuse_shapes, rtol, atol)
+        self.run(debug, compare_metric, metric_min, normals_reestimate, fuse_shapes)
         
     def __repr__(self):
         line = type(self).__name__+'('
@@ -58,7 +52,7 @@ class MultiDetector():
             raise RuntimeError('MultiDetector still did not fit, try to run, '
                                'see: MultiDetector.run')
             
-        return self._pcds_inliers
+        return [s.inliers for s in self._shapes_detected]
         
     @property
     def pcds_rest(self):
@@ -82,10 +76,10 @@ class MultiDetector():
             raise RuntimeError('MultiDetector still did not fit, try to run, '
                                'see: MultiDetector.run')
             
-        return self._metrics_detected
+        return [s.metrics for s in self._shapes_detected]
         
     def run(self, debug, compare_metric, metric_min, 
-            normals_reestimate, fuse_shapes, rtol, atol):
+            normals_reestimate, fuse_shapes):
         
         debug_detectors = debug > 1
         debug = debug > 0
@@ -98,8 +92,6 @@ class MultiDetector():
         #         times[primitive.name] = 0
         
         shapes_detected = []
-        metrics_detected = []
-        pcds_inliers = []
         pcds_rest = []
         
         start = time.time()
@@ -168,10 +160,7 @@ class MultiDetector():
                 shape.set_inliers(pcd_inliers)
                 
                 shape.metrics = metrics
-                
                 shapes_detected.append(shape)
-                metrics_detected.append(metrics)
-                pcds_inliers.append(pcd_inliers)
                 iteration += 1
             
             if len(pcd_.points) != 0:
@@ -180,36 +169,8 @@ class MultiDetector():
         if debug:
             print('\n-------------------------------------------')
             print(f'Finished after {time.time() - start:.5f}s')
-            print('Time spend with each detector:')
-            
-            # for detector in self.detectors:
-            #     name = detector.primitive.name
-            #     print(f'- {name}: {times[name]:.3f}s')
-            
-        if fuse_shapes:
-            from pyShapeDetector.primitives import Primitive
-            
-            shapes_lists = Primitive.group_similar_shapes(
-                shapes_detected, rtol=rtol, atol=atol)
-            shapes_detected = Primitive.fuse_shape_groups(shapes_lists, detector)
-            # metrics_detected = [s.metrics for s in shapes_detected]
-            
-            pcds_inliers = []
-            metrics_detected = []
-            for s in shapes_detected:
-                pcd = PointCloud(s.inliers.points)
-                if s.inliers.normals is not None:
-                    pcd.normals = s.inlies.normals
-                if s.inliers.colors is not None:
-                    pcd.colors = s.inlies.colors
-                
-                pcds_inliers.append(pcd)
-                metrics_detected.append(s.metrics)
-                
+            print('Time spend with each detector:')                
                 
         self._shapes_detected = shapes_detected
-        self._metrics_detected = metrics_detected
-        self._pcds_inliers = pcds_inliers
         self._pcds_rest = pcds_rest
         self._finished = True
-
