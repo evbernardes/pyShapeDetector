@@ -12,15 +12,16 @@ from open3d import geometry, utility
 # Maps the dimension and type of variable with the converter function
 # that creates Eigen instances from the original lists/arrays
 converters_vector = {
-    (1, int): utility.IntVector,
-    (1, float): utility.DoubleVector,
-    (2, int): utility.Vector2iVector,
-    (2, float): utility.Vector2dVector,
-    (3, int): utility.Vector3iVector,
-    (3, float): utility.Vector3dVector,
-    (4, int): utility.Vector4iVector,
+    (1, (), int): utility.IntVector,
+    (1, (), float): utility.DoubleVector,
+    (2, (2,), int): utility.Vector2iVector,
+    (2, (2,), float): utility.Vector2dVector,
+    (2, (3,), int): utility.Vector3iVector,
+    (2, (3,), float): utility.Vector3dVector,
+    (2, (4,), int): utility.Vector4iVector,
+    (3, (3, 3), float): utility.Matrix3dVector,
+    (3, (4, 4), float): utility.Matrix4dVector,
     }
-
  
 def _convert_args_to_open3d(*args, **kwargs):
     # Convert every argument to Eigen instances whenever possible
@@ -45,13 +46,8 @@ def _convert_args_to_open3d(*args, **kwargs):
             else:
                 dtype = None
             
-            if (dim := arg.ndim) > 1:
-                dim = arg.shape[1]
-            else:
-                arg = arg.tolist() 
-            
-            if (dim, dtype) in converters_vector:
-                args[i] = converters_vector[dim, dtype](arg)
+            if (arg.ndim, arg.shape[1:], dtype) in converters_vector:
+                args[i] = converters_vector[arg.ndim, arg.shape[1:], dtype](arg)
                 
     return tuple(args), kwargs
 
