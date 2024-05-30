@@ -6,9 +6,6 @@ Created on Thu May 23 10:00:58 2024
 @author: ebernardes
 """
 import copy
-# import functools
-import numpy as np
-# from open3d import geometry, utility
 from .open3d_decorators import (
     args_to_open3d, to_open3d_and_back
 )
@@ -65,6 +62,9 @@ class Open3D_Geometry():
         _open3d = copy.deepcopy(self.as_open3d)
         return type(self)(_open3d)
         # return "test"
+    
+    def __repr__(self):
+        return "Open3D-Compatible "+self._open3d.__repr__()
         
     @classmethod
     def is_instance_or_open3d(cls, elem):
