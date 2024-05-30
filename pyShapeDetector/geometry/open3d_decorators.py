@@ -46,8 +46,11 @@ def _convert_args_to_open3d(*args, **kwargs):
             else:
                 dtype = None
             
-            if (arg.ndim, arg.shape[1:], dtype) in converters_vector:
-                args[i] = converters_vector[arg.ndim, arg.shape[1:], dtype](arg)
+            if (key := (arg.ndim, arg.shape[1:], dtype)) in converters_vector:
+                try:
+                    args[i] = converters_vector[key](arg)
+                except TypeError:
+                    args[i] = converters_vector[key](arg.tolist())
                 
     return tuple(args), kwargs
 
