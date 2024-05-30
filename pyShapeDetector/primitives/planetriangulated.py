@@ -689,25 +689,20 @@ class PlaneTriangulated(Plane):
                               "inliers, ignoring...")
             
             else:
-                inlier_points = self.inlier_points
-                inlier_normals = self.inlier_normals
-                inlier_colors = self.inlier_colors
-                projections = self.get_projections(inlier_points)
+                pcd = self.inliers
+                projections = self.get_projections(pcd.points)
+                
                 for plane in planes:
                     if len(projections) == 0:
                         break
                     inside = plane.contains_projections(projections, input_is_2D=True)
-                    plane.set_inliers(
-                        inlier_points[inside],
-                        inlier_normals[inside],
-                        inlier_colors[inside])
-                    inlier_points = inlier_points[~inside]
-                    inlier_normals = inlier_normals[~inside]
-                    inlier_colors = inlier_colors[~inside]
+                    inside_idx = np.where(inside)[0]
+                    plane.set_inliers(pcd.select_by_index(inside_idx))
+                    pcd = pcd.select_by_index(inside_idx, invert=True)
                     projections = projections[~inside]
                     
-                    num_inliers = np.array([len(p.inlier_points) for p in planes])
-                    planes = np.array(planes)[num_inliers > min_inliers].tolist()
+                num_inliers = np.array([len(p.inlier_points) for p in planes])
+                planes = np.array(planes)[num_inliers > min_inliers].tolist()
                     
         return planes
 

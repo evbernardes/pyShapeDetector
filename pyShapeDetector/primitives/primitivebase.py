@@ -205,9 +205,6 @@ class Primitive(ABC):
     fuse_shape_groups
     fuse_similar_shapes
     """
-    # _inlier_points = np.asarray([])
-    # _inlier_normals = np.asarray([])
-    # _inlier_colors = np.asarray([])
     _metrics = {}
     _color = None
     _mesh = None
@@ -737,9 +734,6 @@ class Primitive(ABC):
         if flatten:
             points = self.flatten_points(points)
 
-        # self._inlier_points = points
-        # self._inlier_normals = normals
-        # self._inlier_colors = colors
         self.inliers.points = points
         if len(normals) > 0:
             self.inliers.normals = normals
@@ -1396,21 +1390,13 @@ class Primitive(ABC):
             shape = primitive(model)
         
         if not ignore_extra_data:
-            points = np.vstack([shape.inliers.points for shape in shapes])
-            normals = np.vstack([shape.inliers.normals for shape in shapes])
-            colors = np.vstack([shape.inliers.colors for shape in shapes])
-            if points.shape[1] == 0:
-                points = None
-            if normals.shape[1] == 0 or len(normals) < len(points):
-                normals = None
-            if colors.shape[1] == 0 or len(colors) < len(points):
-                colors = None
-            shape.set_inliers(points, normals, colors)
+            pcd = PointCloud.fuse_pointclouds([shape.inliers for shape in shapes])
+            shape.set_inliers(pcd)
             
             if detector is not None:
                 num_points = sum([shape.metrics['num_points'] for shape in shapes])
-                num_inliers = len(points)
-                distances, angles = shape.get_residuals(points, normals)
+                num_inliers = len(pcd.points)
+                distances, angles = shape.get_residuals(pcd.points, pcd.normals)
                 shape.metrics = detector.get_metrics(
                     num_points, num_inliers, distances, angles)
                 

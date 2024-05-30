@@ -9,11 +9,7 @@ Created on Wed Sep 20 15:30:28 2023
 import copy
 import time
 import numpy as np
-
 from open3d.geometry import PointCloud
-from open3d.utility import Vector3dVector
-
-#%% Parameters and input
 
 class MultiDetector():
     
@@ -169,13 +165,7 @@ class MultiDetector():
 
                 pcd_inliers = pcd_.select_by_index(inliers)
                 pcd_ = pcd_.select_by_index(inliers, invert=True)
-                
-                # shape.inlier_indices = inliers
-                # shape.inlier_points = pcd_inliers.points
-                # shape.inlier_normals = pcd_inliers.normals
-                shape.set_inliers(pcd_inliers.points, 
-                                  pcd_inliers.normals, 
-                                  pcd_inliers.colors)
+                shape.set_inliers(pcd_inliers)
                 
                 shape.metrics = metrics
                 
@@ -199,17 +189,19 @@ class MultiDetector():
         if fuse_shapes:
             from pyShapeDetector.primitives import Primitive
             
-            shapes_lists = Primitive.group_similar_shapes(shapes_detected, 
-                                                rtol=rtol, atol=atol)
+            shapes_lists = Primitive.group_similar_shapes(
+                shapes_detected, rtol=rtol, atol=atol)
             shapes_detected = Primitive.fuse_shape_groups(shapes_lists, detector)
             # metrics_detected = [s.metrics for s in shapes_detected]
             
             pcds_inliers = []
             metrics_detected = []
             for s in shapes_detected:
-                pcd = PointCloud(Vector3dVector(s.inlier_points))
-                if s.inlier_normals is not None:
-                    pcd.normals = Vector3dVector(s.inlier_normals)
+                pcd = PointCloud(s.inliers.points)
+                if s.inliers.normals is not None:
+                    pcd.normals = s.inlies.normals
+                if s.inliers.colors is not None:
+                    pcd.colors = s.inlies.colors
                 
                 pcds_inliers.append(pcd)
                 metrics_detected.append(s.metrics)
