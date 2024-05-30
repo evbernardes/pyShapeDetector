@@ -416,7 +416,7 @@ class Plane(Primitive):
         
         super().set_inliers(
             points_or_pointcloud=points_or_pointcloud, 
-            normals=None, colors=None,  flatten=False, color_shape=False)
+            normals=normals, colors=colors,  flatten=flatten, color_shape=color_shape)
         
         self._parallel_vectors = None
     
@@ -985,11 +985,7 @@ class Plane(Primitive):
         triangles = triangles[select]
         
         plane = PlaneTriangulated(self, grid_points_selected, triangles)
-        plane.set_inliers(
-            self.inlier_points,
-            self.inlier_normals,
-            self.inlier_colors,
-            )
+        plane.set_inliers(self.inliers)
         
         if return_rect_grid:
             plane_rect = self.get_rectangular_plane(vectors, center)
