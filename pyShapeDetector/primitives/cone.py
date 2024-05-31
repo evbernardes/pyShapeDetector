@@ -113,7 +113,8 @@ class Cone(Primitive):
     get_point_angle
     """
     
-    _fit_n_min = 15
+    # _fit_n_min = 15
+    _fit_n_min = 7
     _model_args_n = 7
     _name = 'cone'
     _translatable = [0, 1, 2]
@@ -255,8 +256,8 @@ class Cone(Primitive):
                              'cone')
             
         if normals is None:
-            raise NotImplementedError('Fitting of cone without normals has not'
-                                      'been implemented.')
+            raise NotImplementedError('Fitting of cone without normals has '
+                                      'not been implemented.')
             
         normals = np.asarray(normals)
         if len(normals) != num_points:
