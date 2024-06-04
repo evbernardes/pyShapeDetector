@@ -1095,7 +1095,7 @@ class Plane(Primitive):
         if points is None:
             points = self.inlier_points_flattened
         else:
-            points = set_and_check_3d_array(points, name='points')
+            points = _set_and_check_3d_array(points, name='points')
         
         center = (np.max(points, axis=0) + np.min(points, axis=0)) / 2
         delta = points - center
