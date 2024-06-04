@@ -52,6 +52,10 @@ def save_elements(outdir, elems, start=None, order_func=None, reverse=True, remo
         
     from pyShapeDetector.primitives import Primitive
     
+    if len(elems) == 0:
+        print(f'No elements saved to {outdir}.\n')
+        return 
+    
     if isinstance(elems[0], (PointCloud, PointCloud.__open3d_class__)):
         if start is None:
             start = 'pcd'
@@ -76,7 +80,7 @@ def save_elements(outdir, elems, start=None, order_func=None, reverse=True, remo
         elif isinstance(elem, Primitive):
             elem.save(out_path)
         
-    print('All elements saved.\n')
+    print(f'All elements saved to {outdir}.\n')
     
 def ask_and_save(outdir, elems, start=None, order_func=None, reverse=True, remove_dir=True):
     
