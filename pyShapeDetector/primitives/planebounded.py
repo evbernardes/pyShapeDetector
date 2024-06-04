@@ -638,8 +638,13 @@ class PlaneBounded(Plane):
         numpy.array of shape (2, 3)
             Two non unit vectors
         """
+        if points is None:
+            points = self.bounds
+            if self.has_inliers:
+                points = np.vstack([points, self.inliers.points])
+        
         return super().get_rectangular_vectors_from_points(
-            points=self.bounds, return_center=return_center, use_PCA=use_PCA, normalized=normalized)
+            points=points, return_center=return_center, use_PCA=use_PCA, normalized=normalized)
     
     def closest_bounds(self, other_plane, n=1):
         """ Returns n pairs of closest bound points with a second plane.
