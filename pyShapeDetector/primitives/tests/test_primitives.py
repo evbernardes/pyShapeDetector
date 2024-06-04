@@ -238,12 +238,12 @@ def test_deepcopy():
         assert id(shapes[0].inliers.points) != id(shapes_copy[0].inliers.points)
 
 
-def test_get_rectangular_vectors_from_inliers():
+def test_get_rectangular_vectors_from_points():
     for i in range(5):
         plane = Plane.random()
         plane.set_inliers(np.random.random([100, 3]), flatten=True)
 
-        (V1, V2), center = plane.get_rectangular_vectors_from_inliers(True)
+        (V1, V2), center = plane.get_rectangular_vectors_from_points(return_center=True)
         
         # making vectors slightly bigger for boundary points
         V1 *= 1 + 1e-7

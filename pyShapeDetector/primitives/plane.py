@@ -19,7 +19,7 @@ from pyShapeDetector.utility import (
     # select_grid_points
     )
 
-from .primitivebase import Primitive
+from .primitivebase import Primitive, _set_and_check_3d_array
 # from alphashape import alphashape
 # from .line import Line    
 
@@ -152,7 +152,7 @@ class Plane(Primitive):
     get_mesh_alphashape
     get_polygon_plane
     get_square_plane
-    get_rectangular_vectors_from_inliers
+    get_rectangular_vectors_from_points
     get_rectangular_plane
     get_square_mesh
     get_rectangular_mesh
@@ -243,7 +243,7 @@ class Plane(Primitive):
             return self._parallel_vectors
         
         elif self.has_inliers:
-            self._parallel_vectors = self.get_rectangular_vectors_from_inliers(normalized=True)
+            self._parallel_vectors = self.get_rectangular_vectors_from_points(normalized=True)
             
         else:
             while True:
@@ -956,7 +956,7 @@ class Plane(Primitive):
             raise ValueError(f"perimeter_eps has to be non-negative, got {perimeter_eps}")
         
         # Get rectangular plane
-        vectors, center = self.get_rectangular_vectors_from_inliers(return_center=True)
+        vectors, center = self.get_rectangular_vectors_gularfrom_inliers(return_center=True)
         # plane_rect = self.get_rectangular_plane(vectors, center)
         
         # grid inside rectangle and select nearby points
@@ -1070,11 +1070,15 @@ class Plane(Primitive):
         triangles = np.vstack([triangles, triangles[:, ::-1]])
         return new_TriangleMesh(vertices, triangles)
     
-    def get_rectangular_vectors_from_inliers(self, return_center=False, use_PCA=True, normalized=False):
+    def get_rectangular_vectors_from_points(self, points=None, return_center=False, use_PCA=True, normalized=False):
         """ Gives vectors defining a rectangle that roughly contains the plane.
+        
+        If points are not given, use inliers.
         
         Parameters
         ----------
+        points : Nx3 array, optional
+            Points used to find rectangle.
         return_center : boolean, optional
             If True, return tuple containing both vectors and calculated center.
         use_PCA : boolean, optional
@@ -1088,7 +1092,10 @@ class Plane(Primitive):
         numpy.array of shape (2, 3)
             Two non unit vectors
         """
-        points = self.inlier_points_flattened
+        if points is None:
+            points = self.inlier_points_flattened
+        else:
+            points = set_and_check_3d_array(points, name='points')
         
         center = (np.max(points, axis=0) + np.min(points, axis=0)) / 2
         delta = points - center
@@ -1127,7 +1134,7 @@ class Plane(Primitive):
         Vectors v1 and v2 should not be unit, and instead have lengths equivalent
         to widths of rectangle.
         
-        If no vectors are given, calculate them with get_rectangular_vectors_from_inliers.
+        If no vectors are given, calculate them with get_rectangular_vectors_from_points.
         
         Parameters
         ----------
@@ -1143,7 +1150,7 @@ class Plane(Primitive):
             Rectangular plane
         """
         if vectors is None:                
-            vectors, center_rect = self.get_rectangular_vectors_from_inliers(return_center=True)
+            vectors, center_rect = self.get_rectangular_vectors_from_points(return_center=True)
             if center is None:
                 center = center_rect
         

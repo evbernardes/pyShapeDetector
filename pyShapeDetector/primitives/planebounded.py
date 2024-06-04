@@ -135,7 +135,7 @@ class PlaneBounded(Plane):
     get_mesh_alphashape
     get_polygon_plane
     get_square_plane
-    get_rectangular_vectors_from_inliers
+    get_rectangular_vectors_from_points
     get_rectangular_plane
     get_square_mesh
     get_rectangular_mesh
