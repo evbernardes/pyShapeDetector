@@ -616,6 +616,24 @@ def test_box_intersections():
     #         pcd = plane.inlier_PointCloud.crop(plane.bbox)
     #         assert len(pcd.points) == num_samples
 
+
+def test_plane_bounded_degenerated_line():
+    model = [0.61302647, 0.10281596, 0.78334375, -10.56448992]
+
+    projections = np.array([
+        [0.06210584, 1.73375236],
+        [0.07249562, 1.68208517],
+        [0.07249562, 1.68208517],
+        [0.06210584, 1.73375236]])
+    
+    plane = Plane(model)
+    bounds = plane.get_points_from_projections(projections)
+
+    with pytest.warns(UserWarning, match='Convex hull failed'):
+        plane.get_bounded_plane(bounds)
+
+    
+
 # if __name__ == "__main__":
     # test_plane_transformations()
     # test_distances()

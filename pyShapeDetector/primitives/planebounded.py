@@ -8,13 +8,11 @@ Created on Thu Feb 15 10:15:09 2024
 import warnings
 from itertools import product
 import numpy as np
-from scipy.spatial import ConvexHull, Delaunay
+from scipy.spatial import QhullError, ConvexHull, Delaunay
 # from scipy.spatial.transform import Rotation
 from open3d.geometry import AxisAlignedBoundingBox
 from pyShapeDetector.geometry import PointCloud, TriangleMesh
-# from .primitivebase import Primitive
 from .plane import Plane
-# from alphashape import alphashape
 
 def _is_clockwise(bounds):
     s = 0
@@ -737,19 +735,23 @@ class PlaneBounded(Plane):
 
         projections = self.get_projections(bounds)
 
-        # if method == 'convex':
-        if convex:
-            chull = ConvexHull(projections)
-            self._bounds_indices = chull.vertices
-            self._bounds = bounds[chull.vertices]
-            self._bounds_projections = projections[chull.vertices]
-        else:
-            self._bounds_indices = np.array(range(len(bounds)))
-            self._bounds = bounds
-            self._bounds_projections = projections
+        try:
+            if convex:
+                chull = ConvexHull(projections)
+                self._bounds_indices = chull.vertices
+                self._bounds = bounds[chull.vertices]
+                self._bounds_projections = projections[chull.vertices]
+            else:
+                self._bounds_indices = np.array(range(len(bounds)))
+                self._bounds = bounds
+                self._bounds_projections = projections
+                
+            self._is_clockwise = _is_clockwise(self._bounds_projections)
+            self._convex = convex
             
-        self._is_clockwise = _is_clockwise(self._bounds_projections)
-        self._convex = convex
+        except QhullError:
+            warnings.warn('Convex hull failed, bounds probably not valid. '
+                          'No bounds have been set.')            
         
     def add_bound_points(self, new_bound_points, flatten=True):
         """ Add points to current bounds.
