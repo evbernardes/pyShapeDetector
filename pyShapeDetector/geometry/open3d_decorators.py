@@ -58,10 +58,12 @@ def _convert_args_to_numpy(args):
     # Convert every argument back from Eigen instances, recursively  
     from .pointcloud import PointCloud
     from .trianglemesh import TriangleMesh
+    from .axis_aligned_bounding_box import AxisAlignedBoundingBox
 
     converters_classes = {
         geometry.PointCloud: PointCloud,
         geometry.TriangleMesh: TriangleMesh,
+        geometry.AxisAlignedBoundingBox: AxisAlignedBoundingBox,
     }
 
     if isinstance(args, (list, tuple)):

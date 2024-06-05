@@ -8,3 +8,4 @@ Created on Thu May 23 11:32:03 2024
 from .open3d_geometry import Open3D_Geometry
 from .pointcloud import PointCloud
 from .trianglemesh import TriangleMesh
+from .axis_aligned_bounding_box import AxisAlignedBoundingBox
