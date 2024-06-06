@@ -41,7 +41,9 @@ class PointCloud(Open3D_Geometry):
     write_point_cloud
     read_point_cloud
     segment_dbscan
-    separate_pointcloud_in_two
+    split
+    split_in_half
+    split_until_small
     segment_by_position
     segment_with_region_growing
     find_closest_points_indices
@@ -250,28 +252,102 @@ class PointCloud(Open3D_Geometry):
             
         return pcds_segmented
     
-    def separate_pointcloud_in_two(self):
-        """ Divide pointcloud in two sub clouds, each one occupying the same 
-        volume.
+    def split(self, num_boxes, dim=None, return_only_indices=False):
+        """ Split the bounding box of the pointcloud in multiple sub boxes and
+        return a list of sub pointclouds.
+        
+        Parameters
+        ----------
+        num_boxes : int
+            Number of sub-boxes.
+        dim : int, optional
+            Dimension that should be divided. If not given, will be chosen as the
+            largest dimension. Default: None.
+        return_only_indices : boolean, optional
+            If True, returns indices instead of pointclouds. Default: False.
+            
+        Returns
+        -------
+        list
+            Divided pointclouds
+        """
+        subboxes = self.get_axis_aligned_bounding_box().split(num_boxes, dim)
+        points = self.points
+        available_indices = set(range(len(self.points)))
+        subsets = []
+        for bbox in subboxes:
+            indices = set(bbox.get_point_indices_within_bounding_box(points))
+            for subset in subsets:
+                indices = indices - subset
+                
+            subsets.append(indices)
+            available_indices = available_indices - indices 
+            
+            if len(available_indices) == 0:
+                break
+            
+        if len(available_indices) != 0:
+            subsets[-1] = subsets.union(available_indices)
+
+        if return_only_indices:
+            return subsets
+            
+        return [self.select_by_index(list(subset)) for subset in subsets]
+    
+    def split_in_half(self, resolution=5):
+        """ Divide pointcloud in two sub clouds, each one occupying roughly the 
+        same volume.
+
+        Parameters
+        ----------
+        resolution : int, optional
+            Number of subdivisions done before joining them. Default: 5. 
             
         Returns
         -------
         tuple
             Subdivided pointclouds
         """
-        bbox = self.get_axis_aligned_bounding_box()
-        min_bound = bbox.min_bound
-        max_bound = bbox.max_bound
-        delta = (max_bound - min_bound)
-        # i = np.where(delta == max(delta))[0][0]
+        if resolution < 2:
+            raise ValueError(f"Resolution must be at least 2, got {resolution}.")
+        subsets = self.split(resolution, return_only_indices=True)
         
-        delta[np.where(delta != max(delta))[0]] = 0
-        pcd_sub_1 = self.crop(
-            AxisAlignedBoundingBox(min_bound, max_bound - delta/2))
-        pcd_sub_2 = self.crop(
-            AxisAlignedBoundingBox(min_bound + delta/2, max_bound))
+        test = np.cumsum([len(subset) for subset in subsets]) - len(self.points) / 2
+        
+        left = []
+        right = []
+        
+        for i, subset in enumerate(subsets):
+            if test[i] < 0:
+                left += list(subset)
+            else:
+                right += list(subset)
+
+        return self.select_by_index(left), self.select_by_index(right)
     
-        return pcd_sub_1, pcd_sub_2
+    def split_until_small(self, max_points=1000000, resolution=5):
+        """ Recursively divide pointcloud in two, until each pointcloud has 
+        less points than `max_points`.
+
+        Parameters
+        ----------
+        max_points : int, optional
+            Max number of points in each output pointcloud.
+        resolution : int, optional
+            Number of subdivisions done before joining them. Default: 5. 
+            
+        Returns
+        -------
+        tuple
+            Subdivided pointclouds
+        """
+        if len(self.points) <= max_points:
+            return [self]
+        
+        pcds = self.split_in_half()
+        print(f'{[len(p.points) for p in pcds]}')
+
+        return pcds[0].split_until_small(max_points, resolution) + pcds[1].split_until_small(max_points, resolution)
     
     def segment_by_position(self, shape, min_points=1):
         """ Uniformly divide pcd into different subsets based purely on position.
@@ -514,7 +590,7 @@ class PointCloud(Open3D_Geometry):
                 while len(pcds) < cores:
                     lengths = np.array([len(p.points) for p in pcds])
                     i = np.where(lengths == max(lengths))[0][0]
-                    pcds += list(pcds.pop(i).separate_pointcloud_in_two())
+                    pcds += list(pcds.pop(i).split_in_half())
                 
             if debug:
                 print(f'Starting parallel with {cores} cores.')
