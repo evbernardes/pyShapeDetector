@@ -294,7 +294,7 @@ class PointCloud(Open3D_Geometry):
             
         return [self.select_by_index(list(subset)) for subset in subsets]
     
-    def split_in_half(self, resolution=5):
+    def split_in_half(self, resolution=30):
         """ Divide pointcloud in two sub clouds, each one occupying roughly the 
         same volume.
 
@@ -325,7 +325,7 @@ class PointCloud(Open3D_Geometry):
 
         return self.select_by_index(left), self.select_by_index(right)
     
-    def split_until_small(self, max_points=1000000, resolution=5):
+    def split_until_small(self, max_points=1000000, resolution=30):
         """ Recursively divide pointcloud in two, until each pointcloud has 
         less points than `max_points`.
 
