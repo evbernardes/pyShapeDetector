@@ -956,7 +956,7 @@ class Plane(Primitive):
             raise ValueError(f"perimeter_eps has to be non-negative, got {perimeter_eps}")
         
         # Get rectangular plane
-        vectors, center = self.get_rectangular_vectors_gularfrom_inliers(return_center=True)
+        vectors, center = self.get_rectangular_vectors_from_points(return_center=True)
         # plane_rect = self.get_rectangular_plane(vectors, center)
         
         # grid inside rectangle and select nearby points
