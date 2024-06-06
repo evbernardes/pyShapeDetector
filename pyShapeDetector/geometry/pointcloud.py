@@ -264,7 +264,8 @@ class PointCloud(Open3D_Geometry):
             Dimension that should be divided. If not given, will be chosen as the
             largest dimension. Default: None.
         return_only_indices : boolean, optional
-            If True, returns indices instead of pointclouds. Default: False.
+            If True, returns indices instead of pointclouds. This is much 
+            slower for bigger pointclouds. Default: False.
             
         Returns
         -------
@@ -272,27 +273,55 @@ class PointCloud(Open3D_Geometry):
             Divided pointclouds
         """
         subboxes = self.get_axis_aligned_bounding_box().split(num_boxes, dim)
-        points = self.points
-        available_indices = set(range(len(self.points)))
-        subsets = []
-        for bbox in subboxes:
-            indices = set(bbox.get_point_indices_within_bounding_box(points))
-            for subset in subsets:
-                indices = indices - subset
-                
-            subsets.append(indices)
-            available_indices = available_indices - indices 
-            
-            if len(available_indices) == 0:
-                break
-            
-        if len(available_indices) != 0:
-            subsets[-1] = subsets.union(available_indices)
 
         if return_only_indices:
-            return subsets
+            return [bbox.get_point_indices_within_bounding_box(self.points) for bbox in subboxes]
+        else:
+            return [self.crop(bbox) for bbox in subboxes]
+    
+    # def split(self, num_boxes, dim=None, return_only_indices=False):
+    #     """ Split the bounding box of the pointcloud in multiple sub boxes and
+    #     return a list of sub pointclouds.
+        
+    #     Parameters
+    #     ----------
+    #     num_boxes : int
+    #         Number of sub-boxes.
+    #     dim : int, optional
+    #         Dimension that should be divided. If not given, will be chosen as the
+    #         largest dimension. Default: None.
+    #     return_only_indices : boolean, optional
+    #         If True, returns indices instead of pointclouds. Default: False.
             
-        return [self.select_by_index(list(subset)) for subset in subsets]
+    #     Returns
+    #     -------
+    #     list
+    #         Divided pointclouds
+    #     """
+    #     subboxes = self.get_axis_aligned_bounding_box().split(num_boxes, dim)
+    #     points = self.points
+    #     available_indices = set(range(len(self.points)))
+    #     subsets = []
+    #     for bbox in subboxes:
+
+    #         indices = bbox.get_point_indices_within_bounding_box(points)
+    #         indices_set = set(indices)
+    #         for subset in subsets:
+    #             indices_set = indices_set - subset
+                
+    #         subsets.append(indices_set)
+    #         available_indices = available_indices - indices_set
+            
+    #         if len(available_indices) == 0:
+    #             break
+            
+    #     if len(available_indices) != 0:
+    #         subsets[-1] = subsets.union(available_indices)
+
+    #     if return_only_indices:
+    #         return subsets
+            
+    #     return [self.select_by_index(list(subset)) for subset in subsets]
     
     def split_in_half(self, resolution=30):
         """ Divide pointcloud in two sub clouds, each one occupying roughly the 
@@ -310,22 +339,24 @@ class PointCloud(Open3D_Geometry):
         """
         if resolution < 2:
             raise ValueError(f"Resolution must be at least 2, got {resolution}.")
-        subsets = self.split(resolution, return_only_indices=True)
         
-        test = np.cumsum([len(subset) for subset in subsets]) - len(self.points) / 2
+        print('Splitting subsets...')
+        pcds = self.split(resolution)
+        print('Got subsets!')
+        test = np.cumsum([len(pcd.points) for pcd in pcds]) - len(self.points) / 2
         
-        left = []
-        right = []
+        left = PointCloud()
+        right = PointCloud()
         
-        for i, subset in enumerate(subsets):
+        for i, pcd in enumerate(pcds):
             if test[i] < 0:
-                left += list(subset)
+                left += pcd
             else:
-                right += list(subset)
+                right += pcd
 
-        return self.select_by_index(left), self.select_by_index(right)
+        return left, right
     
-    def split_until_small(self, max_points=1000000, resolution=30):
+    def split_until_small(self, max_points=1000000, resolution=30, debug=False):
         """ Recursively divide pointcloud in two, until each pointcloud has 
         less points than `max_points`.
 
