@@ -340,9 +340,7 @@ class PointCloud(Open3D_Geometry):
         if resolution < 2:
             raise ValueError(f"Resolution must be at least 2, got {resolution}.")
         
-        print('Splitting subsets...')
         pcds = self.split(resolution)
-        print('Got subsets!')
         test = np.cumsum([len(pcd.points) for pcd in pcds]) - len(self.points) / 2
         
         left = PointCloud()
@@ -372,13 +370,24 @@ class PointCloud(Open3D_Geometry):
         tuple
             Subdivided pointclouds
         """
+        if resolution > 500:
+            warn('Resolution too high, returning cannot go further.')
+            return [self]
+
         if len(self.points) <= max_points:
             return [self]
         
         pcds = self.split_in_half()
-        print(f'{[len(p.points) for p in pcds]}')
+        if np.any(np.array([len(p.points) for p in pcds]) == 0):
+            old_res = resolution
+            resolution = int(1.1 * resolution)
+            warn(f'Subarray with points detected, '
+                 f'resolution changing from {old_res} to {resolution}.')
+        # print(f'{len(self.points)} to {[len(p.points) for p in pcds]}')
 
-        return pcds[0].split_until_small(max_points, resolution) + pcds[1].split_until_small(max_points, resolution)
+        pcds = pcds[0].split_until_small(max_points, resolution, debug) + pcds[1].split_until_small(max_points, resolution, debug)
+
+        return [pcd for pcd in pcds if len(pcd.points) != 0]
     
     def segment_by_position(self, shape, min_points=1):
         """ Uniformly divide pcd into different subsets based purely on position.
