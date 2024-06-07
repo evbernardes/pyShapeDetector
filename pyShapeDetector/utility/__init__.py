@@ -37,7 +37,9 @@ from .helpers_internal import (
     )
 
 from .helpers_math import (
-    get_rotation_from_axis
+    get_rotation_from_axis,
+    rgb_to_cielab,
+    cielab_to_rgb,
     )
 
 from .helpers_visualization import (
