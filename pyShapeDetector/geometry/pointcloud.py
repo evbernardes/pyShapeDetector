@@ -37,10 +37,12 @@ class PointCloud(Open3D_Geometry):
     Attributes
     ----------
     colors_cielab
+    curvature
     
     Methods
     -------
     from_points_normals_colors
+    estimate_curvature
     fuse_pointclouds
     average_nearest_dist
     write_point_cloud
@@ -56,6 +58,19 @@ class PointCloud(Open3D_Geometry):
     find_closest_points_indices
     find_closest_points
     """
+    _curvature = np.empty(0)
+
+    @property
+    def curvature(self):
+        return self._curvature
+    
+    @curvature.setter
+    def curvature(self, values):
+        values = np.array(values)
+        if values.ndim != 1:
+            raise ValueError('Curvature values must be one-dimensional ',
+                             f'got array of shape {values.shape}.')
+        self._curvature = values
     
     @property
     def colors_cielab(self):
@@ -100,7 +115,34 @@ class PointCloud(Open3D_Geometry):
         pcd.normals = normals
         pcd.colors = colors
         return pcd
-    pass
+
+    def estimate_curvature(self, k=15):
+        """ Estimate curvature of points by getting the mean value of angles between 
+        the neighbors.
+
+        Parameters
+        ----------
+        k : positive int, default = 15
+            Number of neighbors.
+            
+        """
+        if not self.has_normals:
+            raise RuntimeError('Pointcloud has no normals, call estimate_normals.')
+        
+        points = self.points
+        normals = self.normals
+        from scipy.spatial import KDTree
+        
+        tree = KDTree(points)
+        curvature = np.zeros(len(points))
+        
+        for i, normal in enumerate(normals):
+            _, idx = tree.query(points[i], k=k)
+            neighbors = normals[idx]
+            angles = np.arccos(np.clip(np.dot(neighbors, normal), -1.0, 1.0))
+            curvature[i] = np.mean(angles)
+        
+        self.curvature = curvature
     
     def average_nearest_dist(self, k=15, leaf_size=40, split=1):
         """ Calculates the K nearest neighbors and returns the average distance 
@@ -371,7 +413,7 @@ class PointCloud(Open3D_Geometry):
 
         return [pcd for pcd in pcds if len(pcd.points) != 0]
     
-    def separate_with_labels(self, labels, return_rest=False):
+    def separate_with_labels(self, labels, return_ungroupped=False):
         """ Separate pcd with labels.
         
         Each distinct value of `labels` correspond to a separate cluster.
@@ -381,8 +423,8 @@ class PointCloud(Open3D_Geometry):
         labels : list or array
             List or one-dimensional array with same length as the pcd's number
             of points.
-        return_rest : boolean, optional
-            If True, add rest to list. Default: False.
+        return_ungroupped : boolean, optional
+            If True, add ungroupped points to list. Default: False.
             
         Returns
         -------
@@ -397,7 +439,7 @@ class PointCloud(Open3D_Geometry):
             pcd_ = self.select_by_index(idx)
             pcd_separated.append(pcd_)
 
-        if return_rest:
+        if return_ungroupped:
             idx = np.where(labels == -1)[0]
             pcd_separated.append(self.select_by_index(idx))
             
