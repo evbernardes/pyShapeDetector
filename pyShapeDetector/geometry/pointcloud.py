@@ -20,6 +20,7 @@ from scipy.spatial.distance import cdist
 
 import h5py
 from sklearn.neighbors import KDTree
+from sklearn.cluster import KMeans
 
 from pyShapeDetector.utility import rgb_to_cielab, cielab_to_rgb
 from .open3d_geometry import (
@@ -56,7 +57,7 @@ class PointCloud(Open3D_Geometry):
     
     @property
     def colors_cielab(self):
-        return rgb_to_cielab(self.colors)
+        return rgb_to_cielab(self.colors.copy())
     
     @colors_cielab.setter
     def colors_cielab(self, lab):
@@ -231,6 +232,62 @@ class PointCloud(Open3D_Geometry):
     
         return pcds
     
+    def separate_with_labels(self, labels):
+        """ Separate pcd with labels.
+        
+        Each distinct value of `labels` correspond to a separate cluster.
+        
+        Parameters
+        ----------
+        labels : list or array
+            List or one-dimensional array with same length as the pcd's number
+            of points.
+            
+        Returns
+        -------
+        list
+            Separated pointclouds.
+        """
+        labels = np.array(labels)
+    
+        pcd_separated = []
+        for label in set(labels) - {-1}:
+            idx = np.where(labels == label)[0]
+            pcd_ = self.select_by_index(idx)
+            pcd_separated.append(pcd_)
+            
+        return pcd_separated
+    
+    def segment_kmeans_colors(self, n_clusters=2, n_init='auto', **options):
+        """ Segment pointcloud according to the colors by using KMeans.
+        
+        For other options, see:
+            sklearn.cluster._kmeans.KMeans
+        
+        Parameters
+        ----------
+        n_clusters : int, optional
+          The number of clusters to form as well as the number of
+          centroids to generate. Default=2.
+        n_init : 'auto' or int, 
+            Number of times the k-means algorithm is run with different centroid
+            seeds. The final results is the best output of `n_init` consecutive runs
+            in terms of inertia. Several runs are recommended for sparse
+            high-dimensional problems (see :ref:`kmeans_sparse_high_dim`).
+            
+            When `n_init='auto'`, the number of runs depends on the value of init:
+            10 if using `init='random'` or `init` is a callable;
+            1 if using `init='k-means++'` or `init` is an array-like.
+            Default = 'auto'.
+            
+        Returns
+        -------
+        list
+            Segmented pointcloud clusters.
+        """
+        kmeans = KMeans(n_clusters=n_clusters, n_init=n_init, **options).fit(self.colors_cielab)
+        return self.separate_with_labels(kmeans.labels_)
+    
     def segment_dbscan(self, eps, min_points=1, print_progress=False, color_based=False):
         """ Get PointCloud points, label it according to Open3D's cluster_dbscan
         implementation and then return a list of segmented pointclouds.
@@ -260,17 +317,9 @@ class PointCloud(Open3D_Geometry):
             
         labels = pcd_clustering.cluster_dbscan(
             eps=eps, min_points=min_points, print_progress=print_progress)
-    
-        labels = np.array(labels)
-    
-        pcds_segmented = []
-        for label in set(labels) - {-1}:
-            idx = np.where(labels == label)[0]
-            pcd_ = self.select_by_index(idx)
-            # if len(pcd_.points) >= min_points:
-            pcds_segmented.append(pcd_)
-            
-        return pcds_segmented
+        
+        return self.separate_with_labels(labels)
+
     
     def split(self, num_boxes, dim=None, return_only_indices=False):
         """ Split the bounding box of the pointcloud in multiple sub boxes and
