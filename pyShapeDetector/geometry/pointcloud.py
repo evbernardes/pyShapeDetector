@@ -206,7 +206,7 @@ class PointCloud(Open3D_Geometry):
     
         return pcds
     
-    def segment_dbscan(self, eps, min_points=1, print_progress=False, colors=False):
+    def segment_dbscan(self, eps, min_points=1, print_progress=False):
         """ Get PointCloud points, label it according to Open3D's cluster_dbscan
         implementation and then return a list of segmented pointclouds.
         
@@ -218,9 +218,6 @@ class PointCloud(Open3D_Geometry):
             Minimum number of points to form a cluster. Default: 1
         print_progress : bool, optional
             If true the progress is visualized in the console. Default=False
-        colors : bool, optional
-            If true each cluster is uniformly painted with a different color. 
-            Default=False
             
         Returns
         -------
@@ -235,13 +232,6 @@ class PointCloud(Open3D_Geometry):
             eps=eps, min_points=min_points, print_progress=print_progress)
     
         labels = np.array(labels)
-        if colors:
-            from matplotlib.pyplot import get_cmap
-            pcd = self.copy()
-            max_label = max(labels)
-            colors = get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
-            colors[labels < 0] = 0
-            pcd.colors = Vector3dVector(colors[:, :3])
     
         pcds_segmented = []
         for label in set(labels) - {-1}:
