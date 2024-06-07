@@ -14,7 +14,6 @@ from warnings import warn
 
 from open3d.geometry import PointCloud as open3d_PointCloud
 from open3d.geometry import AxisAlignedBoundingBox, KDTreeFlann
-from open3d.utility import Vector3dVector
 from open3d import io
 
 from scipy.spatial.distance import cdist
@@ -22,6 +21,7 @@ from scipy.spatial.distance import cdist
 import h5py
 from sklearn.neighbors import KDTree
 
+from pyShapeDetector.utility import rgb_to_cielab, cielab_to_rgb
 from .open3d_geometry import (
     link_to_open3d_geometry,
     Open3D_Geometry)
@@ -32,6 +32,10 @@ class PointCloud(Open3D_Geometry):
     PointCloud class that uses Open3D.geometry.PointCloud internally.
     
     Almost every method and property are automatically copied and decorated.
+    
+    Attributes
+    ----------
+    colors_cielab
     
     Methods
     -------
@@ -49,6 +53,14 @@ class PointCloud(Open3D_Geometry):
     find_closest_points_indices
     find_closest_points
     """
+    
+    @property
+    def colors_cielab(self):
+        return rgb_to_cielab(self.colors)
+    
+    @colors_cielab.setter
+    def colors_cielab(self, lab):
+        self.colors = cielab_to_rgb(lab)
     
     def from_points_normals_colors(element, normals=[], colors=[]):
         """ Creates PointCloud instance from points, normals or colors.
@@ -206,7 +218,7 @@ class PointCloud(Open3D_Geometry):
     
         return pcds
     
-    def segment_dbscan(self, eps, min_points=1, print_progress=False):
+    def segment_dbscan(self, eps, min_points=1, print_progress=False, color_based=False):
         """ Get PointCloud points, label it according to Open3D's cluster_dbscan
         implementation and then return a list of segmented pointclouds.
         
@@ -227,8 +239,13 @@ class PointCloud(Open3D_Geometry):
         if min_points < 1 or not isinstance(min_points, int):
             raise ValueError(
                 f'min_points must be positive integer, got {min_points}')
+        
+        if color_based:
+            pcd_clustering = PointCloud(self.colors_cielab)
+        else:
+            pcd_clustering = self
             
-        labels = self.cluster_dbscan(
+        labels = pcd_clustering.cluster_dbscan(
             eps=eps, min_points=min_points, print_progress=print_progress)
     
         labels = np.array(labels)
