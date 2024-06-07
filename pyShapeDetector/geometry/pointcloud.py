@@ -99,7 +99,7 @@ class PointCloud(Open3D_Geometry):
         return pcd
     pass
     
-    def average_nearest_dist(self, k=15, leaf_size=40):
+    def average_nearest_dist(self, k=15, leaf_size=40, split=1):
         """ Calculates the K nearest neighbors and returns the average distance 
         between them.
         
@@ -107,7 +107,6 @@ class PointCloud(Open3D_Geometry):
         ----------
         k : positive int, default = 15
             Number of neighbors.
-        
         leaf_size : positive int, default=40
             Number of points at which to switch to brute-force. Changing
             leaf_size will not affect the results of a query, but can
@@ -117,14 +116,28 @@ class PointCloud(Open3D_Geometry):
             For a specified ``leaf_size``, a leaf node is guaranteed to
             satisfy ``leaf_size <= n_points <= 2 * leaf_size``, except in
             the case that ``n_samples < leaf_size``.
+        split : positive int, optional
+            If a value bigger than 1 is given, the pointcloud will be split
+            in sections and the average dist will be taken from the biggest
+            split. Default: 1.
         
         Returns
         -------
         float
             Average nearest dist.
         """
-        tree = KDTree(self.points, leaf_size=leaf_size)
-        nearest_dist, nearest_ind = tree.query(self.points, k=k)
+        
+        if not isinstance(split, int) or split < 1:
+            raise ValueError(f'split must be a positive integer, got {split}.')
+            
+        if split > 1:
+            pcds = self.split(split)
+            pcd = pcds[np.argmax([len(p.points) for p in pcds])]
+        else:
+            pcd = self
+        
+        tree = KDTree(pcd.points, leaf_size=leaf_size)
+        nearest_dist, nearest_ind = tree.query(pcd.points, k=k)
         return np.mean(nearest_dist[:, 1:])
     
     def write_point_cloud(self, filepath, **options):
