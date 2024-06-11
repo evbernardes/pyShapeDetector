@@ -813,7 +813,8 @@ class Plane(Primitive):
                                      angle_colinear=0,
                                      colinear_recursive=True,
                                      contract_bounds=False,
-                                     min_inliers=1):
+                                     min_inliers=1,
+                                     max_grid_points=100000):
         """
         Experimental method of triangulating plane with a grid.
 
@@ -859,6 +860,8 @@ class Plane(Primitive):
         min_inliers : int, optional
             If add_inliers is True, remove planes with less inliers than this
             value. Default: 1.
+        max_grid_points : int, optional
+            Max grid points possible. Default: 100000
             
         Return
         ------
@@ -866,6 +869,8 @@ class Plane(Primitive):
             PlaneTriangulated instance from grid
 
         """
+        
+        
         result = self.get_triangulated_plane_from_grid(
             grid_width=grid_width, 
             max_point_dist=max_point_dist, 
@@ -874,13 +879,20 @@ class Plane(Primitive):
             perimeter_eps=perimeter_eps, 
             return_rect_grid=return_rect_grid,
             only_inside=only_inside,
-            add_boundary=add_boundary)
+            add_boundary=add_boundary,
+            max_grid_points = max_grid_points)
         
         if return_rect_grid:
             plane_triangulated, plane_rect, grid = result
         else:
             plane_triangulated = result
             
+        from .planetriangulated import PlaneTriangulated
+        
+        if not isinstance(plane_triangulated, PlaneTriangulated):
+            print('No points selected, returning self...')
+            return [self]
+        
         planes = plane_triangulated.get_bounded_planes_from_boundaries(
             detect_holes=detect_holes, 
             add_inliers=add_inliers, 
@@ -896,7 +908,8 @@ class Plane(Primitive):
     def get_triangulated_plane_from_grid(self, grid_width, max_point_dist=None, 
                                          grid_type = "hexagonal", perimeter_multiplier=1,
                                          return_rect_grid=False, perimeter_eps=1e-3,
-                                         only_inside=False, add_boundary=False):
+                                         only_inside=False, add_boundary=False,
+                                         max_grid_points=100000):
         """
         Experimental method of triangulating plane with a grid.
         
@@ -935,6 +948,8 @@ class Plane(Primitive):
             boundary. Default: False.
         add_boundary : boolean, optional
             If True, add convex boundary points to grid. Default: False.
+        max_grid_points : int, optional
+            Max grid points possible. Default: 100000
             
         Return
         ------
@@ -942,7 +957,6 @@ class Plane(Primitive):
             PlaneTriangulated instance from grid
 
         """
-        
         if not self.has_inliers:
             raise RuntimeError("Plane has no inliers.")
         
@@ -957,7 +971,13 @@ class Plane(Primitive):
         
         # Get rectangular plane
         vectors, center = self.get_rectangular_vectors_from_points(return_center=True)
-        # plane_rect = self.get_rectangular_plane(vectors, center)
+        
+        # Check if there are too many points, do the check assuming regular
+        area = np.prod(np.linalg.norm(vectors, axis=1))
+        if int(area / (grid_width ** 2)) > max_grid_points:
+            old_grid_width = grid_width
+            grid_width = np.sqrt(area / max_grid_points)
+            warnings.warn(f"Too many points, width changed from {old_grid_width} to {grid_width}.")
         
         # grid inside rectangle and select nearby points
         grid, perimeter = PointCloud.get_rectangular_grid(
@@ -971,6 +991,12 @@ class Plane(Primitive):
         
         if only_inside:
             grid_points_selected = grid_points_selected[self.contains_projections(grid_points_selected)]
+            
+        if len(grid_points_selected) == 0:
+            warnings.warn('No points selected, returning simple triangulated version...')
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                return PlaneTriangulated(self)
             
         if add_boundary:
             chull = ConvexHull(self.get_projections(self.inlier_points))
@@ -990,6 +1016,8 @@ class Plane(Primitive):
         if return_rect_grid:
             plane_rect = self.get_rectangular_plane(vectors, center)
             return plane, plane_rect, grid
+        
+        del grid
         return plane
 
     def get_projections(self, points, return_rotation=False):

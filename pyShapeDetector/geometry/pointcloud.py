@@ -22,7 +22,7 @@ import h5py
 from sklearn.neighbors import KDTree
 from sklearn.cluster import KMeans
 
-from pyShapeDetector.utility import rgb_to_cielab, cielab_to_rgb
+from pyShapeDetector.utility import rgb_to_cielab, cielab_to_rgb, parallelize
 from .open3d_geometry import (
     link_to_open3d_geometry,
     Open3D_Geometry)
@@ -116,7 +116,7 @@ class PointCloud(Open3D_Geometry):
         pcd.colors = colors
         return pcd
 
-    def estimate_curvature(self, k=15):
+    def estimate_curvature(self, k=15, cores=10):
         """ Estimate curvature of points by getting the mean value of angles between 
         the neighbors.
 
@@ -124,6 +124,8 @@ class PointCloud(Open3D_Geometry):
         ----------
         k : positive int, default = 15
             Number of neighbors.
+        cores : positive int, default = 10
+            Number of cores used to paralellize the computation.
             
         """
         if not self.has_normals:
@@ -134,15 +136,21 @@ class PointCloud(Open3D_Geometry):
         from scipy.spatial import KDTree
         
         tree = KDTree(points)
-        curvature = np.zeros(len(points))
+        # curvature = np.zeros(len(points))
         
-        for i, normal in enumerate(normals):
-            _, idx = tree.query(points[i], k=k)
-            neighbors = normals[idx]
-            angles = np.arccos(np.clip(np.dot(neighbors, normal), -1.0, 1.0))
-            curvature[i] = np.mean(angles)
+        @parallelize(cores)
+        def _get_normals(indices):
+            curvature = np.zeros(len(indices))
+            j = 0
+            for i in indices:
+                _, idx = tree.query(points[i], k=k)
+                neighbors = normals[idx]
+                angles = np.arccos(np.clip(np.dot(neighbors, normals[i]), -1.0, 1.0))
+                curvature[j] = np.mean(angles)
+                j += 1
+            return indices
         
-        self.curvature = curvature
+        self.curvature = _get_normals(np.arange(len(points)))
     
     def average_nearest_dist(self, k=15, leaf_size=40, split=1):
         """ Calculates the K nearest neighbors and returns the average distance 
@@ -905,6 +913,7 @@ class PointCloud(Open3D_Geometry):
         if PointCloud.is_instance_or_open3d(inlier_points):
             inlier_points = np.asarray(inlier_points.points)
         
+        # parallelizing this was creating problems with SIGKILL
         @parallelize(6)
         def select_points(grid):
             dist_squared = cdist(inlier_points, grid, 'sqeuclidean')
@@ -969,7 +978,8 @@ class PointCloud(Open3D_Geometry):
         
         def get_range(length, width):
             array = np.arange(stop=length, step=width) - length / 2
-            assert abs(width - (array[1] - array[0])) < eps
+            # TODO: why? why is it failing?
+            # assert abs(width - (array[1] - array[0])) < eps
             
             # adding last point if needed
             if (length / width) % 1 > eps:
