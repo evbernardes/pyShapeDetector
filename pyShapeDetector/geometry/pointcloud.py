@@ -904,8 +904,8 @@ class PointCloud(Open3D_Geometry):
         from pyShapeDetector.utility import parallelize
         
         if cores > (cpu_count := multiprocessing.cpu_count()):
-            warn(f'Only {cpu_count} available, {cores} required.'
-                        ' limiting to max availability.')
+            warn(f'Only {cpu_count} available, {cores} required. '
+                 'limiting to max availability.')
             cores = cpu_count
             
         max_distance_squared = max_distance * max_distance
