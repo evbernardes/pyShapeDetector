@@ -1350,7 +1350,7 @@ class Plane(Primitive):
         radius : float
             Radius of circle.
         resolution : int, optional
-            Number of points defining circular plane.
+            Number of points defining circular plane. Default: 30.
 
         Returns
         -------
