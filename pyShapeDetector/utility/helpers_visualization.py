@@ -5,40 +5,88 @@ Created on Wed Feb 28 10:59:02 2024
 
 @author: ebernardes
 """
-import numpy as np
 import copy
+import matplotlib.pyplot as plt
+import numpy as np
 from open3d import visualization
 from pyShapeDetector.geometry import PointCloud
 # from pyShapeDetector.primitives import Primitive, Line
 
-def paint_random(elements, paint_inliers=False, return_copy=False):
-    """ Paint each pointcloud/mesh with a different random color.
+def get_painted(elements, color=None):
+    """ Get painted copy of each pointcloud/mesh/shape.
+    
+    If color is not input, then 
     
     Parameters
     ----------
     elements : list of geomery elements
         Elements to be painted
+        
+    Returns
+    -------
+    list
     """
-    
     from pyShapeDetector.primitives import Primitive
     
-    if return_copy:
-        elements = copy.deepcopy(elements)
+    elements = copy.deepcopy(elements)
     
-    if not isinstance(elements, list):
+    if not (is_list := isinstance(elements, list)):
         elements = [elements]
 
-    for element in elements:
-        color = np.random.random(3)
-        if isinstance(element, Primitive):
-            element._color = color
-            if paint_inliers:
-                element._inlier_colors[:] = color
-        else:
+    if color is None:
+        color_map = plt.get_cmap("tab20")
+        colors = [color_map(i)[:3] for i in range(len(elements))]
+    else:
+        colors = [color] * len(elements)
+    
+    for color, element in zip(colors, elements):        
+        try:
             element.paint_uniform_color(color)
             
-    if return_copy:
+        except AttributeError:
+            try:    
+                element.color = color
+            except AttributeError:
+                pass
+            
+        color = np.random.random(3)
+        if isinstance(element, Primitive):
+            element.inliers.paint_uniform_color(color)
+            
+    if is_list:
         return elements
+    else:
+        return elements[0]
+    
+
+# def paint_random(elements, paint_inliers=False, return_copy=False):
+#     """ Paint each pointcloud/mesh with a different random color.
+    
+#     Parameters
+#     ----------
+#     elements : list of geomery elements
+#         Elements to be painted
+#     """
+    
+#     from pyShapeDetector.primitives import Primitive
+    
+#     if return_copy:
+#         elements = copy.deepcopy(elements)
+    
+#     if not isinstance(elements, list):
+#         elements = [elements]
+
+#     for element in elements:
+#         color = np.random.random(3)
+#         if isinstance(element, Primitive):
+#             element._color = color
+#             if paint_inliers:
+#                 element._inlier_colors[:] = color
+#         else:
+#             element.paint_uniform_color(color)
+            
+#     if return_copy:
+#         return elements
 
 # def _treat_up_normal(camera_options):
     

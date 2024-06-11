@@ -43,7 +43,7 @@ from .helpers_math import (
     )
 
 from .helpers_visualization import (
-    paint_random,
+    get_painted,
     draw_geometries,
     draw_two_columns,
     draw_and_ask
