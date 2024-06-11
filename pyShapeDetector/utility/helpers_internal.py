@@ -17,7 +17,9 @@ def parallelize(cores=2):
             array_split = np.array_split(array, cores)
             
             def func_internal(i, data, *args, **kwargs):
-                data[i] = func(array_split[i], *args, **kwargs)
+                values = func(array_split[i], *args, **kwargs)
+                data[i] = values
+                # print(f'{i} worked!')
                 
             manager = Manager()    
             data = manager.dict()
@@ -29,6 +31,11 @@ def parallelize(cores=2):
             for process in processes:        
                 process.join()
             
-            return np.hstack([data[i] for i in range(cores)])
+            try:
+                return np.hstack([data[i] for i in range(cores) if i in data])
+            except KeyError:
+                raise RuntimeError(f'Only {len(data)} out of {cores} processes '
+                                   'worked, possibly memory problem.')
+
         return wrapper
     return decorator_parallelize
