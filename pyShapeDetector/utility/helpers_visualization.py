@@ -196,7 +196,7 @@ def draw_and_ask(elements, return_not_selected=False, **camera_options):
     for element in elements:
         try:
             element.paint_uniform_color((0.9, 0.9, 0.9))
-        except:
+        except Exception:
             element.color = (0.9, 0.9, 0.9)
 
     N = len(elements)
@@ -211,7 +211,7 @@ def draw_and_ask(elements, return_not_selected=False, **camera_options):
             element_red.color = (1, 0, 0)
         
         camera_options['window_name'] = window_name + f'{i+1}/{N}'
-        draw_geometries(elements[:i] + [element_red] + elements[(i+1):], **camera_options)
+        draw_two_columns(elements[:i] + [element_red] + elements[(i+1):], element_red, **camera_options)
         out = input(f'Get element {i+1}/{N}? (y)es, (N)o: ').lower()
         if out == 'y' or out == 'yes':
             indices_selected.append(i)
