@@ -1310,7 +1310,7 @@ class Plane(Primitive):
         """
         return self.get_rectangular_plane(v1, v2, center).get_mesh()
     
-    def cut_with_cylinders(shapes, radius_min, total_cut=False, eps=0):
+    def cut_with_cylinders(self, shapes, radius_min, total_cut=False, eps=0):
         """ Isolates planes and cylinders. For every plane and cylinder 
         combination, check if cylinder cuts plane and, if it does, add a hole.
         
@@ -1326,14 +1326,15 @@ class Plane(Primitive):
         eps : float, optional
             Adds some backlash to top and bottom of cylinder. Default: 0.
         """
-        from pyShapeDetector.primitives import Plane, Cylinder
+        from pyShapeDetector.primitives import Cylinder
         
         cylinders = [s for s in shapes if isinstance(s, Cylinder) and s.radius < radius_min + eps]
     
-        for s in shapes:
-            if not isinstance(s, Cylinder):
-                warn(f"Ignoring shape of type {type(s)} (not a Cylinder).")
-            elif s.radius < radius_min + eps and c.cuts(self, total_cut=total_cut, eps=eps):
+        for c in cylinders:
+            # if not isinstance(c, Cylinder):
+                # warnings.warn(f"Ignoring shape of type {type(s)} (not a Cylinder).")
+                
+            if c.radius < radius_min + eps and c.cuts(self, total_cut=total_cut, eps=eps):
                 self.add_holes(c.project_to_plane(self))
     
     @classmethod
