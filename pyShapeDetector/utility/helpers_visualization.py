@@ -40,22 +40,22 @@ def paint_random(elements, paint_inliers=False, return_copy=False):
     if return_copy:
         return elements
 
-def _treat_up_normal(camera_options):
+# def _treat_up_normal(camera_options):
     
-    normal = camera_options.pop('normal', None)
-    up = camera_options.get('up', None)
+#     normal = camera_options.pop('normal', None)
+#     up = camera_options.get('up', None)
     
-    if normal is not None and  up is not None:
-            raise ValueError("Cannot enter both 'up' and 'normal'")
+#     if normal is not None and  up is not None:
+#             raise ValueError("Cannot enter both 'up' and 'normal'")
     
-    elif normal is not None:
-        x = np.cross(np.random.random(3), normal)
-        x /= np.linalg.norm(x)
-        # camera_options['up'] = np.cross(normal, x)
-        camera_options['up'] = x
+#     elif normal is not None:
+#         x = np.cross(np.random.random(3), normal)
+#         x /= np.linalg.norm(x)
+#         # camera_options['up'] = np.cross(normal, x)
+#         camera_options['up'] = x
     
-    elif 'up' in camera_options:
-        camera_options['up'] = up
+#     elif 'up' in camera_options:
+#         camera_options['up'] = up
 
 def draw_geometries(elements, **camera_options):
     
