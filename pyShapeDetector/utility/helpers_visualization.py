@@ -191,13 +191,27 @@ def draw_and_ask(elements, return_not_selected=False, **camera_options):
     window_name = camera_options.get('window_name', '')
     if window_name != '':
         window_name += '_'
+        
+    elements = copy.deepcopy(elements)
+    for element in elements:
+        try:
+            element.paint_uniform_color((0.9, 0.9, 0.9))
+        except:
+            element.color = (0.9, 0.9, 0.9)
 
     N = len(elements)
     indices_selected = []
     indices_not_selected = []
     for i, element in enumerate(elements):
+        element_red = copy.deepcopy(element)
+        
+        try:
+            element_red.paint_uniform_color((1, 0, 0))
+        except:
+            element_red.color = (1, 0, 0)
+        
         camera_options['window_name'] = window_name + f'{i+1}/{N}'
-        draw_geometries(element, **camera_options)
+        draw_geometries(elements[:i] + [element_red] + elements[(i+1):], **camera_options)
         out = input(f'Get element {i+1}/{N}? (y)es, (N)o: ').lower()
         if out == 'y' or out == 'yes':
             indices_selected.append(i)
