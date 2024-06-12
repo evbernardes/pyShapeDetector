@@ -148,7 +148,7 @@ class PointCloud(Open3D_Geometry):
                 angles = np.arccos(np.clip(np.dot(neighbors, normals[i]), -1.0, 1.0))
                 curvature[j] = np.mean(angles)
                 j += 1
-            return indices
+            return curvature
         
         self.curvature = _get_normals(np.arange(len(points)))
     
