@@ -12,7 +12,7 @@ from open3d import visualization
 from pyShapeDetector.geometry import PointCloud
 # from pyShapeDetector.primitives import Primitive, Line
 
-def get_painted(elements, color=None):
+def get_painted(elements, color='random'):
     """ Get painted copy of each pointcloud/mesh/shape.
     
     If color is not input, then 
@@ -21,7 +21,11 @@ def get_painted(elements, color=None):
     ----------
     elements : list of geomery elements
         Elements to be painted
-        
+    color : array_like, 'random' or cmap name
+        If color is an array_like, it will be used to define the color of 
+        everything. If 'random', colors will be random. If anything else, will
+        be assumed to be the name of a color map. See: matplotlib.pyplot.get_cmap
+    
     Returns
     -------
     list
@@ -33,9 +37,13 @@ def get_painted(elements, color=None):
     if not (is_list := isinstance(elements, list)):
         elements = [elements]
 
-    if color is None:
-        color_map = plt.get_cmap("tab20")
-        colors = [color_map(i)[:3] for i in range(len(elements))]
+    if isinstance(color, str) or color is None:
+        if color == 'random':
+            colors = np.random.random((len(elements), 3))
+        else:
+            color_map = plt.get_cmap(color)
+            colors = [color_map(i)[:3] for i in range(len(elements))]
+            
     else:
         colors = [color] * len(elements)
     
@@ -185,13 +193,14 @@ def draw_geometries(elements, **camera_options):
         
     visualization.draw_geometries(geometries, **camera_options)
     
-def draw_two_columns(objs_left, objs_right, dist=5, **camera_options):
+def draw_two_columns(objs_left, objs_right, **camera_options):
                   
     # _treat_up_normal(camera_options)       
     lookat = camera_options.pop('lookat', None)
     up = camera_options.pop('up', None)
     front = camera_options.pop('front', None)
     zoom = camera_options.pop('zoom', None)
+    dist = camera_options.pop('dist', 5) 
     
     has_options = not any(v is None for v in [lookat, up, front, zoom])
     
@@ -260,9 +269,13 @@ def draw_and_ask(elements, return_not_selected=False, **camera_options):
         
         camera_options['window_name'] = window_name + f'{i+1}/{N}'
         draw_two_columns(elements[:i] + [element_red] + elements[(i+1):], element_red, **camera_options)
-        out = input(f'Get element {i+1}/{N}? (y)es, (N)o: ').lower()
+        out = input(f'Get element {i+1}/{N}? (y)es, (N)o, s(top): ').lower()
         if out == 'y' or out == 'yes':
             indices_selected.append(i)
+        elif out == 's' or out == 'stop':
+            indices_not_selected.append(i)
+            indices_not_selected += list(range(i+1, len(elements)))
+            break
         elif return_not_selected:
             indices_not_selected.append(i)
 
