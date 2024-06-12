@@ -1038,7 +1038,7 @@ class PointCloud(Open3D_Geometry):
         PointCloud
             Fused point cloud.
         """
-        pcd_full = cls()
+        pcd_full = open3d_PointCloud()
         for pcd in pcds:
-            pcd_full += pcd
-        return pcd_full
+            pcd_full += pcd.as_open3d
+        return cls(pcd_full)
