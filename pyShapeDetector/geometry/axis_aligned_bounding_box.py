@@ -22,8 +22,71 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
     
     Methods
     -------
+    check_bbox_intersection
+    intersects
+    expanded
     split
     """
+    
+    def intersects(self, other_bbox, distance=0):
+        """ Check if minimal distance of the inlier points bounding box
+        is below a given distance.
+        
+        Parameters
+        ----------
+        other_bbox : Primitive
+            A shape with inlier points
+        distance : float
+            Max distance between the bounding boxes.
+            
+        Returns
+        -------
+        bool
+            True if the calculated distance is smaller than the input distance.
+        """
+        if not isinstance(other_bbox, AxisAlignedBoundingBox):
+            raise ValueError('Input should be another instance of AxisAlignedBoundingBox.')
+        
+        if distance is None:
+            return True
+        
+        if distance < 0:
+            raise ValueError("Distance must be non-negative.")
+            
+        bb1 = self
+        bb2 = other_bbox
+        if distance == 0:
+            bb1 = bb1.expanded(distance/2)
+            bb2 = bb2.expanded(distance/2)
+        
+        test_order = bb2.max_bound - bb1.min_bound >= 0
+        if test_order.all():
+            pass
+        elif (~test_order).all():
+            bb1, bb2 = bb2, bb1
+        else:
+            return False
+        
+        # test_intersect = (bb1.max_bound + atol) - (bb2.min_bound - atol) >= 0
+        test_intersect = bb1.max_bound - bb2.min_bound >= 0
+        return test_intersect.all()
+    
+    def expanded(self, slack=0):
+        """ Return expanded version with bounds expanded in all directions.
+        
+        Parameters
+        ----------
+        slack : float, optional
+            Expand bounding box in all directions, useful for testing purposes.
+            Default: 0.
+            
+        Returns
+        -------
+        AxisAlignedBoundingBox
+        """        
+        slack = abs(slack)
+        return AxisAlignedBoundingBox(self.min_bound - slack, 
+                                      self.max_bound + slack)
     
     def split(self, num_boxes, dim=None):
         """ Separates bounding boxes into multiple sub-boxes.
