@@ -10,10 +10,10 @@ from abc import ABC, abstractmethod
 from itertools import product, combinations
 
 import numpy as np
-from open3d.geometry import AxisAlignedBoundingBox
+# from open3d.geometry import AxisAlignedBoundingBox
 from scipy.spatial.transform import Rotation
 from pyShapeDetector.utility import get_rotation_from_axis
-from pyShapeDetector.geometry import PointCloud, TriangleMesh
+from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
 
 def _set_and_check_3d_array(input_array, name='array', num_points=None):
     if input_array is None or len(input_array) == 0:
@@ -857,7 +857,8 @@ class Primitive(ABC):
             
         min_bound = np.min(points, axis=0)
         max_bound = np.max(points, axis=0)
-        return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
+        return AxisAlignedBoundingBox(min_bound - slack, 
+                                      max_bound + slack)
     
     def get_axis_aligned_bounding_box(self, slack=0):
         """ Returns an axis-aligned bounding box of the primitive.
@@ -879,9 +880,7 @@ class Primitive(ABC):
             
         bbox = self.mesh.get_axis_aligned_bounding_box()
         if slack > 0:
-            min_bound = bbox.min_bound - slack
-            max_bound = bbox.min_bound + slack
-            bbox = AxisAlignedBoundingBox(min_bound, max_bound)
+            return bbox.expanded(slack)
         return bbox
             
     def sample_points_uniformly(self, number_of_points=100, 
@@ -1301,18 +1300,20 @@ class Primitive(ABC):
         else:
             bb1 = self.get_axis_aligned_bounding_box(slack=distance/2)
             bb2 = other_shape.get_axis_aligned_bounding_box(slack=distance/2)
+            
+        return bb1.intersects(bb2)
         
-        test_order = bb2.max_bound - bb1.min_bound >= 0
-        if test_order.all():
-            pass
-        elif (~test_order).all():
-            bb1, bb2 = bb2, bb1
-        else:
-            return False
+        # test_order = bb2.max_bound - bb1.min_bound >= 0
+        # if test_order.all():
+        #     pass
+        # elif (~test_order).all():
+        #     bb1, bb2 = bb2, bb1
+        # else:
+        #     return False
         
-        # test_intersect = (bb1.max_bound + atol) - (bb2.min_bound - atol) >= 0
-        test_intersect = bb1.max_bound - bb2.min_bound >= 0
-        return test_intersect.all()
+        # # test_intersect = (bb1.max_bound + atol) - (bb2.min_bound - atol) >= 0
+        # test_intersect = bb1.max_bound - bb2.min_bound >= 0
+        # return test_intersect.all()
     
     def check_inlier_distance(self, other_shape, distance):
         """ Check if the distance between the closest inlier point pair in the
