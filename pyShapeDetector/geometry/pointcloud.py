@@ -946,7 +946,7 @@ class PointCloud(Open3D_Geometry):
         
         return closest_points, min_distances
     
-    def select_nearby_points(self, inlier_points, max_distance, cores=6):
+    def select_nearby_points(self, pcd, max_distance, cores=6):
         """
         Return PointCloud containing points that are close enough to at 
         least some point in the inlier_points points array.
@@ -958,8 +958,8 @@ class PointCloud(Open3D_Geometry):
 
         Parameters
         ----------
-        inlier_points : numpy array
-            Array of points (most likely, inlier points).
+        pcd : PointCloud or numpy array
+            PointCloud or Array of points (most likely, inlier points).
         max_distance : float
             Max distance allowed between grid points and inlier points.
 
@@ -968,27 +968,12 @@ class PointCloud(Open3D_Geometry):
         numpy array
             Selected points.
         """
-        import multiprocessing
-        from pyShapeDetector.utility import parallelize
+        if not isinstance(pcd, PointCloud):
+            pcd = PointCloud(pcd)
         
-        if cores > (cpu_count := multiprocessing.cpu_count()):
-            warnings.warn(f'Only {cpu_count} available, {cores} required. '
-                 'limiting to max availability.')
-            cores = cpu_count
-            
-        max_distance_squared = max_distance * max_distance
-
-        if PointCloud.is_instance_or_open3d(inlier_points):
-            inlier_points = np.asarray(inlier_points.points)
-        
-        # parallelizing this was creating problems with SIGKILL
-        @parallelize(6)
-        def select_points(grid):
-            dist_squared = cdist(inlier_points, grid, 'sqeuclidean')
-            return np.any(dist_squared <= max_distance_squared, axis=0)
-        
-        selected_idxs = select_points(self.points)
-        return PointCloud(self.points[selected_idxs])
+        distance = self.compute_point_cloud_distance(pcd)
+        selected_idxs = np.where(distance <= max_distance)[0]
+        return self.select_by_index(selected_idxs)
     
     @classmethod
     def get_rectangular_grid(cls, vectors, center, grid_width, 
