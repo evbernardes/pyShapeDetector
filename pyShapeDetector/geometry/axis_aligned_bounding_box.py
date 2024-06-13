@@ -13,6 +13,8 @@ from .open3d_geometry import (
     link_to_open3d_geometry,
     Open3D_Geometry)
 
+from pyShapeDetector.utility import _set_and_check_3d_array
+
 @link_to_open3d_geometry(open3d_AxisAlignedBoundingBox)
 class AxisAlignedBoundingBox(Open3D_Geometry):
     """
@@ -22,11 +24,39 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
     
     Methods
     -------
+    contains_points
     check_bbox_intersection
     intersects
     expanded
     split
     """
+
+    def contains_points(self, points, inclusive=True):
+        """
+        Check which points are inside of the bounding box.
+    
+        Parameters
+        ----------
+        
+        points : N x 3 array
+            N input points 
+    
+        Returns
+        -------
+        Numpy array
+            Boolean values
+        """
+        points = _set_and_check_3d_array(points, name='points')
+        
+        if inclusive:
+            min_check = np.all(self.min_bound <= points, axis=1)
+            max_check = np.all(points <= self.max_bound, axis=1)
+
+        else:
+            min_check = np.all(self.min_bound <= points, axis=1)
+            max_check = np.all(points <= self.max_bound, axis=1)
+            
+        return np.logical_and(min_check, max_check)#.tolist()
     
     def intersects(self, other_bbox, distance=0):
         """ Check if minimal distance of the inlier points bounding box
