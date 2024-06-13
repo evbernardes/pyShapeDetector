@@ -43,6 +43,7 @@ class PointCloud(Open3D_Geometry):
     Methods
     -------
     from_points_normals_colors
+    distribute_to_closest
     estimate_curvature
     fuse_pointclouds
     average_nearest_dist
@@ -121,6 +122,21 @@ class PointCloud(Open3D_Geometry):
         pcd.normals = normals
         pcd.colors = colors
         return pcd
+    
+    def distribute_to_closest(self, pcds):
+        """ Add each point to the closest of the input pointclouds.
+
+        Parameters
+        ----------
+        pcds : list of pointclouds
+            List of pointclouds to distribute.
+        """
+        
+        distances = np.vstack([self.compute_point_cloud_distance(pcd) for pcd in pcds])
+        labels = np.argmin(distances, axis=0)
+        pcds_separated = self.separate_with_labels(labels)
+        for pcd, distributed in zip(pcds, pcds_separated):
+            pcd._open3d += distributed._open3d
 
     def estimate_curvature(self, k=15, cores=10):
         """ Estimate curvature of points by getting the mean value of angles between 
