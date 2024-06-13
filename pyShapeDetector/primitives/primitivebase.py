@@ -1286,20 +1286,8 @@ class Primitive(ABC):
             bb2 = other_shape.get_axis_aligned_bounding_box(slack=distance/2)
             
         return bb1.intersects(bb2)
-        
-        # test_order = bb2.max_bound - bb1.min_bound >= 0
-        # if test_order.all():
-        #     pass
-        # elif (~test_order).all():
-        #     bb1, bb2 = bb2, bb1
-        # else:
-        #     return False
-        
-        # # test_intersect = (bb1.max_bound + atol) - (bb2.min_bound - atol) >= 0
-        # test_intersect = bb1.max_bound - bb2.min_bound >= 0
-        # return test_intersect.all()
     
-    def check_inlier_distance(self, other_shape, distance):
+    def check_inlier_distance(self, other_shape, max_distance):
         """ Check if the distance between the closest inlier point pair in the
         shapes is below a given distance.
         
@@ -1307,7 +1295,7 @@ class Primitive(ABC):
         ----------
         other_shape : Primitive
             A shape with inlier points
-        distance : float
+        max_distance : float
             Max distance between the bounding boxes.
             
         Returns
@@ -1316,17 +1304,17 @@ class Primitive(ABC):
             True if the calculated distance is smaller than the input distance.
         """
         
-        if distance is None:
+        if max_distance is None:
             return True
         
-        if distance <= 0:
+        if max_distance <= 0:
             raise ValueError("Distance must be positive.")
             
         if len(self.inliers.points) == 0 or len(other_shape.inliers.points) == 0:
             raise RuntimeError("Both shapes must have inlier points.")
         
-        _, dist = self.closest_inliers(other_shape)
-        return dist[0] <= distance
+        distance = self.inliers.compute_point_cloud_distance(other_shape.inliers)
+        return distance.min() <= max_distance
     
     @staticmethod
     def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=None,
