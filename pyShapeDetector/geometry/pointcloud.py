@@ -128,6 +128,7 @@ class PointCloud(Open3D_Geometry):
             Number of cores used to paralellize the computation.
             
         """
+        
         if not self.has_normals:
             raise RuntimeError('Pointcloud has no normals, call estimate_normals.')
         
@@ -140,13 +141,17 @@ class PointCloud(Open3D_Geometry):
         
         @parallelize(cores)
         def _get_normals(indices):
-            curvature = np.zeros(len(indices))
+            curvature = np.empty(len(indices))
             j = 0
             for i in indices:
                 _, idx = tree.query(points[i], k=k)
                 neighbors = normals[idx]
-                angles = np.arccos(np.clip(np.dot(neighbors, normals[i]), -1.0, 1.0))
-                curvature[j] = np.mean(angles)
+                # angles = np.arccos(np.clip(np.dot(neighbors, normals[i]), -1.0, 1.0))
+                dot_products = abs(np.dot(neighbors, normals[i]))
+                dot_mean = np.clip(dot_products.mean(), 0.0, 1.0)
+                # angles = np.arccos(np.clip(np.dot(neighbors, normals[i]), -1.0, 1.0))
+                # curvature[j] = np.mean(angles)
+                curvature[j] = np.arccos(dot_mean)
                 j += 1
             return curvature
         
