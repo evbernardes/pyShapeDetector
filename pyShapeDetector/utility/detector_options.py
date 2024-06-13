@@ -25,6 +25,7 @@ class DetectorOptions():
     _inliers_min=None
     _fitness_min=None
     _eps=None
+    _downsample=1
     
     # @property
     # def properties(self):
@@ -188,3 +189,13 @@ class DetectorOptions():
     @connected_components_density.setter
     def connected_components_density(self, value):
         self._eps = value
+        
+    @property
+    def downsample(self):
+        return self._downsample
+    
+    @downsample.setter
+    def downsample(self, value):
+        if not isinstance(value, int) or value < 1:
+            raise ValueError("downsample must be a positive int, got {value}.")
+        self._downsample = value
