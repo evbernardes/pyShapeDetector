@@ -14,6 +14,7 @@ from .open3d_geometry import (
     Open3D_Geometry)
 
 from pyShapeDetector.utility import _set_and_check_3d_array
+from .pointcloud import PointCloud
 
 @link_to_open3d_geometry(open3d_AxisAlignedBoundingBox)
 class AxisAlignedBoundingBox(Open3D_Geometry):
@@ -29,6 +30,10 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
     intersects
     expanded
     split
+    sample_points_uniformly
+    sample_points_density
+    sample_PointCloud_uniformly
+    sample_PointCloud_density
     """
 
     def contains_points(self, points, inclusive=True):
@@ -163,4 +168,81 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
             bboxes.append(subbox)
 
         return bboxes
+    
+    def sample_points_uniformly(self, number_of_points=100):
+        """ Sample points inside bounding box.
+        
+        Parameters
+        ----------
+        number_of_points : int, optional
+            Number of points that should be uniformly sampled. Default = 100.
+        
+        Returns
+        -------
+        Numpy array with shape (number_of_points, 3)
+            Sampled pointcloud from shape.
+        """
+        if number_of_points <= 0:
+            raise ValueError("Number of points must be a non-negative number.")
+        return np.random.uniform(size=(number_of_points, 3), low=self.min_bound, high=self.max_bound)
+    
+    def sample_points_density(self, density=1):
+        """ Sample points inside bounding box.
+        
+        Parameters
+        ----------
+        density: float, optional
+            Ratio between points and surface area. Default: 1.
+        
+        Returns
+        -------
+        Numpy array with shape (number_of_points, 3)
+        """
+        if density <= 0:
+            raise ValueError("Density must be a non-negative number.")
+            
+        # mesh = self.get_mesh()
+        number_of_points = int(density * self.volume())
+        return self.sample_points_uniformly(number_of_points)
+    
+    def sample_PointCloud_uniformly(self, number_of_points=100):
+        """ Sample points inside bounding box and return PointCloud.
+        
+        Parameters
+        ----------
+        number_of_points : int, optional
+            Number of points that should be uniformly sampled. Default = 100.
+        use_triangle_normal : bool, optional
+            If True assigns the triangle normals instead of the interpolated 
+            vertex normals to the returned points. The triangle normals will 
+            be computed and added to the mesh if necessary. Default = False.
+        
+        Returns
+        -------
+        open3d.geometry.PointCloud
+            Sampled pointcloud from shape.
+        """
+        return PointCloud(self.sample_points_uniformly(number_of_points))
+    
+    def sample_PointCloud_density(self, density=1):
+        """ Sample points inside bounding box and return PointCloud.
+        
+        See: sample_points_uniformly, sample_points_density, 
+        sample_PointCloud_uniformly
+        
+        Parameters
+        ----------
+        density: float, optional
+            Ratio between points and surface area. Default: 1.
+        use_triangle_normal : bool, optional
+            If True assigns the triangle normals instead of the interpolated 
+            vertex normals to the returned points. The triangle normals will 
+            be computed and added to the mesh if necessary. Default = False.
+        
+        Returns
+        -------
+        open3d.geometry.PointCloud
+            Sampled pointcloud from shape.
+        """
+        return PointCloud(self.sample_points_density(density))
         
