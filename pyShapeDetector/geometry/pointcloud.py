@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import multiprocessing
 import time
-from warnings import warn
+import warnings
 
 from open3d.geometry import PointCloud as open3d_PointCloud
 from open3d.geometry import AxisAlignedBoundingBox, KDTreeFlann
@@ -36,8 +36,9 @@ class PointCloud(Open3D_Geometry):
     
     Attributes
     ----------
-    colors_cielab
     curvature
+    has_curvature
+    colors_cielab
     
     Methods
     -------
@@ -54,6 +55,7 @@ class PointCloud(Open3D_Geometry):
     segment_by_position
     segment_kmeans_colors
     segment_dbscan
+    segment_curvature_threshold
     segment_with_region_growing
     find_closest_points_indices
     find_closest_points
@@ -71,6 +73,10 @@ class PointCloud(Open3D_Geometry):
             raise ValueError('Curvature values must be one-dimensional ',
                              f'got array of shape {values.shape}.')
         self._curvature = values
+        
+    @property
+    def has_curvature(self):
+        return len(self.curvature) > 0
     
     @property
     def colors_cielab(self):
@@ -408,7 +414,7 @@ class PointCloud(Open3D_Geometry):
             Subdivided pointclouds
         """
         if resolution > 500:
-            warn('Resolution too high, returning cannot go further.')
+            warnings.warn('Resolution too high, returning cannot go further.')
             return [self]
 
         if len(self.points) <= max_points:
@@ -418,7 +424,7 @@ class PointCloud(Open3D_Geometry):
         if np.any(np.array([len(p.points) for p in pcds]) == 0):
             old_res = resolution
             resolution = int(1.1 * resolution)
-            warn(f'Subarray with points detected, '
+            warnings.warn(f'Subarray with points detected, '
                  f'resolution changing from {old_res} to {resolution}.')
         # print(f'{len(self.points)} to {[len(p.points) for p in pcds]}')
 
@@ -560,6 +566,47 @@ class PointCloud(Open3D_Geometry):
             eps=eps, min_points=min_points, print_progress=print_progress)
         
         return self.separate_with_labels(labels)
+    
+    def segment_curvature_threshold(self, std_ratio=0.1):
+        """ Remove borders by separating points with high and low curvature.
+        
+        The cutoff threshold used to separate points of high and low curvature 
+        is defined as:
+            threshold = mean + std * str_ratio
+            
+        Where the mean and str are calculated from the pointcloud's curvature
+        values.
+        
+        Parameters
+        ----------
+        std_ratio : float, optional
+            Defines the cutoff threshold. Default: 0.1.
+            
+        print_progress : bool, optional
+            If true the progress is visualized in the console. Default=False
+            
+        Returns
+        -------
+        list
+            Segmented pointcloud clusters.
+        """
+        
+        if not self.has_curvature:
+            warnings.warn('PointCloud does not have curvature, calculating...')
+            self.estimate_curvature()
+            
+        mean = np.mean(self.curvature)
+        std = np.std(self.curvature)
+        
+        
+        threshold = mean + std * std_ratio
+            
+        indices = np.where(self.curvature < threshold)[0]
+
+        pcd_low = self.select_by_index(indices)
+        pcd_high = self.select_by_index(indices, invert=True)
+
+        return pcd_low, pcd_high
     
     def segment_with_region_growing(self, residuals=None, mode='knn', k=20, radius=0,
                                     k_retest=10, threshold_angle=np.radians(10), 
@@ -720,7 +767,7 @@ class PointCloud(Open3D_Geometry):
                              f'{cores}')
             
         if cores > multiprocessing.cpu_count():
-            warn(f'Only {multiprocessing.cpu_count()} available, {cores} required.'
+            warnings.warn(f'Only {multiprocessing.cpu_count()} available, {cores} required.'
                   ' limiting to max availability.')
             cores = multiprocessing.cpu_count()
         
@@ -909,7 +956,7 @@ class PointCloud(Open3D_Geometry):
         from pyShapeDetector.utility import parallelize
         
         if cores > (cpu_count := multiprocessing.cpu_count()):
-            warn(f'Only {cpu_count} available, {cores} required. '
+            warnings.warn(f'Only {cpu_count} available, {cores} required. '
                  'limiting to max availability.')
             cores = cpu_count
             
