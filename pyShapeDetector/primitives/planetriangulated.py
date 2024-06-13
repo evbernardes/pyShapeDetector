@@ -10,8 +10,8 @@ from itertools import permutations, product, combinations
 import numpy as np
 # from scipy.spatial import ConvexHull, Delaunay
 # from scipy.spatial.transform import Rotation
-from open3d.geometry import AxisAlignedBoundingBox
-from pyShapeDetector.geometry import PointCloud, TriangleMesh
+# from open3d.geometry import AxisAlignedBoundingBox
+from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
 
 # from pyShapeDetector.utility import (
 #     # fuse_vertices_triangles, 

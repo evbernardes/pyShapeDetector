@@ -10,8 +10,8 @@ from itertools import product
 import numpy as np
 from scipy.spatial import QhullError, ConvexHull, Delaunay
 # from scipy.spatial.transform import Rotation
-from open3d.geometry import AxisAlignedBoundingBox
-from pyShapeDetector.geometry import PointCloud, TriangleMesh
+# from open3d.geometry import AxisAlignedBoundingBox
+from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
 from .plane import Plane
 
 def _is_clockwise(bounds):

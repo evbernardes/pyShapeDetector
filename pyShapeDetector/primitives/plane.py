@@ -10,8 +10,8 @@ from itertools import permutations, product, combinations
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
 from scipy.spatial.transform import Rotation
-from open3d.geometry import AxisAlignedBoundingBox
-from pyShapeDetector.geometry import PointCloud, TriangleMesh
+# from open3d.geometry import AxisAlignedBoundingBox
+from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
 
 from pyShapeDetector.utility import (
     get_rotation_from_axis,
@@ -1474,7 +1474,7 @@ class Plane(Primitive):
         Checking bbox_intersection is much quicker than checking inlier_max_distance,
         which is why it is a good idea to check both.
         
-        See: group_shape_groups, fuse_shape_groups, glue_nearby_planes
+        See: group_shape_groups, fuse_shape_groups, PlaneBounded.glue_nearby_planes
         
         Parameters
         ----------
