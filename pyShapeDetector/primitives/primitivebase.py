@@ -12,24 +12,8 @@ from itertools import product, combinations
 import numpy as np
 # from open3d.geometry import AxisAlignedBoundingBox
 from scipy.spatial.transform import Rotation
-from pyShapeDetector.utility import get_rotation_from_axis
+from pyShapeDetector.utility import get_rotation_from_axis, _set_and_check_3d_array
 from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
-
-def _set_and_check_3d_array(input_array, name='array', num_points=None):
-    if input_array is None or len(input_array) == 0:
-        return np.array([])
-    
-    array = np.asarray(input_array)
-    if array.shape == (3, ):
-        array = np.reshape(array, (1,3))
-    elif array.shape[1] != 3:
-        raise ValueError('Invalid shape for {name}, must be a single'
-                         ' point or an array of shape (N, 3), got '
-                         f'{array.shape}')
-    if num_points is not None and len(array) != num_points:
-        raise ValueError(f'Expected shape of array is ({num_points}, 3), got {array.shape}.')
-        
-    return array
 
 def _get_partitions_legacy(num_shapes, pairs):
     new_indices = np.array(range(num_shapes))
@@ -873,7 +857,7 @@ class Primitive(ABC):
             
         Returns
         -------
-        open3d.geometry.AxisAlignedBoundingBox
+        AxisAlignedBoundingBox
         """
         if slack < 0:
             raise ValueError("Slack must be non-negative.")

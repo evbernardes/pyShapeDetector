@@ -34,6 +34,7 @@ from .detector_options import DetectorOptions
 
 from .helpers_internal import (
     parallelize,
+    _set_and_check_3d_array,
     )
 
 from .helpers_math import (

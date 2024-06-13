@@ -39,3 +39,19 @@ def parallelize(cores=2):
 
         return wrapper
     return decorator_parallelize
+
+def _set_and_check_3d_array(input_array, name='array', num_points=None):
+    if input_array is None or len(input_array) == 0:
+        return np.array([])
+    
+    array = np.asarray(input_array)
+    if array.shape == (3, ):
+        array = np.reshape(array, (1,3))
+    elif array.shape[1] != 3:
+        raise ValueError('Invalid shape for {name}, must be a single'
+                         ' point or an array of shape (N, 3), got '
+                         f'{array.shape}')
+    if num_points is not None and len(array) != num_points:
+        raise ValueError(f'Expected shape of array is ({num_points}, 3), got {array.shape}.')
+        
+    return array
