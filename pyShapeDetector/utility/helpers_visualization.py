@@ -247,7 +247,7 @@ def draw_and_ask(elements, return_not_selected=False, **camera_options):
 
     window_name = camera_options.get('window_name', '')
     if window_name != '':
-        window_name += '_'
+        window_name += ' - '
         
     elements = copy.deepcopy(elements)
     for element in elements:
@@ -269,7 +269,7 @@ def draw_and_ask(elements, return_not_selected=False, **camera_options):
         
         camera_options['window_name'] = window_name + f'{i+1}/{N}'
         draw_two_columns(elements[:i] + [element_red] + elements[(i+1):], element_red, **camera_options)
-        out = input(f'Get element {i+1}/{N}? (y)es, (N)o, s(top): ').lower()
+        out = input(f'Get element {i+1}/{N}? (y)es, (N)o, (s)top: ').lower()
         if out == 'y' or out == 'yes':
             indices_selected.append(i)
         elif out == 's' or out == 'stop':
