@@ -7,6 +7,7 @@ Created on Tue Sep 26 15:59:55 2023
 """
 
 from abc import ABC, abstractmethod
+import warnings
 import time
 import random
 import numpy as np
@@ -529,7 +530,7 @@ class RANSAC_Base(ABC):
         return inliers
 
 
-    def fit(self, pointcloud, use_normals=True, debug=False):#, filter_model=True):
+    def fit(self, pointcloud, use_normals=True, debug=False, set_inliers=False):#, filter_model=True):
         """ Main loop implementing RANSAC algorithm.
         
         Parameters
@@ -538,8 +539,10 @@ class RANSAC_Base(ABC):
             All input points
         use_normals : boolean, optionl
             If True, use normals from pointcloud. Default: True. 
-        debug, optional : bool
-            Gives info if true
+        debug : boolean, optional
+            Gives info if True. Default: False.
+        set_inliers : boolean, optional
+            Pre-sets inliers into detected shape. Default: False.
         
         Returns
         -------
@@ -550,6 +553,7 @@ class RANSAC_Base(ABC):
         dict
             Metrics of best fitted shape
         """
+        
         if not PointCloud.is_instance_or_open3d(pointcloud):
             pointcloud = PointCloud(pointcloud)
             use_normals = False
@@ -564,6 +568,12 @@ class RANSAC_Base(ABC):
             normals_full = pointcloud.normals
         else:
             normals = normals_full = None
+            
+        if (no_threshold_distance := self._opt.threshold_distance is None):
+            k = self._opt.adaptative_threshold_k
+            eps = pcd_test.average_nearest_dist(k=15)
+            warnings.warn(f'threshold_distance calculated as {eps} with {k} neighbors.')
+            self._opt.threshold_distance = eps
 
         points = np.asarray(pcd_test.points)
         num_points = len(points)
@@ -699,5 +709,11 @@ class RANSAC_Base(ABC):
             print(f'RMSE for angles: {metrics_final["rmse_angles"]}\n')
             
         # shape_best.inlier_points = points[inliers_final]
+        
+        if no_threshold_distance:
+            self._opt.threshold_distance = None
+            
+        if set_inliers:
+            shape_best.set_inliers(pointcloud.select_by_index(inliers_final), color_shape=True)
 
         return shape_best, inliers_final, metrics_final
