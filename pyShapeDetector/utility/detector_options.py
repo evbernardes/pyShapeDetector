@@ -7,13 +7,15 @@ Created on Tue Sep 26 15:59:55 2023
 """
 import warnings
 
+DEG = 57.29577951308232
+
 class DetectorOptions():
     """
     Base class used to define options for detector methods.
 
     """
     _reduction_rate=1.0
-    _threshold_distance=0.1
+    _threshold_distance=None
     _threshold_angle=3.141592653589793  # ~ 180 degrees
     _threshold_ratios=[0.2, 0.7] # for LDSAC
     _threshold_refit_ratio=1
@@ -26,6 +28,7 @@ class DetectorOptions():
     _fitness_min=None
     _eps=None
     _downsample=1
+    _adaptative_threshold_k=15
     
     # @property
     # def properties(self):
@@ -50,7 +53,9 @@ class DetectorOptions():
             'max_normal_angle_degrees': self.max_normal_angle_degrees,
             'inliers_min': self.inliers_min,
             'fitness_min': self.fitness_min,
-            'connected_components_density': self.connected_components_density
+            'connected_components_density': self.connected_components_density,
+            'downsample': self._downsample,
+            'adaptative_threshold_k': self.adaptative_threshold_k
             }
     
     def __repr__(self):
@@ -79,7 +84,7 @@ class DetectorOptions():
         
     @threshold_distance.setter
     def threshold_distance(self, value):
-        if value < 0:
+        if value is not None and value < 0:
             raise ValueError('threshold_distance must be positive')
         self._threshold_distance = value
         
@@ -92,6 +97,16 @@ class DetectorOptions():
         if value < 0:
             raise ValueError('threshold_angle must be positive')
         self._threshold_angle = value
+        
+    @property
+    def threshold_angle_degrees(self):
+        return self.threshold_angle * DEG
+    
+    @threshold_angle_degrees.setter
+    def threshold_angle_degrees(self, value):
+        if value < 0:
+            raise ValueError('threshold_angle_degrees must be positive')
+        self._threshold_angle = value / DEG
         
     @property
     def threshold_ratios(self):
@@ -199,3 +214,13 @@ class DetectorOptions():
         if not isinstance(value, int) or value < 1:
             raise ValueError("downsample must be a positive int, got {value}.")
         self._downsample = value
+        
+    @property
+    def adaptative_threshold_k(self):
+        return self._adaptative_threshold_k
+    
+    @adaptative_threshold_k.setter
+    def adaptative_threshold_k(self, value):
+        if not isinstance(value, int) or value < 1:
+            raise ValueError("adaptative_threshold_k must be a positive int, got {value}.")
+        self._adaptative_threshold_k = value
