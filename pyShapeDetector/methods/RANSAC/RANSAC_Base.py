@@ -12,10 +12,7 @@ import random
 import numpy as np
 import copy
 
-from open3d.geometry import PointCloud
-from open3d.utility import Vector3dVector
-
-# from pyShapeDetector.primitives import Primitive
+from pyShapeDetector.geometry import PointCloud
 from pyShapeDetector.utility import PrimitiveLimits, DetectorOptions
 
 # random.seed(time.time())
@@ -464,7 +461,7 @@ class RANSAC_Base(ABC):
         
         points_flat = shape.flatten_points(points[inliers])
         
-        pcd = PointCloud(Vector3dVector(points_flat))
+        pcd = PointCloud(points_flat)
         labels = pcd.cluster_dbscan(eps=self._opt.eps, min_points=min_points)
         labels = np.array(labels)
         if len(labels) < 2:
@@ -532,15 +529,15 @@ class RANSAC_Base(ABC):
         return inliers
 
 
-    def fit(self, points, normals=None, debug=False):#, filter_model=True):
+    def fit(self, pointcloud, use_normals=True, debug=False):#, filter_model=True):
         """ Main loop implementing RANSAC algorithm.
         
         Parameters
         ----------
-        points : array
+        pointcloud : PointCloud or array
             All input points
-        normals, optional : array
-            All input normal vectors 
+        use_normals : boolean, optionl
+            If True, use normals from pointcloud. Default: True. 
         debug, optional : bool
             Gives info if true
         
@@ -553,7 +550,22 @@ class RANSAC_Base(ABC):
         dict
             Metrics of best fitted shape
         """
-        points = np.asarray(points)
+        if not PointCloud.is_instance_or_open3d(pointcloud):
+            pointcloud = PointCloud(pointcloud)
+            use_normals = False
+
+        if self._opt.downsample > 1:
+            pcd_test = pointcloud.uniform_down_sample(self._opt.downsample)
+        else:
+            pcd_test = pointcloud
+
+        if use_normals and pointcloud.has_normals():
+            normals = pcd_test.normals
+            normals_full = pointcloud.normals
+        else:
+            normals = normals_full = None
+
+        points = np.asarray(pcd_test.points)
         num_points = len(points)
         inliers_min = self._opt.inliers_min
         fitness_min = self._opt.fitness_min
@@ -565,8 +577,9 @@ class RANSAC_Base(ABC):
         if num_points < num_samples:
             raise ValueError(f'Pointcloud must have at least '
                              f'{self.num_samples} points, {num_points} '
-                             'given.')
+                             'given. Check if options.downsample is adapted.')
 
+        # TODO: Most likely useless now:
         if normals is not None:
             if len(normals) == 0:
                 normals = None
@@ -650,7 +663,11 @@ class RANSAC_Base(ABC):
         if shape_best is None:
             return None, None, self.get_metrics(None)
         
-        # Find the final inliers using model_best ...
+        # Find the final inliers using model_best and get full pointcloud...
+        points = pointcloud.points
+        normals = normals_full
+        num_points = len(points)
+
         distances, angles = shape_best.get_residuals(points, normals)
         
         inliers_final = self.get_inliers(

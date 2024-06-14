@@ -126,7 +126,7 @@ class MultiDetector():
                 for detector in self.detectors:
                     # start = time.time()
                     shape, inliers, metrics = detector.fit(
-                        pcd_.points, debug=debug_detectors, normals=normals)
+                        pcd_, debug=debug_detectors, normals=normals)
                     # times[detector.primitive.name] += time.time() - start
                     output_shapes.append(shape)
                     output_inliers.append(inliers)
