@@ -47,7 +47,8 @@ from .helpers_visualization import (
     get_painted,
     draw_geometries,
     draw_two_columns,
-    draw_and_ask
+    draw_and_ask,
+    select_combinations_manually
     )
 
 from .helpers_io import (

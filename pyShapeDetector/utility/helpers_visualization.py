@@ -6,6 +6,7 @@ Created on Wed Feb 28 10:59:02 2024
 @author: ebernardes
 """
 import copy
+import itertools
 import matplotlib.pyplot as plt
 import numpy as np
 from open3d import visualization
@@ -294,3 +295,45 @@ def draw_and_ask(elements, return_not_selected=False, **camera_options):
     if return_not_selected:
         return indices_selected, indices_not_selected
     return indices_selected
+
+def select_combinations_manually(elements, return_grouped):
+    if not isinstance(elements, list) or len(elements) < 2:
+        raise ValueError("'elements' must be a list with at least 2 elements, "
+                         f"got {elements}.")
+
+    elements_test = [[elem] for elem in get_painted(elements)]
+    
+    partitions = np.arange(N := len(elements))
+    for i, j in itertools.combinations(range(N), 2):
+        if partitions[i] == partitions[j]:
+            # print(f'{i} and {j} already fused...\n')
+            continue
+        elif len(elements_test[j]) == 0:
+            # print(f'{j} already fused...\n')
+            continue
+        
+        elements_test[i] = get_painted(elements_test[i], color=(0, 0, 1))
+        elements_test[j] = get_painted(elements_test[j], color=(0, 1, 0))
+
+        draw_geometries(elements_test[i] + elements_test[j], window_name=f'{i} and {j}')
+        option = input(f'Fuse {i} and {j}?  (y)es, (N)o, (s)top: ').lower()
+        if option == 's' or option == 'stop':
+            break
+        elif option == 'y' or option == 'yes':
+            partitions[j] = partitions[i]
+            # elements_test[j].paint_uniform_color(elements_test[i].colors[0])
+            elements_test[i] += elements_test[j]
+            elements_test[j] = []
+            
+            # pcds_no_ground[i] += pcds_no_ground[j]
+            # pcds_no_ground[j].points = []
+            
+    if return_grouped:
+        grouped = []
+        elements = np.array(elements)
+        for partition in set(partitions):
+            grouped.append(
+                elements[partition == partitions].tolist())
+        return partitions, grouped
+
+    return partitions
