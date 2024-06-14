@@ -26,7 +26,6 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
     Methods
     -------
     contains_points
-    check_bbox_intersection
     intersects
     expanded
     split
