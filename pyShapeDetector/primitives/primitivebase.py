@@ -15,6 +15,22 @@ from scipy.spatial.transform import Rotation
 from pyShapeDetector.utility import get_rotation_from_axis, _set_and_check_3d_array
 from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
 
+def _check_distance(shape1, shape2, bbox_intersection, inlier_max_distance):
+    
+    if bbox_intersection is not None:
+        if not shape1.bbox.intersects(shape2.bbox, distance=bbox_intersection):
+            return False
+    
+    # Check if there is at least one pair that is close enough
+    if inlier_max_distance is not None:
+        if not shape1.has_inliers or not shape2.has_inliers:
+            warnings.warn("No inliers found, ignoring inlier distance test.")
+        
+        elif shape1.inliers.compute_point_cloud_distance(shape2.inliers).min() > inlier_max_distance:
+            return False
+    
+    return True
+
 def _get_partitions_legacy(num_shapes, pairs):
     new_indices = np.array(range(num_shapes))
     for pair, result in pairs.items():
@@ -1349,16 +1365,7 @@ class Primitive(ABC):
         def _test(i, j):
             if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
                 return False
-            
-            if not shapes[i].bbox.intersects(shapes[j].bbox, distance=bbox_intersection):
-                return False
-            
-            # Check if there is at least one pair that is close enough
-            distance = shapes[i].inliers.compute_point_cloud_distance(shapes[j].inliers)
-            if distance.min() > inlier_max_distance:
-                return False
-            
-            return True
+            return _check_distance(shapes[i], shapes[j], bbox_intersection, inlier_max_distance)
         
         # Step 1: check all pairs
         shape_pairs = combinations(range(len(shapes)), 2)

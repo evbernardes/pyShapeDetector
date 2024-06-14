@@ -19,7 +19,7 @@ from pyShapeDetector.utility import (
     # select_grid_points
     )
 
-from .primitivebase import Primitive, _set_and_check_3d_array
+from .primitivebase import Primitive, _set_and_check_3d_array, _check_distance
 # from alphashape import alphashape
 # from .line import Line    
 
@@ -1539,10 +1539,7 @@ class Plane(Primitive):
             
             # Only if both shapes are bounded
             if isinstance(shapes[i], PlaneBounded) and isinstance(shapes[j], PlaneBounded):
-                if not shapes[i].bbox.intersects(shapes[j].bbox, distance=bbox_intersection):
-                    continue
-                distance = shapes[i].inliers.compute_point_cloud_distance(shapes[j].inliers)
-                if distance.min() > inlier_max_distance:
+                if not _check_distance(shapes[i], shapes[j], bbox_intersection, inlier_max_distance):
                     continue
             
             line = Line.from_plane_intersection(
