@@ -182,8 +182,6 @@ class Primitive(ABC):
     __get_attributes_from_dict__
     load
     load
-    check_bbox_intersection
-    check_inlier_distance
     fuse
     group_similar_shapes
     fuse_shape_groups
@@ -1254,68 +1252,6 @@ class Primitive(ABC):
         f.close()
         return shape
     
-    def check_bbox_intersection(self, other_shape, distance, use_inliers=False):
-        """ Check if minimal distance of the inlier points bounding box
-        is below a given distance.
-        
-        Parameters
-        ----------
-        other_shape : Primitive
-            A shape with inlier points
-        distance : float
-            Max distance between the bounding boxes.
-        use_inliers : bool, optional
-            If True, use inliers bounding box. Default: False.
-            
-        Returns
-        -------
-        bool
-            True if the calculated distance is smaller than the input distance.
-        """
-        if distance is None:
-            return True
-        
-        if distance <= 0:
-            raise ValueError("Distance must be positive.")
-        
-        if use_inliers:
-            bb1 = self.get_inliers_axis_aligned_bounding_box(slack=distance/2)
-            bb2 = other_shape.get_inliers_axis_aligned_bounding_box(slack=distance/2)
-        else:
-            bb1 = self.get_axis_aligned_bounding_box(slack=distance/2)
-            bb2 = other_shape.get_axis_aligned_bounding_box(slack=distance/2)
-            
-        return bb1.intersects(bb2)
-    
-    def check_inlier_distance(self, other_shape, max_distance):
-        """ Check if the distance between the closest inlier point pair in the
-        shapes is below a given distance.
-        
-        Parameters
-        ----------
-        other_shape : Primitive
-            A shape with inlier points
-        max_distance : float
-            Max distance between the bounding boxes.
-            
-        Returns
-        -------
-        bool
-            True if the calculated distance is smaller than the input distance.
-        """
-        
-        if max_distance is None:
-            return True
-        
-        if max_distance <= 0:
-            raise ValueError("Distance must be positive.")
-            
-        if len(self.inliers.points) == 0 or len(other_shape.inliers.points) == 0:
-            raise RuntimeError("Both shapes must have inlier points.")
-        
-        distance = self.inliers.compute_point_cloud_distance(other_shape.inliers)
-        return distance.min() <= max_distance
-    
     @staticmethod
     def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=None,
              **extra_options):
@@ -1413,10 +1349,15 @@ class Primitive(ABC):
         def _test(i, j):
             if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
                 return False
-            if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
+            
+            if not shapes[i].bbox.intersects(shapes[j].bbox, distance=bbox_intersection):
                 return False
-            if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
+            
+            # Check if there is at least one pair that is close enough
+            distance = shapes[i].inliers.compute_point_cloud_distance(shapes[j].inliers)
+            if distance.min() > inlier_max_distance:
                 return False
+            
             return True
         
         # Step 1: check all pairs

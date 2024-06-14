@@ -129,8 +129,6 @@ class Plane(Primitive):
     save
     __get_attributes_from_dict__
     load
-    check_bbox_intersection
-    check_inlier_distance
     fuse
     group_similar_shapes
     fuse_shape_groups
@@ -1539,13 +1537,13 @@ class Plane(Primitive):
             if ignore[i] or ignore[j]:
                 continue
             
-            both_bounded = isinstance(shapes[i], PlaneBounded) and isinstance(shapes[j], PlaneBounded)
-            
-            if both_bounded and not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
-                continue
-            
-            if both_bounded and not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
-                continue
+            # Only if both shapes are bounded
+            if isinstance(shapes[i], PlaneBounded) and isinstance(shapes[j], PlaneBounded):
+                if not shapes[i].bbox.intersects(shapes[j].bbox, distance=bbox_intersection):
+                    continue
+                distance = shapes[i].inliers.compute_point_cloud_distance(shapes[j].inliers)
+                if distance.min() > inlier_max_distance:
+                    continue
             
             line = Line.from_plane_intersection(
                 shapes[i], shapes[j], intersect_parallel=intersect_parallel,

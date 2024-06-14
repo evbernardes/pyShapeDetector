@@ -95,8 +95,6 @@ class Cylinder(Primitive):
     align
     save
     load
-    check_bbox_intersection
-    check_inlier_distance
     fuse
     group_similar_shapes
     fuse_shape_groups
