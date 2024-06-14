@@ -26,7 +26,6 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
     Methods
     -------
     contains_points
-    check_bbox_intersection
     intersects
     expanded
     split
@@ -90,7 +89,7 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
             
         bb1 = self
         bb2 = other_bbox
-        if distance == 0:
+        if distance != 0:
             bb1 = bb1.expanded(distance/2)
             bb2 = bb2.expanded(distance/2)
         

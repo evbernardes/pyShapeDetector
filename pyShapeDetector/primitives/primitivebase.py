@@ -15,6 +15,22 @@ from scipy.spatial.transform import Rotation
 from pyShapeDetector.utility import get_rotation_from_axis, _set_and_check_3d_array
 from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
 
+def _check_distance(shape1, shape2, bbox_intersection, inlier_max_distance):
+    
+    if bbox_intersection is not None:
+        if not shape1.bbox.intersects(shape2.bbox, distance=bbox_intersection):
+            return False
+    
+    # Check if there is at least one pair that is close enough
+    if inlier_max_distance is not None:
+        if not shape1.has_inliers or not shape2.has_inliers:
+            warnings.warn("No inliers found, ignoring inlier distance test.")
+        
+        elif shape1.inliers.compute_point_cloud_distance(shape2.inliers).min() > inlier_max_distance:
+            return False
+    
+    return True
+
 def _get_partitions_legacy(num_shapes, pairs):
     new_indices = np.array(range(num_shapes))
     for pair, result in pairs.items():
@@ -138,8 +154,6 @@ class Primitive(ABC):
     axis_cylindrical
     bbox
     bbox_bounds
-    inlier_bbox
-    inlier_bbox_bounds
         
     Methods
     -------
@@ -162,7 +176,6 @@ class Primitive(ABC):
     add_inliers
     closest_inliers
     inliers_average_dist
-    get_inliers_axis_aligned_bounding_box
     get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density
@@ -181,9 +194,6 @@ class Primitive(ABC):
     save
     __get_attributes_from_dict__
     load
-    load
-    check_bbox_intersection
-    check_inlier_distance
     fuse
     group_similar_shapes
     fuse_shape_groups
@@ -375,17 +385,6 @@ class Primitive(ABC):
     @property
     def bbox_bounds(self):
         bbox = self.get_axis_aligned_bounding_box()
-        return bbox.min_bound, bbox.max_bound
-    
-    @property
-    def inlier_bbox(self):
-        bbox = self.get_inliers_axis_aligned_bounding_box()
-        bbox.color = self.color
-        return bbox
-    
-    @property
-    def inlier_bbox_bounds(self):
-        bbox = self.get_inliers_axis_aligned_bounding_box()
         return bbox.min_bound, bbox.max_bound
     
     def __repr__(self):
@@ -811,39 +810,6 @@ class Primitive(ABC):
         """
         return self.inliers.average_nearest_dist(k, leaf_size)
     
-    def get_inliers_axis_aligned_bounding_box(self, slack=0, num_sample=15):
-        """ If the shape includes inlier points, returns the minimum and 
-        maximum bounds of their bounding box.
-        
-        If 'slack' parameter is given, use it 
-        
-        Parameters
-        ----------
-        slack : float, optional
-            Expand bounding box in all directions, useful for testing purposes.
-            Default: 0.
-        num_sample : int, optional
-            If no inliers, bounds or vertices found, sample mesh instead.
-            Default: 15.
-            
-        Returns
-        -------
-        tuple of two 3 x 1 arrays
-            Minimum and maximum bounds of inlier points bounding box.
-        """        
-        slack = abs(slack)
-        
-        if len(self.inliers.points) > 0:
-            points = self.inliers.points
-        else:
-            points = np.array(
-                self.sample_points_uniformly(num_sample).points)
-            
-        min_bound = np.min(points, axis=0)
-        max_bound = np.max(points, axis=0)
-        return AxisAlignedBoundingBox(min_bound - slack, 
-                                      max_bound + slack)
-    
     def get_axis_aligned_bounding_box(self, slack=0):
         """ Returns an axis-aligned bounding box of the primitive.
         
@@ -1254,80 +1220,6 @@ class Primitive(ABC):
         f.close()
         return shape
     
-    def check_bbox_intersection(self, other_shape, distance, use_inliers=False):
-        """ Check if minimal distance of the inlier points bounding box
-        is below a given distance.
-        
-        Parameters
-        ----------
-        other_shape : Primitive
-            A shape with inlier points
-        distance : float
-            Max distance between the bounding boxes.
-        use_inliers : bool, optional
-            If True, use inliers bounding box. Default: False.
-            
-        Returns
-        -------
-        bool
-            True if the calculated distance is smaller than the input distance.
-        """
-        if distance is None:
-            return True
-        
-        if distance <= 0:
-            raise ValueError("Distance must be positive.")
-        
-        if use_inliers:
-            bb1 = self.get_inliers_axis_aligned_bounding_box(slack=distance/2)
-            bb2 = other_shape.get_inliers_axis_aligned_bounding_box(slack=distance/2)
-        else:
-            bb1 = self.get_axis_aligned_bounding_box(slack=distance/2)
-            bb2 = other_shape.get_axis_aligned_bounding_box(slack=distance/2)
-            
-        return bb1.intersects(bb2)
-        
-        # test_order = bb2.max_bound - bb1.min_bound >= 0
-        # if test_order.all():
-        #     pass
-        # elif (~test_order).all():
-        #     bb1, bb2 = bb2, bb1
-        # else:
-        #     return False
-        
-        # # test_intersect = (bb1.max_bound + atol) - (bb2.min_bound - atol) >= 0
-        # test_intersect = bb1.max_bound - bb2.min_bound >= 0
-        # return test_intersect.all()
-    
-    def check_inlier_distance(self, other_shape, distance):
-        """ Check if the distance between the closest inlier point pair in the
-        shapes is below a given distance.
-        
-        Parameters
-        ----------
-        other_shape : Primitive
-            A shape with inlier points
-        distance : float
-            Max distance between the bounding boxes.
-            
-        Returns
-        -------
-        bool
-            True if the calculated distance is smaller than the input distance.
-        """
-        
-        if distance is None:
-            return True
-        
-        if distance <= 0:
-            raise ValueError("Distance must be positive.")
-            
-        if len(self.inliers.points) == 0 or len(other_shape.inliers.points) == 0:
-            raise RuntimeError("Both shapes must have inlier points.")
-        
-        _, dist = self.closest_inliers(other_shape)
-        return dist[0] <= distance
-    
     @staticmethod
     def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=None,
              **extra_options):
@@ -1425,11 +1317,7 @@ class Primitive(ABC):
         def _test(i, j):
             if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
                 return False
-            if not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
-                return False
-            if not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
-                return False
-            return True
+            return _check_distance(shapes[i], shapes[j], bbox_intersection, inlier_max_distance)
         
         # Step 1: check all pairs
         shape_pairs = combinations(range(len(shapes)), 2)

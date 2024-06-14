@@ -55,8 +55,6 @@ class PlaneBounded(Plane):
     axis_cylindrical
     bbox
     bbox_bounds
-    inlier_bbox
-    inlier_bbox_bounds
 
     is_convex
     normal
@@ -93,7 +91,6 @@ class PlaneBounded(Plane):
     add_inliers
     closest_inliers
     inliers_average_dist
-    get_inliers_axis_aligned_bounding_box
     get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density
@@ -112,8 +109,6 @@ class PlaneBounded(Plane):
     save
     __get_attributes_from_dict__
     load
-    check_bbox_intersection
-    check_inlier_distance
     fuse
     group_similar_shapes
     fuse_shape_groups
@@ -527,37 +522,6 @@ class PlaneBounded(Plane):
         # no need to remove points, as they were already tested when creating
         # the plane
         self.add_holes(holes, remove_points=False)
-                
-    # def get_inliers_axis_aligned_bounding_box(self, slack=0, num_sample=15):
-    #     """ If the shape includes inlier points, returns the minimum and 
-    #     maximum bounds of their bounding box.
-        
-    #     If no inlier points, use bounds or vertices.
-        
-    #     Parameters
-    #     ----------
-    #     slack : float, optional
-    #         Expand bounding box in all directions, useful for testing purposes.
-    #         Default: 0.
-    #     num_sample : int, optional
-    #         If no inliers, bounds or vertices found, sample mesh instead.
-    #         Default: 15.
-            
-    #     Returns
-    #     -------
-    #     tuple of two 3 x 1 arrays
-    #         Minimum and maximum bounds of inlier points bounding box.
-    #     """
-        
-    #     if len(self.bounds) > 0:
-    #         points = self.bounds
-    #     else:
-    #         return Primitive.inliers_bounding_box(slack=0, num_sample=15)
-        
-    #     slack = abs(slack)
-    #     min_bound = np.min(points, axis=0)
-    #     max_bound = np.max(points, axis=0)
-    #     return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
     
     def get_axis_aligned_bounding_box(self, slack=0):
         """ Returns an axis-aligned bounding box of the primitive.

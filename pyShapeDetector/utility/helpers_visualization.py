@@ -242,6 +242,18 @@ def draw_two_columns(objs_left, objs_right, **camera_options):
                         )
         
 def draw_and_ask(elements, return_not_selected=False, **camera_options):
+    
+    def _paint_element(element, color):
+        try:
+            element.paint_uniform_color(color)
+        except Exception:
+            element.color = color
+    
+    color_remaining = (0, 0, 1)
+    color_selected = (0, 1, 0)
+    color_discarded = (0.9, 0.9, 0.9)
+    color_test = (1, 0, 0)
+    
     if not isinstance(elements, (list, tuple)):
         elements = [elements]
 
@@ -251,33 +263,33 @@ def draw_and_ask(elements, return_not_selected=False, **camera_options):
         
     elements = copy.deepcopy(elements)
     for element in elements:
-        try:
-            element.paint_uniform_color((0.9, 0.9, 0.9))
-        except Exception:
-            element.color = (0.9, 0.9, 0.9)
+        _paint_element(element, color_remaining)
 
     N = len(elements)
     indices_selected = []
     indices_not_selected = []
     for i, element in enumerate(elements):
-        element_red = copy.deepcopy(element)
+        # element_red = copy.deepcopy(element)
+        _paint_element(element, color_test)
         
-        try:
-            element_red.paint_uniform_color((1, 0, 0))
-        except:
-            element_red.color = (1, 0, 0)
+        # try:
+        #     element_red.paint_uniform_color(color_test)
+        # except:
+        #     element_red.color = color_test
         
         camera_options['window_name'] = window_name + f'{i+1}/{N}'
-        draw_two_columns(elements[:i] + [element_red] + elements[(i+1):], element_red, **camera_options)
+        draw_two_columns(elements[:i] + [element] + elements[(i+1):], element, **camera_options)
         out = input(f'Get element {i+1}/{N}? (y)es, (N)o, (s)top: ').lower()
         if out == 'y' or out == 'yes':
             indices_selected.append(i)
+            _paint_element(element, color_selected)
         elif out == 's' or out == 'stop':
             indices_not_selected.append(i)
             indices_not_selected += list(range(i+1, len(elements)))
             break
         elif return_not_selected:
             indices_not_selected.append(i)
+            _paint_element(element, color_discarded)
 
     if return_not_selected:
         return indices_selected, indices_not_selected

@@ -570,7 +570,7 @@ def test_planes_group_inlier_max_distance():
     pright = p.copy()
     pright.translate(+ direction * (side + dist))
     
-    with pytest.raises(RuntimeError, match='must have inlier points'): 
+    with pytest.warns(UserWarning, match='No inliers found'): 
         Primitive.group_similar_shapes([pleft, p], inlier_max_distance=eps)
         
     # adding points...

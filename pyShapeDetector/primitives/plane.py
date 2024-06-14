@@ -19,7 +19,7 @@ from pyShapeDetector.utility import (
     # select_grid_points
     )
 
-from .primitivebase import Primitive, _set_and_check_3d_array
+from .primitivebase import Primitive, _set_and_check_3d_array, _check_distance
 # from alphashape import alphashape
 # from .line import Line    
 
@@ -80,8 +80,6 @@ class Plane(Primitive):
     axis_cylindrical
     bbox
     bbox_bounds
-    inlier_bbox
-    inlier_bbox_bounds
 
     is_convex
     normal
@@ -110,7 +108,6 @@ class Plane(Primitive):
     add_inliers
     closest_inliers
     inliers_average_dist
-    get_inliers_axis_aligned_bounding_box
     get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density
@@ -129,8 +126,6 @@ class Plane(Primitive):
     save
     __get_attributes_from_dict__
     load
-    check_bbox_intersection
-    check_inlier_distance
     fuse
     group_similar_shapes
     fuse_shape_groups
@@ -1539,13 +1534,10 @@ class Plane(Primitive):
             if ignore[i] or ignore[j]:
                 continue
             
-            both_bounded = isinstance(shapes[i], PlaneBounded) and isinstance(shapes[j], PlaneBounded)
-            
-            if both_bounded and not shapes[i].check_bbox_intersection(shapes[j], bbox_intersection):
-                continue
-            
-            if both_bounded and not shapes[i].check_inlier_distance(shapes[j], inlier_max_distance):
-                continue
+            # Only if both shapes are bounded
+            if isinstance(shapes[i], PlaneBounded) and isinstance(shapes[j], PlaneBounded):
+                if not _check_distance(shapes[i], shapes[j], bbox_intersection, inlier_max_distance):
+                    continue
             
             line = Line.from_plane_intersection(
                 shapes[i], shapes[j], intersect_parallel=intersect_parallel,

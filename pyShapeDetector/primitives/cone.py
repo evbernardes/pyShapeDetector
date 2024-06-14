@@ -46,8 +46,6 @@ class Cone(Primitive):
     axis_cylindrical
     bbox
     bbox_bounds
-    inlier_bbox
-    inlier_bbox_bounds
     
     appex
     top
@@ -78,7 +76,6 @@ class Cone(Primitive):
     add_inliers
     closest_inliers
     inliers_average_dist
-    get_inliers_axis_aligned_bounding_box
     get_axis_aligned_bounding_box
     sample_points_uniformly
     sample_points_density
@@ -97,8 +94,6 @@ class Cone(Primitive):
     save
     __get_attributes_from_dict__
     load
-    check_bbox_intersection
-    check_inlier_distance
     fuse
     group_similar_shapes
     fuse_shape_groups
