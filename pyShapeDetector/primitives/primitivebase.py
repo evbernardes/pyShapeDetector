@@ -194,7 +194,6 @@ class Primitive(ABC):
     save
     __get_attributes_from_dict__
     load
-    load
     fuse
     group_similar_shapes
     fuse_shape_groups
