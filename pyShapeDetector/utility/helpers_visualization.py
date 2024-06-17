@@ -242,6 +242,116 @@ def draw_two_columns(objs_left, objs_right, **camera_options):
                         **camera_options
                         )
         
+def select_manually(elements, fixed_elements=[], bbox_expand = 0.0, **camera_options):
+
+    if not isinstance(elements, list):
+        elements = [elements]
+
+    bboxes = []
+    for element in elements:
+        bbox = element.get_axis_aligned_bounding_box()
+        bbox = bbox.expanded(bbox_expand)
+        bbox.color = (1, 0, 0)
+        bbox = bbox.as_open3d
+        bboxes.append(bbox)
+
+    elements = [elem.as_open3d for elem in elements]
+
+    if not isinstance(fixed_elements, list):
+        fixed_elements = [fixed_elements]
+    fixed_elements = [elem.as_open3d for elem in fixed_elements]
+
+    color_selected = (0, 0.5, 0)
+    color_selected_current = (0, 1, 0)
+    
+    color_unselected = (0.9, 0.9, 0.9)
+    color_unselected_current = (0.0, 0.0, 0.9)
+
+    elements_painted = get_painted(elements, color_unselected)
+    elements_painted[0] = get_painted(elements_painted[0], color_unselected_current)
+    
+    # instructions = " - Red: current, Blue: remaining, Green: selected, White: Unselected."
+
+    global data
+    
+    # window_name = """
+    #     (S): Toggle. 
+    #     (D): Next.
+    #     (A): Previous.
+    #     (I): Info.
+    #     (ESC): Save and quit
+    #     """
+
+    window_name = f"{len(elements)} elements. Green: selected. White: unselected. (T)oggle | (D) next | (A) previous"
+    
+    data = {
+        'selected': [False] * len(elements),
+        'elements_painted': elements_painted,
+        'i_old': 0,
+        'i': 0,
+        }
+
+    def update(vis):
+        global data
+        i_old = data['i_old']
+        i = data['i']
+        
+        element = data['elements_painted'][i_old]
+
+        vis.remove_geometry(element, reset_bounding_box=False)
+        vis.remove_geometry(bboxes[i_old], reset_bounding_box=False)
+        if data['selected'][i_old]:
+            element = get_painted(element, color_selected)
+        else:
+            element = get_painted(element, color_unselected)
+        data['elements_painted'][i_old] = element
+        vis.add_geometry(element, reset_bounding_box=False)
+
+        element = data['elements_painted'][i]
+        vis.remove_geometry(element, reset_bounding_box=False)
+        if data['selected'][i]:
+            element = get_painted(element, color_selected_current)
+        else:
+            element = get_painted(element, color_unselected_current)
+        # element = get_painted(element, color_test)
+        data['elements_painted'][i] = element
+        
+        vis.add_geometry(element, reset_bounding_box=False)
+        vis.add_geometry(bboxes[i], reset_bounding_box=False)
+
+        data['i_old'] = i
+
+    def toggle(vis):
+        global data
+        data['selected'][data['i']] = not data['selected'][data['i']]
+        update(vis)
+
+    def next(vis):
+        global data
+        data['i_old'] = data['i']
+        data['i'] = min(data['i_old']+1, len(elements)-1)
+        update(vis)
+
+    def previous(vis):
+        global data
+        data['i_old'] = data['i']
+        data['i'] = max(data['i_old']-1, 0)
+        update(vis)
+    
+    key_to_callback = {}
+    key_to_callback[ord("S")] = toggle
+    key_to_callback[ord("D")] = next
+    key_to_callback[ord("A")] = previous
+    
+    visualization.draw_geometries_with_key_callbacks(
+        fixed_elements + data['elements_painted'] + [bboxes[0]],
+        # data['elements_painted'],
+        key_to_callback,
+        window_name = window_name,
+        )
+    
+    return data['selected']
+        
 def draw_and_ask(elements, return_not_selected=False, **camera_options):
     
     elements_original = elements
@@ -300,7 +410,7 @@ def draw_and_ask(elements, return_not_selected=False, **camera_options):
         return indices_selected, indices_not_selected
     return indices_selected
 
-def select_combinations_manually(elements, return_grouped):
+def select_combinations_manually(elements, return_grouped=False):
     if not isinstance(elements, list) or len(elements) < 2:
         raise ValueError("'elements' must be a list with at least 2 elements, "
                          f"got {elements}.")
@@ -309,18 +419,19 @@ def select_combinations_manually(elements, return_grouped):
     
     partitions = np.arange(N := len(elements))
     for i, j in itertools.combinations(range(N), 2):
+
         if partitions[i] == partitions[j]:
-            # print(f'{i} and {j} already fused...\n')
             continue
-        elif len(elements_test[j]) == 0:
-            # print(f'{j} already fused...\n')
+        elif len(elements_test[i]) == 0 or len(elements_test[j]) == 0:
             continue
         
         elements_test[i] = get_painted(elements_test[i], color=(0, 0, 1))
         elements_test[j] = get_painted(elements_test[j], color=(0, 1, 0))
 
         draw_geometries(elements_test[i] + elements_test[j], window_name=f'{i} and {j}')
+
         option = input(f'Fuse {i} and {j}?  (y)es, (N)o, (s)top: ').lower()
+
         if option == 's' or option == 'stop':
             break
         elif option == 'y' or option == 'yes':
