@@ -20,8 +20,12 @@ def check_existance(outdir, remove_dir):
     if not outdir.exists():
         outdir.mkdir()
         
-def save_ask(outdir):
-    val = input(f'Save at {outdir}? (y)es, (N)o, (o)ther name. ').lower()
+def save_ask(outdir, name=''):
+    if name == '':
+        val = input(f'Save at {outdir}? (y)es, (N)o, (o)ther name. ').lower()
+    else:
+        val = input(f'Save {name} at {outdir}? (y)es, (N)o, (o)ther name. ').lower()
+    
     if val == 'y':
         return outdir
     elif val == 'o':
