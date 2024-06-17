@@ -244,6 +244,8 @@ def draw_two_columns(objs_left, objs_right, **camera_options):
         
 def draw_and_ask(elements, return_not_selected=False, **camera_options):
     
+    elements_original = elements
+    
     def _paint_element(element, color):
         try:
             element.paint_uniform_color(color)
@@ -254,6 +256,8 @@ def draw_and_ask(elements, return_not_selected=False, **camera_options):
     color_selected = (0, 1, 0)
     color_discarded = (0.9, 0.9, 0.9)
     color_test = (1, 0, 0)
+    
+    instructions = " - Red: current, Blue: remaining, Green: selected, White: Unselected."
     
     if not isinstance(elements, (list, tuple)):
         elements = [elements]
@@ -278,8 +282,8 @@ def draw_and_ask(elements, return_not_selected=False, **camera_options):
         # except:
         #     element_red.color = color_test
         
-        camera_options['window_name'] = window_name + f'{i+1}/{N}'
-        draw_two_columns(elements[:i] + [element] + elements[(i+1):], element, **camera_options)
+        camera_options['window_name'] = window_name + f'{i+1}/{N}' + instructions
+        draw_two_columns(elements[:i] + [element] + elements[(i+1):], elements_original[i], **camera_options)
         out = input(f'Get element {i+1}/{N}? (y)es, (N)o, (s)top: ').lower()
         if out == 'y' or out == 'yes':
             indices_selected.append(i)
