@@ -387,6 +387,10 @@ class Primitive(ABC):
         bbox = self.get_axis_aligned_bounding_box()
         return bbox.min_bound, bbox.max_bound
     
+    @property
+    def as_open3d(self):
+        return self.mesh.as_open3d
+    
     def __repr__(self):
         params = [round(x, 5) for x in self.model]
         return type(self).__name__+f'({params})'
