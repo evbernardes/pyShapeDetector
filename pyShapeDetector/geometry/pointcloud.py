@@ -1092,6 +1092,10 @@ class PointCloud(Open3D_Geometry):
             Fused point cloud.
         """
         pcd_full = open3d_PointCloud()
+        
+        if len(pcds) == 0:
+            return pcd_full
+        
         curvatures = []
         for pcd in pcds:
             pcd_full += pcd.as_open3d
