@@ -116,7 +116,7 @@ class MultiDetector():
                 
                 if normals_reestimate:
                     pcd_.estimate_normals()
-                normals = pcd_.normals
+                # normals = pcd_.normals
                 
                 output_shapes = []
                 output_inliers = []
@@ -126,7 +126,7 @@ class MultiDetector():
                 for detector in self.detectors:
                     # start = time.time()
                     shape, inliers, metrics = detector.fit(
-                        pcd_, debug=debug_detectors, normals=normals)
+                        pcd_, debug=debug_detectors)
                     # times[detector.primitive.name] += time.time() - start
                     output_shapes.append(shape)
                     output_inliers.append(inliers)
