@@ -15,8 +15,14 @@ from .cylinder import Cylinder
 from .cone import Cone
 from .line import Line
 
-list_primitives=[
-    Plane, Sphere, Cylinder, PlaneBounded, PlaneTriangulated, Cone, Line,
+list_primitives = [
+    Plane,
+    Sphere,
+    Cylinder,
+    PlaneBounded,
+    PlaneTriangulated,
+    Cone,
+    Line,
 ]
 
 dict_primitives = {p._name: p for p in list_primitives}

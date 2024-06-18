@@ -14,19 +14,20 @@ from pyShapeDetector.utility import get_rotation_from_axis
 from .primitivebase import Primitive
 from .plane import Plane
 from .planebounded import PlaneBounded
-    
+
+
 class Cylinder(Primitive):
     """
     Cylinder primitive.
-    
+
     Attributes
     ----------
-    fit_n_min 
+    fit_n_min
     model_args_n
     name
     model
     equation
-    surface_area 
+    surface_area
     volume
     canonical
     color
@@ -45,7 +46,7 @@ class Cylinder(Primitive):
     axis_cylindrical
     bbox
     bbox_bounds
-    
+
     base
     top
     center
@@ -56,7 +57,7 @@ class Cylinder(Primitive):
     axis
     radius
     rotation_from_axis
-        
+
     Methods
     -------
     __init__
@@ -96,7 +97,7 @@ class Cylinder(Primitive):
     group_similar_shapes
     fuse_shape_groups
     fuse_similar_shapes
-    
+
     from_base_vector_radius
     from_center_half_vector_radius
     from_base_top_radius
@@ -105,102 +106,104 @@ class Cylinder(Primitive):
     project_to_plane
     cuts
     """
-    
+
     _fit_n_min = 6
     _model_args_n = 7
-    _name = 'cylinder'
+    _name = "cylinder"
     _translatable = [0, 1, 2]
     _rotatable = [3, 4, 5]
     _color = np.array([1, 0, 0])
-    
+
     @property
     def equation(self):
         def sig(x):
-            return "-" if x < 0 else '+'
-        delta = [f'{p} {sig(-a)} {abs(a)}' for p, a in zip(('x','y','z'), 
-                                                           self.center)]
-        A = " + ".join([f'({p})**2' for p in delta])
-        B = " + ".join([ f'{e} * ({p})' for e, p in zip (self.axis, delta)])
+            return "-" if x < 0 else "+"
+
+        delta = [
+            f"{p} {sig(-a)} {abs(a)}" for p, a in zip(("x", "y", "z"), self.center)
+        ]
+        A = " + ".join([f"({p})**2" for p in delta])
+        B = " + ".join([f"{e} * ({p})" for e, p in zip(self.axis, delta)])
         return A + " + [" + B + "]**2" + f" = {self.radius ** 2}"
-    
+
     @property
     def surface_area(self):
-        """ Surface area of primitive """
+        """Surface area of primitive"""
         return 2 * np.pi * self.radius * self.height
-    
+
     @property
     def volume(self):
-        """ Volume of primitive. """
-        return np.pi * (self.radius ** 2) * self.height
+        """Volume of primitive."""
+        return np.pi * (self.radius**2) * self.height
 
     @property
     def canonical(self):
-        """ Return canonical form for testing."""
+        """Return canonical form for testing."""
         if self.vector[-1] >= 0:
             return self
-        
+
         return Cylinder(list(self.base) + list(-self.vector) + [self.radius])
-    
+
     @property
     def base(self):
-        """ Point at the base of the cylinder. """
+        """Point at the base of the cylinder."""
         return np.array(self.model[:3])
         # return self.center + self.vector / 2
-        
+
     @property
     def top(self):
-        """ Point at the top of the cylinder. """
+        """Point at the top of the cylinder."""
         return self.base + self.vector
-    
+
     @property
     def center(self):
-        """ Center point of the cylinder."""
+        """Center point of the cylinder."""
         return self.base + self.vector / 2
         # return np.array(self.model[:3])
-        
+
     @property
     def center_projection(self):
-        """ Center point of the cylinder."""
+        """Center point of the cylinder."""
         return self.center - self.axis.dot(self.center)
         # return np.array(self.model[:3])
-    
+
     @property
     def vector(self):
-        """ Vector from base point to top point. """
+        """Vector from base point to top point."""
         return np.array(self.model[3:6])
-    
+
     @property
     def length(self):
-        """ Height/length of cylinder. """
+        """Height/length of cylinder."""
         return np.linalg.norm(self.vector)
-    
+
     @property
     def height(self):
-        """ Height/length of cylinder. """
+        """Height/length of cylinder."""
         return self.length
-    
+
     @property
     def axis(self):
-        """ Unit vector defining axis of cylinder. """
+        """Unit vector defining axis of cylinder."""
         return self.vector / self.height
-    
+
     @property
     def radius(self):
-        """ Radius of the cylinder. """
+        """Radius of the cylinder."""
         return self.model[6]
-    
+
     @property
     def rotation_from_axis(self):
-        """ Rotation matrix that aligns z-axis with cylinder axis."""
+        """Rotation matrix that aligns z-axis with cylinder axis."""
         return get_rotation_from_axis([0, 0, 1], self.axis)
-    
+
     @classmethod
     def from_base_vector_radius(cls, base, vector, radius):
-        """ Creates cylinder from center base point, vector and radius as 
+        """Creates cylinder from center base point, vector and radius as
         separated arguments.
-        
+
         Parameters
-        ----------            
+        ----------
         base : 3 x 1 array
             Center point at the base of the cylinder.
         vector : 3 x 1 array
@@ -213,67 +216,67 @@ class Cylinder(Primitive):
         Cone
             Generated shape.
         """
-        return cls(list(base)+list(vector)+[radius])
-    
+        return cls(list(base) + list(vector) + [radius])
+
     @staticmethod
     def fit(points, normals=None):
-        """ Gives cylinder that fits the input points. 
-        
+        """Gives cylinder that fits the input points.
+
         If normals are given: first calculate cylinder axis using normals as
         explained in [1] and then use least squares to calculate center point
         and radius.
-        
+
         If normals are not given, uses Scikit Spatial, which is slower and not
         recommended.
-        
+
         References
         ----------
         [1]: http://dx.doi.org/10.1016/j.cag.2014.09.027
-        
+
         Parameters
         ----------
         points : N x 3 array
             N input points
-        
+
         Returns
         -------
         Cylinder
             Fitted cylinder.
         """
         points = np.asarray(points)
-        
+
         num_points = len(points)
-        
+
         if num_points < 6:
-            raise ValueError('A minimun of 6 points are needed to fit a '
-                             'cylinder')
-            
+            raise ValueError("A minimun of 6 points are needed to fit a cylinder")
+
         if normals is None:
-            raise NotImplementedError('Fitting of cylinder without normals '
-                                      'has not been implemented.')
+            raise NotImplementedError(
+                "Fitting of cylinder without normals has not been implemented."
+            )
             # # if no normals, use scikit spatial, slower
             # warnings.warn('Cylinder fitting works much quicker if normals '
             #               'are given.')
             # solution = skcylinder.best_fit(points)
-            
+
             # base = list(solution.point)
             # # center = list(solution.point + solution.vector/2)
             # vector = list(solution.vector)
             # radius = solution.radius
-            
-        # Reference for axis estimation with normals: 
+
+        # Reference for axis estimation with normals:
         # http://dx.doi.org/10.1016/j.cag.2014.09.027
         normals = np.asarray(normals)
         if len(normals) != num_points:
-            raise ValueError('Different number of points and normals')
-    
+            raise ValueError("Different number of points and normals")
+
         eigval, eigvec = np.linalg.eig(normals.T @ normals)
         idx = eigval == min(eigval)
         if sum(idx) != 1:  # no well defined minimum eigenvalue
             return None
-        
+
         axis = eigvec.T[idx][0]
-        
+
         # Reference for the rest:
         # Was revealed to me in a dream
         axis_neg_squared_skew = np.eye(3) - axis[np.newaxis].T * axis
@@ -281,55 +284,54 @@ class Cylinder(Primitive):
         b = sum(points_skew.T * points_skew.T)
         a = np.c_[2 * points_skew, np.ones(num_points)]
         X = np.linalg.lstsq(a, b, rcond=None)[0]
-        
+
         point = X[:3]
         radius = np.sqrt(X[3] + point.dot(axis_neg_squared_skew @ point))
-        
+
         # find point in base of cylinder
         proj = points.dot(axis)
         idx = np.where(proj == max(proj))[0][0]
-        
+
         # point = list(point)
         height = max(proj) - min(proj)
         vector = axis * height
-        center = -np.cross(axis, np.cross(axis, point)) + np.median(proj) * axis     
+        center = -np.cross(axis, np.cross(axis, point)) + np.median(proj) * axis
         base = center - vector / 2
-        
+
         # base = list(base)
         # center = list(center)
         # vector = list(vector)
-        
+
         # return Cylinder(center+vector+[radius])
         return Cylinder.from_base_vector_radius(base, vector, radius)
-    
+
     def get_signed_distances(self, points):
-        """ Gives the minimum distance between each point to the cylinder. 
-        
+        """Gives the minimum distance between each point to the cylinder.
+
         Parameters
         ----------
         points : N x 3 array
-            N input points 
-        
+            N input points
+
         Returns
         -------
         distances
             Nx1 array distances.
         """
-        points = np.asarray(points)             
-        distances = np.linalg.norm(
-            np.cross(self.axis, points - self.base), axis=1)
-        
+        points = np.asarray(points)
+        distances = np.linalg.norm(np.cross(self.axis, points - self.base), axis=1)
+
         return distances - self.radius
-    
+
     def get_normals(self, points):
-        """ Gives, for each input point, the normal vector of the point closest 
+        """Gives, for each input point, the normal vector of the point closest
         to the cylinder.
-        
+
         Parameters
         ----------
         points : N x 3 array
-            N input points 
-        
+            N input points
+
         Returns
         -------
         normals
@@ -338,39 +340,39 @@ class Cylinder(Primitive):
         normals = self.get_orthogonal_component(points)
         normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
         return normals
-    
+
     def get_mesh(self, **options):
-        """ Returns mesh defined by the cylinder model.
-        
+        """Returns mesh defined by the cylinder model.
+
         Parameters
         ----------
         resolution : int, optional
             Resolution parameter for mesh. Default: 30
         closed : bool, optional
             If True, does not remove top and bottom of cylinder
-        
+
         Returns
         -------
         TriangleMesh
             Mesh corresponding to the cylinder.
         """
-        
-        resolution = options.get('resolution', 30)
-        closed = options.get('closed', False)
-        
+
+        resolution = options.get("resolution", 30)
+        closed = options.get("closed", False)
+
         mesh = TriangleMesh.create_cylinder(
-            radius=self.radius, height=self.height, resolution=resolution)
-            # radius=self.radius, height=self.height, resolution=100, split=100)
-        
+            radius=self.radius, height=self.height, resolution=resolution
+        )
+        # radius=self.radius, height=self.height, resolution=100, split=100)
+
         # first and second points are the central points defining top / base
         triangles = np.asarray(mesh.triangles)
-        
+
         if not closed:
-            triangles = np.array(
-                [t for t in triangles if 0 not in t and 1 not in t])
+            triangles = np.array([t for t in triangles if 0 not in t and 1 not in t])
             # triangles = np.vstack([triangles, triangles[:, ::-1]])
             mesh.triangles = triangles
-        
+
         mesh.rotate(self.rotation_from_axis)
         mesh.translate(self.center)
 
@@ -378,18 +380,18 @@ class Cylinder(Primitive):
 
     @classmethod
     def from_center_half_vector_radius(cls, center, half_vector, radius):
-        """ Creates cylinder from center point, half vector and radius as 
+        """Creates cylinder from center point, half vector and radius as
         separated arguments.
-        
+
         Parameters
-        ----------            
+        ----------
         center : 3 x 1 array
             Center point of the cylinder.
         half_vector : 3 x 1 array
             Vector from center point to top center point.
         radius : float
             Radius of the cylinder.
-    
+
         Returns
         -------
         Cone
@@ -398,14 +400,14 @@ class Cylinder(Primitive):
         half_vector = np.asarray(half_vector)
         base = np.asarray(center) - half_vector
         return cls.from_base_vector_radius(base, 2 * half_vector, radius)
-        
+
     @classmethod
     def from_base_top_radius(cls, base, top, radius):
-        """ Creates cylinder from center base point, center top point and 
+        """Creates cylinder from center base point, center top point and
         radius as separated arguments.
-        
+
         Parameters
-        ----------            
+        ----------
         base : 3 x 1 array
             Center point at the base of the cylinder.
         top : 3 x 1 array
@@ -420,16 +422,16 @@ class Cylinder(Primitive):
         """
         vector = np.array(top) - np.array(base)
         return cls.from_base_vector_radius(base, vector, radius)
-    
+
     def closest_to_line(self, points):
-        """ Returns points in cylinder axis that are the closest to the input
+        """Returns points in cylinder axis that are the closest to the input
         points.
-        
+
         Parameters
         ----------
         points : N x 3 array
-            N input points 
-        
+            N input points
+
         Returns
         -------
         points_closest: N x 3 array
@@ -438,15 +440,15 @@ class Cylinder(Primitive):
         points = np.asarray(points)
         projection = (points - self.base).dot(self.axis)
         return self.base + projection[..., np.newaxis] * self.axis
-    
+
     def get_orthogonal_component(self, points):
-        """ Removes the axis-aligned components of points.
-        
+        """Removes the axis-aligned components of points.
+
         Parameters
         ----------
         points : N x 3 array
-            N input points 
-        
+            N input points
+
         Returns
         -------
         points_orthogonal: N x 3 array
@@ -456,18 +458,16 @@ class Cylinder(Primitive):
         delta = points - self.base
         return -np.cross(self.axis, np.cross(self.axis, delta))
 
-
-        
     def project_to_plane(self, plane, resolution=30):
-        """ Projects cylinder into a plane, creating an elliptical plane.
-        
+        """Projects cylinder into a plane, creating an elliptical plane.
+
         Parameters
         ----------
         plane : Plane
             Plane instance.
         resolution : int, optional
             Number of points defining elliptical plane.
-        
+
         Returns
         -------
         PlaneBounded
@@ -475,78 +475,82 @@ class Cylinder(Primitive):
         """
         cos_theta = np.dot(self.axis, plane.normal)
         if np.abs(np.dot(self.axis, plane.normal)) < 1e-7:
-            warnings.warn('Plane normal and cylinder axis cannot be '
-                         'orthogonal.')
+            warnings.warn("Plane normal and cylinder axis cannot be orthogonal.")
             return None
-        
+
         random_axis_in_plane = np.cross(np.random.random(3), plane.normal)
         random_axis_in_plane /= np.linalg.norm(random_axis_in_plane)
         vx = np.cross(self.axis, plane.normal)
         if np.linalg.norm(vx) < 1e-7:
             vx = random_axis_in_plane
         vy = np.cross(plane.normal, vx)
-        vx *= self.radius / np.linalg.norm(vx) 
+        vx *= self.radius / np.linalg.norm(vx)
         vy *= self.radius / np.linalg.norm(vy) / cos_theta
-        
+
         dist = plane.get_signed_distances(self.center)
         cos_theta = np.dot(self.axis, plane.normal)
         center = self.center + self.axis * dist / cos_theta
-        
+
         return PlaneBounded.create_ellipse(center, vx, vy, resolution)
-        
-    
+
         # Older wrong circular implementation
         # circle = PlaneBounded.create_circle(
         #     self.center, self.axis, self.radius, resolution)
-        
+
         # random_axis = np.random.random(3)
         # random_axis /= np.linalg.norm(random_axis)
         # vx = np.cross(random_axis, plane.normal)
         # vy = np.cross(plane.normal, vx)
-        
+
         # dist = plane.get_distances(self.center)
         # cos_theta = np.dot(self.axis, plane.normal)
-        
+
         # points = circle.bounds
         # points += self.axis * dist / cos_theta
-        
+
         # if not np.isclose(cos_theta, 1):
         #     rot_axis = np.cross(self.axis, plane.normal)
         #     rot_axis /= np.linalg.norm(rot_axis)
         #     rot = Rotation.from_rotvec(np.arccos(cos_theta) * rot_axis)
         #     center = points.mean(axis=0)
         #     points = center + rot.apply(points - center)
-        
+
         # return PlaneBounded.create_ellipse(center, vx, vy)
-    
+
     def cuts(self, plane, total_cut=False, eps=0):
-        """ Returns true if cylinder cuts through plane.
-        
+        """Returns true if cylinder cuts through plane.
+
         Parameters
         ----------
         plane : Plane
             Plane instance.
         total_cut : boolean, optional
-            When True, only accepts cuts when either the top of the bottom 
+            When True, only accepts cuts when either the top of the bottom
             completely cuts the plane. Default: False.
         eps : float, optional
             Adds some backlash to top and bottom of cylinder. Default: 0.
-        
+
         Returns
         -------
         Bool
             True if cylinder cuts plane.
         """
         if not isinstance(plane, Plane):
-            warnings.warn("'cuts_shape' is only known to work with planes, "
-                          "trying it anyway with {plane.name}")
-        
-        top = PlaneBounded.create_circle(self.top+eps*self.axis, self.axis, self.radius)
-        base = PlaneBounded.create_circle(self.base-eps*self.axis, self.axis, self.radius)
+            warnings.warn(
+                "'cuts_shape' is only known to work with planes, "
+                "trying it anyway with {plane.name}"
+            )
+
+        top = PlaneBounded.create_circle(
+            self.top + eps * self.axis, self.axis, self.radius
+        )
+        base = PlaneBounded.create_circle(
+            self.base - eps * self.axis, self.axis, self.radius
+        )
         center = np.sign(np.dot(self.center, plane.normal))
-        
+
         # test_passes = False
-        
+
         def test(center, circle, total_cut):
             sign_circle = np.sign(plane.get_signed_distances(circle.bounds))
             if not total_cut and not np.all(sign_circle == sign_circle[0]):
@@ -555,9 +559,9 @@ class Cylinder(Primitive):
             if np.all(sign_circle == sign_circle[0]) and center != sign_circle[0]:
                 return True
             return False
-        
-        return test(center, base, total_cut) or test(center, top, total_cut) 
-        
+
+        return test(center, base, total_cut) or test(center, top, total_cut)
+
         # def point_in_poly(hull, point):
         #     for simplex in hull.simplices:
         #         x, y = hull.points[simplex, 0], hull.points[simplex, 1]
@@ -566,11 +570,10 @@ class Cylinder(Primitive):
         #         if (point[0] - p1[0]) * (p2[1] - p1[1]) - (point[1] - p1[1]) * (p2[0] - p1[0]) > 0:
         #             return False
         #     return True
-        
+
         # rot = plane.get_rotation_from_axis([0, 0, 1], plane.normal)
         # projected_circle = self.project_to_plane(plane)
         # projected_points = (rot @ projected_circle.bounds.T).T[:, :2]
         # hull = ConvexHull((rot @ plane.bounds.T).T[:, :2])
-        
+
         # return np.all([point_in_poly(hull, p) for p in projected_points])
-    

@@ -8,18 +8,20 @@ Created on Thu Feb 15 10:15:09 2024
 import warnings
 from itertools import permutations, product, combinations
 import numpy as np
+
 # from scipy.spatial import ConvexHull, Delaunay
 # from scipy.spatial.transform import Rotation
 # from open3d.geometry import AxisAlignedBoundingBox
 from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
 
 # from pyShapeDetector.utility import (
-#     # fuse_vertices_triangles, 
+#     # fuse_vertices_triangles,
 #     # get_triangle_boundary_indexes,
 #     get_loop_indexes_from_boundary_indexes,
 #     )
 # from .primitivebase import Primitive
 from .plane import Plane
+
 
 class PlaneTriangulated(Plane):
     """
@@ -27,12 +29,12 @@ class PlaneTriangulated(Plane):
 
     Attributes
     ----------
-    fit_n_min 
+    fit_n_min
     model_args_n
     name
     model
     equation
-    surface_area 
+    surface_area
     volume
     canonical
     color
@@ -65,7 +67,7 @@ class PlaneTriangulated(Plane):
     bounds_or_vertices
 
     Methods
-    ------- 
+    -------
     __init__
     __repr__
     __eq__
@@ -137,7 +139,8 @@ class PlaneTriangulated(Plane):
     from_plane_with_mesh
     get_bounded_planes_from_boundaries
     """
-    _name = 'triangulated plane'
+
+    _name = "triangulated plane"
     _vertices = np.array([])
     _triangles = np.array([])
     # TODO: maybe set _convex to None as it cannot be known
@@ -145,13 +148,13 @@ class PlaneTriangulated(Plane):
 
     @property
     def surface_area(self):
-        """ Surface area of triangulated plane. """
-        
+        """Surface area of triangulated plane."""
+
         triangle_projections = self.get_projections(self.vertices)[self.triangles]
         diff = np.diff(triangle_projections, axis=1)
-        areas = abs(np.cross(diff[:,0,:], diff[:,1,:])) * 0.5
+        areas = abs(np.cross(diff[:, 0, :], diff[:, 1, :])) * 0.5
         surface_area = sum(areas)
-            
+
         return surface_area
 
     @property
@@ -161,11 +164,11 @@ class PlaneTriangulated(Plane):
     @property
     def triangles(self):
         return self._triangles
-    
+
     @property
-    def bounds_or_vertices(self):            
+    def bounds_or_vertices(self):
         return self.vertices
-    
+
     @property
     def bounds_or_vertices_or_inliers(self):
         if len(self.vertices) > 0:
@@ -173,8 +176,7 @@ class PlaneTriangulated(Plane):
         else:
             return self.inliers.points
 
-    def __init__(self, model, vertices=None, triangles=None,
-                 decimals=None):
+    def __init__(self, model, vertices=None, triangles=None, decimals=None):
         """
         Parameters
         ----------
@@ -192,17 +194,17 @@ class PlaneTriangulated(Plane):
         Raises
         ------
         ValueError
-            If number of parameters is incompatible with the model of the 
+            If number of parameters is incompatible with the model of the
         """
         super().__init__(model, decimals)
 
         flatten = True
         if vertices is None and triangles is None:
             if isinstance(model, Plane):
-                warnings.warn('No input bounds, using inliers mesh.')
+                warnings.warn("No input bounds, using inliers mesh.")
                 mesh = model.mesh
             else:
-                warnings.warn('No input vertices/triangles, returning square plane')
+                warnings.warn("No input vertices/triangles, returning square plane")
                 mesh = self.get_square_plane(1).mesh
             vertices = np.asarray(mesh.vertices)
             triangles = np.asarray(mesh.triangles)
@@ -211,14 +213,16 @@ class PlaneTriangulated(Plane):
         elif vertices is not None or triangles is not None:
             pass
         elif vertices is None or triangles is None:
-            raise ValueError("Either 'vertices' and 'triangles' should be given, or one of them.")
+            raise ValueError(
+                "Either 'vertices' and 'triangles' should be given, or one of them."
+            )
 
         # super().__init__(model, decimals)
         self.set_vertices_triangles(vertices, triangles, flatten=flatten)
 
     @classmethod
     def random(cls, scale=1, decimals=16):
-        """ Generates a random shape.
+        """Generates a random shape.
 
         Parameters
         ----------
@@ -244,9 +248,9 @@ class PlaneTriangulated(Plane):
 
     @staticmethod
     def fit(points, normals=None):
-        """ Gives plane that fits the input points. If the numb
+        """Gives plane that fits the input points. If the numb
         points : N x 3 arrayer of points is
-        higher than the `3`, the fitted shape will return a least squares 
+        higher than the `3`, the fitted shape will return a least squares
         estimation.
 
         Reference:
@@ -255,7 +259,7 @@ class PlaneTriangulated(Plane):
         Parameters
         ----------
         points : N x 3 array
-            N input points 
+            N input points
         normals : N x 3 array
             N normal vectors
 
@@ -266,12 +270,10 @@ class PlaneTriangulated(Plane):
         """
 
         plane = Plane.fit(points, normals)
-        return PlaneTriangulated.from_bounded_plane(
-            plane.get_bounded_plane(points)
-        )
+        return PlaneTriangulated.from_bounded_plane(plane.get_bounded_plane(points))
 
     def get_mesh(self, **options):
-        """ Flatten points and creates a simplified mesh of the plane defined
+        """Flatten points and creates a simplified mesh of the plane defined
         by the points at the borders.
 
         Parameters
@@ -287,14 +289,14 @@ class PlaneTriangulated(Plane):
         mesh = TriangleMesh(self.vertices, self.triangles)
 
         return mesh
-    
+
     def __copy_atributes__(self, shape_original):
         super().__copy_atributes__(shape_original)
         self._vertices = shape_original._vertices.copy()
         self._triangles = shape_original._triangles.copy()
 
     def translate(self, translation, translate_inliers=True):
-        """ Translate the shape.
+        """Translate the shape.
 
         Parameters
         ----------
@@ -308,7 +310,7 @@ class PlaneTriangulated(Plane):
         self._vertices = self._vertices + translation
 
     def rotate(self, rotation, rotate_inliers=True):
-        """ Rotate the shape.
+        """Rotate the shape.
 
         Parameters
         ----------
@@ -320,19 +322,19 @@ class PlaneTriangulated(Plane):
         rotation = self._parse_rotation(rotation)
         super().rotate(rotation)
 
-        self._vertices = rotation.apply(self._vertices, rotate_inliers=rotate_inliers)        
-    
+        self._vertices = rotation.apply(self._vertices, rotate_inliers=rotate_inliers)
+
     def get_axis_aligned_bounding_box(self, slack=0):
-        """ Returns an axis-aligned bounding box of the primitive.
-        
+        """Returns an axis-aligned bounding box of the primitive.
+
         Parameters
         ----------
         slack : float, optional
             Expand bounding box in all directions, useful for testing purposes.
             Default: 0.
-        
+
         See: open3d.geometry.get_axis_aligned_bounding_box
-            
+
         Returns
         -------
         open3d.geometry.AxisAlignedBoundingBox
@@ -342,29 +344,34 @@ class PlaneTriangulated(Plane):
         min_bound = np.min(self.vertices, axis=0)
         max_bound = np.max(self.vertices, axis=0)
         return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
-    
+
     def __put_attributes_in_dict__(self, data):
         super().__put_attributes_in_dict__(data)
-        
+
         # additional PlaneTriangulated related data:
-        data['vertices'] = self.vertices.tolist()
-        data['triangles'] = self.triangles.tolist()
-        
+        data["vertices"] = self.vertices.tolist()
+        data["triangles"] = self.triangles.tolist()
+
     def __get_attributes_from_dict__(self, data):
         super().__get_attributes_from_dict__(data)
-        
+
         # additional PlaneTriangulated related data:
-        self.set_vertices_triangles(data['vertices'], data['triangles'])
-                
+        self.set_vertices_triangles(data["vertices"], data["triangles"])
+
     @staticmethod
-    def fuse(shapes, detector=None, ignore_extra_data=False, line_intersection_eps=1e-3,
-             **extra_options):
-        """ Find weigthed average of shapes, where the weight is the fitness
+    def fuse(
+        shapes,
+        detector=None,
+        ignore_extra_data=False,
+        line_intersection_eps=1e-3,
+        **extra_options,
+    ):
+        """Find weigthed average of shapes, where the weight is the fitness
         metric.
-        
+
         If a detector is given, use it to compute the metrics of the resulting
         average shapes.
-        
+
         Parameters
         ----------
         shapes : list
@@ -382,38 +389,39 @@ class PlaneTriangulated(Plane):
             Default: 1.5
         ressample_radius_ratio : float, optional
             Default: 1.2
-            
+
         Returns
         -------
         PlaneTriangulated
-            Averaged PlaneTriangulated instance.    
+            Averaged PlaneTriangulated instance.
         """
         plane_unbounded = Plane.fuse(shapes, detector, ignore_extra_data)
-        
-        vertices_list = [plane_unbounded.flatten_points(s.vertices) for s in shapes]    
+
+        vertices_list = [plane_unbounded.flatten_points(s.vertices) for s in shapes]
         triangles_list = [s.triangles for s in shapes]
-        
+
         vertices, triangles = TriangleMesh.fuse_vertices_triangles(
-            vertices_list, triangles_list)
-        
+            vertices_list, triangles_list
+        )
+
         shape = PlaneTriangulated(plane_unbounded.model, vertices, triangles)
         if not ignore_extra_data:
             shape.set_inliers(plane_unbounded)
             shape.metrics = plane_unbounded.metrics
-            
+
         return shape
-        
+
         # force_concave = extra_options.get('force_concave', True)
         # ressample_density = extra_options.get('ressample_density', 1.5)
         # ressample_radius_ratio = extra_options.get('ressample_radius_ratio', 1.2)
-        
+
         # if len(shapes) == 1:
         #     return shapes[0]
         # elif isinstance(shapes, Primitive):
         #     return shapes
-        
+
         # shape = Plane.fuse(shapes, detector, ignore_extra_data)
-        
+
         # is_convex = np.array([shape.is_convex for shape in shapes])
         # all_convex = is_convex.all()
         # if not all_convex and is_convex.any():
@@ -421,40 +429,40 @@ class PlaneTriangulated(Plane):
         #     # raise ValueError("If 'force_concave' is False, PlaneBounded "
         #     #                  "instances should either all be convex or "
         #     #                  "all non convex.")
-        
+
         # if not ignore_extra_data:
         #     if force_concave:
         #         vertices, triangles = planes_ressample_and_triangulate(
         #             shapes, ressample_density, ressample_radius_ratio, double_triangles=False)
         #         shape.set_vertices_triangles(vertices, triangles)
-                
+
         #     elif not all_convex:
         #         vertices = [shape.vertices for shape in shapes]
         #         triangles = [shape.triangles for shape in shapes]
-        #         vertices, triangles = fuse_vertices_triangles(vertices, triangles)                                       
+        #         vertices, triangles = fuse_vertices_triangles(vertices, triangles)
         #         shape.set_vertices_triangles(vertices, triangles)
-                
+
         #     else:
         #         bounds = np.vstack([shape.bounds for shape in shapes])
         #         shape.set_bounds(bounds)
-            
+
         #         intersections = []
         #         for plane1, plane2 in combinations(shapes, 2):
         #             points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
         #             if len(points) > 0:
         #                 intersections.append(points)
-                
+
         #         # temporary hack, saving intersections for mesh generation
         #         if len(intersections) > 0:
         #             shape._fusion_intersections = np.vstack(intersections)
-        
+
         # return shape
-    
+
     def closest_vertices(self, other_plane, n=1):
-        """ Returns n pairs of closest bound points with a second plane.
+        """Returns n pairs of closest bound points with a second plane.
 
         Parameters
-        ----------            
+        ----------
         other_plane : Plane
             Another plane.
         n : int, optional
@@ -469,33 +477,34 @@ class PlaneTriangulated(Plane):
         """
 
         if not isinstance(other_plane, PlaneTriangulated):
-            raise ValueError("Only implemented with other instances of "
-                             "PlaneBounded.")
+            raise ValueError("Only implemented with other instances of PlaneBounded.")
 
         closest_points, distances = PointCloud.find_closest_points(
-            self.vertices, other_plane.vertices, n)
+            self.vertices, other_plane.vertices, n
+        )
 
         return closest_points, distances
 
     def contains_projections(self, points):
-        """ For each point in points, check if its projection on the plane lies
-        inside of the plane's bounds. 
+        """For each point in points, check if its projection on the plane lies
+        inside of the plane's bounds.
 
         Parameters
         ----------
         points : N x 3 array
-            N input points 
+            N input points
 
         Returns
         -------
         array of booleans
             True for points whose projection lies in plane's bounds
         """
-        raise RuntimeError("'contains_projections' not implemented for "
-                           "PlaneTriangulated instances.")
-        
+        raise RuntimeError(
+            "'contains_projections' not implemented for PlaneTriangulated instances."
+        )
+
     def set_vertices_triangles(self, vertices, triangles, flatten=True):
-        """ Flatten points according to plane model, get projections of 
+        """Flatten points according to plane model, get projections of
         flattened points in the model and set desired vertices and triangles.
 
         Parameters
@@ -513,32 +522,33 @@ class PlaneTriangulated(Plane):
         self._mesh = None
         vertices = np.asarray(vertices)
         triangles = np.asarray(triangles)
-        
+
         if vertices.shape[1] != 3 or triangles.shape[1] != 3:
-            raise ValueError("Invalid shape of 'vertices' and/or 'triangles' "
-                             "array.")
-        
+            raise ValueError("Invalid shape of 'vertices' and/or 'triangles' array.")
+
         if not all([x.is_integer() for x in triangles.flatten()]):
             raise ValueError("All elements of 'triangles' must be integers.")
-        
+
         if (triangles >= len(vertices)).any() or (triangles < 0).any():
-            raise ValueError("Each element in 'triangles' should be an integer"
-                             " between 0 and len(vertices) - 1.")
+            raise ValueError(
+                "Each element in 'triangles' should be an integer"
+                " between 0 and len(vertices) - 1."
+            )
 
         if flatten:
             vertices = self.flatten_points(vertices)
         if np.any(np.isnan(vertices)):
-            raise ValueError('NaN found in points')
-            
+            raise ValueError("NaN found in points")
+
         # self._bounds = np.array([])
         # self._bounds_indices = np.array([])
         self._vertices = vertices
         self._triangles = triangles
         # self._convex = False
-        
+
     @staticmethod
     def from_plane_with_mesh(plane):
-        """ Convert plane instance's mesh into PlaneTriangulated instance by
+        """Convert plane instance's mesh into PlaneTriangulated instance by
 
         By copying the vertices and triangles from its mesh.
 
@@ -557,20 +567,23 @@ class PlaneTriangulated(Plane):
         vertices = np.asarray(mesh.vertices)
         triangles = np.asarray(mesh.triangles)
         return plane.get_triangulated_plane(vertices, triangles)
-    
-    def get_bounded_planes_from_boundaries(self, detect_holes=False,
-                                           add_inliers=True,
-                                           angle_colinear=0,
-                                           colinear_recursive=True,
-                                           contract_bounds=False,
-                                           min_inliers=1):
-        """ Convert PlaneTriangulated instance into list of non-convex 
+
+    def get_bounded_planes_from_boundaries(
+        self,
+        detect_holes=False,
+        add_inliers=True,
+        angle_colinear=0,
+        colinear_recursive=True,
+        contract_bounds=False,
+        min_inliers=1,
+    ):
+        """Convert PlaneTriangulated instance into list of non-convex
         PlaneBounded instances.
-        
+
         If `detect_holes` is set to True, when planes are detected inside some
         other, they will be added as holes instead.
-        
-        If a small positive `angle_colinear` value is given, two subsequent 
+
+        If a small positive `angle_colinear` value is given, two subsequent
         boundary lines will be fused into one when they are almost colinear.
 
         Parameters
@@ -580,7 +593,7 @@ class PlaneTriangulated(Plane):
         add_inliers : boolean, optional
             If True, add inlier points.
         angle_colinear : float, optional
-            Small angle value for assuming two lines are colinear. If None is 
+            Small angle value for assuming two lines are colinear. If None is
             given, then no simplification is done. Default: 0.
         colinear_recursive : boolean, optional
             If False, only try to simplify loop once. If True, try to simplify
@@ -596,66 +609,77 @@ class PlaneTriangulated(Plane):
         list of PlaneBounded instances
         """
         from .planebounded import PlaneBounded
-        
+
         boundary_indexes = self.mesh.get_triangle_boundary_indexes()
-        
+
         if not isinstance(min_inliers, int) or (min_inliers < 1):
-            raise ValueError(f"min_inliers must be a positive integer, got {min_inliers}.")
-        
-        loop_indexes = TriangleMesh.get_loop_indexes_from_boundary_indexes(boundary_indexes)
-        
+            raise ValueError(
+                f"min_inliers must be a positive integer, got {min_inliers}."
+            )
+
+        loop_indexes = TriangleMesh.get_loop_indexes_from_boundary_indexes(
+            boundary_indexes
+        )
+
         if angle_colinear is not None:
             for i in range(len(loop_indexes)):
                 loop_indexes[i] = TriangleMesh.simplify_loop_with_angle(
-                    self.vertices, loop_indexes[i], angle_colinear, colinear_recursive)
+                    self.vertices, loop_indexes[i], angle_colinear, colinear_recursive
+                )
 
-        planes = [PlaneBounded(self, self.vertices[loop], convex=False) for loop in loop_indexes]
-        
+        planes = [
+            PlaneBounded(self, self.vertices[loop], convex=False)
+            for loop in loop_indexes
+        ]
+
         if contract_bounds:
             for p in planes:
                 p.contract_bounds(self.inliers.points)
-        
+
         if detect_holes and (N := len(planes)) > 1:
             fuse_dict = {key: [] for key in range(N)}
-            
+
             for i, j in combinations(range(N), 2):
                 if np.all(planes[i].contains_projections(planes[j].bounds)):
                     fuse_dict[i].append(j)
                 elif np.all(planes[j].contains_projections(planes[i].bounds)):
                     fuse_dict[j].append(i)
-            
+
             all_holes = []
             all_hole_idxs = []
             for key, idxs in fuse_dict.items():
                 all_holes += fuse_dict[key]
                 all_hole_idxs += idxs
-            
+
             if len(all_holes) != len(set(all_holes)):
                 # this shouldn't happen, just in case...
-                raise RuntimeError("Error while detecting holes, same hole "
-                                   "detected for same plane.")
-                
+                raise RuntimeError(
+                    "Error while detecting holes, same hole detected for same plane."
+                )
+
             for key, idxs in fuse_dict.items():
                 for idx in idxs:
                     # print(f"Adding {idx} to {key}")
                     planes[key].add_holes(planes[idx])
-                    
+
             all_hole_idxs.sort()
             for i in all_hole_idxs[::-1]:
                 planes.pop(i)
-        
+
         idx = np.argsort([p.surface_area for p in planes])[::-1]
         planes = np.array(planes)[idx].tolist()
-        
+
         if add_inliers:
             if not self.has_inliers:
-                warnings.warn("Option 'add_inliers' is True but plane has no "
-                              "inliers, ignoring...")
-            
+                warnings.warn(
+                    "Option 'add_inliers' is True but plane has no "
+                    "inliers, ignoring..."
+                )
+
             else:
                 pcd = self.inliers
                 projections = self.get_projections(pcd.points)
-                
+
                 for plane in planes:
                     if len(projections) == 0:
                         break
@@ -664,9 +688,8 @@ class PlaneTriangulated(Plane):
                     plane.set_inliers(pcd.select_by_index(inside_idx))
                     pcd = pcd.select_by_index(inside_idx, invert=True)
                     projections = projections[~inside]
-                    
+
                 num_inliers = np.array([len(p.inlier_points) for p in planes])
                 planes = np.array(planes)[num_inliers > min_inliers].tolist()
-                    
-        return planes
 
+        return planes

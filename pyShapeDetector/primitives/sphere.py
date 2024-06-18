@@ -10,19 +10,20 @@ from open3d.geometry import AxisAlignedBoundingBox
 from pyShapeDetector.geometry import TriangleMesh
 
 from .primitivebase import Primitive
-    
+
+
 class Sphere(Primitive):
     """
     Sphere primitive.
-    
+
     Attributes
     ----------
-    fit_n_min 
+    fit_n_min
     model_args_n
     name
     model
     equation
-    surface_area 
+    surface_area
     volume
     canonical
     color
@@ -41,10 +42,10 @@ class Sphere(Primitive):
     axis_cylindrical
     bbox
     bbox_bounds
-    
+
     radius
     center
-        
+
     Methods
     -------
     __init__
@@ -84,57 +85,59 @@ class Sphere(Primitive):
     group_similar_shapes
     fuse_shape_groups
     fuse_similar_shapes
-    
+
     from_center_radius
     """
-    
+
     _fit_n_min = 4
     _model_args_n = 4
-    _name = 'sphere'
+    _name = "sphere"
     _translatable = [0, 1, 2]
     _rotatable = []
     _color = np.array([0, 1, 0])
-    
+
     @property
     def equation(self):
         def sig(x):
-            return "-" if x < 0 else '+'
-        delta = [f'{p} {sig(-a)} {abs(a)}' for p, a in zip(('x','y','z'), 
-                                                           self.center)]
-        equation = " + ".join([f'({p})**2' for p in delta])
+            return "-" if x < 0 else "+"
+
+        delta = [
+            f"{p} {sig(-a)} {abs(a)}" for p, a in zip(("x", "y", "z"), self.center)
+        ]
+        equation = " + ".join([f"({p})**2" for p in delta])
         return equation + f" = {self.radius ** 2}"
-    
+
     @property
     def surface_area(self):
-        """ Surface area of primitive """
-        return 4 * np.pi * (self.radius ** 2)
-    
+        """Surface area of primitive"""
+        return 4 * np.pi * (self.radius**2)
+
     @property
     def volume(self):
-        """ Volume of primitive. """
-        return (4/3) * np.pi * (self.radius ** 3)
-    
+        """Volume of primitive."""
+        return (4 / 3) * np.pi * (self.radius**3)
+
     @property
     def radius(self):
-        """ Radius of the sphere."""
+        """Radius of the sphere."""
         return self.model[-1]
-    
+
     @property
     def center(self):
-        """ Center point of the sphere."""
+        """Center point of the sphere."""
         return np.array(self.model[:3])
-        
+
     @staticmethod
     def fit(points, normals=None):
-        """ Gives sphere that fits the input points. If the number of points is
-        higher than the `4`, the fitted shape will return a least squares 
+        """Gives sphere that fits the input points. If the number of points is
+        higher than the `4`, the fitted shape will return a least squares
         estimation.
-        
+
         Parameters
         ----------
         points : N x 3 array
             N input points
-        
+
         Returns
         -------
         Plane
@@ -143,15 +146,14 @@ class Sphere(Primitive):
         # points_ = np.asarray(points)[samples]
         points = np.asarray(points)
         num_points = len(points)
-        
+
         if num_points < 4:
-            raise ValueError('A minimun of 4 points are needed to fit a '
-                             'sphere')
-        
+            raise ValueError("A minimun of 4 points are needed to fit a sphere")
+
         # if simplest case, the result is direct
         elif num_points == 4:
             p0, p1, p2, p3 = points
-            
+
             r1 = p0 - p1
             r2 = p0 - p2
             r3 = p0 - p3
@@ -159,43 +161,47 @@ class Sphere(Primitive):
             c12 = np.cross(r1, r2)
             c23 = np.cross(r2, r3)
             c31 = np.cross(r3, r1)
-            
+
             det = r1.dot(c23)
             if det == 0:
                 return None
-            
-            center = 0.5 * (
-                (n0 - p1.dot(p1)) * c23 + \
-                (n0 - p2.dot(p2)) * c31 + \
-                (n0 - p3.dot(p3)) * c12) / det
-                
+
+            center = (
+                0.5
+                * (
+                    (n0 - p1.dot(p1)) * c23
+                    + (n0 - p2.dot(p2)) * c31
+                    + (n0 - p3.dot(p3)) * c12
+                )
+                / det
+            )
+
             radiuses = np.linalg.norm(points - center, axis=1)
             radius = sum(radiuses) / num_points
-            
-        # for more points, find the plane such that the summed squared distance 
-        # from the plane to all points is minimized. 
+
+        # for more points, find the plane such that the summed squared distance
+        # from the plane to all points is minimized.
         else:
-            
             b = sum(points.T * points.T)
             a = np.c_[2 * points, np.ones(num_points)]
             X = np.linalg.lstsq(a, b, rcond=None)[0]
-            
+
             center = X[:3]
             radius = np.sqrt(X[3] + center.dot(center))
-        
+
         if radius < 0:
             return None
 
-        return Sphere([center[0], center[1], center[2], radius]) 
-    
+        return Sphere([center[0], center[1], center[2], radius])
+
     def get_signed_distances(self, points):
-        """ Gives the minimum distance between each point to the sphere.
-        
+        """Gives the minimum distance between each point to the sphere.
+
         Parameters
         ----------
         points : N x 3 array
-            N input points 
-        
+            N input points
+
         Returns
         -------
         distances
@@ -204,16 +210,16 @@ class Sphere(Primitive):
         points = np.asarray(points)
         model = self.model
         return np.linalg.norm(points - model[:3], axis=1) - model[3]
-    
+
     def get_normals(self, points):
-        """ Gives, for each input point, the normal vector of the point closest 
+        """Gives, for each input point, the normal vector of the point closest
         to the sphere.
-        
+
         Parameters
         ----------
         points : N x 3 array
-            N input points 
-        
+            N input points
+
         Returns
         -------
         normals
@@ -222,55 +228,56 @@ class Sphere(Primitive):
         points = np.asarray(points)
         dist_vec = points - self.model[:3]
         normals = dist_vec / np.linalg.norm(dist_vec, axis=1)[..., np.newaxis]
-        return normals 
+        return normals
 
     def get_axis_aligned_bounding_box(self, slack=0):
-        """ Returns an axis-aligned bounding box of the primitive.
-        
+        """Returns an axis-aligned bounding box of the primitive.
+
         Parameters
         ----------
         slack : float, optional
             Expand bounding box in all directions, useful for testing purposes.
             Default: 0.
-        
+
         See: open3d.geometry.get_axis_aligned_bounding_box
-            
+
         Returns
         -------
         open3d.geometry.AxisAlignedBoundingBox
         """
         if slack < 0:
             raise ValueError("Slack must be non-negative.")
-            
-        return AxisAlignedBoundingBox(self.center - self.radius - slack, 
-                                      self.center + self.radius + slack)
+
+        return AxisAlignedBoundingBox(
+            self.center - self.radius - slack, self.center + self.radius + slack
+        )
 
     def get_mesh(self, **options):
-        """ Returns mesh defined by the sphere model.   
-        
+        """Returns mesh defined by the sphere model.
+
         Parameters
         ----------
         resolution : int, optional
-            Resolution parameter for mesh. Default: 30   
-        
+            Resolution parameter for mesh. Default: 30
+
         Returns
         -------
         TriangleMesh
             Mesh corresponding to the plane.
         """
-        resolution = options.get('resolution', 30)
-        
+        resolution = options.get("resolution", 30)
+
         mesh = TriangleMesh.create_sphere(radius=self.model[3], resolution=resolution)
         mesh.translate(self.model[:3])
-        
+
         return mesh
-    
+
     @classmethod
     def from_center_radius(cls, center, radius):
-        """ Creates sphere from center and radius as separated arguments.
-        
+        """Creates sphere from center and radius as separated arguments.
+
         Parameters
-        ----------            
+        ----------
         center : 3 x 1 array
             Center point.
         radius : float
@@ -281,5 +288,4 @@ class Sphere(Primitive):
         Cone
             Generated shape.
         """
-        return cls(list(center)+[radius])
-    
+        return cls(list(center) + [radius])
