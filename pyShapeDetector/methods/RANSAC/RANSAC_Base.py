@@ -132,7 +132,7 @@ class RANSAC_Base(ABC):
 
         if self._opt._num_samples and self._opt._num_samples < primitive._fit_n_min:
             raise ValueError(
-                f"{primitive._name}s need a minimum of "
+                f"{primitive.__name__}s need a minimum of "
                 f"{primitive._fit_n_min} for fitting, but current "
                 f"num_samples option is set to {self._opt._num_samples}"
                 ". Either raise the value on the options, or set "
@@ -630,7 +630,7 @@ class RANSAC_Base(ABC):
         times = {"get_inliers": 0, "get_model": 0}
 
         if debug:
-            print(f"Starting loop, fitting {[p._name for p in self.primitives]}")
+            print(f"Starting loop, fitting {[p.__name__ for p in self.primitives]}")
 
         for itr in range(self._opt.num_iterations):
             if iteration_count > metrics_best["break_iteration"]:
@@ -685,7 +685,7 @@ class RANSAC_Base(ABC):
 
             iteration_count += 1
 
-            if debug:
+            if debug > 1:
                 print(
                     f"Iteration {itr+1}/{self._opt.num_iterations} : "
                     f"{time.time() - start_itr:.5f}s"
