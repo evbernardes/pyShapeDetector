@@ -24,6 +24,7 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
 
     Methods
     -------
+    __add__
     contains_points
     intersects
     expanded
@@ -33,6 +34,18 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
     sample_PointCloud_uniformly
     sample_PointCloud_density
     """
+
+    def __add__(self, other_bbox):
+        if not self.is_instance_or_open3d(other_bbox):
+            raise ValueError(
+                f"Can only add to other axis aligned bounding boxes, got {other_bbox.__class__}."
+            )
+
+        min_bound = np.min([self.min_bound, other_bbox.min_bound], axis=0)
+        max_bound = np.max([self.max_bound, other_bbox.max_bound], axis=0)
+        bbox = AxisAlignedBoundingBox(min_bound, max_bound)
+        bbox.color = self.color
+        return bbox
 
     def contains_points(self, points, inclusive=True):
         """
