@@ -25,6 +25,8 @@ from sklearn.cluster import KMeans
 from pyShapeDetector.utility import rgb_to_cielab, cielab_to_rgb, parallelize
 from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
 
+from sklearn.decomposition import PCA
+
 
 @link_to_open3d_geometry(open3d_PointCloud)
 class PointCloud(Open3D_Geometry):
@@ -35,6 +37,7 @@ class PointCloud(Open3D_Geometry):
 
     Attributes
     ----------
+    volume
     curvature
     has_curvature
     colors_cielab
@@ -62,6 +65,16 @@ class PointCloud(Open3D_Geometry):
     """
 
     _curvature = np.empty(0)
+
+    @property
+    def volume(self):
+        delta = self.points - np.median(self.points, axis=0)
+        pca = PCA(n_components=3)
+        pca.fit(delta)
+        computed_volume = 1
+        for v in pca.components_:
+            computed_volume *= abs(delta.dot(v)).max()
+        return computed_volume
 
     @property
     def curvature(self):
