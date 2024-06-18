@@ -35,26 +35,26 @@ from .detector_options import DetectorOptions
 from .helpers_internal import (
     parallelize,
     _set_and_check_3d_array,
-    )
+)
 
 from .helpers_math import (
     get_rotation_from_axis,
     rgb_to_cielab,
     cielab_to_rgb,
-    )
+)
 
 from .helpers_visualization import (
     get_painted,
     draw_geometries,
     draw_two_columns,
-    draw_and_ask,
+    # draw_and_ask,
     select_manually,
-    select_combinations_manually
-    )
+    select_combinations_manually,
+)
 
 from .helpers_io import (
     check_existance,
     save_elements,
     save_ask,
     ask_and_save,
-    )
+)
