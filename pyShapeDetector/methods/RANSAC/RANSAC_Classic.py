@@ -15,10 +15,11 @@ import numpy as np
 
 from .RANSAC_Base import RANSAC_Base
 
+
 class RANSAC_Classic(RANSAC_Base):
     """
     Implementation of RANSAC Classic method.
-    
+
     Attributes
     ----------
     _type
@@ -28,14 +29,14 @@ class RANSAC_Classic(RANSAC_Base):
     limits
     num_primitives
     options
-    
+
     Methods
     -------
     __init__
     __repr__
     add
     remove
-    remove_all  
+    remove_all
     copy_options
     weight_distances
     weight_angles
@@ -49,22 +50,22 @@ class RANSAC_Classic(RANSAC_Base):
     get_inliers
     fit
     """
-    
+
     _type = "RANSAC Classic"
-    
+
     def weight_distances(self, distances, distance_threshold):
-        """ Gives weights for each point based on the distances.
+        """Gives weights for each point based on the distances.
 
         For `RANSAC_Weighted`, the weight function is a simple
         step that changes at threshold.
-        
+
         Parameters
         ----------
         distances : array
             Distances of each point to shape
         threshold_distances : float
             Max distance accepted between points and shape
-        
+
         Returns
         -------
         array
@@ -73,27 +74,27 @@ class RANSAC_Classic(RANSAC_Base):
         weight = np.zeros(len(distances))
         weight[distances < distance_threshold] = 1
         return weight
-    
+
     def compare_metrics(self, metrics, metrics_best):
-        """ Compare metrics to decide if new fit is better than current
+        """Compare metrics to decide if new fit is better than current
         best fit.
 
         For RANSAC Classic, choose the shape with best fitness, meaning
         the higher number of inliers.
-        
+
         Parameters
         ----------
         metrics : dict
             Metrics analyzing current fit
         metrics_best : dict
             Metrics analyzing current best fit
-        
+
         Returns
         -------
         bool
             True if `metrics` is considered better than `metrics_best`
         """
-        return (metrics['fitness'] > metrics_best['fitness'] or 
-                (metrics['fitness'] == metrics_best['fitness'] and 
-                 metrics['rmse_distances'] < metrics_best['rmse_distances']))
-    
+        return metrics["fitness"] > metrics_best["fitness"] or (
+            metrics["fitness"] == metrics_best["fitness"]
+            and metrics["rmse_distances"] < metrics_best["rmse_distances"]
+        )
