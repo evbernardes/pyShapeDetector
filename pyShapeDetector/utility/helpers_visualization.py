@@ -6,11 +6,10 @@ Created on Wed Feb 28 10:59:02 2024
 @author: ebernardes
 """
 import copy
-import itertools
 import matplotlib.pyplot as plt
 import numpy as np
 from open3d import visualization
-from pyShapeDetector.geometry import PointCloud
+from pyShapeDetector.geometry import PointCloud, AxisAlignedBoundingBox
 # from pyShapeDetector.primitives import Primitive, Line
 
 
@@ -147,6 +146,8 @@ def draw_geometries(elements, **camera_options):
         elements = [elements]
 
     for element in elements:
+        if element is None:
+            continue
         if hasattr(element, "as_open3d"):
             geometries.append(element.as_open3d)
         elif isinstance(element, Line):
@@ -247,20 +248,35 @@ def draw_two_columns(objs_left, objs_right, **camera_options):
 
 
 def select_manually(
-    elements, fixed_elements=[], bbox_expand=0.0, paint_selected=False, **camera_options
+    elements,
+    fixed_elements=[],
+    bbox_expand=0.0,
+    paint_selected=True,
+    window_name="",
+    **camera_options,
 ):
     if not isinstance(elements, list):
         elements = [elements]
 
+    if len(elements) == 0:
+        raise ValueError("Elements cannot be an empty list.")
+
     bboxes = []
     for element in elements:
-        bbox = element.get_axis_aligned_bounding_box()
-        bbox = bbox.expanded(bbox_expand)
-        bbox.color = (1, 0, 0)
-        bbox = bbox.as_open3d
-        bboxes.append(bbox)
+        if element is None:
+            bbox = None
+        else:
+            bbox = AxisAlignedBoundingBox(element.get_axis_aligned_bounding_box())
+            bbox = bbox.expanded(bbox_expand)
+            bbox.color = (1, 0, 0)
+            bbox = bbox.as_open3d
+            bboxes.append(bbox)
 
-    elements = [elem.as_open3d for elem in elements]
+    for i in range(len(elements)):
+        try:
+            elements[i] = elements[i].as_open3d
+        except Exception:
+            pass
 
     if not isinstance(fixed_elements, list):
         fixed_elements = [fixed_elements]
@@ -283,7 +299,10 @@ def select_manually(
 
     global data
 
-    window_name = f"{len(elements)} elements. Green: selected. White: unselected. (T)oggle | (D) next | (A) previous"
+    if window_name != "":
+        window_name += " - "
+
+    window_name += f"{len(elements)} elements. Green: selected. White: unselected. (T)oggle | (D) next | (A) previous"
 
     data = {
         "selected": [False] * len(elements),
@@ -426,38 +445,75 @@ def select_manually(
 #     return indices_selected
 
 
-def select_combinations_manually(elements, return_grouped=False):
+def select_combinations_manually(
+    elements,
+    return_grouped=False,
+    bbox_expand=0.0,
+    paint_selected=True,
+    **camera_options,
+):
     if not isinstance(elements, list) or len(elements) < 2:
         raise ValueError(
-            "'elements' must be a list with at least 2 elements, " f"got {elements}."
+            f"'elements' must be a list with at least 2 elements, got {elements}."
         )
 
-    elements_test = [[elem] for elem in get_painted(elements)]
+    # elements_test = [[elem] for elem in get_painted(elements)]
+    elements = copy.deepcopy(elements)
+    elements_fused = [[elem] for elem in elements]
 
     partitions = np.arange(N := len(elements))
-    for i, j in itertools.combinations(range(N), 2):
-        if partitions[i] == partitions[j]:
+
+    for i in range(N):
+        if elements[i] is None:
+            # if len(elements_test[i]) == 0:
             continue
-        elif len(elements_test[i]) == 0 or len(elements_test[j]) == 0:
+
+        if len(elements[i + 1 :]) == 0:
             continue
 
-        elements_test[i] = get_painted(elements_test[i], color=(0, 0, 1))
-        elements_test[j] = get_painted(elements_test[j], color=(0, 1, 0))
+        selected = select_manually(
+            elements[i + 1 :],
+            fixed_elements=elements_fused[i],
+            window_name=f"Element {i}",
+            bbox_expand=bbox_expand,
+            paint_selected=paint_selected,
+            **camera_options,
+        )
 
-        draw_geometries(elements_test[i] + elements_test[j], window_name=f"{i} and {j}")
+        indices = np.where(selected)[0]
+        partitions[i + 1 :][indices] = partitions[i]
 
-        option = input(f"Fuse {i} and {j}?  (y)es, (N)o, (s)top: ").lower()
+        for idx in indices:
+            if isinstance(elements[i + 1 :][idx], list):
+                elements_fused[i] += elements[i + 1 :][idx]
+            else:
+                elements_fused[i].append(elements[i + 1 :][idx])
+            elements[i + 1 :][idx] = None
 
-        if option == "s" or option == "stop":
-            break
-        elif option == "y" or option == "yes":
-            partitions[j] = partitions[i]
-            # elements_test[j].paint_uniform_color(elements_test[i].colors[0])
-            elements_test[i] += elements_test[j]
-            elements_test[j] = []
+        # for i, j in itertools.combinations(range(N), 2):
 
-            # pcds_no_ground[i] += pcds_no_ground[j]
-            # pcds_no_ground[j].points = []
+        # if partitions[i] == partitions[j]:
+        # continue
+        # elif len(elements_test[i]) == 0 or len(elements_test[j]) == 0:
+        # continue
+
+        # elements_test[i] = get_painted(elements_test[i], color=(0, 0, 1))
+        # elements_test[j] = get_painted(elements_test[j], color=(0, 1, 0))
+
+        # draw_geometries(elements_test[i] + elements_test[j], window_name=f"{i} and {j}")
+
+        # option = input(f"Fuse {i} and {j}?  (y)es, (N)o, (s)top: ").lower()
+
+        # if option == "s" or option == "stop":
+        #     break
+        # elif option == "y" or option == "yes":
+        #     partitions[j] = partitions[i]
+        #     # elements_test[j].paint_uniform_color(elements_test[i].colors[0])
+        #     elements_test[i] += elements_test[j]
+        #     elements_test[j] = []
+
+        #     # pcds_no_ground[i] += pcds_no_ground[j]
+        #     # pcds_no_ground[j].points = []
 
     if return_grouped:
         grouped = []
