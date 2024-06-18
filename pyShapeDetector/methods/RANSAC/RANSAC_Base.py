@@ -586,8 +586,9 @@ class RANSAC_Base(ABC):
 
         if no_threshold_distance := self._opt.threshold_distance is None:
             k = self._opt.adaptative_threshold_k
-            eps = pcd_test.average_nearest_dist(k=15)
-            warnings.warn(f"threshold_distance calculated as {eps} with {k} neighbors.")
+            eps = pcd_test.average_nearest_dist(k=k)
+            if debug:
+                print(f"threshold_distance calculated as {eps} with {k} neighbors.")
             self._opt.threshold_distance = eps
 
         points = np.asarray(pcd_test.points)
