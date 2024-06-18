@@ -246,7 +246,9 @@ def draw_two_columns(objs_left, objs_right, **camera_options):
         )
 
 
-def select_manually(elements, fixed_elements=[], bbox_expand=0.0, **camera_options):
+def select_manually(
+    elements, fixed_elements=[], bbox_expand=0.0, paint_selected=False, **camera_options
+):
     if not isinstance(elements, list):
         elements = [elements]
 
@@ -264,26 +266,22 @@ def select_manually(elements, fixed_elements=[], bbox_expand=0.0, **camera_optio
         fixed_elements = [fixed_elements]
     fixed_elements = [elem.as_open3d for elem in fixed_elements]
 
-    color_selected = (0, 0.5, 0)
-    color_selected_current = (0, 1, 0)
+    color_bbox_selected = (0, 0.8, 0)
+    color_bbox_unselected = (1, 0, 0)
+
+    color_selected = (0, 0.4, 0)
+    color_selected_current = color_bbox_selected
 
     color_unselected = (0.9, 0.9, 0.9)
-    color_unselected_current = (0.0, 0.0, 0.9)
+    color_unselected_current = (0.0, 0.0, 0.6)
 
     elements_painted = get_painted(elements, color_unselected)
-    elements_painted[0] = get_painted(elements_painted[0], color_unselected_current)
-
-    # instructions = " - Red: current, Blue: remaining, Green: selected, White: Unselected."
+    if paint_selected:
+        elements_painted[0] = get_painted(elements_painted[0], color_unselected_current)
+    else:
+        elements_painted[0] = elements[0]
 
     global data
-
-    # window_name = """
-    #     (S): Toggle.
-    #     (D): Next.
-    #     (A): Previous.
-    #     (I): Info.
-    #     (ESC): Save and quit
-    #     """
 
     window_name = f"{len(elements)} elements. Green: selected. White: unselected. (T)oggle | (D) next | (A) previous"
 
@@ -300,23 +298,31 @@ def select_manually(elements, fixed_elements=[], bbox_expand=0.0, **camera_optio
         i = data["i"]
 
         element = data["elements_painted"][i_old]
-
         vis.remove_geometry(element, reset_bounding_box=False)
         vis.remove_geometry(bboxes[i_old], reset_bounding_box=False)
-        if data["selected"][i_old]:
-            element = get_painted(element, color_selected)
-        else:
+        if not data["selected"][i_old]:
+            bboxes[i_old].color = color_bbox_unselected
             element = get_painted(element, color_unselected)
+
+        else:
+            bboxes[i_old].color = color_bbox_selected
+            if paint_selected:
+                element = get_painted(element, color_selected)
+            else:
+                element = elements[i_old]
+
         data["elements_painted"][i_old] = element
+
         vis.add_geometry(element, reset_bounding_box=False)
 
         element = data["elements_painted"][i]
         vis.remove_geometry(element, reset_bounding_box=False)
-        if data["selected"][i]:
+        if not paint_selected:
+            element = elements[i]
+        elif data["selected"][i]:
             element = get_painted(element, color_selected_current)
         else:
             element = get_painted(element, color_unselected_current)
-        # element = get_painted(element, color_test)
         data["elements_painted"][i] = element
 
         vis.add_geometry(element, reset_bounding_box=False)
