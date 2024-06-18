@@ -721,7 +721,7 @@ class RANSAC_Base(ABC):
             )
 
         if debug:
-            print(f"\nFinished fitting {shape_best.name}!")
+            print(f"\nFinished fitting {shape_best.__class__.__name__}!")
             print(f"model: {shape_best.model}")
             print("Execution time:")
             for t_ in times:
