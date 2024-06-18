@@ -13,6 +13,7 @@ from scipy.spatial import Delaunay
 from pyShapeDetector.primitives import Plane, PlaneBounded
 from pyShapeDetector.geometry import TriangleMesh
 
+
 def test_get_triangle_boundary_indexes():
     plane = Plane.random()
 
@@ -34,8 +35,3 @@ def test_get_triangle_boundary_indexes():
 
     for p in points_in_boundary:
         assert p in square.bounds
-
-
-
-
-

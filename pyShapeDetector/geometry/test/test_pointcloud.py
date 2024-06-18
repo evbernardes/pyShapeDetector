@@ -10,8 +10,8 @@ import numpy as np
 from pyShapeDetector.primitives import Sphere
 from pyShapeDetector.geometry import PointCloud
 
-def test_distribute():
 
+def test_distribute():
     spheres = [Sphere.random() for i in range(10)]
 
     for sphere in spheres:
@@ -28,4 +28,3 @@ def test_distribute():
     N_after = sum([len(pcd.points) for pcd in pcds])
 
     assert N_after == N_before + len(pcd_sampled.points)
-

@@ -9,19 +9,20 @@ Created on Tue Mar  5 13:47:35 2024
 import pytest
 import numpy as np
 
-from pyShapeDetector.primitives import (
-    Plane, PlaneBounded, Sphere, Cylinder, Cone, Line)
+from pyShapeDetector.primitives import Plane, PlaneBounded, Sphere, Cylinder, Cone, Line
 from pyShapeDetector.utility import PrimitiveLimits
+
 
 def get_x(vector):
     return vector[0]
 
+
 def test_init():
     func = [None, get_x]
-    attributes = ['radius', 'center']
+    attributes = ["radius", "center"]
     bounds = [(0, 1), (0, 1)]
 
-    limits1 = PrimitiveLimits(['radius', bounds[0]])
+    limits1 = PrimitiveLimits(["radius", bounds[0]])
     limits1_alt = PrimitiveLimits([None, attributes[0], bounds[0]])
     limits2 = PrimitiveLimits([func[1], attributes[1], bounds[1]])
     assert limits1 == limits1_alt
@@ -32,14 +33,14 @@ def test_init():
     assert limits_sum == limits3
 
     with pytest.raises(ValueError):
-        PrimitiveLimits([1, 'radius', bounds[0]])
+        PrimitiveLimits([1, "radius", bounds[0]])
 
-    limits_inf_neg = PrimitiveLimits(['radius', (None, 1)])
+    limits_inf_neg = PrimitiveLimits(["radius", (None, 1)])
     assert limits_inf_neg.bounds[0] == (-np.inf, 1)
-    limits_inf_pos = PrimitiveLimits(['radius', (1, None)])
+    limits_inf_pos = PrimitiveLimits(["radius", (1, None)])
     assert limits_inf_pos.bounds[0] == (1, np.inf)
     with pytest.raises(ValueError):
-        PrimitiveLimits(['radius', (None, None)])
+        PrimitiveLimits(["radius", (None, None)])
 
 
 def test_compatibility():
@@ -50,7 +51,7 @@ def test_compatibility():
     cone = Cone.random()
     line = Line.random()
 
-    limits = PrimitiveLimits(['radius', [0, 1]])
+    limits = PrimitiveLimits(["radius", [0, 1]])
 
     assert not limits.check_compatibility(plane)
     assert not limits.check_compatibility(planebounded)
@@ -62,42 +63,41 @@ def test_compatibility():
 
 
 def test_check():
-    limits_radius = PrimitiveLimits(['radius', [0, 1]])
-    limits_x = PrimitiveLimits([get_x, 'center', [0, 1]])
-    
-    spheres = [
-        Sphere.from_center_radius([x, 1, 1], x) for x in range(3)]
-    
+    limits_radius = PrimitiveLimits(["radius", [0, 1]])
+    limits_x = PrimitiveLimits([get_x, "center", [0, 1]])
+
+    spheres = [Sphere.from_center_radius([x, 1, 1], x) for x in range(3)]
+
     assert limits_radius.check(spheres[0])
     assert limits_radius.check(spheres[1])
     assert not limits_radius.check(spheres[2])
-    
+
     assert limits_x.check(spheres[0])
     assert limits_x.check(spheres[1])
     assert not limits_x.check(spheres[2])
 
 
 def test_check_two_conditions():
-    limits_radius = PrimitiveLimits(['radius', (0, 1)])
-    limits_position = PrimitiveLimits([get_x, 'center', (0, 1)])
+    limits_radius = PrimitiveLimits(["radius", (0, 1)])
+    limits_position = PrimitiveLimits([get_x, "center", (0, 1)])
     limits_sum = limits_radius + limits_position
 
     sphere_too_big = Sphere.from_center_radius([0.5, 0, 0], 3)
     assert not limits_radius.check(sphere_too_big)
     assert limits_position.check(sphere_too_big)
     assert not limits_sum.check(sphere_too_big)
-    
-    sphere_outside = Sphere.from_center_radius([3, 0, 0], 0.5)  
+
+    sphere_outside = Sphere.from_center_radius([3, 0, 0], 0.5)
     assert limits_radius.check(sphere_outside)
     assert not limits_position.check(sphere_outside)
     assert not limits_sum.check(sphere_outside)
 
-    sphere_ok = Sphere.from_center_radius([0.5, 0, 0], 0.5) 
+    sphere_ok = Sphere.from_center_radius([0.5, 0, 0], 0.5)
     assert limits_radius.check(sphere_ok)
     assert limits_position.check(sphere_ok)
     assert limits_sum.check(sphere_ok)
 
-    sphere_problematic = Sphere.from_center_radius([3, 0, 0], 3) 
+    sphere_problematic = Sphere.from_center_radius([3, 0, 0], 3)
     assert not limits_radius.check(sphere_problematic)
     assert not limits_position.check(sphere_problematic)
-    assert not limits_sum.check(sphere_problematic)    
+    assert not limits_sum.check(sphere_problematic)
