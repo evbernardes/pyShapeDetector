@@ -6,6 +6,7 @@ Created on Wed Feb 28 10:59:02 2024
 @author: ebernardes
 """
 import copy
+import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 from open3d import visualization
@@ -255,6 +256,8 @@ def select_manually(
     window_name="",
     **camera_options,
 ):
+    elements = copy.deepcopy(elements)
+
     if not isinstance(elements, list):
         elements = [elements]
 
@@ -452,10 +455,24 @@ def select_combinations_manually(
     paint_selected=True,
     **camera_options,
 ):
-    if not isinstance(elements, list) or len(elements) < 2:
-        raise ValueError(
-            f"'elements' must be a list with at least 2 elements, got {elements}."
-        )
+    if not isinstance(elements, list):
+        raise ValueError("'elements' must be a list.")
+
+    if len(elements) == 0:
+        warnings.warn("'elements' has no elements, doing nothing...")
+
+        if return_grouped:
+            return [], []
+        else:
+            return []
+
+    if len(elements) == 1:
+        warnings.warn("'elements' has only one element, doing nothing...")
+
+        if return_grouped:
+            return [0], elements
+        else:
+            return [0]
 
     # elements_test = [[elem] for elem in get_painted(elements)]
     elements = copy.deepcopy(elements)
@@ -466,6 +483,9 @@ def select_combinations_manually(
     for i in range(N):
         if elements[i] is None:
             # if len(elements_test[i]) == 0:
+            continue
+
+        if partitions[i] != i:
             continue
 
         if len(elements[i + 1 :]) == 0:
