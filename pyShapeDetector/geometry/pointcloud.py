@@ -68,13 +68,8 @@ class PointCloud(Open3D_Geometry):
 
     @property
     def volume(self):
-        delta = self.points - np.median(self.points, axis=0)
-        pca = PCA(n_components=3)
-        pca.fit(delta)
-        computed_volume = 1
-        for v in pca.components_:
-            computed_volume *= abs(delta.dot(v)).max()
-        return computed_volume
+        bbox_oriented = self.get_minimal_oriented_bounding_box()
+        return np.product(bbox_oriented.extent)
 
     @property
     def curvature(self):
