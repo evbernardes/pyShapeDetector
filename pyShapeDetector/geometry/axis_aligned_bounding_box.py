@@ -9,10 +9,9 @@ import copy
 import numpy as np
 from open3d.geometry import AxisAlignedBoundingBox as open3d_AxisAlignedBoundingBox
 
-from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
-
 from pyShapeDetector.utility import _set_and_check_3d_array
-from .pointcloud import PointCloud
+from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
+# from .pointcloud import PointCloud
 
 
 @link_to_open3d_geometry(open3d_AxisAlignedBoundingBox)
@@ -239,6 +238,8 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
         open3d.geometry.PointCloud
             Sampled pointcloud from shape.
         """
+        from .pointcloud import PointCloud
+
         return PointCloud(self.sample_points_uniformly(number_of_points))
 
     def sample_PointCloud_density(self, density=1):

@@ -16,8 +16,6 @@ from open3d.geometry import PointCloud as open3d_PointCloud
 from open3d.geometry import KDTreeFlann
 from open3d import io
 
-from pyShapeDetector.geometry import AxisAlignedBoundingBox, OrientedBoundingBox
-
 from scipy.spatial.distance import cdist
 
 import h5py
@@ -134,6 +132,8 @@ class PointCloud(Open3D_Geometry):
         return pcd
 
     def get_oriented_bounding_box(self):
+        from .oriented_bounding_box import OrientedBoundingBox
+
         try:
             oriented_bbox = self.get_minimal_oriented_bounding_box()
 
@@ -148,7 +148,6 @@ class PointCloud(Open3D_Geometry):
                         for v in pca.components_
                     ]
                 )
-                # extent[2] = 0
                 oriented_bbox = OrientedBoundingBox(
                     center=pca.mean_, R=pca.components_.T, extent=extent
                 )
