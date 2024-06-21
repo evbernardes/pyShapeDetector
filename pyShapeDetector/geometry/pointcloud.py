@@ -16,6 +16,9 @@ from open3d.geometry import PointCloud as open3d_PointCloud
 from open3d.geometry import KDTreeFlann
 from open3d import io
 
+from .axis_aligned_bounding_box import AxisAlignedBoundingBox
+from .oriented_bounding_box import OrientedBoundingBox
+
 from scipy.spatial.distance import cdist
 
 import h5py

@@ -6,12 +6,7 @@ Created on Wed Feb 28 10:59:02 2024
 @author: ebernardes
 """
 import numpy as np
-import copy
-from pathlib import Path
 import shutil
-from open3d import visualization
-from open3d.io import write_point_cloud
-from pyShapeDetector.geometry import PointCloud
 
 
 def check_existance(outdir, remove_dir):
@@ -39,6 +34,7 @@ def save_elements(
     outdir, elems, start=None, order_func=None, reverse=True, remove_dir=True
 ):
     check_existance(outdir, remove_dir)
+    from pyShapeDetector.geometry import PointCloud
 
     single = False
     if not isinstance(elems, (list, tuple)):

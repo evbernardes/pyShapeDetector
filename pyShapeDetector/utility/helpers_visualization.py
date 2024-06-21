@@ -10,8 +10,6 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 from open3d import visualization
-from pyShapeDetector.geometry import PointCloud, AxisAlignedBoundingBox, OrientedBoundingBox
-# from pyShapeDetector.primitives import Primitive, Line
 
 
 def get_painted(elements, color="random"):
@@ -118,6 +116,7 @@ def get_painted(elements, color="random"):
 
 def draw_geometries(elements, **camera_options):
     from pyShapeDetector.primitives import Primitive, Line, Plane, PlaneBounded
+    from pyShapeDetector.geometry import PointCloud
 
     # _treat_up_normal(camera_options)
     _ = camera_options.pop("dist", None)
@@ -258,6 +257,12 @@ def select_manually(
 ):
     elements = copy.deepcopy(elements)
 
+    from pyShapeDetector.geometry import (
+        PointCloud,
+        AxisAlignedBoundingBox,
+        OrientedBoundingBox,
+    )
+
     if not isinstance(elements, list):
         elements = [elements]
 
@@ -284,7 +289,7 @@ def select_manually(
     if not isinstance(fixed_elements, list):
         fixed_elements = [fixed_elements]
     fixed_elements = [elem.as_open3d for elem in fixed_elements]
-    
+
     # fixed_bbox = [elem.get_axis_aligned_bounding_box() for elem in ]
 
     color_bbox_selected = (0, 0.8, 0)
