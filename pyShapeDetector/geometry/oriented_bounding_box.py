@@ -5,14 +5,9 @@ Created on Wed Jun  5 15:27:03 2024
 
 @author: ebernardes
 """
-import copy
-import numpy as np
 from open3d.geometry import OrientedBoundingBox as open3d_OrientedBoundingBox
 
 from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
-
-from pyShapeDetector.utility import _set_and_check_3d_array
-from .pointcloud import PointCloud
 
 
 @link_to_open3d_geometry(open3d_OrientedBoundingBox)
