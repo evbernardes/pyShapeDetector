@@ -45,15 +45,3 @@ class OrientedBoundingBox(Open3D_Geometry):
         return OrientedBoundingBox(
             center=self.center, R=self.R, extent=self.extent + slack
         )
-
-    def from_planar_points(plane, points, flatten=True):
-        if flatten:
-            points = points.flatten_points(points)
-
-        vectors, center = plane.get_rectangular_vectors_from_points(
-            return_center=True, normalized=True
-        )
-
-        R = np.vstack([vectors, np.cross(vectors[0], vectors[1])])
-        delta = points - center
-        extent = [max(abs(delta.dot(v))) * 2 for v in R]
