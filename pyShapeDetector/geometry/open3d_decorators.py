@@ -60,11 +60,13 @@ def _convert_args_to_numpy(args):
     from .pointcloud import PointCloud
     from .trianglemesh import TriangleMesh
     from .axis_aligned_bounding_box import AxisAlignedBoundingBox
+    from .oriented_bounding_box import OrientedBoundingBox
 
     converters_classes = {
         geometry.PointCloud: PointCloud,
         geometry.TriangleMesh: TriangleMesh,
         geometry.AxisAlignedBoundingBox: AxisAlignedBoundingBox,
+        geometry.OrientedBoundingBox: OrientedBoundingBox,
     }
 
     if isinstance(args, (list, tuple)):

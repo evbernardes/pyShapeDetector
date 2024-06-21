@@ -13,19 +13,20 @@ import time
 import warnings
 
 from open3d.geometry import PointCloud as open3d_PointCloud
-from open3d.geometry import AxisAlignedBoundingBox, KDTreeFlann
+from open3d.geometry import KDTreeFlann
 from open3d import io
+
+from pyShapeDetector.geometry import AxisAlignedBoundingBox, OrientedBoundingBox
 
 from scipy.spatial.distance import cdist
 
 import h5py
 from sklearn.neighbors import KDTree
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 
 from pyShapeDetector.utility import rgb_to_cielab, cielab_to_rgb, parallelize
 from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
-
-from sklearn.decomposition import PCA
 
 
 @link_to_open3d_geometry(open3d_PointCloud)
@@ -68,8 +69,7 @@ class PointCloud(Open3D_Geometry):
 
     @property
     def volume(self):
-        bbox_oriented = self.get_minimal_oriented_bounding_box()
-        return np.product(bbox_oriented.extent)
+        return np.product(self.get_oriented_bounding_box().extent)
 
     @property
     def curvature(self):
@@ -132,6 +132,32 @@ class PointCloud(Open3D_Geometry):
         pcd.normals = normals
         pcd.colors = colors
         return pcd
+
+    def get_oriented_bounding_box(self):
+        try:
+            oriented_bbox = self.get_minimal_oriented_bounding_box()
+
+        except RuntimeError as e:
+            if "Qhull precision error" in str(e):
+                pca = PCA(n_components=3)
+                pca.fit(self.points)
+                # extent = pca.explained_variance_
+                extent = 2 * np.array(
+                    [
+                        max(abs((self.points - pca.mean_).dot(v)))
+                        for v in pca.components_
+                    ]
+                )
+                # extent[2] = 0
+                oriented_bbox = OrientedBoundingBox(
+                    center=pca.mean_, R=pca.components_.T, extent=extent
+                )
+                warnings.warn("PointCloud has no extent in one of its dimensions.")
+
+            else:
+                raise e
+
+        return oriented_bbox
 
     def distribute_to_closest(self, pcds):
         """Add each point to the closest of the input pointclouds.

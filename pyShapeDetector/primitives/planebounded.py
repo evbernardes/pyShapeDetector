@@ -10,10 +10,19 @@ from itertools import product
 import numpy as np
 from scipy.spatial import QhullError, ConvexHull, Delaunay
 
+from sklearn.decomposition import PCA
+
 # from scipy.spatial.transform import Rotation
 # from open3d.geometry import AxisAlignedBoundingBox
-from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
+from pyShapeDetector.geometry import (
+    PointCloud,
+    TriangleMesh,
+    AxisAlignedBoundingBox,
+    OrientedBoundingBox,
+)
 from .plane import Plane
+
+from pyShapeDetector.utility import get_rotation_from_axis
 
 
 def _is_clockwise(bounds):
@@ -57,7 +66,7 @@ class PlaneBounded(Plane):
     axis_spherical
     axis_cylindrical
     bbox
-    bbox_bounds
+    oriented_bbox
 
     is_convex
     normal
@@ -95,6 +104,7 @@ class PlaneBounded(Plane):
     closest_inliers
     inliers_average_dist
     get_axis_aligned_bounding_box
+    get_oriented_bounding_box
     sample_points_uniformly
     sample_points_density
     sample_PointCloud_uniformly
@@ -318,6 +328,26 @@ class PlaneBounded(Plane):
 
         plane = Plane.fit(points, normals)
         return plane.get_bounded_plane(points)
+
+    def get_oriented_bounding_box(self, slack=0):
+        """Returns an oriented bounding box of the primitive.
+
+        Parameters
+        ----------
+        slack : float, optional
+            Expand bounding box in all directions, useful for testing purposes.
+            Default: 0.
+
+        See: open3d.geometry.get_oriented_bounding_box
+
+        Returns
+        -------
+        OrientedBoundingBox
+        """
+        if slack < 0:
+            raise ValueError("Slack must be non-negative.")
+        oriented_bbox = self.get_rectangular_oriented_bounding_box_from_points()
+        return oriented_bbox.expanded(slack)
 
     def get_mesh(self, **options):
         """Flatten points and creates a simplified mesh of the plane defined
@@ -589,6 +619,35 @@ class PlaneBounded(Plane):
             shape.metrics = plane_unbounded.metrics
 
         return shape
+
+    def get_rectangular_oriented_bounding_box_from_points(
+        self, points=None, use_PCA=True
+    ):
+        """Gives oriented bounding box contains the plane.
+
+        If points are not given, use inliers.
+
+        Parameters
+        ----------
+        points : Nx3 array, optional
+            Points used to find rectangle.
+        return_center : boolean, optional
+            If True, return tuple containing both vectors and calculated center.
+        use_PCA : boolean, optional
+            If True, use PCA to detect vectors (better for rectangles). If False,
+            use eigenvectors from covariance matrix. Default: True.
+
+        Returns
+        -------
+        numpy.array of shape (2, 3)
+            Two non unit vectors
+        """
+        if points is None:
+            points = self.bounds
+
+        return super().get_rectangular_oriented_bounding_box_from_points(
+            points, use_PCA=use_PCA
+        )
 
     def get_rectangular_vectors_from_points(
         self, points=None, return_center=False, use_PCA=True, normalized=False

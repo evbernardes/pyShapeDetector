@@ -52,7 +52,7 @@ class PlaneTriangulated(Plane):
     axis_spherical
     axis_cylindrical
     bbox
-    bbox_bounds
+    oriented_bbox
 
     is_convex
     normal
@@ -86,6 +86,7 @@ class PlaneTriangulated(Plane):
     closest_inliers
     inliers_average_dist
     get_axis_aligned_bounding_box
+    get_oriented_bounding_box
     sample_points_uniformly
     sample_points_density
     sample_PointCloud_uniformly
@@ -272,6 +273,26 @@ class PlaneTriangulated(Plane):
         plane = Plane.fit(points, normals)
         return PlaneTriangulated.from_bounded_plane(plane.get_bounded_plane(points))
 
+    def get_oriented_bounding_box(self, slack=0):
+        """Returns an oriented bounding box of the primitive.
+
+        Parameters
+        ----------
+        slack : float, optional
+            Expand bounding box in all directions, useful for testing purposes.
+            Default: 0.
+
+        See: open3d.geometry.get_oriented_bounding_box
+
+        Returns
+        -------
+        OrientedBoundingBox
+        """
+        if slack < 0:
+            raise ValueError("Slack must be non-negative.")
+        oriented_bbox = self.get_rectangular_oriented_bounding_box_from_points()
+        return oriented_bbox.expanded(slack)
+
     def get_mesh(self, **options):
         """Flatten points and creates a simplified mesh of the plane defined
         by the points at the borders.
@@ -457,6 +478,71 @@ class PlaneTriangulated(Plane):
         #             shape._fusion_intersections = np.vstack(intersections)
 
         # return shape
+
+    def get_rectangular_oriented_bounding_box_from_points(
+        self, points=None, use_PCA=True
+    ):
+        """Gives oriented bounding box contains the plane.
+
+        If points are not given, use inliers.
+
+        Parameters
+        ----------
+        points : Nx3 array, optional
+            Points used to find rectangle.
+        return_center : boolean, optional
+            If True, return tuple containing both vectors and calculated center.
+        use_PCA : boolean, optional
+            If True, use PCA to detect vectors (better for rectangles). If False,
+            use eigenvectors from covariance matrix. Default: True.
+
+        Returns
+        -------
+        numpy.array of shape (2, 3)
+            Two non unit vectors
+        """
+        if points is None:
+            points = self.vertices
+
+        return super().get_rectangular_oriented_bounding_box_from_points(
+            points, use_PCA=use_PCA
+        )
+
+    def get_rectangular_vectors_from_points(
+        self, points=None, return_center=False, use_PCA=True, normalized=False
+    ):
+        """Gives vectors defining a rectangle that roughly contains the plane.
+
+        If points are not given, use bounds.
+
+        Parameters
+        ----------
+        points : Nx3 array, optional
+            Points used to find rectangle.
+        return_center : boolean, optional
+            If True, return tuple containing both vectors and calculated center.
+        use_PCA : boolean, optional
+            If True, use PCA to detect vectors (better for rectangles). If False,
+            use eigenvectors from covariance matrix. Default: True.
+        normalized : boolean, optional
+            If True, return normalized vectors. Default: False.
+
+        Returns
+        -------
+        numpy.array of shape (2, 3)
+            Two non unit vectors
+        """
+        if points is None:
+            points = self.vertices
+            if self.has_inliers:
+                points = np.vstack([points, self.inliers.points])
+
+        return super().get_rectangular_vectors_from_points(
+            points=points,
+            return_center=return_center,
+            use_PCA=use_PCA,
+            normalized=normalized,
+        )
 
     def closest_vertices(self, other_plane, n=1):
         """Returns n pairs of closest bound points with a second plane.

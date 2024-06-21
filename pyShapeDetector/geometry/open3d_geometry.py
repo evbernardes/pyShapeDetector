@@ -65,9 +65,9 @@ class Open3D_Geometry:
         return self.get_axis_aligned_bounding_box()
 
     @property
-    def bbox_bounds(self):
-        bbox = self.bbox
-        return bbox.min_bounds, bbox.max_bounds
+    def oriented_bbox(self):
+        oriented_bbox = self.get_oriented_bounding_box()
+        return oriented_bbox
 
     def __copy__(self, *args):
         _open3d = copy.copy(self.as_open3d)

@@ -10,7 +10,7 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 from open3d import visualization
-from pyShapeDetector.geometry import PointCloud, AxisAlignedBoundingBox
+from pyShapeDetector.geometry import PointCloud, AxisAlignedBoundingBox, OrientedBoundingBox
 # from pyShapeDetector.primitives import Primitive, Line
 
 
@@ -284,6 +284,8 @@ def select_manually(
     if not isinstance(fixed_elements, list):
         fixed_elements = [fixed_elements]
     fixed_elements = [elem.as_open3d for elem in fixed_elements]
+    
+    # fixed_bbox = [elem.get_axis_aligned_bounding_box() for elem in ]
 
     color_bbox_selected = (0, 0.8, 0)
     color_bbox_unselected = (1, 0, 0)

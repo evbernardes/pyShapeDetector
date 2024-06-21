@@ -9,3 +9,4 @@ from .open3d_geometry import Open3D_Geometry
 from .pointcloud import PointCloud
 from .trianglemesh import TriangleMesh
 from .axis_aligned_bounding_box import AxisAlignedBoundingBox
+from .oriented_bounding_box import OrientedBoundingBox

@@ -6,7 +6,7 @@ Created on Mon Sep 25 15:42:59 2023
 @author: ebernardes
 """
 import numpy as np
-from open3d.geometry import AxisAlignedBoundingBox
+from pyShapeDetector.geometry import AxisAlignedBoundingBox
 from pyShapeDetector.geometry import TriangleMesh
 
 from .primitivebase import Primitive
@@ -41,7 +41,7 @@ class Sphere(Primitive):
     axis_spherical
     axis_cylindrical
     bbox
-    bbox_bounds
+    oriented_bbox
 
     radius
     center
@@ -66,6 +66,7 @@ class Sphere(Primitive):
     closest_inliers
     inliers_average_dist
     get_axis_aligned_bounding_box
+    get_oriented_bounding_box
     sample_points_uniformly
     sample_points_density
     sample_PointCloud_uniformly

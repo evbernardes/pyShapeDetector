@@ -9,16 +9,16 @@ import warnings
 from itertools import permutations, product, combinations
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
-from scipy.spatial.transform import Rotation
+# from scipy.spatial.transform import Rotation
 
-# from open3d.geometry import AxisAlignedBoundingBox
-from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
-
-from pyShapeDetector.utility import (
-    get_rotation_from_axis,
-    # get_rectangular_grid,
-    # select_grid_points
+from pyShapeDetector.geometry import (
+    PointCloud,
+    TriangleMesh,
+    AxisAlignedBoundingBox,
+    OrientedBoundingBox,
 )
+
+from pyShapeDetector.utility import get_rotation_from_axis
 
 from .primitivebase import Primitive, _set_and_check_3d_array, _check_distance
 # from alphashape import alphashape
@@ -75,7 +75,7 @@ class Plane(Primitive):
     axis_spherical
     axis_cylindrical
     bbox
-    bbox_bounds
+    oriented_bbox
 
     is_convex
     normal
@@ -105,6 +105,7 @@ class Plane(Primitive):
     closest_inliers
     inliers_average_dist
     get_axis_aligned_bounding_box
+    get_oriented_bounding_box
     sample_points_uniformly
     sample_points_density
     sample_PointCloud_uniformly
@@ -429,12 +430,12 @@ class Plane(Primitive):
 
         Returns
         -------
-        open3d.geometry.AxisAlignedBoundingBox
+        AxisAlignedBoundingBox
         """
         if slack < 0:
             raise ValueError("Slack must be non-negative.")
 
-        warnings.warn("Unbounded planes have infinite axis aligned bounding boxes.")
+        warnings.warn("Unbounded planes have infinite bounding boxes.")
 
         eps = 1e-3
         if np.linalg.norm(self.normal - [1, 0, 0]) < eps:
@@ -449,6 +450,32 @@ class Plane(Primitive):
         centroid = self.centroid
         expand = np.array([slack if n == idx else np.inf for n in range(3)])
         return AxisAlignedBoundingBox(centroid - expand, centroid + expand)
+
+    def get_oriented_bounding_box(self, slack=0):
+        """Returns an oriented bounding box of the primitive.
+
+        Parameters
+        ----------
+        slack : float, optional
+            Expand bounding box in all directions, useful for testing purposes.
+            Default: 0.
+
+        See: open3d.geometry.get_oriented_bounding_box
+
+        Returns
+        -------
+        OrientedBoundingBox
+        """
+        if slack < 0:
+            raise ValueError("Slack must be non-negative.")
+
+        warnings.warn("Unbounded planes have infinite bounding boxes.")
+
+        R = get_rotation_from_axis([0, 0, 1], self.normal)
+
+        return OrientedBoundingBox(
+            center=self.centroid, R=R, extent=np.array([np.inf, np.inf, slack])
+        )
 
     def get_mesh(self, **options):
         """Flatten inliers points and creates a simplified mesh of the plane. If the
@@ -1143,6 +1170,45 @@ class Plane(Primitive):
         vertices = self.get_points_from_projections(vertices_2d)
         triangles = np.vstack([triangles, triangles[:, ::-1]])
         return new_TriangleMesh(vertices, triangles)
+
+    def get_rectangular_oriented_bounding_box_from_points(
+        self, points=None, use_PCA=True
+    ):
+        """Gives oriented bounding box contains the plane.
+
+        If points are not given, use inliers.
+
+        Parameters
+        ----------
+        points : Nx3 array, optional
+            Points used to find rectangle.
+        return_center : boolean, optional
+            If True, return tuple containing both vectors and calculated center.
+        use_PCA : boolean, optional
+            If True, use PCA to detect vectors (better for rectangles). If False,
+            use eigenvectors from covariance matrix. Default: True.
+
+        Returns
+        -------
+        numpy.array of shape (2, 3)
+            Two non unit vectors
+        """
+        if points is None:
+            if not self.inliers.has_points():
+                raise RuntimeError(
+                    "If no inliers, bounds or vertices, must input points."
+                )
+            points = self.flatten_points(self.inliers.points)
+
+        vectors, center = self.get_rectangular_vectors_from_points(
+            points=points, return_center=True, normalized=True
+        )
+
+        R = np.vstack([vectors, np.cross(vectors[0], vectors[1])])
+        delta = points - center
+        extent = [max(abs(delta.dot(v))) * 2 for v in R]
+
+        return OrientedBoundingBox(center=center, R=R.T, extent=extent)
 
     def get_rectangular_vectors_from_points(
         self, points=None, return_center=False, use_PCA=True, normalized=False
