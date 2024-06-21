@@ -253,6 +253,7 @@ def select_manually(
     bbox_expand=0.0,
     paint_selected=True,
     window_name="",
+    return_finish_flag=False,
     **camera_options,
 ):
     elements = copy.deepcopy(elements)
@@ -274,8 +275,10 @@ def select_manually(
         if element is None:
             bbox = None
         else:
-            bbox = AxisAlignedBoundingBox(element.get_axis_aligned_bounding_box())
-            bbox = bbox.expanded(bbox_expand)
+            # bbox = AxisAlignedBoundingBox(element.get_axis_aligned_bounding_box()).expanded(bbox_expand)
+            bbox = OrientedBoundingBox(element.get_oriented_bounding_box()).expanded(
+                bbox_expand
+            )
             bbox.color = (1, 0, 0)
             bbox = bbox.as_open3d
             bboxes.append(bbox)
@@ -290,7 +293,18 @@ def select_manually(
         fixed_elements = [fixed_elements]
     fixed_elements = [elem.as_open3d for elem in fixed_elements]
 
-    # fixed_bbox = [elem.get_axis_aligned_bounding_box() for elem in ]
+    fixed_bboxes = []
+    for element in fixed_elements:
+        if element is None:
+            bbox = None
+        else:
+            # bbox = AxisAlignedBoundingBox(element.get_axis_aligned_bounding_box()).expanded(bbox_expand)
+            bbox = OrientedBoundingBox(element.get_oriented_bounding_box()).expanded(
+                bbox_expand
+            )
+            bbox.color = (0, 0, 0)
+            bbox = bbox.as_open3d
+            fixed_bboxes.append(bbox)
 
     color_bbox_selected = (0, 0.8, 0)
     color_bbox_unselected = (1, 0, 0)
@@ -307,18 +321,19 @@ def select_manually(
     else:
         elements_painted[0] = elements[0]
 
-    global data
-
     if window_name != "":
         window_name += " - "
 
-    window_name += f"{len(elements)} elements. Green: selected. White: unselected. (T)oggle | (D) next | (A) previous"
+    window_name += f"{len(elements)} elements. Green: selected. White: unselected. (T)oggle | (D) next | (A) previous | (F)inish"
+
+    global data
 
     data = {
         "selected": [False] * len(elements),
         "elements_painted": elements_painted,
         "i_old": 0,
         "i": 0,
+        "finish": False,
     }
 
     def update(vis):
@@ -376,18 +391,26 @@ def select_manually(
         data["i"] = max(data["i_old"] - 1, 0)
         update(vis)
 
+    def finish_process(vis):
+        global data
+        data["finish"] = True
+        vis.close()
+
     key_to_callback = {}
     key_to_callback[ord("S")] = toggle
     key_to_callback[ord("D")] = next
     key_to_callback[ord("A")] = previous
+    key_to_callback[ord("F")] = finish_process
 
     visualization.draw_geometries_with_key_callbacks(
-        fixed_elements + data["elements_painted"] + [bboxes[0]],
+        fixed_elements + fixed_bboxes + data["elements_painted"] + [bboxes[0]],
         # data['elements_painted'],
         key_to_callback,
         window_name=window_name,
     )
 
+    if return_finish_flag:
+        return data["selected"], data["finish"]
     return data["selected"]
 
 
@@ -498,12 +521,13 @@ def select_combinations_manually(
         if len(elements[i + 1 :]) == 0:
             continue
 
-        selected = select_manually(
+        selected, finish_flag = select_manually(
             elements[i + 1 :],
             fixed_elements=elements_fused[i],
             window_name=f"Element {i}",
             bbox_expand=bbox_expand,
             paint_selected=paint_selected,
+            return_finish_flag=True,
             **camera_options,
         )
 
@@ -516,6 +540,9 @@ def select_combinations_manually(
             else:
                 elements_fused[i].append(elements[i + 1 :][idx])
             elements[i + 1 :][idx] = None
+
+        if finish_flag:
+            break
 
         # for i, j in itertools.combinations(range(N), 2):
 
