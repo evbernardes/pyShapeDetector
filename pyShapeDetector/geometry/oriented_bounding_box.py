@@ -62,7 +62,8 @@ class OrientedBoundingBox(Open3D_Geometry):
         -------
         AxisAlignedBoundingBox
         """
-        slack = abs(slack)
-        return OrientedBoundingBox(
+        obb = OrientedBoundingBox(
             center=self.center, R=self.R, extent=self.extent + slack
         )
+        obb.color = self.color
+        return obb

@@ -131,8 +131,9 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
         -------
         AxisAlignedBoundingBox
         """
-        slack = abs(slack)
-        return AxisAlignedBoundingBox(self.min_bound - slack, self.max_bound + slack)
+        aabb = AxisAlignedBoundingBox(self.min_bound - slack, self.max_bound + slack)
+        aabb.color = self.color
+        return aabb
 
     def split(self, num_boxes, dim=None):
         """Separates bounding boxes into multiple sub-boxes.
