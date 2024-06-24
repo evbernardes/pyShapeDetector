@@ -67,6 +67,7 @@ class Open3D_Geometry:
     @property
     def oriented_bbox(self):
         oriented_bbox = self.get_oriented_bounding_box()
+        oriented_bbox.color = (1, 0, 0)
         return oriented_bbox
 
     def __copy__(self, *args):

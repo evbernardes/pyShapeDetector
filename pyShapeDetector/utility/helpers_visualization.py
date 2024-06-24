@@ -34,7 +34,7 @@ def get_painted(elements, color="random"):
 
     elements = copy.deepcopy(elements)
 
-    if not (is_list := isinstance(elements, list)):
+    if not (is_list := isinstance(elements, (list, tuple))):
         elements = [elements]
 
     if isinstance(color, str) or color is None:
