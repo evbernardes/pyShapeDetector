@@ -135,8 +135,6 @@ class PointCloud(Open3D_Geometry):
         return pcd
 
     def get_oriented_bounding_box(self):
-        from .oriented_bounding_box import OrientedBoundingBox
-
         try:
             oriented_bbox = self.get_minimal_oriented_bounding_box()
 
