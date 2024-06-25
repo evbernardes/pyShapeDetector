@@ -156,11 +156,11 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
                 f"Number of divisions should be a positive integer, got {num_boxes}."
             )
 
-        if num_boxes == 1:
-            return [copy.copy(self)]
-
         if dim is not None and dim not in [0, 1, 2]:
             raise ValueError(f"Dim must be 0, 1 or 2, got {dim}.")
+
+        if num_boxes == 1:
+            return [copy.copy(self)]
 
         min_bound = self.min_bound
         max_bound = self.max_bound
@@ -263,4 +263,6 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
         open3d.geometry.PointCloud
             Sampled pointcloud from shape.
         """
+        from .pointcloud import PointCloud
+
         return PointCloud(self.sample_points_density(density))

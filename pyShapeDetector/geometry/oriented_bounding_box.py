@@ -25,6 +25,7 @@ class OrientedBoundingBox(Open3D_Geometry):
     -------
     contains_points
     expanded
+    split
 
     """
 
@@ -68,3 +69,35 @@ class OrientedBoundingBox(Open3D_Geometry):
         )
         obb.color = self.color
         return obb
+
+    def split(self, num_boxes, dim=None):
+        """Separates bounding boxes into multiple sub-boxes.
+
+        Parameters
+        ----------
+        num_boxes : int
+            Number of sub-boxes.
+        dim : int, optional
+            Dimension that should be divided. If not given, will be chosen as the
+            largest dimension. Default: None.
+
+        Returns
+        -------
+        list
+            Divided boxes
+        """
+        aabb = AxisAlignedBoundingBox(
+            self.center - self.extent / 2, self.center + self.extent / 2
+        )
+        aabb.color = (0, 0, 1)
+
+        bboxes = []
+        for bbox in aabb.split(num_boxes, dim=dim):
+            center = (bbox.max_bound + bbox.min_bound) / 2
+            extent = bbox.max_bound - bbox.min_bound
+            new_bbox = OrientedBoundingBox(center=center, R=np.eye(3), extent=extent)
+            center = aabb.get_center()
+            new_bbox.rotate(self.R, center=self.center)
+            bboxes.append(new_bbox)
+
+        return bboxes
