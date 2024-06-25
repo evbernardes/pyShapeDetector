@@ -737,6 +737,9 @@ class PointCloud(Open3D_Geometry):
                 "When mode == 'radius', radius must be positive. " f"Got {radius}."
             )
 
+        if residuals is None and len(self.curvature) == len(self.points):
+            residuals = self.curvature
+
         def _get_labels_region_growing(
             pcd, residuals, k, k_retest, cos_thr, min_points, debug, i=None, data=None
         ):
