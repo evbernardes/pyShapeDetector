@@ -5,6 +5,7 @@ Created on Wed Jun  5 15:27:03 2024
 
 @author: ebernardes
 """
+import copy
 import numpy as np
 from open3d.geometry import OrientedBoundingBox as open3d_OrientedBoundingBox
 

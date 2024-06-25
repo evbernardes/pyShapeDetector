@@ -34,17 +34,17 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
     sample_PointCloud_density
     """
 
-    def __add__(self, other_bbox):
-        if not self.is_instance_or_open3d(other_bbox):
+    def __add__(self, other_aabb):
+        if not self.is_instance_or_open3d(other_aabb):
             raise ValueError(
-                f"Can only add to other axis aligned bounding boxes, got {other_bbox.__class__}."
+                f"Can only add to other axis aligned bounding boxes, got {other_aabb.__class__}."
             )
 
-        min_bound = np.min([self.min_bound, other_bbox.min_bound], axis=0)
-        max_bound = np.max([self.max_bound, other_bbox.max_bound], axis=0)
-        bbox = AxisAlignedBoundingBox(min_bound, max_bound)
-        bbox.color = self.color
-        return bbox
+        min_bound = np.min([self.min_bound, other_aabb.min_bound], axis=0)
+        max_bound = np.max([self.max_bound, other_aabb.max_bound], axis=0)
+        aabb = AxisAlignedBoundingBox(min_bound, max_bound)
+        aabb.color = self.color
+        return aabb
 
     def contains_points(self, points, inclusive=True):
         """
@@ -73,13 +73,13 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
 
         return np.logical_and(min_check, max_check)  # .tolist()
 
-    def intersects(self, other_bbox, distance=0):
+    def intersects(self, other_aabb, distance=0):
         """Check if minimal distance of the inlier points bounding box
         is below a given distance.
 
         Parameters
         ----------
-        other_bbox : Primitive
+        other_aabb : Primitive
             A shape with inlier points
         distance : float
             Max distance between the bounding boxes.
@@ -89,7 +89,7 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
         bool
             True if the calculated distance is smaller than the input distance.
         """
-        if not isinstance(other_bbox, AxisAlignedBoundingBox):
+        if not isinstance(other_aabb, AxisAlignedBoundingBox):
             raise ValueError(
                 "Input should be another instance of AxisAlignedBoundingBox."
             )
@@ -101,7 +101,7 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
             raise ValueError("Distance must be non-negative.")
 
         bb1 = self
-        bb2 = other_bbox
+        bb2 = other_aabb
         if distance != 0:
             bb1 = bb1.expanded(distance / 2)
             bb2 = bb2.expanded(distance / 2)

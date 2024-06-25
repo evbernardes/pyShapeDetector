@@ -51,8 +51,8 @@ class PlaneTriangulated(Plane):
     metrics
     axis_spherical
     axis_cylindrical
-    bbox
-    oriented_bbox
+    aabb
+    obb
 
     is_convex
     normal

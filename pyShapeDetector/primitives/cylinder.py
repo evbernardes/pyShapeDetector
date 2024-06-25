@@ -44,8 +44,8 @@ class Cylinder(Primitive):
     metrics
     axis_spherical
     axis_cylindrical
-    bbox
-    oriented_bbox
+    aabb
+    obb
 
     base
     top

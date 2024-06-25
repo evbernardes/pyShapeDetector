@@ -160,8 +160,8 @@ class Primitive(ABC):
     metrics
     axis_spherical
     axis_cylindrical
-    bbox
-    oriented_bbox
+    aabb
+    obb
 
     Methods
     -------
@@ -387,13 +387,13 @@ class Primitive(ABC):
         return np.array([rho, theta, z])
 
     @property
-    def bbox(self):
-        bbox = self.get_axis_aligned_bounding_box()
-        bbox.color = self.color
-        return bbox
+    def aabb(self):
+        axis_aligned_bbox = self.get_axis_aligned_bounding_box()
+        axis_aligned_bbox.color = self.color
+        return axis_aligned_bbox
 
     @property
-    def oriented_bbox(self):
+    def obb(self):
         oriented_bbox = self.get_oriented_bounding_box()
         oriented_bbox.color = self.color
         return oriented_bbox

@@ -45,8 +45,8 @@ class Cone(Primitive):
     metrics
     axis_spherical
     axis_cylindrical
-    bbox
-    oriented_bbox
+    aabb
+    obb
 
     appex
     top

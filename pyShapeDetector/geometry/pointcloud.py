@@ -366,15 +366,15 @@ class PointCloud(Open3D_Geometry):
         list
             Divided pointclouds
         """
-        subboxes = self.get_axis_aligned_bounding_box().split(num_boxes, dim)
+        suaabbes = self.get_axis_aligned_bounding_box().split(num_boxes, dim)
 
         if return_only_indices:
             return [
-                bbox.get_point_indices_within_bounding_box(self.points)
-                for bbox in subboxes
+                aabb.get_point_indices_within_bounding_box(self.points)
+                for aabb in suaabbes
             ]
         else:
-            return [self.crop(bbox) for bbox in subboxes]
+            return [self.crop(aabb) for aabb in suaabbes]
 
     # def split(self, num_boxes, dim=None, return_only_indices=False):
     #     """ Split the bounding box of the pointcloud in multiple sub boxes and
@@ -395,13 +395,13 @@ class PointCloud(Open3D_Geometry):
     #     list
     #         Divided pointclouds
     #     """
-    #     subboxes = self.get_axis_aligned_bounding_box().split(num_boxes, dim)
+    #     suaabbes = self.get_axis_aligned_bounding_box().split(num_boxes, dim)
     #     points = self.points
     #     available_indices = set(range(len(self.points)))
     #     subsets = []
-    #     for bbox in subboxes:
+    #     for aabb in suaabbes:
 
-    #         indices = bbox.get_point_indices_within_bounding_box(points)
+    #         indices = aabb.get_point_indices_within_bounding_box(points)
     #         indices_set = set(indices)
     #         for subset in subsets:
     #             indices_set = indices_set - subset
@@ -549,16 +549,16 @@ class PointCloud(Open3D_Geometry):
                     f"shapes must only contain positive integers, got {shape}"
                 )
 
-        bbox = self.get_axis_aligned_bounding_box()
-        min_bound = bbox.min_bound
-        max_bound = bbox.max_bound
+        aabb = self.get_axis_aligned_bounding_box()
+        min_bound = aabb.min_bound
+        max_bound = aabb.max_bound
         delta = (max_bound - min_bound) / shape
         pcds = []
         for ix, iy, iz in itertools.product(*[range(n) for n in shape]):
             min_bound_sub = min_bound + delta * (ix, iy, iz)
             max_bound_sub = min_bound + delta * (ix + 1, iy + 1, iz + 1)
-            bbox_sub = AxisAlignedBoundingBox(min_bound_sub, max_bound_sub)
-            pcd_sub = self.crop(bbox_sub)
+            aabb_sub = AxisAlignedBoundingBox(min_bound_sub, max_bound_sub)
+            pcd_sub = self.crop(aabb_sub)
             if len(pcd_sub.points) >= min_points:
                 pcds.append(pcd_sub)
         return pcds
