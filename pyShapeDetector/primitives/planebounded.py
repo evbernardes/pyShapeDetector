@@ -364,20 +364,6 @@ class PlaneBounded(Plane):
             Mesh corresponding to the plane.
         """
 
-        # if len(self._fusion_intersections) == 0:
-        #     points = self.bounds
-        #     projections = self.bounds_projections
-        #     # idx_intersections_sorted = []
-        # else:
-        #     points = np.vstack([self.bounds, self._fusion_intersections])
-        #     projections = self.get_projections(points)
-
-        #     angles = projections - projections.mean(axis=0)
-        #     angles = np.arctan2(*angles.T) + np.pi
-        #     idx = np.argsort(angles)
-
-        #     points = points[idx]
-        #     projections = projections[idx]
         projections = self.bounds_projections
         holes = self._holes
 
