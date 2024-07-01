@@ -301,7 +301,7 @@ class Primitive(ABC):
 
     @mesh.setter
     def mesh(self, new_mesh):
-        if isinstance(new_mesh, TriangleMesh):
+        if isinstance(new_mesh, TriangleMesh) or new_mesh is None:
             self._mesh = new_mesh
         elif isinstance(new_mesh, TriangleMesh.__open3d_class__):
             self._mesh = TriangleMesh(new_mesh)
