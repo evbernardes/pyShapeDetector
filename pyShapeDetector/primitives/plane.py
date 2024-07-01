@@ -657,6 +657,7 @@ class Plane(Primitive):
             hole._is_hole = True
             fixed_holes.append(hole)
         self._holes += fixed_holes
+        self.mesh = None
 
     def remove_hole(self, idx):
         """Remove hole according to index.
@@ -667,6 +668,7 @@ class Plane(Primitive):
             Index of hole to be removed.
         """
         self._holes.pop(idx)
+        self.mesh = None
 
     def get_fused_holes(self):
         """Fuse bounds of all holes into single PlaneBounded instance.

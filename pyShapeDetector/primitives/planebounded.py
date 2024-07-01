@@ -8,6 +8,7 @@ Created on Thu Feb 15 10:15:09 2024
 import warnings
 from itertools import product
 import numpy as np
+from importlib.util import find_spec
 from scipy.spatial import QhullError, ConvexHull, Delaunay
 
 from sklearn.decomposition import PCA
@@ -23,6 +24,9 @@ from pyShapeDetector.geometry import (
 from .plane import Plane
 
 from pyShapeDetector.utility import get_rotation_from_axis
+
+if has_mapbox_earcut := find_spec("mapbox_earcut") is not None:
+    from mapbox_earcut import triangulate_float32
 
 
 def _is_clockwise(bounds):
@@ -389,17 +393,34 @@ class PlaneBounded(Plane):
                     triangles_center = triangles_center[~inside_hole]
 
         else:
-            if not self.is_clockwise:
-                projections = projections[::-1]
+            if has_mapbox_earcut:
+                all_points = [self.bounds] + [h.bounds for h in self.holes]
+                points = np.vstack(all_points)
+                projections = self.get_projections(points)
+                rings = [len(self.bounds)]
+                for hole in self.holes:
+                    rings.append(rings[-1] + len(hole.bounds))
 
-            if not self.is_hole and len(self.holes) > 0:
-                from .plane import _fuse_loops
+                triangles = triangulate_float32(projections, rings).reshape(-1, 3)
 
-                fused_hole = self.get_fused_holes()
-                projections = _fuse_loops(projections, fused_hole.bounds_projections)
+            else:
+                warnings.warn(
+                    "mapbox_earcut not present, triangulation might not work properly."
+                )
 
-            points = self.get_points_from_projections(projections)
-            triangles = TriangleMesh.triangulate_earclipping(projections)
+                if not self.is_clockwise:
+                    projections = projections[::-1]
+
+                if not self.is_hole and len(self.holes) > 0:
+                    from .plane import _fuse_loops
+
+                    fused_hole = self.get_fused_holes()
+                    projections = _fuse_loops(
+                        projections, fused_hole.bounds_projections
+                    )
+
+                points = self.get_points_from_projections(projections)
+                triangles = TriangleMesh.triangulate_earclipping(projections)
 
         areas = TriangleMesh(points, triangles).get_triangle_surface_areas()
         triangles = triangles[areas > 0]

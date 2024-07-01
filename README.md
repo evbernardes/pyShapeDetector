@@ -9,6 +9,9 @@ Python 3 module to detect geometrical primitives in pointclouds.
 - `sklearn`
 - `TODO` ...
 
+### Optional
+- `mapbox_earcut`: for proper triangulation of concave plane boundaries
+
 ## Installation
 
 To install from GitHub source, first clone repo using `git`:
