@@ -740,6 +740,10 @@ class PlaneBounded(Plane):
 
         # inside = np.array([True] * len(points))
         inside = []
+        
+        if PointCloud.is_instance_or_open3d(points):
+            points = np.asarray(points.points)
+            
         points = np.atleast_2d(points)
         if points.shape[1] == 3:
             if input_is_2D:
