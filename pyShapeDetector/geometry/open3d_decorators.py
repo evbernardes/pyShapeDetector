@@ -12,7 +12,7 @@ from open3d import geometry, utility
 # Maps the dimension and type of variable with the converter function
 # that creates Eigen instances from the original lists/arrays
 converters_vector = {
-    (1, (), int): utility.IntVector,
+    (1, (), int): lambda x: utility.IntVector(list(x)),
     (1, (), float): utility.DoubleVector,
     (2, (2,), int): utility.Vector2iVector,
     (2, (2,), float): utility.Vector2dVector,
