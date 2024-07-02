@@ -64,7 +64,7 @@ class Open3D_Geometry:
     def aabb(self):
         axis_aligned_bbox = self.get_axis_aligned_bounding_box()
         axis_aligned_bbox.color = (0, 1, 0)
-        return self.get_axis_aligned_bounding_box()
+        return axis_aligned_bbox
 
     @property
     def obb(self):
