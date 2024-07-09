@@ -499,7 +499,10 @@ def select_manually(
         distances = [
             _get_element_distance(elem, point) for elem in data["elements_painted"]
         ]
-        update(vis, np.argmin(distances))
+        data["i_old"] = data["i"]
+        data["i"] = np.argmin(distances)
+        toggle(vis, 0, None)
+        update(vis)
 
     vis = visualization.VisualizerWithKeyCallback()
 
