@@ -347,9 +347,10 @@ def select_manually(
     if window_name != "":
         window_name += " - "
 
-    window_name += f"{len(elements)} elements. "
-                    "Green: selected. White: unselected. Blue: current. "
-                    "(T)oggle | (D) next | (A) previous | (LShift) Mouse select | (F)inish"
+    window_name += f"{len(elements)} elements. " + (
+        " Green: selected. White: unselected. Blue: current. "
+        " (T)oggle | (D) next | (A) previous | (LShift) Mouse select | (F)inish"
+    )
 
     global data
 
@@ -362,8 +363,13 @@ def select_manually(
         "mouse_select": False,
     }
 
-    def update(vis):
+    def update(vis, idx=None):
         global data
+
+        if idx is not None:
+            data["i_old"] = data["i"]
+            data["i"] = idx
+
         i_old = data["i_old"]
         i = data["i"]
 
@@ -402,8 +408,6 @@ def select_manually(
 
     def toggle_mouse(vis, action, mods):
         global data
-        # print("Ah!")
-        # return
 
         if data["mouse_select"] == bool(action):
             return
@@ -411,11 +415,11 @@ def select_manually(
         data["mouse_select"] = bool(action)
 
         if data["mouse_select"]:
-            print("[Info] Mouse mode: selection")
+            # print("[Info] Mouse mode: selection")
             vis.register_mouse_button_callback(on_mouse_button)
             vis.register_mouse_move_callback(on_mouse_move)
         else:
-            print("[Info] Mouse mode: camera control")
+            # print("[Info] Mouse mode: camera control")
             vis.register_mouse_button_callback(None)
             vis.register_mouse_move_callback(None)
 
@@ -432,18 +436,14 @@ def select_manually(
             return
 
         global data
-        data["i_old"] = data["i"]
-        data["i"] = min(data["i_old"] + 1, len(elements) - 1)
-        update(vis)
+        update(vis, min(data["i_old"] + 1, len(elements) - 1))
 
     def previous(vis, action, mods):
         if action == 1:
             return
 
         global data
-        data["i_old"] = data["i"]
-        data["i"] = max(data["i_old"] - 1, 0)
-        update(vis)
+        update(vis, max(data["i_old"] - 1, 0))
 
     def finish_process(vis, action, mods):
         if action == 1:
@@ -483,7 +483,6 @@ def select_manually(
         world_space_point = np.dot(np.linalg.inv(extrinsic), camera_space_point)
 
         point = world_space_point[:3].flatten()
-        print(point)
         return point
 
     def on_mouse_move(vis, x, y):
@@ -496,18 +495,11 @@ def select_manually(
             return
 
         global data
-        print(data["mouse_position"])
         point = unproject(vis, *data["mouse_position"])
         distances = [
             _get_element_distance(elem, point) for elem in data["elements_painted"]
         ]
-        # print(distances)
-        data["i_old"] = data["i"]
-        data["i"] = np.argmin(distances)
-        print(data["i"])
-        update(vis)
-
-        # print(unproject(vis, *data["mouse_position"]))
+        update(vis, np.argmin(distances))
 
     vis = visualization.VisualizerWithKeyCallback()
 
@@ -519,21 +511,12 @@ def select_manually(
     vis.register_key_action_callback(ord("A"), previous)
     vis.register_key_action_callback(ord("F"), finish_process)
     vis.register_key_action_callback(GLFW_LEFT_SHIFT, toggle_mouse)
-    # vis.register_mouse_button_callback(on_mouse_button)
-    # vis.register_mouse_scroll_callback(on_mouse_scroll)
 
     vis.create_window(window_name)
 
     for elem in fixed_elements + fixed_bboxes + data["elements_painted"] + [bboxes[0]]:
         # for elem in fixed_elements + data["elements_painted"]:
         vis.add_geometry(elem)
-
-    # visualization.draw_geometries_with_key_callbacks(
-    #     fixed_elements + fixed_bboxes + data["elements_painted"] + [bboxes[0]],
-    #     # data['elements_painted'],
-    #     key_to_callback,
-    #     window_name=window_name,
-    # )
 
     vis.run()
     vis.destroy_window()
