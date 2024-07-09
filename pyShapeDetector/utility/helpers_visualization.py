@@ -12,6 +12,29 @@ import numpy as np
 from open3d import visualization
 
 
+GLFW_LEFT_SHIFT = 340
+
+
+def _get_element_distance(elem, point, res=20):
+    from pyShapeDetector.primitives import Primitive
+    from pyShapeDetector.geometry import TriangleMesh, PointCloud
+
+    dist = np.inf
+
+    if isinstance(elem, Primitive):
+        dist = elem.get_distances(point)
+
+    elif TriangleMesh.is_instance_or_open3d(elem):
+        elem = elem.sample_uniform_point(res)
+        dist = PointCloud([point]).compute_point_cloud_distance(elem)[0]
+
+    elif PointCloud.is_instance_or_open3d(elem):
+        elem = elem.uniform_down_sample(res)
+        dist = PointCloud([point]).compute_point_cloud_distance(elem)[0]
+
+    return dist
+
+
 def get_painted(elements, color="random"):
     """Get painted copy of each pointcloud/mesh/shape.
 
@@ -324,7 +347,9 @@ def select_manually(
     if window_name != "":
         window_name += " - "
 
-    window_name += f"{len(elements)} elements. Green: selected. White: unselected. (T)oggle | (D) next | (A) previous | (F)inish"
+    window_name += f"{len(elements)} elements. "
+                    "Green: selected. White: unselected. Blue: current. "
+                    "(T)oggle | (D) next | (A) previous | (LShift) Mouse select | (F)inish"
 
     global data
 
@@ -334,6 +359,7 @@ def select_manually(
         "i_old": 0,
         "i": 0,
         "finish": False,
+        "mouse_select": False,
     }
 
     def update(vis):
@@ -374,40 +400,144 @@ def select_manually(
 
         data["i_old"] = i
 
-    def toggle(vis):
+    def toggle_mouse(vis, action, mods):
+        global data
+        # print("Ah!")
+        # return
+
+        if data["mouse_select"] == bool(action):
+            return
+
+        data["mouse_select"] = bool(action)
+
+        if data["mouse_select"]:
+            print("[Info] Mouse mode: selection")
+            vis.register_mouse_button_callback(on_mouse_button)
+            vis.register_mouse_move_callback(on_mouse_move)
+        else:
+            print("[Info] Mouse mode: camera control")
+            vis.register_mouse_button_callback(None)
+            vis.register_mouse_move_callback(None)
+
+    def toggle(vis, action, mods):
+        if action == 1:
+            return
+
         global data
         data["selected"][data["i"]] = not data["selected"][data["i"]]
         update(vis)
 
-    def next(vis):
+    def next(vis, action, mods):
+        if action == 1:
+            return
+
         global data
         data["i_old"] = data["i"]
         data["i"] = min(data["i_old"] + 1, len(elements) - 1)
         update(vis)
 
-    def previous(vis):
+    def previous(vis, action, mods):
+        if action == 1:
+            return
+
         global data
         data["i_old"] = data["i"]
         data["i"] = max(data["i_old"] - 1, 0)
         update(vis)
 
-    def finish_process(vis):
+    def finish_process(vis, action, mods):
+        if action == 1:
+            return
+
         global data
         data["finish"] = True
         vis.close()
 
-    key_to_callback = {}
-    key_to_callback[ord("S")] = toggle
-    key_to_callback[ord("D")] = next
-    key_to_callback[ord("A")] = previous
-    key_to_callback[ord("F")] = finish_process
+    def unproject(vis, x, y):
+        """
+        Convert screen coordinates (x, y, depth) to 3D coordinates.
+        """
 
-    visualization.draw_geometries_with_key_callbacks(
-        fixed_elements + fixed_bboxes + data["elements_painted"] + [bboxes[0]],
-        # data['elements_painted'],
-        key_to_callback,
-        window_name=window_name,
-    )
+        depth = vis.capture_depth_float_buffer(True)
+        depth = np.asarray(depth)[y, x]
+
+        intrinsic = (
+            vis.get_view_control().convert_to_pinhole_camera_parameters().intrinsic
+        )
+        extrinsic = (
+            vis.get_view_control().convert_to_pinhole_camera_parameters().extrinsic
+        )
+
+        fx = intrinsic.intrinsic_matrix[0, 0]
+        fy = intrinsic.intrinsic_matrix[1, 1]
+        cx = intrinsic.intrinsic_matrix[0, 2]
+        cy = intrinsic.intrinsic_matrix[1, 2]
+
+        # Convert screen space to camera space
+        z = depth
+        x = (x - cx) * z / fx
+        y = (y - cy) * z / fy
+
+        # Convert camera space to world space
+        camera_space_point = np.array([x, y, z, 1.0]).reshape(4, 1)
+        world_space_point = np.dot(np.linalg.inv(extrinsic), camera_space_point)
+
+        point = world_space_point[:3].flatten()
+        print(point)
+        return point
+
+    def on_mouse_move(vis, x, y):
+        global data
+        data["mouse_position"] = (int(x), int(y))
+        # data["mouse_position"] = unproject(vis, x, y)
+
+    def on_mouse_button(vis, button, action, mods):
+        if action == 1:
+            return
+
+        global data
+        print(data["mouse_position"])
+        point = unproject(vis, *data["mouse_position"])
+        distances = [
+            _get_element_distance(elem, point) for elem in data["elements_painted"]
+        ]
+        # print(distances)
+        data["i_old"] = data["i"]
+        data["i"] = np.argmin(distances)
+        print(data["i"])
+        update(vis)
+
+        # print(unproject(vis, *data["mouse_position"]))
+
+    vis = visualization.VisualizerWithKeyCallback()
+
+    # for key, func in key_to_callback.items():
+    #     vis.register_key_action_callback(key, func)
+
+    vis.register_key_action_callback(ord("S"), toggle)
+    vis.register_key_action_callback(ord("D"), next)
+    vis.register_key_action_callback(ord("A"), previous)
+    vis.register_key_action_callback(ord("F"), finish_process)
+    vis.register_key_action_callback(GLFW_LEFT_SHIFT, toggle_mouse)
+    # vis.register_mouse_button_callback(on_mouse_button)
+    # vis.register_mouse_scroll_callback(on_mouse_scroll)
+
+    vis.create_window(window_name)
+
+    for elem in fixed_elements + fixed_bboxes + data["elements_painted"] + [bboxes[0]]:
+        # for elem in fixed_elements + data["elements_painted"]:
+        vis.add_geometry(elem)
+
+    # visualization.draw_geometries_with_key_callbacks(
+    #     fixed_elements + fixed_bboxes + data["elements_painted"] + [bboxes[0]],
+    #     # data['elements_painted'],
+    #     key_to_callback,
+    #     window_name=window_name,
+    # )
+
+    vis.run()
+    vis.destroy_window()
+    # vis.close()
 
     if return_finish_flag:
         return data["selected"], data["finish"]
