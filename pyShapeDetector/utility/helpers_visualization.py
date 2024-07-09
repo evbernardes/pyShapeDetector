@@ -12,27 +12,8 @@ import numpy as np
 from open3d import visualization
 
 
-GLFW_LEFT_SHIFT = 340
-
-
-def _get_element_distance(elem, point, res=20):
-    from pyShapeDetector.primitives import Primitive
-    from pyShapeDetector.geometry import TriangleMesh, PointCloud
-
-    dist = np.inf
-
-    if isinstance(elem, Primitive):
-        dist = elem.get_distances(point)
-
-    elif TriangleMesh.is_instance_or_open3d(elem):
-        elem = elem.sample_uniform_point(res)
-        dist = PointCloud([point]).compute_point_cloud_distance(elem)[0]
-
-    elif PointCloud.is_instance_or_open3d(elem):
-        elem = elem.uniform_down_sample(res)
-        dist = PointCloud([point]).compute_point_cloud_distance(elem)[0]
-
-    return dist
+GLFW_KEY_LEFT_SHIFT = 340
+GLFW_KEY_LEFT_CONTROL = 341
 
 
 def get_painted(elements, color="random"):
@@ -281,11 +262,10 @@ def select_manually(
 ):
     elements = copy.deepcopy(elements)
 
-    from pyShapeDetector.geometry import (
-        PointCloud,
-        AxisAlignedBoundingBox,
-        OrientedBoundingBox,
-    )
+    from pyShapeDetector.geometry import OrientedBoundingBox, TriangleMesh, PointCloud
+    from pyShapeDetector.primitives import Primitive
+
+    NUM_POINTS_DIST = 40
 
     if not isinstance(elements, list):
         elements = [elements]
@@ -344,12 +324,27 @@ def select_manually(
     else:
         elements_painted[0] = elements[0]
 
+    # these are used for distance testing with the mouse
+    elements_distance = []
+    for elem in elements:
+        if isinstance(elem, Primitive):
+            elements_distance.append(elem)
+
+        elif TriangleMesh.is_instance_or_open3d(elem):
+            elements_distance.append(elem.sample_uniform_point(NUM_POINTS_DIST))
+
+        elif PointCloud.is_instance_or_open3d(elem):
+            elements_distance.append(elem.uniform_down_sample(NUM_POINTS_DIST))
+
+        else:
+            elements_distance.append(None)
+
     if window_name != "":
         window_name += " - "
 
     window_name += f"{len(elements)} elements. " + (
         " Green: selected. White: unselected. Blue: current. "
-        " (T)oggle | (D) next | (A) previous | (LShift) Mouse select | (F)inish"
+        " (T)oggle | (D) next | (A) previous | (LShift) Mouse select + (LCtrl) Toggle| (F)inish"
     )
 
     global data
@@ -357,10 +352,12 @@ def select_manually(
     data = {
         "selected": [False] * len(elements),
         "elements_painted": elements_painted,
+        "elements_distance": elements_distance,
         "i_old": 0,
         "i": 0,
         "finish": False,
         "mouse_select": False,
+        "mouse_toggle": False,
     }
 
     def update(vis, idx=None):
@@ -406,7 +403,7 @@ def select_manually(
 
         data["i_old"] = i
 
-    def toggle_mouse(vis, action, mods):
+    def switch_mouse_selection(vis, action, mods):
         global data
 
         if data["mouse_select"] == bool(action):
@@ -422,6 +419,10 @@ def select_manually(
             # print("[Info] Mouse mode: camera control")
             vis.register_mouse_button_callback(None)
             vis.register_mouse_move_callback(None)
+
+    def switch_mouse_toggle(vis, action, mods):
+        global data
+        data["mouse_toggle"] = bool(action)
 
     def toggle(vis, action, mods):
         if action == 1:
@@ -496,24 +497,38 @@ def select_manually(
 
         global data
         point = unproject(vis, *data["mouse_position"])
-        distances = [
-            _get_element_distance(elem, point) for elem in data["elements_painted"]
-        ]
+
+        distances = []
+        for elem in data["elements_distance"]:
+            if elem is None:
+                distances.append(np.inf)
+
+            elif PointCloud.is_instance_or_open3d(elem):
+                distances.append(
+                    PointCloud([point]).compute_point_cloud_distance(elem)[0]
+                )
+
+            # in this case, it is certainly a Primitive
+            else:
+                distances.append(elem.get_distances(point))
+
+        # distances = [
+        #     _get_element_distance(elem, point) for elem in data["elements_painted"]
+        # ]
         data["i_old"] = data["i"]
         data["i"] = np.argmin(distances)
-        toggle(vis, 0, None)
+        if data["mouse_toggle"]:
+            toggle(vis, 0, None)
         update(vis)
 
     vis = visualization.VisualizerWithKeyCallback()
-
-    # for key, func in key_to_callback.items():
-    #     vis.register_key_action_callback(key, func)
 
     vis.register_key_action_callback(ord("S"), toggle)
     vis.register_key_action_callback(ord("D"), next)
     vis.register_key_action_callback(ord("A"), previous)
     vis.register_key_action_callback(ord("F"), finish_process)
-    vis.register_key_action_callback(GLFW_LEFT_SHIFT, toggle_mouse)
+    vis.register_key_action_callback(GLFW_KEY_LEFT_SHIFT, switch_mouse_selection)
+    vis.register_key_action_callback(GLFW_KEY_LEFT_CONTROL, switch_mouse_toggle)
 
     vis.create_window(window_name)
 
