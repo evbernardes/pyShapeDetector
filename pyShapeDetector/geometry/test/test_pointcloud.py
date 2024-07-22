@@ -28,3 +28,17 @@ def test_distribute():
     N_after = sum([len(pcd.points) for pcd in pcds])
 
     assert N_after == N_before + len(pcd_sampled.points)
+
+
+def test_estimate_curvature():
+    spheres = [Sphere.random() for i in range(2)]
+    pcds = [s.sample_PointCloud_uniformly(12345) for s in spheres]
+
+    pcd_full = PointCloud.fuse_pointclouds(pcds)
+    assert not pcd_full.has_curvature()
+
+    for pcd in pcds:
+        assert not pcd.has_curvature()
+        pcd.estimate_curvature(cores=1)
+        assert pcd.has_curvature()
+        pcd.estimate_curvature(cores=10)

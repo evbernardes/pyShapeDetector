@@ -86,7 +86,7 @@ class PointCloud(Open3D_Geometry):
             )
         self._curvature = values
 
-    @property
+    # @property
     def has_curvature(self):
         return len(self.curvature) > 0
 
@@ -187,7 +187,7 @@ class PointCloud(Open3D_Geometry):
 
         """
 
-        if not self.has_normals:
+        if not self.has_normals():
             raise RuntimeError("Pointcloud has no normals, call estimate_normals.")
 
         points = self.points
