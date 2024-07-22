@@ -12,6 +12,9 @@ from multiprocessing import Manager, Process
 def parallelize(cores=2):
     def decorator_parallelize(func):
         def wrapper(*args, **kwargs):
+            if cores == 1:
+                return func(*args, **kwargs)
+            
             array = args[0]
             args = args[1:]
             array_split = np.array_split(array, cores)
