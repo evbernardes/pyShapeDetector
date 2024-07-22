@@ -22,9 +22,9 @@ from pyShapeDetector.utility import get_rotation_from_axis, _set_and_check_3d_ar
 from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
 
 
-def _check_distance(shape1, shape2, bbox_intersection, inlier_max_distance):
-    if bbox_intersection is not None:
-        if not shape1.bbox.intersects(shape2.bbox, distance=bbox_intersection):
+def _check_distance(shape1, shape2, aabb_intersection, inlier_max_distance):
+    if aabb_intersection is not None:
+        if not shape1.aabb.intersects(shape2.aabb, distance=aabb_intersection):
             return False
 
     # Check if there is at least one pair that is close enough
@@ -1409,7 +1409,7 @@ class Primitive(ABC):
         shapes,
         rtol=1e-02,
         atol=1e-02,
-        bbox_intersection=None,
+        aabb_intersection=None,
         inlier_max_distance=None,
         legacy=False,
         return_partitions=False,
@@ -1449,7 +1449,7 @@ class Primitive(ABC):
             if not shapes[i].is_similar_to(shapes[j], rtol=rtol, atol=atol):
                 return False
             return _check_distance(
-                shapes[i], shapes[j], bbox_intersection, inlier_max_distance
+                shapes[i], shapes[j], aabb_intersection, inlier_max_distance
             )
 
         # Step 1: check all pairs

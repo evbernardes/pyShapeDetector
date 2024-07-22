@@ -1590,7 +1590,7 @@ class Plane(Primitive):
     @staticmethod
     def get_plane_intersections(
         shapes,
-        bbox_intersection=None,
+        aabb_intersection=None,
         inlier_max_distance=None,
         length_max=None,
         distance_max=None,
@@ -1602,7 +1602,7 @@ class Plane(Primitive):
         """For every possible pair of neighboring bounded planes, calculate their
         intersection and return dictionary of all intersection lines.
 
-        Checking bbox_intersection is much quicker than checking inlier_max_distance,
+        Checking aabb_intersection is much quicker than checking inlier_max_distance,
         which is why it is a good idea to check both.
 
         See: group_shape_groups, fuse_shape_groups, PlaneBounded.glue_nearby_planes
@@ -1611,7 +1611,7 @@ class Plane(Primitive):
         ----------
         shapes : list of shapes
             List containing all shapes.
-        bbox_intersection : float, optional
+        aabb_intersection : float, optional
             Max distance between planes.
         inlier_max_distance : float, optional
             Max distance between points in shapes. If None, ignore this test.
@@ -1678,7 +1678,7 @@ class Plane(Primitive):
                 shapes[j], PlaneBounded
             ):
                 if not _check_distance(
-                    shapes[i], shapes[j], bbox_intersection, inlier_max_distance
+                    shapes[i], shapes[j], aabb_intersection, inlier_max_distance
                 ):
                     continue
 
