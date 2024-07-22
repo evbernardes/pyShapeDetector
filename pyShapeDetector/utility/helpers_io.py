@@ -68,7 +68,7 @@ def save_elements(
     elif isinstance(elems[0], Primitive):
         if start is None:
             start = "shape"
-        extension = "json"
+        extension = "tar"
     else:
         raise ValueError(f"Not implemented for elements of type {type(elems[0])}.")
 
