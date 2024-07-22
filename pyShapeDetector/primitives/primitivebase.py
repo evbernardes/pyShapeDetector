@@ -5,9 +5,14 @@ Created on Mon Sep 25 15:42:59 2023
 
 @author: ebernardes
 """
+import tempfile
+import tarfile
+import os
+import json
+from pathlib import Path
 import warnings
 from abc import ABC, abstractmethod
-from itertools import product, combinations
+from itertools import combinations
 
 import numpy as np
 
@@ -1214,37 +1219,67 @@ class Primitive(ABC):
         if self.color is not None:
             data["color"] = self.color.tolist()
 
-    def save(self, path, save_inliers=True):
-        """Saves shape to JSON file.
+    def save(self, path, save_inliers_in_json=True):
+        """Saves shape to a file.
+
+        File extension can be:
+        - json:
+            Saves everything in a single json file, with or without inliers.
+        - tar:
+            Saves inliers in a separated ply file, everything on a tar file.
 
         Parameters
         ----------
         path : string of pathlib.Path
             File destination.
-        save_inliers : boolean, optional
-            Add inliers to file. Default: True.
+        save_inliers_in_json : boolean, optional
+            Add inliers to JSON file. Ignores this if file is a tar. Default: True.
         """
-        import json
-        from pathlib import Path
 
         path = Path(path)
         if path.exists():
             path.unlink()
 
-        f = open(path, "w")
-        data = {}
-        self.__put_attributes_in_dict__(data, save_inliers=save_inliers)
-        json.dump(data, f)
-        f.close()
+        if path.suffix == ".json":
+            f = open(path, "w")
+            json_data = {}
+            self.__put_attributes_in_dict__(
+                json_data, save_inliers=save_inliers_in_json
+            )
+            json.dump(json_data, f)
+            f.close()
+        elif path.suffix == ".tar":
+            json_data = {}
+            self.__put_attributes_in_dict__(json_data, save_inliers=False)
+
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Create a temporary JSON file
+                json_file_path = os.path.join(temp_dir, "shape.json")
+                with open(json_file_path, "w") as json_file:
+                    json.dump(json_data, json_file)
+
+                # Create a temporary copy of the other file
+                temp_inliers_path = os.path.join(temp_dir, "inliers.ply")
+                self.inliers.write_point_cloud(temp_inliers_path)
+
+                # Create the tar file and add both files
+                with tarfile.open(path, "w") as tar:
+                    tar.add(json_file_path, arcname="shape.json")
+                    tar.add(temp_inliers_path, arcname="inliers.ply")
+        else:
+            raise ValueError(
+                f"Acceptable extensions are 'tar' and 'json', got {path.suffix}."
+            )
 
     def __get_attributes_from_dict__(self, data):
         try:
             self.inliers.points = np.array(data["inlier_points"])
             self.inliers.normals = np.array(data["inlier_normals"])
             self.inliers.colors = np.array(data["inlier_colors"])
-            print("[Info] Inliers found.")
+            # print("[Info] Inliers found.")
         except KeyError:
-            print("[Info] No inliers found.")
+            # print("[Info] No inliers found.")
+            pass
         color = data.get("color")
         if color is not None:
             self.color = color
@@ -1266,18 +1301,42 @@ class Primitive(ABC):
         import json
         from pyShapeDetector.primitives import dict_primitives
 
-        f = open(path, "r")
-        data = json.load(f)
-        name = data["name"]
+        extension = Path(path).suffix
+
+        if extension == ".json":
+            with open(path, "r") as f:
+                json_data = json.load(f)
+                separated_inliers = None
+        elif extension == ".tar":
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Open the tar file
+                with tarfile.open(path, "r") as tar:
+                    # Extract all files to the temporary directory
+                    tar.extractall(path=temp_dir)
+
+                    # Read the JSON file
+                    json_file_path = os.path.join(temp_dir, "shape.json")
+                    with open(json_file_path, "r") as json_file:
+                        json_data = json.load(json_file)
+
+                    temp_inliers_path = os.path.join(temp_dir, "inliers.ply")
+                    separated_inliers = PointCloud.read_point_cloud(temp_inliers_path)
+        else:
+            raise ValueError(
+                f"Acceptable extensions are 'tar' and 'json', got {extension}."
+            )
+
+        name = json_data["name"]
         primitive = dict_primitives[name]
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            shape = primitive(data["model"])
+            shape = primitive(json_data["model"])
 
-        shape.__get_attributes_from_dict__(data)
+        shape.__get_attributes_from_dict__(json_data)
+        if separated_inliers is not None:
+            shape.set_inliers(separated_inliers)
 
-        f.close()
         return shape
 
     @staticmethod
