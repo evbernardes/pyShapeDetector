@@ -1204,22 +1204,25 @@ class Primitive(ABC):
                 self.rotate(rotation)
                 break
 
-    def __put_attributes_in_dict__(self, data):
+    def __put_attributes_in_dict__(self, data, save_inliers=True):
         data["name"] = self.name
         data["model"] = self.model.tolist()
-        data["inlier_points"] = self.inliers.points.tolist()
-        data["inlier_normals"] = self.inlier_normals.tolist()
-        data["inlier_colors"] = self.inlier_colors.tolist()
+        if save_inliers:
+            data["inlier_points"] = self.inliers.points.tolist()
+            data["inlier_normals"] = self.inlier_normals.tolist()
+            data["inlier_colors"] = self.inlier_colors.tolist()
         if self.color is not None:
             data["color"] = self.color.tolist()
 
-    def save(self, path):
+    def save(self, path, save_inliers=True):
         """Saves shape to JSON file.
 
         Parameters
         ----------
         path : string of pathlib.Path
             File destination.
+        save_inliers : boolean, optional
+            Add inliers to file. Default: True.
         """
         import json
         from pathlib import Path
@@ -1230,14 +1233,18 @@ class Primitive(ABC):
 
         f = open(path, "w")
         data = {}
-        self.__put_attributes_in_dict__(data)
+        self.__put_attributes_in_dict__(data, save_inliers=save_inliers)
         json.dump(data, f)
         f.close()
 
     def __get_attributes_from_dict__(self, data):
-        self.inliers.points = np.array(data["inlier_points"])
-        self.inliers.normals = np.array(data["inlier_normals"])
-        self.inliers.colors = np.array(data["inlier_colors"])
+        try:
+            self.inliers.points = np.array(data["inlier_points"])
+            self.inliers.normals = np.array(data["inlier_normals"])
+            self.inliers.colors = np.array(data["inlier_colors"])
+            print("[Info] Inliers found.")
+        except KeyError:
+            print("[Info] No inliers found.")
         color = data.get("color")
         if color is not None:
             self.color = color

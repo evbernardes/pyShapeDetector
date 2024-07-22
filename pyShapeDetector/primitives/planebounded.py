@@ -536,8 +536,8 @@ class PlaneBounded(Plane):
 
         self._bounds = rotation.apply(self._bounds)
 
-    def __put_attributes_in_dict__(self, data):
-        super().__put_attributes_in_dict__(data)
+    def __put_attributes_in_dict__(self, data, save_inliers=True):
+        super().__put_attributes_in_dict__(data, save_inliers=save_inliers)
 
         # additional PlaneBounded related data:
         data["bounds"] = self.bounds.tolist()
@@ -740,10 +740,10 @@ class PlaneBounded(Plane):
 
         # inside = np.array([True] * len(points))
         inside = []
-        
+
         if PointCloud.is_instance_or_open3d(points):
             points = np.asarray(points.points)
-            
+
         points = np.atleast_2d(points)
         if points.shape[1] == 3:
             if input_is_2D:

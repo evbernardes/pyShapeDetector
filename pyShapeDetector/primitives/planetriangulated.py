@@ -366,8 +366,8 @@ class PlaneTriangulated(Plane):
         max_bound = np.max(self.vertices, axis=0)
         return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
 
-    def __put_attributes_in_dict__(self, data):
-        super().__put_attributes_in_dict__(data)
+    def __put_attributes_in_dict__(self, data, save_inliers=True):
+        super().__put_attributes_in_dict__(data, save_inliers=save_inliers)
 
         # additional PlaneTriangulated related data:
         data["vertices"] = self.vertices.tolist()
