@@ -7,7 +7,6 @@ Created on Mon Sep 25 15:42:59 2023
 """
 import tempfile
 import tarfile
-import os
 import json
 from pathlib import Path
 import warnings
@@ -1248,25 +1247,25 @@ class Primitive(ABC):
                 "Saving inliers in json files is not efficient, consider saving as a tar file."
             )
 
-            f = open(path, "w")
             json_data = {}
-
             self.__put_attributes_in_dict__(json_data, save_inliers=save_inliers)
-            json.dump(json_data, f)
-            f.close()
+            with open(path, "w") as json_file:
+                json.dump(json_data, json_file, indent=4)
+
         elif path.suffix == ".tar":
             json_data = {}
             self.__put_attributes_in_dict__(json_data, save_inliers=False)
 
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Create a temporary JSON file
-                json_file_path = os.path.join(temp_dir, "shape.json")
+                temp_dir = Path(temp_dir)
+                json_file_path = temp_dir / "shape.json"
                 with open(json_file_path, "w") as json_file:
-                    json.dump(json_data, json_file)
+                    json.dump(json_data, json_file, indent=4)
 
                 # Create a temporary copy of the other file
                 if save_inliers:
-                    temp_inliers_path = os.path.join(temp_dir, "inliers.ply")
+                    temp_inliers_path = temp_dir / "inliers.ply"
                     self.inliers.write_point_cloud(temp_inliers_path)
 
                 # Create the tar file and add both files
