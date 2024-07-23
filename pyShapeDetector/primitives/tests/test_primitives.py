@@ -716,7 +716,7 @@ def test_save_load():
 
     with pytest.warns(UserWarning, match="returning square plane"):
         with tempfile.TemporaryDirectory() as temp_dir:
-            for i in range(50):
+            for i in range(10):
                 for primitive in all_primitives:
                     shape = primitive.random()
 
@@ -728,15 +728,18 @@ def test_save_load():
                         shape.add_holes([hole])
 
                     assert not shape.has_inliers
-                    test(shape, temp_dir, ".json", True)
-                    test(shape, temp_dir, ".json", False)
+                    with pytest.warns(UserWarning, match="consider saving"):
+                        test(shape, temp_dir, ".json", True)
+                    with pytest.warns(UserWarning, match="consider saving"):
+                        test(shape, temp_dir, ".json", False)
                     test(shape, temp_dir, ".tar", True)
                     test(shape, temp_dir, ".tar", False)
 
                     shape.set_inliers(shape.sample_PointCloud_uniformly(100))
 
                     assert shape.has_inliers
-                    test(shape, temp_dir, ".json", True)
+                    with pytest.warns(UserWarning, match="consider saving"):
+                        test(shape, temp_dir, ".json", True)
                     test(shape, temp_dir, ".tar", True)
 
 

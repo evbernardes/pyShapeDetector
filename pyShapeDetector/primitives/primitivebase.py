@@ -1244,8 +1244,13 @@ class Primitive(ABC):
             save_inliers = False
 
         if path.suffix == ".json":
+            warnings.warn(
+                "Saving inliers in json files is not efficient, consider saving as a tar file."
+            )
+
             f = open(path, "w")
             json_data = {}
+
             self.__put_attributes_in_dict__(json_data, save_inliers=save_inliers)
             json.dump(json_data, f)
             f.close()
