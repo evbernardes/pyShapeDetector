@@ -116,7 +116,7 @@ class Cone(Primitive):
     _name = "cone"
     _translatable = [0, 1, 2]
     _rotatable = [3, 4, 5]
-    _color = np.array([0, 0.707, 0.707])
+    _color = np.array([0, 180, 180]) / 255.
 
     @property
     def equation(self):

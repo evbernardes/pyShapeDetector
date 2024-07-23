@@ -162,7 +162,7 @@ class Plane(Primitive):
     _rotatable = [0, 1, 2]
     _translatable = []
     _fusion_intersections = np.array([])
-    _color = np.array([0, 0, 1])
+    _color = np.array([0., 0., 1.])
     _is_hole = False
     _convex = None
     _parallel_vectors = None
