@@ -29,6 +29,13 @@ if has_mapbox_earcut := find_spec("mapbox_earcut") is not None:
     from mapbox_earcut import triangulate_float32
 
 
+def _unflatten(values):
+    values = np.array(values)
+    if values.ndim == 1:
+        values = values.reshape([len(values) // 3, 3])
+    return values
+
+
 def _is_clockwise(bounds):
     s = 0
     N = len(bounds)
@@ -540,7 +547,7 @@ class PlaneBounded(Plane):
         super().__put_attributes_in_dict__(data, save_inliers=save_inliers)
 
         # additional PlaneBounded related data:
-        data["bounds"] = self.bounds.tolist()
+        data["bounds"] = self.bounds.flatten().tolist()
         data["_fusion_intersections"] = self._fusion_intersections.tolist()
         data["hole_bounds"] = [h.bounds.tolist() for h in self.holes]
         data["convex"] = self.is_convex
@@ -551,7 +558,7 @@ class PlaneBounded(Plane):
 
         # additional PlaneBounded related data:
         convex = data.get("convex", True)
-        self.set_bounds(data["bounds"], flatten=False, convex=convex)
+        self.set_bounds(_unflatten(data["bounds"]), flatten=False, convex=convex)
         self._fusion_intersections = np.array(data["_fusion_intersections"])
 
         hole_bounds = data["hole_bounds"]
@@ -562,7 +569,7 @@ class PlaneBounded(Plane):
 
         holes = []
         for bounds, convex in zip(hole_bounds, hole_convex):
-            holes.append(PlaneBounded(self.model, bounds, convex=convex))
+            holes.append(PlaneBounded(self.model, _unflatten(bounds), convex=convex))
 
         # no need to remove points, as they were already tested when creating
         # the plane

@@ -21,6 +21,7 @@ from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundi
 #     )
 # from .primitivebase import Primitive
 from .plane import Plane
+from .planebounded import _unflatten
 
 
 class PlaneTriangulated(Plane):
@@ -370,14 +371,16 @@ class PlaneTriangulated(Plane):
         super().__put_attributes_in_dict__(data, save_inliers=save_inliers)
 
         # additional PlaneTriangulated related data:
-        data["vertices"] = self.vertices.tolist()
-        data["triangles"] = self.triangles.tolist()
+        data["vertices"] = self.vertices.flatten().tolist()
+        data["triangles"] = self.triangles.flatten().tolist()
 
     def __get_attributes_from_dict__(self, data):
         super().__get_attributes_from_dict__(data)
 
         # additional PlaneTriangulated related data:
-        self.set_vertices_triangles(data["vertices"], data["triangles"])
+        self.set_vertices_triangles(
+            _unflatten(data["vertices"]), _unflatten(data["triangles"])
+        )
 
     @staticmethod
     def fuse(
