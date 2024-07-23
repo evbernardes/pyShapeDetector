@@ -683,18 +683,32 @@ def test_plane_bounded_degenerated_line():
 
 
 def test_save_load():
-    def test(shape, path, save_inliers):
+    def test(shape, temp_dir, extension, save_inliers):
+        path = temp_dir + "shape" + extension
+
         shape.save(path, save_inliers=save_inliers)
         primitive = type(shape)
         shape_loaded = primitive.load(path)
         assert_allclose(shape.model, shape_loaded.model)
         assert_allclose(shape.color, shape_loaded.color)
-        assert_allclose(shape.inliers.points, shape_loaded.inliers.points)
-        assert_allclose(shape.inliers.normals, shape_loaded.inliers.normals)
-        assert_allclose(shape.inliers.colors, shape_loaded.inliers.colors)
+
+        if save_inliers:
+            assert_allclose(
+                shape.inliers.points, shape_loaded.inliers.points, atol=1e-10
+            )
+            assert_allclose(
+                shape.inliers.normals, shape_loaded.inliers.normals, atol=1e-10
+            )
+            assert_allclose(
+                shape.inliers.colors, shape_loaded.inliers.colors, atol=1e-10
+            )
 
         if primitive is PlaneBounded:
             assert_allclose(shape.bounds, shape_loaded.bounds)
+
+            if len(shape.holes) > 0:
+                for hole in shape.holes:
+                    test(hole, temp_dir, extension, save_inliers=False)
 
         if primitive is PlaneTriangulated:
             assert_allclose(shape.vertices, shape_loaded.vertices)
@@ -702,21 +716,28 @@ def test_save_load():
 
     with pytest.warns(UserWarning, match="returning square plane"):
         with tempfile.TemporaryDirectory() as temp_dir:
-            for i in range(10):
+            for i in range(50):
                 for primitive in all_primitives:
                     shape = primitive.random()
 
+                    if primitive is PlaneBounded:
+                        sides = np.random.randint(3, 8)
+                        radius = np.sqrt(shape.surface_area / np.pi) / 3
+                        center = np.median(shape.bounds, axis=0)
+                        hole = shape.get_polygon_plane(sides, radius, center)
+                        shape.add_holes([hole])
+
                     assert not shape.has_inliers
-                    test(shape, temp_dir + "/no_inliers.json", True)
-                    test(shape, temp_dir + "/no_inliers.json", False)
-                    test(shape, temp_dir + "/no_inliers.tar", True)
-                    test(shape, temp_dir + "/no_inliers.tar", False)
+                    test(shape, temp_dir, ".json", True)
+                    test(shape, temp_dir, ".json", False)
+                    test(shape, temp_dir, ".tar", True)
+                    test(shape, temp_dir, ".tar", False)
 
                     shape.set_inliers(shape.sample_PointCloud_uniformly(100))
 
                     assert shape.has_inliers
-                    test(shape, temp_dir + "/with_inliers.json", True)
-                    test(shape, temp_dir + "/with_inliers.tar", True)
+                    test(shape, temp_dir, ".json", True)
+                    test(shape, temp_dir, ".tar", True)
 
 
 # if __name__ == "__main__":
