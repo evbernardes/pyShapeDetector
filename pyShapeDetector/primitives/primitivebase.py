@@ -1219,7 +1219,7 @@ class Primitive(ABC):
         if self.color is not None:
             data["color"] = self.color.tolist()
 
-    def save(self, path, save_inliers_in_json=True):
+    def save(self, path, save_inliers=True):
         """Saves shape to a file.
 
         File extension can be:
@@ -1232,7 +1232,7 @@ class Primitive(ABC):
         ----------
         path : string of pathlib.Path
             File destination.
-        save_inliers_in_json : boolean, optional
+        save_inliers : boolean, optional
             Add inliers to JSON file. Ignores this if file is a tar. Default: True.
         """
 
@@ -1240,12 +1240,13 @@ class Primitive(ABC):
         if path.exists():
             path.unlink()
 
+        if not self.has_inliers:
+            save_inliers = False
+
         if path.suffix == ".json":
             f = open(path, "w")
             json_data = {}
-            self.__put_attributes_in_dict__(
-                json_data, save_inliers=save_inliers_in_json
-            )
+            self.__put_attributes_in_dict__(json_data, save_inliers=save_inliers)
             json.dump(json_data, f)
             f.close()
         elif path.suffix == ".tar":
@@ -1259,13 +1260,15 @@ class Primitive(ABC):
                     json.dump(json_data, json_file)
 
                 # Create a temporary copy of the other file
-                temp_inliers_path = os.path.join(temp_dir, "inliers.ply")
-                self.inliers.write_point_cloud(temp_inliers_path)
+                if save_inliers:
+                    temp_inliers_path = os.path.join(temp_dir, "inliers.ply")
+                    self.inliers.write_point_cloud(temp_inliers_path)
 
                 # Create the tar file and add both files
                 with tarfile.open(path, "w") as tar:
                     tar.add(json_file_path, arcname="shape.json")
-                    tar.add(temp_inliers_path, arcname="inliers.ply")
+                    if save_inliers:
+                        tar.add(temp_inliers_path, arcname="inliers.ply")
         else:
             raise ValueError(
                 f"Acceptable extensions are 'tar' and 'json', got {path.suffix}."
@@ -1303,10 +1306,12 @@ class Primitive(ABC):
 
         extension = Path(path).suffix
 
+        separated_inliers = None
+
         if extension == ".json":
             with open(path, "r") as f:
                 json_data = json.load(f)
-                separated_inliers = None
+
         elif extension == ".tar":
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Open the tar file
@@ -1315,12 +1320,13 @@ class Primitive(ABC):
                     tar.extractall(path=temp_dir)
 
                     # Read the JSON file
-                    json_file_path = os.path.join(temp_dir, "shape.json")
-                    with open(json_file_path, "r") as json_file:
+                    json_path = Path(temp_dir) / "shape.json"
+                    with open(json_path, "r") as json_file:
                         json_data = json.load(json_file)
 
-                    temp_inliers_path = os.path.join(temp_dir, "inliers.ply")
-                    separated_inliers = PointCloud.read_point_cloud(temp_inliers_path)
+                    inliers_path = Path(temp_dir) / "inliers.ply"
+                    if inliers_path.exists():
+                        separated_inliers = PointCloud.read_point_cloud(inliers_path)
         else:
             raise ValueError(
                 f"Acceptable extensions are 'tar' and 'json', got {extension}."

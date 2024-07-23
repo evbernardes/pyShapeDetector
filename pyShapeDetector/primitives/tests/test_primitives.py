@@ -11,6 +11,7 @@ import copy
 import numpy as np
 from numpy.testing import assert_allclose
 import warnings
+import tempfile
 from itertools import combinations
 
 from scipy.spatial.transform import Rotation
@@ -30,6 +31,7 @@ from pyShapeDetector.geometry import PointCloud
 
 all_primitives_regular = [Plane, Sphere, Cylinder, Cone]
 all_primitives = all_primitives_regular + [PlaneBounded, PlaneTriangulated, Line]
+
 all_primitives_regular_bounded = [
     PlaneBounded,
     PlaneTriangulated,
@@ -37,9 +39,7 @@ all_primitives_regular_bounded = [
     Cylinder,
     Cone,
 ]
-all_primitives_bounded = [PlaneBounded, PlaneTriangulated, Sphere, Cylinder, Cone] + [
-    Line
-]
+all_primitives_bounded = all_primitives_regular_bounded + [Line]
 
 
 def rmse(x):
@@ -680,6 +680,43 @@ def test_plane_bounded_degenerated_line():
 
     with pytest.warns(UserWarning, match="Convex hull failed"):
         plane.get_bounded_plane(bounds)
+
+
+def test_save_load():
+    def test(shape, path, save_inliers):
+        shape.save(path, save_inliers=save_inliers)
+        primitive = type(shape)
+        shape_loaded = primitive.load(path)
+        assert_allclose(shape.model, shape_loaded.model)
+        assert_allclose(shape.color, shape_loaded.color)
+        assert_allclose(shape.inliers.points, shape_loaded.inliers.points)
+        assert_allclose(shape.inliers.normals, shape_loaded.inliers.normals)
+        assert_allclose(shape.inliers.colors, shape_loaded.inliers.colors)
+
+        if primitive is PlaneBounded:
+            assert_allclose(shape.bounds, shape_loaded.bounds)
+
+        if primitive is PlaneTriangulated:
+            assert_allclose(shape.vertices, shape_loaded.vertices)
+            assert np.all(shape.triangles == shape_loaded.triangles)
+
+    with pytest.warns(UserWarning, match="returning square plane"):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for i in range(10):
+                for primitive in all_primitives:
+                    shape = primitive.random()
+
+                    assert not shape.has_inliers
+                    test(shape, temp_dir + "/no_inliers.json", True)
+                    test(shape, temp_dir + "/no_inliers.json", False)
+                    test(shape, temp_dir + "/no_inliers.tar", True)
+                    test(shape, temp_dir + "/no_inliers.tar", False)
+
+                    shape.set_inliers(shape.sample_PointCloud_uniformly(100))
+
+                    assert shape.has_inliers
+                    test(shape, temp_dir + "/with_inliers.json", True)
+                    test(shape, temp_dir + "/with_inliers.tar", True)
 
 
 # if __name__ == "__main__":
