@@ -551,7 +551,7 @@ class PlaneBounded(Plane):
 
         # additional PlaneBounded related data:
         convex = data.get("convex", True)
-        self.set_bounds(data["bounds"], convex=convex)
+        self.set_bounds(data["bounds"], flatten=False, convex=convex)
         self._fusion_intersections = np.array(data["_fusion_intersections"])
 
         hole_bounds = data["hole_bounds"]
