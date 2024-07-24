@@ -619,7 +619,7 @@ class PlaneBounded(Plane):
         PlaneBounded
             Averaged PlaneBounded instance.
         """
-        plane_unbounded = Plane.fuse(shapes, detector, ignore_extra_data)
+        plane_unbounded = Plane.fuse(shapes, detector, ignore_extra_data=True)
         bounds = np.vstack([s.bounds for s in shapes])
 
         if not np.all([s.is_convex for s in shapes]):
@@ -629,9 +629,19 @@ class PlaneBounded(Plane):
             )
 
         shape = PlaneBounded(plane_unbounded.model, bounds)
+
         if not ignore_extra_data:
-            shape.set_inliers(plane_unbounded)
-            shape.metrics = plane_unbounded.metrics
+            pcd = PointCloud.fuse_pointclouds([shape.inliers for shape in shapes])
+            shape.set_inliers(pcd)
+            shape.color = np.mean([s.color for s in shapes], axis=0)
+
+            if detector is not None:
+                num_points = sum([shape.metrics["num_points"] for shape in shapes])
+                num_inliers = len(pcd.points)
+                distances, angles = shape.get_residuals(pcd.points, pcd.normals)
+                shape.metrics = detector.get_metrics(
+                    num_points, num_inliers, distances, angles
+                )
 
         return shape
 

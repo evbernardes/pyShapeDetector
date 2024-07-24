@@ -1414,7 +1414,7 @@ class Primitive(ABC):
 
         try:
             fitness = [shape.metrics["fitness"] for shape in shapes]
-        except:
+        except Exception:
             fitness = [1] * len(shapes)
 
         model = np.vstack([shape.model for shape in shapes])
@@ -1428,6 +1428,7 @@ class Primitive(ABC):
         if not ignore_extra_data:
             pcd = PointCloud.fuse_pointclouds([shape.inliers for shape in shapes])
             shape.set_inliers(pcd)
+            shape.color = np.mean([s.color for s in shapes], axis=0)
 
             if detector is not None:
                 num_points = sum([shape.metrics["num_points"] for shape in shapes])
