@@ -96,6 +96,7 @@ class Cone(Primitive):
     save
     __get_attributes_from_dict__
     load
+    get_obj_description
     fuse
     group_similar_shapes
     fuse_shape_groups
@@ -116,7 +117,7 @@ class Cone(Primitive):
     _name = "cone"
     _translatable = [0, 1, 2]
     _rotatable = [3, 4, 5]
-    _color = np.array([0, 180, 180]) / 255.
+    _color = np.array([0, 180, 180]) / 255.0
 
     @property
     def equation(self):

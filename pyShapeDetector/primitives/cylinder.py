@@ -94,6 +94,7 @@ class Cylinder(Primitive):
     align
     save
     load
+    get_obj_description
     fuse
     group_similar_shapes
     fuse_shape_groups

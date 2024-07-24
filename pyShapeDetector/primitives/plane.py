@@ -123,6 +123,7 @@ class Plane(Primitive):
     save
     __get_attributes_from_dict__
     load
+    get_obj_description
     fuse
     group_similar_shapes
     fuse_shape_groups
@@ -162,7 +163,7 @@ class Plane(Primitive):
     _rotatable = [0, 1, 2]
     _translatable = []
     _fusion_intersections = np.array([])
-    _color = np.array([0, 0, 255]) / 255.
+    _color = np.array([0, 0, 255]) / 255.0
     _is_hole = False
     _convex = None
     _parallel_vectors = None

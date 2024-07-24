@@ -53,6 +53,9 @@ from .helpers_visualization import (
 )
 
 from .helpers_io import (
+    mesh_to_obj_description,
+    write_obj,
+    create_unity_package,
     check_existance,
     save_elements,
     save_ask,

@@ -19,6 +19,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 from pyShapeDetector.utility import get_rotation_from_axis, _set_and_check_3d_array
 from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
+from pyShapeDetector.utility import mesh_to_obj_description
 
 
 def _check_distance(shape1, shape2, aabb_intersection, inlier_max_distance):
@@ -206,6 +207,7 @@ class Primitive(ABC):
     save
     __get_attributes_from_dict__
     load
+    get_obj_description
     fuse
     group_similar_shapes
     fuse_shape_groups
@@ -1348,6 +1350,29 @@ class Primitive(ABC):
             shape.set_inliers(separated_inliers)
 
         return shape
+
+    def get_obj_description(self, shading="off", mtl="Material", **kwargs):
+        """
+        Converts the primitive to an OBJ file content string.
+
+        Parameters
+        ----------
+        shading: str or int
+            Shading across polygons is enabled by smoothing groups. Default: "off".
+        mtl: str
+            Specifies the material name for the element following it.
+            The material name matches a named material definition in an external
+            .mtl file. Default: "Material"
+
+        Returns
+        -------
+        str
+            The content of the OBJ file as a string.
+        """
+        name = type(self).__name__
+        return mesh_to_obj_description(
+            name, self.mesh, shading=shading, mtl=mtl, **kwargs
+        )
 
     @staticmethod
     def fuse(

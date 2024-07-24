@@ -10,6 +10,7 @@ import numpy as np
 from open3d.geometry import TriangleMesh as open3d_TriangleMesh
 from open3d.utility import Vector3dVector, Vector2iVector
 
+from pyShapeDetector.utility import mesh_to_obj_description
 from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
 
 
@@ -305,6 +306,45 @@ class TriangleMesh(Open3D_Geometry):
             mesh_sliced = self._get_sliceplane(i, max_, True)
             mesh_sliced = mesh_sliced._sliceplane(i, min_, False)
         return mesh_sliced
+
+    def _get_obj_vertices_triangles(self):
+        obj_content = []
+
+        # Write vertices to obj_content
+        for vertex in self.vertices:
+            obj_content.append(f"v {vertex[0]} {vertex[1]} {vertex[2]}")
+
+        for normal in self.triangle_normals:
+            obj_content.append(f"vn {normal[0]} {normal[1]} {normal[2]}")
+
+        # Write triangles to obj_content (OBJ format uses 1-based indexing)
+        for triangle in self.triangles:
+            obj_content.append(
+                f"f {triangle[0] + 1} {triangle[1] + 1} {triangle[2] + 1}"
+            )
+        return "\n".join(obj_content)
+
+    def get_obj_description(self, shading="off", mtl="Material", **kwargs):
+        """
+        Converts the TriangleMesh to an OBJ file content string.
+
+        Parameters
+        ----------
+        shading: str or int
+            Shading across polygons is enabled by smoothing groups. Default: "off".
+        mtl: str
+            Specifies the material name for the element following it.
+            The material name matches a named material definition in an external
+            .mtl file. Default: "Material"
+
+        Returns
+        -------
+        str
+            The content of the OBJ file as a string.
+        """
+        return mesh_to_obj_description(
+            "TriangleMesh", self, shading=shading, mtl=mtl, **kwargs
+        )
 
     @staticmethod
     def get_loop_indexes_from_boundary_indexes(boundary_indexes):

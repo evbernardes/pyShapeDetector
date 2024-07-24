@@ -86,6 +86,7 @@ class Template(Primitive):
     save
     __get_attributes_from_dict__
     load
+    get_obj_description
     fuse
     group_similar_shapes
     fuse_shape_groups
