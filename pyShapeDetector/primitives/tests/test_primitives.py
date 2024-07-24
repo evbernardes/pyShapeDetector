@@ -743,6 +743,21 @@ def test_save_load():
                     test(shape, temp_dir, ".tar", True)
 
 
+def test_fuse():
+    n = 10
+    for primitive in all_primitives:
+        shapes = [primitive.random() for i in range(n)]
+        colors = [np.random.random(3) for i in range(n)]
+        # models = [shape.model for shape in shapes]
+
+        for color, shape in zip(colors, shapes):
+            shape.color = color
+
+        shape_fused = primitive.fuse(shapes)
+        assert_allclose(shape_fused.color, np.mean(colors, axis=0))
+        # assert_allclose(shape_fused.model, np.mean(models, axis=0))
+
+
 # if __name__ == "__main__":
 # test_plane_transformations()
 # test_distances()
