@@ -1220,7 +1220,7 @@ class Primitive(ABC):
         if self.color is not None:
             data["color"] = self.color.tolist()
 
-    def save(self, path, save_inliers=True):
+    def save(self, path, save_inliers=None):
         """Saves shape to a file.
 
         File extension can be:
@@ -1234,20 +1234,25 @@ class Primitive(ABC):
         path : string of pathlib.Path
             File destination.
         save_inliers : boolean, optional
-            Add inliers to JSON file. Ignores this if file is a tar. Default: True.
+            Add inliers to JSON file. Ignores this if file is a tar.
+            Default: True for tar files and False for json files.
         """
 
         path = Path(path)
         if path.exists():
             path.unlink()
 
+        if path.suffix == ".json" and save_inliers:
+            warnings.warn(
+                "Saving inliers in json files is not efficient, consider saving as a tar file."
+            )
+
         if not self.has_inliers:
             save_inliers = False
 
         if path.suffix == ".json":
-            warnings.warn(
-                "Saving inliers in json files is not efficient, consider saving as a tar file."
-            )
+            if save_inliers is None:
+                save_inliers = False
 
             json_data = {}
             self.__put_attributes_in_dict__(json_data, save_inliers=save_inliers)
@@ -1255,6 +1260,9 @@ class Primitive(ABC):
                 json.dump(json_data, json_file, indent=4)
 
         elif path.suffix == ".tar":
+            if save_inliers is None:
+                save_inliers = True
+
             json_data = {}
             self.__put_attributes_in_dict__(json_data, save_inliers=False)
 

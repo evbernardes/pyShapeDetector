@@ -730,8 +730,8 @@ def test_save_load():
                     assert not shape.has_inliers
                     with pytest.warns(UserWarning, match="consider saving"):
                         test(shape, temp_dir, ".json", True)
-                    with pytest.warns(UserWarning, match="consider saving"):
-                        test(shape, temp_dir, ".json", False)
+                    # with pytest.warns(UserWarning, match="consider saving"):
+                    test(shape, temp_dir, ".json", False)
                     test(shape, temp_dir, ".tar", True)
                     test(shape, temp_dir, ".tar", False)
 
