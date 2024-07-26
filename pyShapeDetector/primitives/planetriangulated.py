@@ -618,7 +618,7 @@ class PlaneTriangulated(Plane):
             If False, does not flatten points
 
         """
-        self._mesh = None
+        # self._mesh = None
         vertices = np.asarray(vertices)
         triangles = np.asarray(triangles)
 
@@ -643,6 +643,7 @@ class PlaneTriangulated(Plane):
         # self._bounds_indices = np.array([])
         self._vertices = vertices
         self._triangles = triangles
+        self._mesh = self.get_mesh()
         # self._convex = False
 
     @staticmethod
