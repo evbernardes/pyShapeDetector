@@ -204,7 +204,7 @@ class PlaneTriangulated(Plane):
         flatten = True
         if vertices is None and triangles is None:
             if isinstance(model, Plane):
-                warnings.warn("No input bounds, using inliers mesh.")
+                warnings.warn("No input bounds, using plane's mesh.")
                 mesh = model.mesh
             else:
                 warnings.warn("No input vertices/triangles, returning square plane")
