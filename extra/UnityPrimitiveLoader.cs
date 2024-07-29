@@ -10,14 +10,6 @@ public class CreateSpheres : Editor
     {
         string DEFAULT_SHADER = "Unlit/Color";
 
-        // // Get input file
-        // string filePath = EditorUtility.OpenFilePanel("Select Primitive Data File", "", "json");
-        // if (string.IsNullOrEmpty(filePath))
-        // {
-        //     Debug.LogWarning("No file selected");
-        //     return;
-        // }
-
         string path = EditorUtility.OpenFolderPanel("Select folder containing primitives", "", "");
         if (!Directory.Exists(path))
         {
@@ -25,6 +17,7 @@ public class CreateSpheres : Editor
             return;
         }
         Debug.Log("Selected folder path: " + path);
+        // string path = "/home/ebernardes/Data/UnityTest/primitives_test/";
 
         string[] filePaths = Directory.GetFiles(path);
 
@@ -36,20 +29,18 @@ public class CreateSpheres : Editor
             return;
         }
         folderPath = "Assets" + folderPath.Substring(Application.dataPath.Length);
+        // string folderPath = "Assets/UnityLoadTest";
         Debug.Log("Selected output folder: " + folderPath);
 
         string prefabFolder = folderPath; // + "/Prefabs";
         string materialFolder = folderPath + "/Materials";
+        string meshesFolder = folderPath + "/Meshes";
 
-        // if (!Directory.Exists(prefabFolder))
-        // {
-        //     Directory.CreateDirectory(prefabFolder);
-        // }
+        if (!Directory.Exists(prefabFolder))
+            Directory.CreateDirectory(prefabFolder);
 
         if (!Directory.Exists(materialFolder))
-        {
             Directory.CreateDirectory(materialFolder);
-        }
 
         Shader shader = Shader.Find(DEFAULT_SHADER);
         GameObject primitiveObject;
@@ -68,26 +59,27 @@ public class CreateSpheres : Editor
                 }
                 primitive.fileName = Path.GetFileNameWithoutExtension(filePath);
 
-                if (primitive.name.Equals("plane"))
-                    primitiveObject = CreatePlanePrefab(primitive);
-                else if (primitive.name.Equals("sphere"))
+                // if (primitive.name.Equals("plane"))
+                // primitiveObject = CreatePlanePrefab(primitive);
+                if (primitive.name.Equals("sphere"))
                     primitiveObject = CreateSpherePrefab(primitive);
                 else if (primitive.name.Equals("triangulated plane"))
-                    primitiveObject = CreatePlaneTriangulatedPrefab(primitive);
+                    primitiveObject = CreatePlaneTriangulatedPrefab(primitive, meshesFolder);
                 else if (primitive.name.Equals("cylinder"))
                     primitiveObject = CreateCylinderPrefab(primitive);
                 else
                 {
-                    Debug.LogWarning($"Not implemented for primitives of type {primitive.name}, ignoring file {primitive.fileName}.");
+                    Debug.LogWarning($"Not implemented for primitives of type {primitive.name}, ignoring file {primitive.fileName}. If this is a plane, try converting it to a PlaneTriangulated instead.");
                     continue;
                 }
 
                 // Create material
                 Material material = CreatePrimitiveMaterial(primitive, shader, materialFolder);
-                if (primitive.name.Equals("triangulated plane"))
-                    primitiveObject.GetComponent<MeshRenderer>().material = material;
-                else
-                    primitiveObject.GetComponent<Renderer>().material = material;
+                primitiveObject.GetComponent<Renderer>().material = material;
+                // if (primitive.name.Equals("triangulated plane"))
+                //     primitiveObject.GetComponent<MeshRenderer>().material = material;
+                // else
+                //     primitiveObject.GetComponent<Renderer>().material = material;
 
                 string prefabPath = $"{prefabFolder}/" + primitive.fileName + ".prefab";
                 PrefabUtility.SaveAsPrefabAsset(primitiveObject, prefabPath);
@@ -95,7 +87,6 @@ public class CreateSpheres : Editor
                 GameObject.DestroyImmediate(primitiveObject);
 
                 Debug.Log($"{primitive.name} created from file {primitive.fileName}.");
-
             }
 
         AssetDatabase.SaveAssets();
@@ -132,15 +123,19 @@ public class CreateSpheres : Editor
         planeObject.transform.position = centroid;
 
         // Set the rotation of the plane to match the plane normal
-        planeObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal);
+        // planeObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal);
 
         planeObject.transform.localScale = new Vector3(0.1f, 1, 0.1f); // 10x10 default plane scaled down to 1x1
+
+        planeObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal);
 
         return planeObject;
     }
 
-    private static GameObject CreatePlaneTriangulatedPrefab(Primitive primitive)
+    private static GameObject CreatePlaneTriangulatedPrefab(Primitive primitive, string meshesFolder)
     {
+        if (!Directory.Exists(meshesFolder))
+            Directory.CreateDirectory(meshesFolder);
 
         if (primitive.vertices.Length % 3 != 0 || primitive.vertices.Length == 0)
         {
@@ -159,17 +154,35 @@ public class CreateSpheres : Editor
         for (int i = 0; i < length; i++)
         {
             vertices[i] = new Vector3(primitive.vertices[3 * i], primitive.vertices[3 * i + 1], primitive.vertices[3 * i + 2]);
+            // Debug.Log($"vertices[{i}]: {vertices[i]}");
+        }
+
+        int num_triangles = primitive.triangles.Length;
+        int[] doubled_triangles = new int[num_triangles * 2];
+        for (int i = 0; i < num_triangles; i++)
+        {
+            doubled_triangles[i] = primitive.triangles[i];
+            // Debug.Log($"triangles[{i}]: [{primitive.triangles[3 * i]}, {primitive.triangles[3 * i + 1]}, {primitive.triangles[3 * i + 2]}]");
+        }
+        for (int i = 0; i < num_triangles; i++)
+        {
+            doubled_triangles[num_triangles + i] = primitive.triangles[num_triangles - 1 - i];
+            // Debug.Log($"triangles[{i}]: [{primitive.triangles[3 * i]}, {primitive.triangles[3 * i + 1]}, {primitive.triangles[3 * i + 2]}]");
         }
 
         // Create the mesh
         Mesh mesh = new Mesh();
         mesh.vertices = vertices;
-        mesh.triangles = primitive.triangles;
+        // Workaround to make meshes visible from both sides
+        // mesh.triangles = primitive.triangles;
+        mesh.triangles = doubled_triangles;
         mesh.RecalculateNormals();
-
-        Debug.Log($"Mesh created with {mesh.vertices.Length} vertices and {mesh.triangles.Length} triangles.");
+        string meshPath = $"{meshesFolder}/" + primitive.fileName + ".asset";
+        AssetDatabase.CreateAsset(mesh, meshPath);
+        Debug.Log($"Mesh with {mesh.vertices.Length} vertices and {mesh.triangles.Length} triangles created at {meshPath}.");
 
         GameObject planeObject = new GameObject("PlaneTriangulated");
+        // GameObject planeObject = new GameObject();
         MeshFilter meshFilter = planeObject.AddComponent<MeshFilter>();
         MeshRenderer meshRenderer = planeObject.AddComponent<MeshRenderer>();
         meshFilter.mesh = mesh;
@@ -218,24 +231,4 @@ public class CreateSpheres : Editor
         public float[] vertices;
         public int[] triangles;
     }
-
-
-    // [System.Serializable]
-    // private class Primitive
-    // {
-    //     public string fileName;
-    //     public PrimitiveData data;
-
-    //     public Primitive(string filePath)
-    //     {
-    //         string jsonString = File.ReadAllText(filePath);
-    //         fileName = Path.GetFileNameWithoutExtension(filePath);
-    //         data = JsonUtility.FromJson<PrimitiveData>(jsonString);
-
-    //         if (data.model == null || data.color == null)
-    //         {
-    //             data.name = null;
-    //         }
-    //     }
-    // }
 }
