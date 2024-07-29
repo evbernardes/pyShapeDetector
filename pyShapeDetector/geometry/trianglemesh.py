@@ -6,6 +6,7 @@ Created on Thu May 23 11:32:38 2024
 @author: ebernardes
 """
 import copy
+import warnings
 import numpy as np
 from open3d.geometry import TriangleMesh as open3d_TriangleMesh
 from open3d.utility import Vector3dVector, Vector2iVector
@@ -448,6 +449,11 @@ class TriangleMesh(Open3D_Geometry):
         import math
         import sys
         from collections import namedtuple
+
+        warnings.warn(
+            "TriangleMesh.triangulate_earclipping is deprecated and should not be used.",
+            DeprecationWarning,
+        )
 
         polygon = np.array(polygon)
 
