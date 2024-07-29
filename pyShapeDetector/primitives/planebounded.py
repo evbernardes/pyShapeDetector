@@ -413,7 +413,7 @@ class PlaneBounded(Plane):
 
             else:
                 warnings.warn(
-                    "mapbox_earcut not present, triangulation might not work properly."
+                    "'mapbox_earcut' module not available, triangulation might not work properly."
                 )
 
                 if not self.is_clockwise:
