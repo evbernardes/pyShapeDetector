@@ -619,8 +619,8 @@ class PlaneTriangulated(Plane):
 
         """
         # self._mesh = None
-        vertices = np.asarray(vertices)
-        triangles = np.asarray(triangles)
+        vertices = np.asarray(vertices).copy()
+        triangles = np.asarray(triangles).copy()
 
         if vertices.shape[1] != 3 or triangles.shape[1] != 3:
             raise ValueError("Invalid shape of 'vertices' and/or 'triangles' array.")

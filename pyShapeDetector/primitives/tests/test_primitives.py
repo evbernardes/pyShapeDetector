@@ -743,6 +743,23 @@ def test_save_load():
                     test(shape, temp_dir, ".tar", True)
 
 
+def test_planetriangulated_translate():
+    plane = PlaneTriangulated.random()
+    assert_allclose(plane.vertices, plane.mesh.vertices)
+
+    plane.translate(np.random.random(3))
+    assert_allclose(plane.vertices, plane.mesh.vertices)
+
+    plane_bounded = PlaneBounded.random()
+    with pytest.warns(UserWarning, match="using plane's mesh"):
+        plane = PlaneTriangulated(plane_bounded)
+
+    assert_allclose(plane.vertices, plane.mesh.vertices)
+
+    plane_bounded.translate(np.random.random(3))
+    assert_allclose(plane.vertices, plane.mesh.vertices)
+
+
 def test_fuse():
     n = 10
     for primitive in all_primitives:
