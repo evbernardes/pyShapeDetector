@@ -141,6 +141,7 @@ class PlaneBounded(Plane):
 
     from_normal_dist
     from_normal_point
+    from_vectors_center
     add_holes
     remove_hole
     get_fused_holes

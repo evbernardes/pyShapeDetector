@@ -131,6 +131,7 @@ class Plane(Primitive):
 
     from_normal_dist
     from_normal_point
+    from_vectors_center
     add_holes
     remove_hole
     get_fused_holes
@@ -572,10 +573,18 @@ class Plane(Primitive):
 
         Returns
         -------
-        Cone
+        Plane
             Generated shape.
         """
-        return cls(list(normal) + [dist])
+        model = list(normal) + [dist]
+        if len(model) != 4:
+            raise ValueError(
+                "Invalid shape for inputs, expected array of length 3 and a value, got {normal} and {dist}."
+            )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            return cls(list(normal) + [dist])
 
     @classmethod
     def from_normal_point(cls, normal, point):
@@ -588,12 +597,37 @@ class Plane(Primitive):
         point : 3 x 1 array
             Point in plane.
 
-        Returns Creates plane from normal vector and point in plane.
+        Returns
         -------
-        Cone
+        Plane
             Generated shape.
         """
         return cls.from_normal_dist(normal, -np.dot(normal, point))
+
+    @classmethod
+    def from_vectors_center(cls, vectors, center):
+        """
+        Creates plane from two vectors representing rectangle and center point.
+
+        Parameters
+        ----------
+        vectors : arraylike of shape (2, 3)
+            The two orthogonal unit vectors defining the rectangle plane.
+        center : arraylike of length 3
+            Center of rectangle.
+
+        Returns
+        -------
+        Plane
+            Generated shape.
+        """
+        V1, V2 = vectors
+        normal = np.cross(V1, V2)
+        norm = np.linalg.norm(normal)
+        if norm < 1e-07:
+            raise ValueError("Vectors cannot be parallel.")
+        normal /= norm
+        return cls.from_normal_point(normal, center)
 
     def add_holes(self, holes, remove_points=True):
         """Add one or more holes to plane.

@@ -61,6 +61,23 @@ def get_shape(primitive, num_points, canonical=False):
         return shape
 
 
+def test_plane_creation_methods():
+    vx = np.random.random(3)
+    vy = np.random.random(3)
+    normal = np.cross(vx, vy)
+    point = np.random.random(3)
+    dist = -np.dot(normal, point)
+
+    for primitive in [Plane, PlaneBounded, PlaneTriangulated]:
+        shape1 = primitive.from_normal_dist(normal, dist)
+        shape2 = primitive.from_normal_point(normal, point)
+        shape3 = primitive.from_vectors_center(np.array([vx, vy]), point)
+
+        assert shape1.is_similar_to(shape2)
+        assert shape2.is_similar_to(shape3)
+        assert shape3.is_similar_to(shape1)
+
+
 def test_plane_transformations():
     points = np.random.random((20, 3))
 
