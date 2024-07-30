@@ -37,9 +37,12 @@ def _fuse_loops(loop1, loop2):
     return loop_full
 
 
-def _get_rectangular_vertices(v1, v2, eps=1e-8):
-    if abs(v1.dot(v2)) > eps:
+def _get_vertices_from_vectors(v1, v2, assert_rect=True, eps=1e-8):
+    if assert_rect and abs(v1.dot(v2)) > eps:
         raise RuntimeError("Vectors are not orthogonal.")
+
+    v1 = np.array(v1)
+    v2 = np.array(v2)
 
     return np.array([-v1 - v2, +v1 - v2, +v1 + v2, -v1 + v2]) / 2
 
@@ -1344,7 +1347,7 @@ class Plane(Primitive):
                 center = self.centroid
 
         V1, V2 = vectors
-        vertices = center + _get_rectangular_vertices(V1, V2)
+        vertices = center + _get_vertices_from_vectors(V1, V2, assert_rect=True)
         return self.get_bounded_plane(vertices)
 
     def get_polygon_plane(self, sides, radius, center=None):
@@ -1412,14 +1415,16 @@ class Plane(Primitive):
         def normalized(x):
             return x / np.linalg.norm(x)
 
-        if np.isclose(self.normal[1], 1, atol=1e-7):
+        if np.isclose(abs(self.normal[1]), 1, atol=1e-7):
             v1 = normalized(np.cross(self.normal, [0, 0, 1]))
             v2 = normalized(np.cross(v1, self.normal))
         else:
             v1 = normalized(np.cross([0, 1, 0], self.normal))
             v2 = normalized(np.cross(self.normal, v1))
 
-        vertices = center + _get_rectangular_vertices(length * v1, length * v2)
+        vertices = center + _get_vertices_from_vectors(
+            length * v1, length * v2, assert_rect=True
+        )
 
         return self.get_bounded_plane(vertices)
 

@@ -78,6 +78,16 @@ def test_plane_creation_methods():
         assert shape3.is_similar_to(shape1)
 
 
+def test_rectangular_plane_from_vectors():
+    vx = np.random.random(3)
+    vz = np.random.random(3)
+    vy = np.cross(vz, vx)
+    point = np.random.random(3)
+
+    plane = PlaneBounded.from_vectors_center([vx, vy], point)
+    assert (plane.surface_area - np.linalg.norm(vx) * np.linalg.norm(vy)) < 1e-4
+
+
 def test_plane_transformations():
     points = np.random.random((20, 3))
 
@@ -771,8 +781,8 @@ def test_planetriangulated_translate():
     assert_allclose(plane.vertices, plane.mesh.vertices)
 
     plane_bounded = PlaneBounded.random()
-    with pytest.warns(UserWarning, match="using plane's mesh"):
-        plane = PlaneTriangulated(plane_bounded)
+    # with pytest.warns(UserWarning, match="using plane's mesh"):
+    plane = PlaneTriangulated(plane_bounded)
 
     assert_allclose(plane.vertices, plane.mesh.vertices)
 

@@ -21,7 +21,7 @@ from pyShapeDetector.geometry import (
     AxisAlignedBoundingBox,
     OrientedBoundingBox,
 )
-from .plane import Plane
+from .plane import Plane, _get_vertices_from_vectors
 
 from pyShapeDetector.utility import get_rotation_from_axis
 
@@ -710,6 +710,29 @@ class PlaneBounded(Plane):
             use_PCA=use_PCA,
             normalized=normalized,
         )
+
+    @classmethod
+    def from_vectors_center(cls, vectors, center):
+        """
+        Creates plane from two vectors representing rectangle and center point.
+
+        Parameters
+        ----------
+        vectors : arraylike of shape (2, 3)
+            The two orthogonal unit vectors defining the rectangle plane.
+        center : arraylike of length 3
+            Center of rectangle.
+
+        Returns
+        -------
+        Plane
+            Generated shape.
+        """
+        plane = super().from_vectors_center(vectors, center)
+        bounds = center + _get_vertices_from_vectors(
+            vectors[0], vectors[1], assert_rect=False
+        )
+        return cls(plane, bounds)
 
     def closest_bounds(self, other_plane, n=1):
         """Returns n pairs of closest bound points with a second plane.

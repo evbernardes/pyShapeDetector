@@ -205,7 +205,7 @@ class PlaneTriangulated(Plane):
         flatten = True
         if vertices is None and triangles is None:
             if isinstance(model, Plane):
-                warnings.warn("No input bounds, using plane's mesh.")
+                # warnings.warn("No input bounds, using plane's mesh.")
                 mesh = model.mesh
             else:
                 warnings.warn("No input vertices/triangles, returning square plane")
@@ -557,6 +557,28 @@ class PlaneTriangulated(Plane):
             use_PCA=use_PCA,
             normalized=normalized,
         )
+
+    @classmethod
+    def from_vectors_center(cls, vectors, center):
+        """
+        Creates plane from two vectors representing rectangle and center point.
+
+        Parameters
+        ----------
+        vectors : arraylike of shape (2, 3)
+            The two orthogonal unit vectors defining the rectangle plane.
+        center : arraylike of length 3
+            Center of rectangle.
+
+        Returns
+        -------
+        Plane
+            Generated shape.
+        """
+        from .planebounded import PlaneBounded
+
+        plane_bounded = PlaneBounded.from_vectors_center(vectors, center)
+        return cls(plane_bounded)
 
     def closest_vertices(self, other_plane, n=1):
         """Returns n pairs of closest bound points with a second plane.
