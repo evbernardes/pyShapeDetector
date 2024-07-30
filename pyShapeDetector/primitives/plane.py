@@ -47,6 +47,20 @@ def _get_vertices_from_vectors(v1, v2, assert_rect=True, eps=1e-8):
     return np.array([-v1 - v2, +v1 - v2, +v1 + v2, -v1 + v2]) / 2
 
 
+def _get_vx_vy(normal):
+    def normalized(x):
+        return x / np.linalg.norm(x)
+
+    if np.isclose(abs(normal[1]), 1, atol=1e-7):
+        v1 = normalized(np.cross(normal, [0, 0, 1]))
+        v2 = normalized(np.cross(v1, normal))
+    else:
+        v1 = normalized(np.cross([0, 1, 0], normal))
+        v2 = normalized(np.cross(normal, v1))
+
+    return v1, v2
+
+
 class Plane(Primitive):
     """
     Plane primitive.
@@ -136,6 +150,7 @@ class Plane(Primitive):
     from_normal_point
     from_vectors_center
     add_holes
+    set_parallel_vectors
     remove_hole
     get_fused_holes
     intersect
@@ -236,24 +251,6 @@ class Plane(Primitive):
 
     @property
     def parallel_vectors(self):
-        if self._parallel_vectors is not None:
-            return self._parallel_vectors
-
-        elif self.has_inliers:
-            self._parallel_vectors = self.get_rectangular_vectors_from_points(
-                normalized=True
-            )
-
-        else:
-            while True:
-                random_vector = np.random.random(3)
-                if abs(random_vector.dot(self.normal)) > 1e-3:
-                    continue
-
-            vy = random_vector / np.linalg.norm(random_vector)
-            vx = np.cross(vy, self.normal)
-            self._parallel_vectors = np.hstack([vx, vy])
-
         return self._parallel_vectors
 
     def __init__(self, model, decimals=None):
@@ -420,8 +417,6 @@ class Plane(Primitive):
             color_shape=color_shape,
         )
 
-        self._parallel_vectors = None
-
     def get_axis_aligned_bounding_box(self, slack=0):
         """Returns an axis-aligned bounding box of the primitive.
 
@@ -549,11 +544,23 @@ class Plane(Primitive):
             for hole in self.holes:
                 hole.rotate(rotation)
 
+    def __put_attributes_in_dict__(self, data, save_inliers=True):
+        super().__put_attributes_in_dict__(data, save_inliers=save_inliers)
+        if self.parallel_vectors is not None:
+            data["parallel_vectors"] = self.parallel_vectors.flatten().tolist()
+
+    def __get_attributes_from_dict__(self, data):
+        super().__get_attributes_from_dict__(data)
+        if data["parallel_vectors"] is not None:
+            self._parallel_vectors = np.array(data["parallel_vectors"]).reshape((2, 3))
+
     def __copy_atributes__(self, shape_original):
         super().__copy_atributes__(shape_original)
         self._model = shape_original._model.copy()
         self._fusion_intersections = shape_original._fusion_intersections.copy()
         self._is_hole = shape_original._is_hole
+        if self._parallel_vectors is not None:
+            self._parallel_vectors = shape_original._parallel_vectors.copy()
         if not shape_original.is_hole:
             self._holes = [h.copy() for h in shape_original._holes]
 
@@ -630,7 +637,65 @@ class Plane(Primitive):
         if norm < 1e-07:
             raise ValueError("Vectors cannot be parallel.")
         normal /= norm
-        return cls.from_normal_point(normal, center)
+        plane = cls.from_normal_point(normal, center)
+        plane.set_parallel_vectors(vectors)
+        return plane
+
+    def set_parallel_vectors(self, vectors=None):
+        """Sets parallel vectors of plane.
+
+        - If vectors are an empty array, removes internal call to it.
+
+        - If no vectors are given as input but the shape has inliers, uses inliers
+        to calculate rectangular vectors.
+
+        - If no vectors are given as input and the shape has no inliers, find to random
+        vectors forming orthogonal base with normal vector.
+
+        Parameters
+        ----------
+        vectors : arraylike of shape (2, 3), optional
+            Custom vectors defining array. Default: None.
+
+        """
+
+        if vectors is not None:
+            vectors = np.array(vectors)
+
+            if len(vectors) == 0:
+                self._parallel_vectors = None
+            elif vectors.shape != (2, 3):
+                raise ValueError(
+                    f"Parallel vectors must be an arraylike of shape (2, 3), got {vectors}."
+                )
+
+            norms = np.linalg.norm(vectors, axis=1)
+            if any(abs((vectors / norms[np.newaxis].T).dot(self.normal)) > 1e-7):
+                raise ValueError(
+                    "Parallel vectors must be orthogonal to normal vector."
+                )
+
+            # removing projections to have two ortoghonal vectors
+            dot = np.dot(vectors[0], vectors[1])
+            if norms[0] > norms[1]:
+                vectors[1] -= dot * vectors[0] / (norms[0] ** 2)
+            else:
+                vectors[0] -= dot * vectors[1] / (norms[1] ** 2)
+
+            self._parallel_vectors = vectors
+
+        elif self.has_inliers:
+            self._parallel_vectors = self.get_rectangular_vectors_from_points(
+                normalized=False
+            )
+
+        else:
+            vx, vy = _get_vx_vy(self.normal)
+            self._parallel_vectors = np.vstack([vx, vy])
+
+        # sanity test
+        v1, v2 = self._parallel_vectors
+        assert abs(v1.dot(v2)) < 1e-7
 
     def add_holes(self, holes, remove_points=True):
         """Add one or more holes to plane.
@@ -1412,15 +1477,7 @@ class Plane(Primitive):
             else:
                 center = self.centroid
 
-        def normalized(x):
-            return x / np.linalg.norm(x)
-
-        if np.isclose(abs(self.normal[1]), 1, atol=1e-7):
-            v1 = normalized(np.cross(self.normal, [0, 0, 1]))
-            v2 = normalized(np.cross(v1, self.normal))
-        else:
-            v1 = normalized(np.cross([0, 1, 0], self.normal))
-            v2 = normalized(np.cross(self.normal, v1))
+        v1, v2 = _get_vx_vy(self.normal)
 
         vertices = center + _get_vertices_from_vectors(
             length * v1, length * v2, assert_rect=True

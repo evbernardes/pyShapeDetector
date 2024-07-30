@@ -143,6 +143,7 @@ class PlaneBounded(Plane):
     from_normal_point
     from_vectors_center
     add_holes
+    set_parallel_vectors
     remove_hole
     get_fused_holes
     intersect
@@ -289,6 +290,9 @@ class PlaneBounded(Plane):
                 bounds = self.get_square_plane(1).bounds
                 flatten = False
                 convex = True
+
+        if isinstance(model, Plane):
+            self._parallel_vectors = model._parallel_vectors
 
         # super().__init__(model, decimals)
         self.set_bounds(bounds, flatten=flatten, convex=convex)

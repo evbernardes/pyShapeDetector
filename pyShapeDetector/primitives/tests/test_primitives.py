@@ -65,6 +65,7 @@ def test_plane_creation_methods():
     vx = np.random.random(3)
     vy = np.random.random(3)
     normal = np.cross(vx, vy)
+    vy = np.cross(normal, vx)
     point = np.random.random(3)
     dist = -np.dot(normal, point)
 
@@ -76,6 +77,11 @@ def test_plane_creation_methods():
         assert shape1.is_similar_to(shape2)
         assert shape2.is_similar_to(shape3)
         assert shape3.is_similar_to(shape1)
+
+        assert shape1.parallel_vectors is None
+        assert shape2.parallel_vectors is None
+        assert shape3.parallel_vectors is not None
+        # assert_allclose(shape3.parallel_vectors, np.array([vx, vy]))
 
 
 def test_rectangular_plane_from_vectors():
