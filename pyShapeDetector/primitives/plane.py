@@ -551,8 +551,8 @@ class Plane(Primitive):
 
     def __get_attributes_from_dict__(self, data):
         super().__get_attributes_from_dict__(data)
-        if data["parallel_vectors"] is not None:
-            self._parallel_vectors = np.array(data["parallel_vectors"]).reshape((2, 3))
+        if (vectors := data.get("parallel_vectors")) is not None:
+            self._parallel_vectors = np.array(vectors).reshape((2, 3))
 
     def __copy_atributes__(self, shape_original):
         super().__copy_atributes__(shape_original)

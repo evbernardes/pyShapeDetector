@@ -750,6 +750,16 @@ def test_save_load():
             assert_allclose(shape.vertices, shape_loaded.vertices)
             assert np.all(shape.triangles == shape_loaded.triangles)
 
+        if primitive in [Plane, PlaneBounded, PlaneTriangulated]:
+            shape_with_parallels = shape.copy()
+            assert shape_with_parallels.parallel_vectors is None
+            shape_with_parallels.set_parallel_vectors()
+            assert shape_with_parallels.parallel_vectors.shape == (2, 3)
+
+            shape_with_parallels.save(path, save_inliers=save_inliers)
+            shape_with_parallels_loaded = primitive.load(path)
+            assert shape_with_parallels_loaded.parallel_vectors.shape == (2, 3)
+
     with pytest.warns(UserWarning, match="returning square plane"):
         with tempfile.TemporaryDirectory() as temp_dir:
             for i in range(10):
