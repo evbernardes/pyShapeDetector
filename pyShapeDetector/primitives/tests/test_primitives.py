@@ -267,6 +267,9 @@ def test_get_rectangular_vectors_from_points():
         plane_rect = plane.get_rectangular_plane((V1, V2), center)
 
         assert np.all(plane_rect.contains_projections(plane.inliers.points))
+        assert_allclose(
+            plane.canonical.model, plane_rect.canonical.model, rtol=1e-01, atol=1e-01
+        )
 
 
 def test_plane_surface_area_and_volume():
