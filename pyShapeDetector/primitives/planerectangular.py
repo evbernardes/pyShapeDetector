@@ -242,28 +242,28 @@ class PlaneRectangular(Plane):
                 vectors_ = model._parallel_vectors
                 center_ = model._center
 
-            elif isinstance(model, (PlaneBounded, PlaneTriangulated)):
-                vectors_, center_ = self.get_rectangular_vectors_from_points(
-                    points=model.bounds_or_vertices,
-                    return_center=True,
-                    use_PCA=True,
-                    normalized=False,
-                )
-
             else:
-                if isinstance(model, Plane) and model.has_inliers:
+                if isinstance(model, (PlaneBounded, PlaneTriangulated)):
+                    points = model.bounds_or_vertices
+
+                elif isinstance(model, Plane) and model.has_inliers:
                     warnings.warn(
                         "No bounds, vertices or input vectors and center, using inliers."
                     )
-                    points = model.inliers
+                    points = model.inliers.points
 
                 else:
                     warnings.warn(
                         "No inliers, bounds, vertices or input vectors and center, returning square plane, possibly centered at [0, 0, 0]."
                     )
                     points = self.get_square_plane(1).bounds
-                    vectors_ = np.vstack([points[1] - points[0], points[2] - points[1]])
-                    center_ = np.array([0, 0, 0])
+
+                vectors_, center_ = self.get_rectangular_vectors_from_points(
+                    points=points,
+                    return_center=True,
+                    use_PCA=True,
+                    normalized=False,
+                )
 
             if vectors is None:
                 vectors = vectors_
@@ -412,6 +412,7 @@ class PlaneRectangular(Plane):
         super().rotate(rotation, rotate_inliers=rotate_inliers)
 
         self._center = rotation.apply(self._center)
+        self._parallel_vectors = rotation.apply(self._parallel_vectors)
 
     def __put_attributes_in_dict__(self, data, save_inliers=True):
         super().__put_attributes_in_dict__(data, save_inliers=save_inliers)
