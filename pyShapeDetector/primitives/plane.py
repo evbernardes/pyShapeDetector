@@ -1607,6 +1607,8 @@ class Plane(Primitive):
                 ]
             )
 
+            # planes.append(cls.from_vectors_center((v1, v2), center + sign * v3 / 2))
+
             plane_unbounded = Plane.from_normal_point(v3, center + sign * v3)
             plane_unbounded.set_inliers(points)
 

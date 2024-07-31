@@ -85,6 +85,11 @@ def test_plane_creation_methods():
         assert shape2.is_similar_to(shape3)
         assert shape3.is_similar_to(shape1)
 
+        if hasattr(shape1, "bounds"):
+            assert_allclose(np.sort(shape1.bounds), np.sort(shape2.bounds))
+            # Not equal:
+            # assert_allclose(shape2.bounds, shape3.bounds)
+
         # assert shape1.parallel_vectors is None
         # assert shape2.parallel_vectors is None
         # assert shape3.parallel_vectors is not None
