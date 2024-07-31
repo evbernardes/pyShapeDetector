@@ -634,8 +634,9 @@ class Plane(Primitive):
         """
         from .planebounded import PlaneBounded
         from .planerectangular import PlaneRectangular
+        from .planetriangulated import PlaneTriangulated
 
-        if remove_points and not isinstance(self, (PlaneBounded, PlaneRectangular)):
+        if remove_points and not isinstance(self, PlaneBounded):
             warnings.warn("Option remove_points only works if plane is bounded.")
             remove_points = False
 
@@ -644,11 +645,13 @@ class Plane(Primitive):
 
         fixed_holes = []
         for hole in holes:
-            if isinstance(hole, PlaneRectangular):
+            if isinstance(hole, (PlaneRectangular, PlaneTriangulated)):
                 hole = PlaneBounded(hole)
             elif not isinstance(hole, PlaneBounded):
                 raise ValueError(
-                    f"Holes must be instances of PlaneBounded or PlaneRectangular, got" f" {hole}."
+                    "Holes must be instances of "
+                    "PlaneBounded, PlaneTriangulated or PlaneRectangular, got "
+                    f"{hole}."
                 )
 
             cos_theta = np.dot(hole.normal, self.normal)
@@ -665,7 +668,9 @@ class Plane(Primitive):
                 continue
 
             if remove_points and not isinstance(self, PlaneBounded):
-                warnings.warn("remove_points only implemented for instances of PlaneBounded, ignoring this step.")
+                warnings.warn(
+                    "remove_points only implemented for instances of PlaneBounded, ignoring this step."
+                )
 
             elif remove_points:
                 if sum(~inside1) > 0:
