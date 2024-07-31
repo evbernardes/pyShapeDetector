@@ -100,7 +100,6 @@ class Plane(Primitive):
     centroid
     holes
     is_hole
-    parallel_vectors
 
     Methods
     -------
@@ -150,7 +149,6 @@ class Plane(Primitive):
     from_normal_point
     from_vectors_center
     add_holes
-    set_parallel_vectors
     remove_hole
     get_fused_holes
     intersect
@@ -185,7 +183,6 @@ class Plane(Primitive):
     _color = np.array([0, 0, 255]) / 255.0
     _is_hole = False
     _convex = None
-    _parallel_vectors = None
 
     @property
     def equation(self):
@@ -248,10 +245,6 @@ class Plane(Primitive):
     @property
     def is_hole(self):
         return self._is_hole
-
-    @property
-    def parallel_vectors(self):
-        return self._parallel_vectors
 
     def __init__(self, model, decimals=None):
         """
@@ -544,23 +537,11 @@ class Plane(Primitive):
             for hole in self.holes:
                 hole.rotate(rotation)
 
-    def __put_attributes_in_dict__(self, data, save_inliers=True):
-        super().__put_attributes_in_dict__(data, save_inliers=save_inliers)
-        if self.parallel_vectors is not None:
-            data["parallel_vectors"] = self.parallel_vectors.flatten().tolist()
-
-    def __get_attributes_from_dict__(self, data):
-        super().__get_attributes_from_dict__(data)
-        if (vectors := data.get("parallel_vectors")) is not None:
-            self._parallel_vectors = np.array(vectors).reshape((2, 3))
-
     def __copy_atributes__(self, shape_original):
         super().__copy_atributes__(shape_original)
         self._model = shape_original._model.copy()
         self._fusion_intersections = shape_original._fusion_intersections.copy()
         self._is_hole = shape_original._is_hole
-        if self._parallel_vectors is not None:
-            self._parallel_vectors = shape_original._parallel_vectors.copy()
         if not shape_original.is_hole:
             self._holes = [h.copy() for h in shape_original._holes]
 
@@ -638,64 +619,7 @@ class Plane(Primitive):
             raise ValueError("Vectors cannot be parallel.")
         normal /= norm
         plane = cls.from_normal_point(normal, center)
-        plane.set_parallel_vectors(vectors)
         return plane
-
-    def set_parallel_vectors(self, vectors=None):
-        """Sets parallel vectors of plane.
-
-        - If vectors are an empty array, removes internal call to it.
-
-        - If no vectors are given as input but the shape has inliers, uses inliers
-        to calculate rectangular vectors.
-
-        - If no vectors are given as input and the shape has no inliers, find to random
-        vectors forming orthogonal base with normal vector.
-
-        Parameters
-        ----------
-        vectors : arraylike of shape (2, 3), optional
-            Custom vectors defining array. Default: None.
-
-        """
-
-        if vectors is not None:
-            vectors = np.array(vectors)
-
-            if len(vectors) == 0:
-                self._parallel_vectors = None
-            elif vectors.shape != (2, 3):
-                raise ValueError(
-                    f"Parallel vectors must be an arraylike of shape (2, 3), got {vectors}."
-                )
-
-            norms = np.linalg.norm(vectors, axis=1)
-            if any(abs((vectors / norms[np.newaxis].T).dot(self.normal)) > 1e-7):
-                raise ValueError(
-                    "Parallel vectors must be orthogonal to normal vector."
-                )
-
-            # removing projections to have two ortoghonal vectors
-            dot = np.dot(vectors[0], vectors[1])
-            if norms[0] > norms[1]:
-                vectors[1] -= dot * vectors[0] / (norms[0] ** 2)
-            else:
-                vectors[0] -= dot * vectors[1] / (norms[1] ** 2)
-
-            self._parallel_vectors = vectors
-
-        elif self.has_inliers:
-            self._parallel_vectors = self.get_rectangular_vectors_from_points(
-                normalized=False
-            )
-
-        else:
-            vx, vy = _get_vx_vy(self.normal)
-            self._parallel_vectors = np.vstack([vx, vy])
-
-        # sanity test
-        v1, v2 = self._parallel_vectors
-        assert abs(v1.dot(v2)) < 1e-7
 
     def add_holes(self, holes, remove_points=True):
         """Add one or more holes to plane.
@@ -949,6 +873,84 @@ class Plane(Primitive):
         plane = PlaneTriangulated(self.model, vertices, triangles)
         Plane.__copy_atributes__(plane, self)
         return plane
+
+    def get_rectangular_plane(self, vectors=None, center=None):
+        """Gives rectangular plane defined two vectors and its center.
+
+        Vectors v1 and v2 should not be unit, and instead have lengths equivalent
+        to widths of rectangle.
+
+        If no vectors are given, calculate them with get_rectangular_vectors_from_points.
+
+        Parameters
+        ----------
+        vectors : arraylike of shape (2, 3), optional
+            The two orthogonal unit vectors defining the rectangle plane.
+        center : arraylike of length 3, optional
+            Center of rectangle. If not given, either inliers or centroid are
+            used.
+
+        Returns
+        -------
+        PlaneBounded
+            Rectangular plane
+        """
+        from .planerectangular import PlaneRectangular
+
+        if vectors is None:
+            vectors, center_rect = self.get_rectangular_vectors_from_points(
+                return_center=True
+            )
+            if center is None:
+                center = center_rect
+
+        if center is None:
+            if self.has_inliers:
+                points = self.inlier_points
+                # center = np.median(self.inlier_points, axis=0)
+                center = (np.max(points, axis=0) + np.min(points, axis=0)) / 2
+            else:
+                center = self.centroid
+
+        # V1, V2 = vectors
+        # vertices = center + _get_vertices_from_vectors(V1, V2, assert_rect=True)
+        plane = PlaneRectangular(self.model, vectors, center)
+        Plane.__copy_atributes__(plane, self)
+        return plane
+
+    def get_square_plane(self, length, center=None):
+        """Gives square plane defined by four points.
+
+        Parameters
+        ----------
+        length : float
+            Length of the sides of the square
+        center : arraylike of length 3, optional
+            Center of rectangle. If not given, either inliers or centroid are
+            used.
+
+        Returns
+        -------
+        PlaneRectangular
+            Square plane
+        """
+
+        # TODO: Replace as an internal call to get_polygon_plane?
+        if center is None:
+            if self.has_inliers:
+                center = np.median(self.inlier_points, axis=0)
+            else:
+                center = self.centroid
+
+        vectors = _get_vx_vy(self.normal)
+
+        vertices = center + _get_vertices_from_vectors(
+            length * vectors[0], length * vectors[1], assert_rect=True
+        )
+
+        # TODO: return rectangular plane?
+        return self.get_bounded_plane(vertices)
+        # return self.get_rectangular_plane(vectors, center)
 
     def get_bounded_planes_from_grid(
         self,
@@ -1375,46 +1377,6 @@ class Plane(Primitive):
             return vectors, center
         return vectors
 
-    def get_rectangular_plane(self, vectors=None, center=None):
-        """Gives rectangular plane defined two vectors and its center.
-
-        Vectors v1 and v2 should not be unit, and instead have lengths equivalent
-        to widths of rectangle.
-
-        If no vectors are given, calculate them with get_rectangular_vectors_from_points.
-
-        Parameters
-        ----------
-        vectors : arraylike of shape (2, 3), optional
-            The two orthogonal unit vectors defining the rectangle plane.
-        center : arraylike of length 3, optional
-            Center of rectangle. If not given, either inliers or centroid are
-            used.
-
-        Returns
-        -------
-        PlaneBounded
-            Rectangular plane
-        """
-        if vectors is None:
-            vectors, center_rect = self.get_rectangular_vectors_from_points(
-                return_center=True
-            )
-            if center is None:
-                center = center_rect
-
-        if center is None:
-            if self.has_inliers:
-                points = self.inlier_points
-                # center = np.median(self.inlier_points, axis=0)
-                center = (np.max(points, axis=0) + np.min(points, axis=0)) / 2
-            else:
-                center = self.centroid
-
-        V1, V2 = vectors
-        vertices = center + _get_vertices_from_vectors(V1, V2, assert_rect=True)
-        return self.get_bounded_plane(vertices)
-
     def get_polygon_plane(self, sides, radius, center=None):
         """Gives plane defined by regular polygon points.
 
@@ -1452,38 +1414,6 @@ class Plane(Primitive):
         y = np.sin(central_angle * np.arange(sides))
         points = self.get_points_from_projections(radius * np.vstack([x, y]).T)
         return self.get_bounded_plane(center + points)
-
-    def get_square_plane(self, length, center=None):
-        """Gives square plane defined by four points.
-
-        Parameters
-        ----------
-        length : float
-            Length of the sides of the square
-        center : arraylike of length 3, optional
-            Center of rectangle. If not given, either inliers or centroid are
-            used.
-
-        Returns
-        -------
-        PlaneBounded
-            Square plane
-        """
-
-        # TODO: Replace as an internal call to get_polygon_plane?
-        if center is None:
-            if self.has_inliers:
-                center = np.median(self.inlier_points, axis=0)
-            else:
-                center = self.centroid
-
-        v1, v2 = _get_vx_vy(self.normal)
-
-        vertices = center + _get_vertices_from_vectors(
-            length * v1, length * v2, assert_rect=True
-        )
-
-        return self.get_bounded_plane(vertices)
 
     def get_square_mesh(self, length, center=None):
         """Gives a square mesh that fits the plane model.

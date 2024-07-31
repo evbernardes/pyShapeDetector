@@ -61,7 +61,6 @@ class PlaneTriangulated(Plane):
     centroid
     holes
     is_hole
-    parallel_vectors
 
     vertices
     triangles
@@ -115,7 +114,6 @@ class PlaneTriangulated(Plane):
     from_normal_point
     from_vectors_center
     add_holes
-    set_parallel_vectors
     remove_hole
     get_fused_holes
     intersect
@@ -221,9 +219,6 @@ class PlaneTriangulated(Plane):
             raise ValueError(
                 "Either 'vertices' and 'triangles' should be given, or one of them."
             )
-
-        if isinstance(model, Plane):
-            self._parallel_vectors = model._parallel_vectors
 
         # super().__init__(model, decimals)
         self.set_vertices_triangles(vertices, triangles, flatten=flatten)
@@ -425,7 +420,7 @@ class PlaneTriangulated(Plane):
         PlaneTriangulated
             Averaged PlaneTriangulated instance.
         """
-        plane_unbounded = Plane.fuse(shapes, detector, ignore_extra_data=True)
+        plane_unbounded = Plane.fuse(shapes, detector, ignore_extra_data)
 
         vertices_list = [plane_unbounded.flatten_points(s.vertices) for s in shapes]
         triangles_list = [s.triangles for s in shapes]
@@ -435,18 +430,11 @@ class PlaneTriangulated(Plane):
         )
 
         shape = PlaneTriangulated(plane_unbounded.model, vertices, triangles)
-        if not ignore_extra_data:
-            pcd = PointCloud.fuse_pointclouds([shape.inliers for shape in shapes])
-            shape.set_inliers(pcd)
-            shape.color = np.mean([s.color for s in shapes], axis=0)
 
-            if detector is not None:
-                num_points = sum([shape.metrics["num_points"] for shape in shapes])
-                num_inliers = len(pcd.points)
-                distances, angles = shape.get_residuals(pcd.points, pcd.normals)
-                shape.metrics = detector.get_metrics(
-                    num_points, num_inliers, distances, angles
-                )
+        if not ignore_extra_data:
+            shape._inliers = plane_unbounded._inliers
+            shape.color = plane_unbounded.color
+            shape.metrics = plane_unbounded.metrics
 
         return shape
 

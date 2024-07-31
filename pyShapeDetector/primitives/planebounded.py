@@ -85,7 +85,6 @@ class PlaneBounded(Plane):
     centroid
     holes
     is_hole
-    parallel_vectors
 
     is_clockwise
     bounds
@@ -143,7 +142,6 @@ class PlaneBounded(Plane):
     from_normal_point
     from_vectors_center
     add_holes
-    set_parallel_vectors
     remove_hole
     get_fused_holes
     intersect
@@ -268,33 +266,30 @@ class PlaneBounded(Plane):
         """
         super().__init__(model, decimals)
 
-        # from .planetriangulated import PlaneTriangulated
+        from .planetriangulated import PlaneTriangulated
+        from .planerectangular import PlaneRectangular
 
         flatten = True
         if bounds is None:
-            if isinstance(model, Plane) and model.has_inliers:
-                warnings.warn("No input bounds, using inliers.")
+            if isinstance(model, PlaneBounded):
+                bounds = model.bounds
+
+            elif isinstance(model, (PlaneTriangulated, PlaneRectangular)):
+                bounds = model.vertices
+
+            elif isinstance(model, Plane) and model.has_inliers:
+                warnings.warn("No bounds, input bounds or vertices, using inliers.")
                 bounds = model.inliers.points
                 convex = True
-            # elif isinstance(model, PlaneTriangulated):
-            #     print("No input bounds, using PlaneTriangulated's boundary.")
-            #     boundary_indexes = get_triangle_boundary_indexes(
-            #         self.vertices,
-            #         self.triangles)
-            #     loops = get_loop_indexes_from_boundary_indexes(boundary_indexes)
-            #     bounds = self.vertices[loops[0]]
-            #     flatten = False
-            #     convex = False
+
             else:
-                warnings.warn("No input bounds, returning square plane.")
+                warnings.warn(
+                    "No bounds, input bounds or vertices, using inliers, returning square plane"
+                )
                 bounds = self.get_square_plane(1).bounds
                 flatten = False
                 convex = True
 
-        if isinstance(model, Plane):
-            self._parallel_vectors = model._parallel_vectors
-
-        # super().__init__(model, decimals)
         self.set_bounds(bounds, flatten=flatten, convex=convex)
 
     @classmethod
@@ -624,7 +619,7 @@ class PlaneBounded(Plane):
         PlaneBounded
             Averaged PlaneBounded instance.
         """
-        plane_unbounded = Plane.fuse(shapes, detector, ignore_extra_data=True)
+        plane_unbounded = Plane.fuse(shapes, detector, ignore_extra_data)
         bounds = np.vstack([s.bounds for s in shapes])
 
         if not np.all([s.is_convex for s in shapes]):
@@ -636,17 +631,9 @@ class PlaneBounded(Plane):
         shape = PlaneBounded(plane_unbounded.model, bounds)
 
         if not ignore_extra_data:
-            pcd = PointCloud.fuse_pointclouds([shape.inliers for shape in shapes])
-            shape.set_inliers(pcd)
-            shape.color = np.mean([s.color for s in shapes], axis=0)
-
-            if detector is not None:
-                num_points = sum([shape.metrics["num_points"] for shape in shapes])
-                num_inliers = len(pcd.points)
-                distances, angles = shape.get_residuals(pcd.points, pcd.normals)
-                shape.metrics = detector.get_metrics(
-                    num_points, num_inliers, distances, angles
-                )
+            shape._inliers = plane_unbounded._inliers
+            shape.color = plane_unbounded.color
+            shape.metrics = plane_unbounded.metrics
 
         return shape
 
