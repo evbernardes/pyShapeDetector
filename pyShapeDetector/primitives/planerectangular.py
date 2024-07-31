@@ -64,9 +64,13 @@ class PlaneRectangular(Plane):
 
     parallel_vectors
     center
-    bounds
     vertices
+    bounds
+    bounds_projections
+    bound_lines
+    bound_LineSet
     bounds_or_vertices
+    bounds_or_vertices_or_inliers
 
     Methods
     -------
@@ -174,8 +178,33 @@ class PlaneRectangular(Plane):
         return self.vertices
 
     @property
+    def bounds_projections(self):
+        return self.get_projections(self.bounds)
+
+    @property
+    def bound_lines(self):
+        """Lines defining bounds."""
+        from .line import Line
+
+        return Line.from_bounds(self.bounds)
+
+    @property
+    def bound_LineSet(self):
+        """Lines defining bounds."""
+        from .line import Line
+
+        return Line.get_LineSet_from_list(self.bound_lines)
+
+    @property
     def bounds_or_vertices(self):
-        return self.vertices
+        return self.bounds
+
+    @property
+    def bounds_or_vertices_or_inliers(self):
+        if len(self.vertices) > 0:
+            return self.bounds
+        else:
+            return self.inlier_points
 
     def __init__(self, model, vectors=None, center=None, decimals=None):
         """
@@ -340,7 +369,9 @@ class PlaneRectangular(Plane):
         """
         from .planebounded import PlaneBounded
 
-        return PlaneBounded(self.model, self.vertices, convex=True).get_mesh()
+        plane_bounded = PlaneBounded(self.model, self.vertices, convex=True)
+        plane_bounded._holes = self._holes
+        return plane_bounded.get_mesh(**options)
 
     def __copy_atributes__(self, shape_original):
         super().__copy_atributes__(shape_original)
