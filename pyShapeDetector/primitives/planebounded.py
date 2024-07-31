@@ -29,6 +29,14 @@ if has_mapbox_earcut := find_spec("mapbox_earcut") is not None:
     from mapbox_earcut import triangulate_float32
 
 
+def _shoelace(projections):
+    # Reference:
+    # https://en.wikipedia.org/wiki/Shoelace_formula
+    i = np.arange(len(projections))
+    x, y = projections.T
+    return np.abs(np.sum(x[i - 1] * y[i] - x[i] * y[i - 1]) * 0.5)
+
+
 def _unflatten(values):
     values = np.array(values)
     if values.ndim == 1:
@@ -187,16 +195,9 @@ class PlaneBounded(Plane):
     def surface_area(self):
         """Surface area of bounded plane."""
 
-        def shoelace(projections):
-            # Reference:
-            # https://en.wikipedia.org/wiki/Shoelace_formula
-            i = np.arange(len(projections))
-            x, y = projections.T
-            return np.abs(np.sum(x[i - 1] * y[i] - x[i] * y[i - 1]) * 0.5)
-
-        surface_area = shoelace(self.bounds_projections)
+        surface_area = _shoelace(self.bounds_projections)
         for hole in self.holes:
-            surface_area -= shoelace(hole.bounds_projections)
+            surface_area -= _shoelace(hole.bounds_projections)
 
         return surface_area
 
@@ -243,7 +244,7 @@ class PlaneBounded(Plane):
         else:
             return self.inlier_points
 
-    def __init__(self, model, bounds=None, convex=True, decimals=None):
+    def __init__(self, model, bounds=None, convex=None, decimals=None):
         """
         Parameters
         ----------
@@ -254,6 +255,7 @@ class PlaneBounded(Plane):
         convex : bool, optinal
             If True, assumes the bounds are supposed to be convex and use
             ConvexHull. If False, assume bounds are directly given as a loop.
+            Default: None (decide dynamically).
         decimals : int, optional
             Number of decimal places to round to (default: 0). If
             decimals is negative, it specifies the number of positions to
@@ -273,8 +275,21 @@ class PlaneBounded(Plane):
         if bounds is None:
             if isinstance(model, PlaneBounded):
                 bounds = model.bounds
+                if convex is None:
+                    convex = model.is_convex
 
-            elif isinstance(model, (PlaneTriangulated, PlaneRectangular)):
+            elif isinstance(model, PlaneRectangular):
+                bounds = model.vertices
+                convex = True
+
+            elif isinstance(model, PlaneTriangulated):
+                if convex is True:
+                    warnings.warn(
+                        "Attempting to create a convex PlaneBounded from a "
+                        "PlaneTriangulated."
+                    )
+                else:
+                    convex = False
                 bounds = model.vertices
 
             elif isinstance(model, Plane) and model.has_inliers:
@@ -290,6 +305,7 @@ class PlaneBounded(Plane):
                 flatten = False
                 convex = True
 
+        assert convex is not None
         self.set_bounds(bounds, flatten=flatten, convex=convex)
 
     @classmethod
