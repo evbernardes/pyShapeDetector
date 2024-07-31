@@ -158,7 +158,13 @@ class PlaneRectangular(Plane):
     def surface_area(self):
         """Surface area of rectangular plane."""
 
-        return np.prod(np.linalg.norm(self.parallel_vectors, axis=1))
+        from .planebounded import _shoelace
+
+        surface_area = np.prod(np.linalg.norm(self.parallel_vectors, axis=1))
+        for hole in self.holes:
+            surface_area -= _shoelace(hole.bounds_projections)
+
+        return surface_area
 
     @property
     def parallel_vectors(self):
