@@ -305,7 +305,9 @@ class PlaneBounded(Plane):
                 flatten = False
                 convex = True
 
-        assert convex is not None
+        # TODO: check this
+        if convex is None:
+            convex = True
         self.set_bounds(bounds, flatten=flatten, convex=convex)
 
     @classmethod

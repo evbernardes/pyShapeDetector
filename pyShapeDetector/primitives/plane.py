@@ -941,6 +941,7 @@ class Plane(Primitive):
         PlaneRectangular
             Square plane
         """
+        from .planerectangular import PlaneRectangular
 
         # TODO: Replace as an internal call to get_polygon_plane?
         if center is None:
@@ -951,13 +952,7 @@ class Plane(Primitive):
 
         vectors = _get_vx_vy(self.normal)
 
-        vertices = center + _get_vertices_from_vectors(
-            length * vectors[0], length * vectors[1], assert_rect=True
-        )
-
-        # TODO: return rectangular plane?
-        return self.get_bounded_plane(vertices)
-        # return self.get_rectangular_plane(vectors, center)
+        return self.get_rectangular_plane(np.array(vectors) * length, center)
 
     def get_bounded_planes_from_grid(
         self,

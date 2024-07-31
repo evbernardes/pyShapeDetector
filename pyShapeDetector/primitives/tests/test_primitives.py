@@ -320,9 +320,10 @@ def test_plane_surface_area_and_volume():
         assert np.isnan(plane.surface_area)
 
     length = np.random.rand()
-    plane_bounded = plane.get_square_plane(length)
-    assert plane_bounded.volume == 0
-    assert_allclose(plane_bounded.surface_area, length**2)
+    plane_rectangular = plane.get_square_plane(length)
+    assert isinstance(plane_rectangular, PlaneRectangular)
+    assert plane_rectangular.volume == 0
+    assert_allclose(plane_rectangular.surface_area, length**2)
 
     # vertices = np.array(plane_bounded.mesh.vertices)
     # triangles = np.array(plane_bounded.mesh.triangles)
@@ -330,7 +331,7 @@ def test_plane_surface_area_and_volume():
     # get only half of the doubled triangles
     # triangles = triangles[:int(len(triangles) / 2)]
 
-    plane_triangulated = PlaneTriangulated.from_plane_with_mesh(plane_bounded)
+    plane_triangulated = PlaneTriangulated.from_plane_with_mesh(plane_rectangular)
     assert_allclose(plane_triangulated.surface_area, length**2)
 
 
@@ -373,6 +374,7 @@ def test_planebounded_contains_projections():
 
 def test_planebounded_convex_tringulation():
     plane = Plane([0, 0, 1, 0]).get_square_plane(10)
+    plane = PlaneBounded(plane)
     area_no_holes = plane.surface_area
 
     hole1 = plane.get_square_plane(2)
