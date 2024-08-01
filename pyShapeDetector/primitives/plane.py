@@ -612,6 +612,11 @@ class Plane(Primitive):
         Plane
             Generated shape.
         """
+        vectors = np.asarray(vectors).astype(float)
+        if vectors.shape != (2, 3):
+            raise ValueError(
+                "Vectors expected to be arraylike of shape (2, 3), got {vectors.shape}"
+            )
         V1, V2 = vectors
         normal = np.cross(V1, V2)
         norm = np.linalg.norm(normal)
