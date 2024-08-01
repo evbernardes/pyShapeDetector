@@ -3,9 +3,9 @@ using UnityEditor;
 using System.IO;
 using System.Collections.Generic;
 
-public class CreateSpheres : Editor
+public class PrimitiveLoader : Editor
 {
-    [MenuItem("Tools/Load pyShapeDetector shapes/From single file")]
+    [MenuItem("Tools/Load pyShapeDetector shapes/From a single file")]
     public static void CreatePrefabFromSingleFile()
     {
         string filePath = EditorUtility.OpenFilePanel("Select shape json file", "", "json");
@@ -59,8 +59,8 @@ public class CreateSpheres : Editor
         if (!Directory.Exists(prefabFolder))
             Directory.CreateDirectory(prefabFolder);
 
-        if (!Directory.Exists(materialFolder))
-            Directory.CreateDirectory(materialFolder);
+        // if (!Directory.Exists(materialFolder))
+        //     Directory.CreateDirectory(materialFolder);
 
         Shader shader = Shader.Find(DEFAULT_SHADER);
         GameObject primitiveObject;
@@ -68,20 +68,23 @@ public class CreateSpheres : Editor
         foreach (string filePath in filePaths)
         {
             Primitive primitive = new Primitive(filePath);
+
             if (!primitive.is_primitive)
             {
-                Debug.Log($"{filePath} not a valid primitive!");
+                Debug.LogWarning($"{filePath} not a valid primitive!");
                 continue;
             }
 
             if (primitive.name.Equals("plane") || primitive.name.Equals("bounded plane"))
             {
                 // primitiveObject = CreatePlanePrefab(primitive);
-                Debug.LogWarning($"Not implemented for {primitive.name}, try converting it to a triangulated plane instead.");
+                Debug.LogWarning($"Not implemented for {primitive.name}, try converting it to a rectangular or triangulated plane instead.");
                 continue;
             }
             else if (primitive.name.Equals("sphere"))
                 primitiveObject = CreateSpherePrefab(primitive);
+            else if (primitive.name.Equals("rectangular plane"))
+                primitiveObject = CreatePlaneRectangularPrefab(primitive);
             else if (primitive.name.Equals("triangulated plane"))
                 primitiveObject = CreatePlaneTriangulatedPrefab(primitive, meshesFolder);
             else if (primitive.name.Equals("cylinder"))
@@ -91,6 +94,8 @@ public class CreateSpheres : Editor
                 Debug.LogWarning($"Not implemented for primitives of type {primitive.name}, ignoring file {primitive.fileName}.");
                 continue;
             }
+
+            Debug.Log($"Primitive of type {primitive.name} created!");
 
             // Create material
             Material material = CreatePrimitiveMaterial(primitive, shader, materialFolder);
@@ -125,31 +130,63 @@ public class CreateSpheres : Editor
             color = new Color(primitive.color[0], primitive.color[1], primitive.color[2], 1)
         };
         string materialPath = $"{materialFolder}/Material_{primitive.fileName}.mat";
+
+        if (!Directory.Exists(materialFolder))
+            Directory.CreateDirectory(materialFolder);
+
         AssetDatabase.CreateAsset(material, materialPath);
         // TODO: discover how to make planes visible from both sides 
         // material.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off); // Disable backface culling
         return material;
     }
 
-    private static GameObject CreatePlanePrefab(Primitive primitive)
+    private static GameObject CreatePlaneRectangularPrefab(Primitive primitive)
     {
+
         GameObject planeObject = GameObject.CreatePrimitive(PrimitiveType.Plane);
 
-        Vector3 normal = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
-        Vector3 centroid = -normal * primitive.model[3];
+        // Vector3 normal = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
+        Vector3[] vectors = unflatten_array(primitive.parallel_vectors);
+        Vector3 normal = Vector3.Cross(vectors[1], vectors[0]).normalized;
+
+        planeObject.transform.localScale = new Vector3(0.1f * vectors[0].magnitude, 1, 0.1f * vectors[1].magnitude); // 10x10 default plane scaled down to 1x1
+
+        // Create a rotation matrix from the vectors
+        Matrix4x4 matrix = new Matrix4x4();
+        matrix.SetColumn(0, vectors[0].normalized);  // X axis
+        // matrix.SetColumn(1, vectors[1].normalized);  // Z axis
+        // matrix.SetColumn(2, normal);        // Y axis
+        matrix.SetColumn(2, vectors[1].normalized);  // Z axis
+        matrix.SetColumn(1, normal);        // Y axis
+        matrix.SetColumn(3, new Vector4(0, 0, 0, 1)); // Homogeneous coordinate
+        planeObject.transform.rotation = matrix.rotation;
 
         // Set the position of the plane
-        planeObject.transform.position = centroid;
+        planeObject.transform.position = new Vector3(primitive.center[0], primitive.center[1], primitive.center[2]);
 
-        // Set the rotation of the plane to match the plane normal
-        // planeObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal);
-
-        planeObject.transform.localScale = new Vector3(0.1f, 1, 0.1f); // 10x10 default plane scaled down to 1x1
-
-        planeObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal);
-
+        // planeObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal);// * Quaternion.FromToRotation(Vector3.right, vectors[1]);
         return planeObject;
     }
+
+    // private static GameObject CreatePlanePrefab(Primitive primitive)
+    // {
+    //     GameObject planeObject = GameObject.CreatePrimitive(PrimitiveType.Plane);
+
+    //     Vector3 normal = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
+    //     Vector3 centroid = -normal * primitive.model[3];
+
+    //     // Set the position of the plane
+    //     planeObject.transform.position = centroid;
+
+    //     // Set the rotation of the plane to match the plane normal
+    //     // planeObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal);
+
+    //     planeObject.transform.localScale = new Vector3(0.1f, 1, 0.1f); // 10x10 default plane scaled down to 1x1
+
+    //     planeObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal);
+
+    //     return planeObject;
+    // }
 
     private static GameObject CreatePlaneTriangulatedPrefab(Primitive primitive, string meshesFolder)
     {
@@ -232,6 +269,8 @@ public class CreateSpheres : Editor
         public float[] color;
         public float[] vertices;
         public int[] triangles;
+        public float[] parallel_vectors;
+        public float[] center;
         public bool is_primitive;
 
         public Primitive(string filePath)
@@ -261,21 +300,31 @@ public class CreateSpheres : Editor
 
             if (json_file_exists)
             {
-                Primitive deserializedObject = JsonUtility.FromJson<Primitive>(jsonString);
+                Primitive jsonObj = JsonUtility.FromJson<Primitive>(jsonString);
 
-                if (deserializedObject.name == null || deserializedObject.model == null || deserializedObject.color == null)
+                if (jsonObj.name == null || jsonObj.model == null || jsonObj.color == null)
+                {
+                    this.is_primitive = false;
+                }
+                else if (jsonObj.name == "triangulated plane" && (jsonObj.vertices == null || jsonObj.triangles == null))
+                {
+                    this.is_primitive = false;
+                }
+                else if (jsonObj.name == "rectangular plane" && (jsonObj.parallel_vectors == null || jsonObj.center == null))
                 {
                     this.is_primitive = false;
                 }
                 else
                 {
-                    this.name = deserializedObject.name;
-                    this.model = deserializedObject.model;
-                    this.color = deserializedObject.color;
-                    this.vertices = deserializedObject.vertices;
-                    this.triangles = deserializedObject.triangles;
+                    this.name = jsonObj.name;
+                    this.model = jsonObj.model;
+                    this.color = jsonObj.color;
+                    this.vertices = jsonObj.vertices;
+                    this.triangles = jsonObj.triangles;
+                    this.parallel_vectors = jsonObj.parallel_vectors;
+                    this.center = jsonObj.center;
                     this.is_primitive = true;
-                    Debug.Log($"Primitive found at {filePath}.");
+                    Debug.Log($"Primitive of type {this.name} found at {filePath}.");
                 }
             }
         }
