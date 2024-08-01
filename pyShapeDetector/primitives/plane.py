@@ -1594,28 +1594,19 @@ class Plane(Primitive):
             List of PlaneBounded instances.
         """
 
-        vectors = np.eye(3) * np.array(dimensions) / 2
+        vectors = np.eye(3) * np.array(dimensions)
         center = np.array(center)
         planes = []
 
         for i, j in permutations([0, 1, 2], 2):
             k = 3 - i - j
             sign = int((i - j) * (j - k) * (k - i) / 2)
-            v1, v2, v3 = vectors[[i, j, k]]
+            vx, vy, normal = vectors[[i, j, k]]
 
-            plane_center = center + sign * v3
-            points = plane_center + np.array(
-                [
-                    +v1 + v2,
-                    +v1 - v2,
-                    -v1 - v2,
-                    -v1 + v2,
-                ]
-            )
+            center_face = center + sign * normal / 2
+            points = center_face + _get_vertices_from_vectors(vx, vy)
 
-            # planes.append(cls.from_vectors_center((v1, v2), center + sign * v3 / 2))
-
-            plane_unbounded = Plane.from_normal_point(v3, plane_center)
+            plane_unbounded = Plane.from_normal_point(normal, center_face)
             plane_unbounded.set_inliers(points)
 
             with warnings.catch_warnings():
