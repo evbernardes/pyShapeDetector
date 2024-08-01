@@ -1603,7 +1603,8 @@ class Plane(Primitive):
             sign = int((i - j) * (j - k) * (k - i) / 2)
             v1, v2, v3 = vectors[[i, j, k]]
 
-            points = center + np.array(
+            plane_center = center + sign * v3
+            points = plane_center + np.array(
                 [
                     +v1 + v2,
                     +v1 - v2,
@@ -1614,7 +1615,7 @@ class Plane(Primitive):
 
             # planes.append(cls.from_vectors_center((v1, v2), center + sign * v3 / 2))
 
-            plane_unbounded = Plane.from_normal_point(v3, center + sign * v3)
+            plane_unbounded = Plane.from_normal_point(v3, plane_center)
             plane_unbounded.set_inliers(points)
 
             with warnings.catch_warnings():
