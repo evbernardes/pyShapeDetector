@@ -199,17 +199,22 @@ def test_plane_box():
     center = (0, 0, 0)
     dimensions = (1, 2, 3)
 
-    box = Plane.create_box(center, dimensions)
-    for p in box:
-        assert type(p) is Plane
+    box_unbounded = Plane.create_box(center, dimensions)
+    for p in box_unbounded:
+        assert isinstance(p, Plane)
 
-    box = PlaneBounded.create_box(center, dimensions)
-    for p in box:
-        assert type(p) is PlaneBounded
+    box_bounded = PlaneBounded.create_box(center, dimensions)
+    for p in box_bounded:
+        assert isinstance(p, PlaneBounded)
 
-    box = PlaneTriangulated.create_box(center, dimensions)
-    for p in box:
-        assert type(p) is PlaneTriangulated
+    box_triangulated = PlaneTriangulated.create_box(center, dimensions)
+    for p in box_triangulated:
+        assert isinstance(p, PlaneTriangulated)
+
+    box_rectangular = PlaneRectangular.create_box(center, dimensions)
+    for p in box_rectangular:
+        assert isinstance(p, PlaneRectangular)
+        assert_allclose(p.mesh.vertices.mean(axis=0), p.center)
 
 
 def test_canonical():

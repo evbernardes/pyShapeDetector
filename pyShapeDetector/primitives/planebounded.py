@@ -844,7 +844,7 @@ class PlaneBounded(Plane):
         bounds : array_like, shape (N, 3)
             Points corresponding to the fitted shape.
         flatten : bool, optional
-            If False, does not flatten points
+            If False, does not flatten points. Default: True.
         convex : bool, optinal
             If True, assumes the bounds are supposed to be convex and use
             ConvexHull. If False, assume bounds are directly given as a loop.

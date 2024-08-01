@@ -272,7 +272,13 @@ class PlaneRectangular(Plane):
                 center = center_
 
         self.set_parallel_vectors(vectors)
-        self.set_center(center)
+        self.set_center(center, flatten=True)
+
+        error = np.linalg.norm(self.get_distances(self.vertices))
+        if error > 1e-7:
+            raise RuntimeError(
+                "PlaneRectangular instance generated with vertices far away from plane model."
+                )
 
     @classmethod
     def random(cls, scale=1, decimals=16):
@@ -669,7 +675,7 @@ class PlaneRectangular(Plane):
         v1, v2 = self._parallel_vectors
         assert abs(v1.dot(v2)) < 1e-7
 
-    def set_center(self, center=None):
+    def set_center(self, center=None, flatten=True):
         """Set center of plane.
 
         - If center is an empty array, removes it.
@@ -681,6 +687,8 @@ class PlaneRectangular(Plane):
         ----------
         vectors : arraylike of shape (2, 3), optional
             Custom vectors defining array. Default: None.
+        flatten : bool, optional
+            If False, does not flatten center point. Default: True.
 
         """
 
@@ -690,12 +698,12 @@ class PlaneRectangular(Plane):
                 raise ValueError(
                     f"Center must be an arraylike with length 3, got {center}."
                 )
-            self._center = center
+            self._center = self.flatten_points([center])[0]
 
         elif self.has_inliers:
             points = self.inliers.points
             center = (np.max(points, axis=0) + np.min(points, axis=0)) / 2
-            self._center = center
+            self._center = self.flatten_points([center])[0]
 
         else:
             warnings.warn("No input center not inliers, setting center to centroid")
