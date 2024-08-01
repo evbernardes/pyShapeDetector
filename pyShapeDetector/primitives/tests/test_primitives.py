@@ -69,6 +69,10 @@ def get_shape(primitive, num_points, canonical=False):
 
 
 def test_plane_creation_methods():
+    # axis=None flattens the array before sorting
+    sort = lambda x: np.sort(x, axis=None)
+    # sort = lambda x: np.sort(x, axis=0)
+
     vx = np.random.random(3)
     vy = np.random.random(3)
     normal = np.cross(vx, vy)
@@ -86,7 +90,17 @@ def test_plane_creation_methods():
 
         if hasattr(shape1, "bounds"):
             # assert_allclose(np.sort(shape1.bounds), np.sort(shape2.bounds))
-            assert_allclose(np.sort(shape2.bounds), np.sort(shape3.bounds))
+            assert_allclose(sort(shape2.bounds), sort(shape3.bounds))
+
+    dimensions = abs(np.random.random(3) * 10)
+    boxes = []
+    for primitive in [PlaneBounded, PlaneTriangulated, PlaneRectangular]:
+        boxes.append(primitive.create_box(center=point, dimensions=dimensions))
+
+    for box1, box2 in combinations(boxes, 2):
+        for plane1, plane2 in zip(box1, box2):
+            assert np.all(sort(plane1.mesh.triangles) == sort(plane2.mesh.triangles))
+            assert_allclose(sort(plane1.mesh.vertices), sort(plane2.mesh.vertices))
 
 
 def test_rectangular_plane_from_vectors():
