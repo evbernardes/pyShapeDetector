@@ -74,26 +74,19 @@ def test_plane_creation_methods():
     normal = np.cross(vx, vy)
     vy = np.cross(normal, vx)
     point = np.random.random(3)
-    dist = -np.dot(normal, point)
 
     for primitive in [Plane, PlaneBounded, PlaneTriangulated, PlaneRectangular]:
-        shape1 = primitive.from_normal_dist(normal, dist)
-        shape2 = primitive.from_normal_point(normal, point)
-        shape3 = primitive.from_vectors_center(np.array([vx, vy]), point)
+        shape1 = primitive.from_vectors_center(np.array([vx, vy]), point)
+        shape2 = primitive.from_normal_point(shape1.normal, shape1.centroid)
+        shape3 = primitive.from_normal_dist(shape1.normal, shape1.dist)
 
         assert shape1.is_similar_to(shape2)
         assert shape2.is_similar_to(shape3)
         assert shape3.is_similar_to(shape1)
 
         if hasattr(shape1, "bounds"):
-            assert_allclose(np.sort(shape1.bounds), np.sort(shape2.bounds))
-            # Not equal:
-            # assert_allclose(shape2.bounds, shape3.bounds)
-
-        # assert shape1.parallel_vectors is None
-        # assert shape2.parallel_vectors is None
-        # assert shape3.parallel_vectors is not None
-        # assert_allclose(shape3.parallel_vectors, np.array([vx, vy]))
+            # assert_allclose(np.sort(shape1.bounds), np.sort(shape2.bounds))
+            assert_allclose(np.sort(shape2.bounds), np.sort(shape3.bounds))
 
 
 def test_rectangular_plane_from_vectors():
