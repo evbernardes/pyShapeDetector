@@ -274,12 +274,6 @@ class PlaneRectangular(Plane):
         self.set_parallel_vectors(vectors)
         self.set_center(center, flatten=True)
 
-        error = np.linalg.norm(self.get_distances(self.vertices))
-        if error > 1e-7:
-            raise RuntimeError(
-                "PlaneRectangular instance generated with vertices far away from plane model."
-                )
-
     @classmethod
     def random(cls, scale=1, decimals=16):
         """Generates a random shape.
@@ -691,20 +685,28 @@ class PlaneRectangular(Plane):
             If False, does not flatten center point. Default: True.
 
         """
-
         if center is not None:
             center = np.array(center)
             if center.shape != (3,):
                 raise ValueError(
                     f"Center must be an arraylike with length 3, got {center}."
                 )
-            self._center = self.flatten_points([center])[0]
 
         elif self.has_inliers:
             points = self.inliers.points
             center = (np.max(points, axis=0) + np.min(points, axis=0)) / 2
-            self._center = self.flatten_points([center])[0]
 
         else:
             warnings.warn("No input center not inliers, setting center to centroid")
-            self._center = self.centroid
+            center = self.centroid
+
+        if flatten:
+            center = self.flatten_points([center])[0]
+
+        self._center = center
+        error = np.linalg.norm(self.get_distances(self.vertices))
+        if error > 1e-7:
+            raise RuntimeError(
+                "PlaneRectangular instance generated with vertices far away "
+                "from plane model, the center is probably incompatible."
+            )
