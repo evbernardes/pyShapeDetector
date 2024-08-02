@@ -899,7 +899,7 @@ class PlaneBounded(Plane):
 
         """
         if self.is_convex is not True:
-            warn("Non convex plane detected, not implemented yet.")
+            warnings.warn("Non convex plane detected, not implemented yet.")
 
         else:
             if flatten:
