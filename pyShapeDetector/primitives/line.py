@@ -412,9 +412,9 @@ class Line(Primitive):
 
         if fit_vertices:
             points = []
-            if len(p := plane1.bounds_or_vertices) > 0:
+            if len(p := plane1.vertices) > 0:
                 points.append(p)
-            if len(p := plane2.bounds_or_vertices) > 0:
+            if len(p := plane2.vertices) > 0:
                 points.append(p)
 
             if len(points) == 0:

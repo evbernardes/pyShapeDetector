@@ -64,7 +64,6 @@ class PlaneTriangulated(Plane):
 
     vertices
     triangles
-    bounds_or_vertices
 
     Methods
     -------
@@ -169,11 +168,7 @@ class PlaneTriangulated(Plane):
         return self._triangles
 
     @property
-    def bounds_or_vertices(self):
-        return self.vertices
-
-    @property
-    def bounds_or_vertices_or_inliers(self):
+    def vertices_or_inliers(self):
         if len(self.vertices) > 0:
             return self.vertices
         else:

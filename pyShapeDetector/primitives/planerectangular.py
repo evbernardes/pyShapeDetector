@@ -198,11 +198,7 @@ class PlaneRectangular(Plane):
         return Line.get_LineSet_from_list(self.vertices_lines)
 
     @property
-    def bounds_or_vertices(self):
-        return self.vertices
-
-    @property
-    def bounds_or_vertices_or_inliers(self):
+    def vertices_or_inliers(self):
         if len(self.vertices) > 0:
             return self.vertices
         else:
@@ -240,7 +236,7 @@ class PlaneRectangular(Plane):
 
             else:
                 if isinstance(model, (PlaneBounded, PlaneTriangulated)):
-                    points = model.bounds_or_vertices
+                    points = model.vertices
 
                 elif isinstance(model, Plane) and model.has_inliers:
                     warnings.warn(

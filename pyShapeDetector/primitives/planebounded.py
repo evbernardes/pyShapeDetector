@@ -100,7 +100,6 @@ class PlaneBounded(Plane):
     vertices_projections
     vertices_lines
     vertices_LineSet
-    bounds_or_vertices
 
     Methods
     -------
@@ -234,11 +233,7 @@ class PlaneBounded(Plane):
         return Line.get_LineSet_from_list(self.vertices_lines)
 
     @property
-    def bounds_or_vertices(self):
-        return self.vertices
-
-    @property
-    def bounds_or_vertices_or_inliers(self):
+    def vertices_or_inliers(self):
         if len(self.vertices) > 0:
             return self.vertices
         else:
