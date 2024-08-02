@@ -610,8 +610,8 @@ class TriangleMesh(Open3D_Geometry):
 
         count = -1
         while count != 0:
-            bounds = vertices[loop_indexes]
-            lines = Line.from_bounds(bounds)
+            vertices = vertices[loop_indexes]
+            lines = Line.from_vertices(vertices)
             keep = []
             N = len(lines)
             for i in range(N):

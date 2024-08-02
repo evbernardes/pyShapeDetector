@@ -44,12 +44,12 @@ def _unflatten(values):
     return values
 
 
-def _is_clockwise(bounds):
+def _is_clockwise(vertices):
     s = 0
-    N = len(bounds)
+    N = len(vertices)
     for i in range(N):
-        point = bounds[i]
-        point2 = bounds[(i + 1) % N]
+        point = vertices[i]
+        point2 = vertices[(i + 1) % N]
         s += (point2[0] - point[0]) * (point2[1] + point[1])
     return s > 0
 
@@ -95,11 +95,11 @@ class PlaneBounded(Plane):
     is_hole
 
     is_clockwise
-    bounds
-    bounds_indices
-    bounds_projections
-    bound_lines
-    bound_LineSet
+    vertices
+    vertices_indices
+    vertices_projections
+    vertices_lines
+    vertices_LineSet
     bounds_or_vertices
 
     Methods
@@ -153,7 +153,7 @@ class PlaneBounded(Plane):
     remove_hole
     get_fused_holes
     intersect
-    closest_bounds
+    closest_vertices
     get_unbounded_plane
     get_bounded_plane
     get_triangulated_plane
@@ -173,21 +173,21 @@ class PlaneBounded(Plane):
     create_box
     get_plane_intersections
 
-    closest_bounds
+    closest_vertices
     contains_projections
     bound_lines_meshes
-    set_bounds
+    set_vertices
     add_bound_points
-    intersection_bounds
-    simplify_bounds_colinear
-    contract_bounds
+    intersection_vertices
+    simplify_vertices_colinear
+    contract_vertices
     glue_planes_with_intersections
     """
 
     _name = "bounded plane"
-    _bounds_indices = np.array([])
-    _bounds = np.array([])
-    _bounds_projections = np.array([])
+    _vertices_indices = np.array([])
+    _vertices = np.array([])
+    _vertices_projections = np.array([])
     _convex = True
     _is_clockwise = None
 
@@ -195,9 +195,9 @@ class PlaneBounded(Plane):
     def surface_area(self):
         """Surface area of bounded plane."""
 
-        surface_area = _shoelace(self.bounds_projections)
+        surface_area = _shoelace(self.vertices_projections)
         for hole in self.holes:
-            surface_area -= _shoelace(hole.bounds_projections)
+            surface_area -= _shoelace(hole.vertices_projections)
 
         return surface_area
 
@@ -206,55 +206,55 @@ class PlaneBounded(Plane):
         return self._is_clockwise
 
     @property
-    def bounds(self):
-        return self._bounds
+    def vertices(self):
+        return self._vertices
 
     @property
-    def bounds_indices(self):
-        """Indices of points corresponding to bounds."""
-        # TODO: should take into consideration added bounds
-        return self._bounds_indices
+    def vertices_indices(self):
+        """Indices of points corresponding to vertices."""
+        # TODO: should take into consideration added vertices
+        return self._vertices_indices
 
     @property
-    def bounds_projections(self):
-        return self._bounds_projections
+    def vertices_projections(self):
+        return self._vertices_projections
 
     @property
-    def bound_lines(self):
-        """Lines defining bounds."""
+    def vertices_lines(self):
+        """Lines defining vertices."""
         from .line import Line
 
-        return Line.from_bounds(self.bounds)
+        return Line.from_vertices(self.vertices)
 
     @property
-    def bound_LineSet(self):
-        """Lines defining bounds."""
+    def vertices_LineSet(self):
+        """Lines defining vertices."""
         from .line import Line
 
-        return Line.get_LineSet_from_list(self.bound_lines)
+        return Line.get_LineSet_from_list(self.vertices_lines)
 
     @property
     def bounds_or_vertices(self):
-        return self.bounds
+        return self.vertices
 
     @property
     def bounds_or_vertices_or_inliers(self):
         if len(self.vertices) > 0:
-            return self.bounds
+            return self.vertices
         else:
             return self.inlier_points
 
-    def __init__(self, model, bounds=None, convex=None, decimals=None):
+    def __init__(self, model, vertices=None, convex=None, decimals=None):
         """
         Parameters
         ----------
         model : Primitive or list of 4 values
             Shape defining plane
-        bounds : array_like, shape (N, 3), optional
-            Points defining bounds.
+        vertices : array_like, shape (N, 3), optional
+            Points defining vertices.
         convex : bool, optinal
-            If True, assumes the bounds are supposed to be convex and use
-            ConvexHull. If False, assume bounds are directly given as a loop.
+            If True, assumes the vertices are supposed to be convex and use
+            ConvexHull. If False, assume vertices are directly given as a loop.
             Default: None (decide dynamically).
         decimals : int, optional
             Number of decimal places to round to (default: 0). If
@@ -272,14 +272,14 @@ class PlaneBounded(Plane):
         from .planerectangular import PlaneRectangular
 
         flatten = True
-        if bounds is None:
+        if vertices is None:
             if isinstance(model, PlaneBounded):
-                bounds = model.bounds
+                vertices = model.vertices
                 if convex is None:
                     convex = model.is_convex
 
             elif isinstance(model, PlaneRectangular):
-                bounds = model.vertices
+                vertices = model.vertices
                 convex = True
 
             elif isinstance(model, PlaneTriangulated):
@@ -290,25 +290,25 @@ class PlaneBounded(Plane):
                     )
                 else:
                     convex = False
-                bounds = model.vertices
+                vertices = model.vertices
 
             elif isinstance(model, Plane) and model.has_inliers:
-                warnings.warn("No bounds, input bounds or vertices, using inliers.")
-                bounds = model.inliers.points
+                warnings.warn("No vertices or input vertices, using inliers.")
+                vertices = model.inliers.points
                 convex = True
 
             else:
                 warnings.warn(
-                    "No bounds, input bounds or vertices, using inliers, returning square plane"
+                    "No vertices, input vertices or using inliers, returning square plane"
                 )
-                bounds = self.get_square_plane(1).bounds
+                vertices = self.get_square_plane(1).vertices
                 flatten = False
                 convex = True
 
         # TODO: check this
         if convex is None:
             convex = True
-        self.set_bounds(bounds, flatten=flatten, convex=convex)
+        self.set_vertices(vertices, flatten=flatten, convex=convex)
 
     @classmethod
     def random(cls, scale=1, decimals=16):
@@ -394,13 +394,13 @@ class PlaneBounded(Plane):
             Mesh corresponding to the plane.
         """
 
-        projections = self.bounds_projections
+        projections = self.vertices_projections
         holes = self._holes
 
         if self.is_convex:
             if len(holes) >= 0:
-                points_holes = [self.flatten_points(hole.bounds) for hole in holes]
-                points = np.vstack([self.bounds] + points_holes)
+                points_holes = [self.flatten_points(hole.vertices) for hole in holes]
+                points = np.vstack([self.vertices] + points_holes)
                 projections = self.get_projections(points)
 
             triangles = Delaunay(projections).simplices
@@ -420,12 +420,12 @@ class PlaneBounded(Plane):
 
         else:
             if has_mapbox_earcut:
-                all_points = [self.bounds] + [h.bounds for h in self.holes]
+                all_points = [self.vertices] + [h.vertices for h in self.holes]
                 points = np.vstack(all_points)
                 projections = self.get_projections(points)
-                rings = [len(self.bounds)]
+                rings = [len(self.vertices)]
                 for hole in self.holes:
-                    rings.append(rings[-1] + len(hole.bounds))
+                    rings.append(rings[-1] + len(hole.vertices))
 
                 triangles = triangulate_float32(projections, rings).reshape(-1, 3)
 
@@ -442,7 +442,7 @@ class PlaneBounded(Plane):
 
                     fused_hole = self.get_fused_holes()
                     projections = _fuse_loops(
-                        projections, fused_hole.bounds_projections
+                        projections, fused_hole.vertices_projections
                     )
 
                 points = self.get_points_from_projections(projections)
@@ -477,11 +477,11 @@ class PlaneBounded(Plane):
     #     """
 
     #     if len(self._fusion_intersections) == 0:
-    #         points = self.bounds
-    #         projections = self.bounds_projections
+    #         points = self.vertices
+    #         projections = self.vertices_projections
     #         # idx_intersections_sorted = []
     #     else:
-    #         points = np.vstack([self.bounds, self._fusion_intersections])
+    #         points = np.vstack([self.vertices, self._fusion_intersections])
     #         projections = self.get_projections(points)
 
     #         angles = projections - projections.mean(axis=0)
@@ -499,7 +499,7 @@ class PlaneBounded(Plane):
     #     holes = self._holes
     #     has_holes = len(holes) != 0
     #     if has_holes:
-    #         points_holes = [self.flatten_points(hole.bounds) for hole in holes]
+    #         points_holes = [self.flatten_points(hole.vertices) for hole in holes]
     #         points = np.vstack([points]+points_holes)
     #         projections = self.get_projections(points)
 
@@ -527,10 +527,10 @@ class PlaneBounded(Plane):
 
     def __copy_atributes__(self, shape_original):
         super().__copy_atributes__(shape_original)
-        self._bounds_indices = shape_original._bounds_indices.copy()
-        self._bounds = shape_original._bounds.copy()
-        self._bounds_projections = shape_original._bounds_projections.copy()
-        self._is_clockwise = _is_clockwise(self._bounds_projections)
+        self._vertices_indices = shape_original.vertices_indices.copy()
+        self._vertices = shape_original._vertices.copy()
+        self._vertices_projections = shape_original._vertices_projections.copy()
+        self._is_clockwise = _is_clockwise(self._vertices_projections)
         self._convex = shape_original._convex
 
     def translate(self, translation, translate_inliers=True):
@@ -545,7 +545,7 @@ class PlaneBounded(Plane):
         """
         # Primitive.translate(self, translation)
         super().translate(translation, translate_inliers=translate_inliers)
-        self._bounds = self._bounds + translation
+        self._vertices = self._vertices + translation
 
     def rotate(self, rotation, rotate_inliers=True):
         """Rotate the shape.
@@ -560,15 +560,15 @@ class PlaneBounded(Plane):
         rotation = self._parse_rotation(rotation)
         super().rotate(rotation, rotate_inliers=rotate_inliers)
 
-        self._bounds = rotation.apply(self._bounds)
+        self._vertices = rotation.apply(self._vertices)
 
     def __put_attributes_in_dict__(self, data, save_inliers=True):
         super().__put_attributes_in_dict__(data, save_inliers=save_inliers)
 
         # additional PlaneBounded related data:
-        data["bounds"] = self.bounds.flatten().tolist()
+        data["vertices"] = self.vertices.flatten().tolist()
         data["_fusion_intersections"] = self._fusion_intersections.tolist()
-        data["hole_bounds"] = [h.bounds.tolist() for h in self.holes]
+        data["hole_vertices"] = [h.vertices.tolist() for h in self.holes]
         data["convex"] = self.is_convex
         data["hole_convex"] = [h.is_convex for h in self.holes]
 
@@ -577,18 +577,20 @@ class PlaneBounded(Plane):
 
         # additional PlaneBounded related data:
         convex = data.get("convex", True)
-        self.set_bounds(_unflatten(data["bounds"]), flatten=False, convex=convex)
+        # Compatibility for when 'vertices' was still called 'bounds':
+        vertices = data.get("vertices", data["bounds"])
+        self.set_vertices(_unflatten(vertices), flatten=False, convex=convex)
         self._fusion_intersections = np.array(data["_fusion_intersections"])
 
-        hole_bounds = data["hole_bounds"]
+        hole_vertices = data["hole_vertices"]
         try:
             hole_convex = data["hole_convex"]
         except KeyError:
-            hole_convex = [True] * len(hole_bounds)
+            hole_convex = [True] * len(hole_vertices)
 
         holes = []
-        for bounds, convex in zip(hole_bounds, hole_convex):
-            holes.append(PlaneBounded(self.model, _unflatten(bounds), convex=convex))
+        for vertices, convex in zip(hole_vertices, hole_convex):
+            holes.append(PlaneBounded(self.model, _unflatten(vertices), convex=convex))
 
         # no need to remove points, as they were already tested when creating
         # the plane
@@ -611,8 +613,8 @@ class PlaneBounded(Plane):
         """
         if slack < 0:
             raise ValueError("Slack must be non-negative.")
-        min_bound = np.min(self.bounds, axis=0)
-        max_bound = np.max(self.bounds, axis=0)
+        min_bound = np.min(self.vertices, axis=0)
+        max_bound = np.max(self.vertices, axis=0)
         return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
 
     @staticmethod
@@ -638,7 +640,7 @@ class PlaneBounded(Plane):
             Averaged PlaneBounded instance.
         """
         plane_unbounded = Plane.fuse(shapes, detector, ignore_extra_data)
-        bounds = np.vstack([s.bounds for s in shapes])
+        vertices = np.vstack([s.vertices for s in shapes])
 
         if not np.all([s.is_convex for s in shapes]):
             warnings.warn(
@@ -646,7 +648,7 @@ class PlaneBounded(Plane):
                 "plane will be convex."
             )
 
-        shape = PlaneBounded(plane_unbounded.model, bounds)
+        shape = PlaneBounded(plane_unbounded.model, vertices)
 
         if not ignore_extra_data:
             shape._inliers = plane_unbounded._inliers
@@ -678,7 +680,7 @@ class PlaneBounded(Plane):
             Two non unit vectors
         """
         if points is None:
-            points = self.bounds
+            points = self.vertices
 
         return super().get_rectangular_oriented_bounding_box_from_points(
             points, use_PCA=use_PCA
@@ -689,7 +691,7 @@ class PlaneBounded(Plane):
     ):
         """Gives vectors defining a rectangle that roughly contains the plane.
 
-        If points are not given, use bounds.
+        If points are not given, use vertices.
 
         Parameters
         ----------
@@ -709,7 +711,7 @@ class PlaneBounded(Plane):
             Two non unit vectors
         """
         if points is None:
-            points = self.bounds
+            points = self.vertices
             if self.has_inliers:
                 points = np.vstack([points, self.inliers.points])
 
@@ -738,12 +740,12 @@ class PlaneBounded(Plane):
             Generated shape.
         """
         plane = super().from_vectors_center(vectors, center)
-        bounds = center + _get_vertices_from_vectors(
+        vertices = center + _get_vertices_from_vectors(
             vectors[0], vectors[1], assert_rect=False
         )
-        return cls(plane, bounds)
+        return cls(plane, vertices)
 
-    def closest_bounds(self, other_plane, n=1):
+    def closest_vertices(self, other_plane, n=1):
         """Returns n pairs of closest bound points with a second plane.
 
         Parameters
@@ -765,14 +767,14 @@ class PlaneBounded(Plane):
             raise ValueError("Only implemented with other instances of PlaneBounded.")
 
         closest_points, distances = PointCloud.find_closest_points(
-            self.bounds, other_plane.bounds, n
+            self.vertices, other_plane.vertices, n
         )
 
         return closest_points, distances
 
     def contains_projections(self, points, input_is_2D=False):
         """For each point in points, check if its projection on the plane lies
-        inside of the plane's bounds.
+        inside of the plane's vertices.
 
         Parameters
         ----------
@@ -786,7 +788,7 @@ class PlaneBounded(Plane):
         Returns
         -------
         array of booleans
-            True for points whose projection lies in plane's bounds
+            True for points whose projection lies in plane's vertices
         """
 
         # inside = np.array([True] * len(points))
@@ -805,13 +807,13 @@ class PlaneBounded(Plane):
                 raise ValueError("For 2D input projections, input_is_2D must be True.")
             projections = points
 
-        # N = len(self.bounds_projections)
-        bounds = self.bounds_projections
-        bounds_shifted = np.roll(bounds, -1, axis=0)
-        diff = bounds_shifted - bounds
+        # N = len(self.vertices_projections)
+        vertices = self.vertices_projections
+        vertices_shifted = np.roll(vertices, -1, axis=0)
+        diff = vertices_shifted - vertices
         for projection in projections:
-            diff1 = projection - bounds
-            diff2 = projection - bounds_shifted
+            diff1 = projection - vertices
+            diff2 = projection - vertices_shifted
 
             with warnings.catch_warnings():
                 # Divisions by zero lead to infs that give correct comparisons
@@ -819,7 +821,7 @@ class PlaneBounded(Plane):
                 test = np.logical_and(
                     (diff1[:, 1] < 0) != (diff2[:, 1] < 0),
                     projection[0]
-                    < diff[:, 0] * diff1[:, 1] / diff[:, 1] + bounds[:, 0],
+                    < diff[:, 0] * diff1[:, 1] / diff[:, 1] + vertices[:, 0],
                 )
 
             inside.append(np.sum(test) % 2 == 1)
@@ -827,12 +829,12 @@ class PlaneBounded(Plane):
         return np.array(inside)
 
     def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
-        lines = self.bound_lines
+        lines = self.vertices_lines
         meshes = [line.get_mesh(radius=radius) for line in lines]
         [mesh.paint_uniform_color(color) for mesh in meshes]
         return meshes
 
-    def set_bounds(self, bounds, flatten=True, convex=True):
+    def set_vertices(self, vertices, flatten=True, convex=True):
         """Flatten points according to plane model, get projections of
         flattened points in the model and compute its boundary using either
         the convex hull or alpha shapes.
@@ -841,58 +843,58 @@ class PlaneBounded(Plane):
         ----------
         plane : Plane
             Plane model
-        bounds : array_like, shape (N, 3)
+        vertices : array_like, shape (N, 3)
             Points corresponding to the fitted shape.
         flatten : bool, optional
             If False, does not flatten points. Default: True.
         convex : bool, optinal
-            If True, assumes the bounds are supposed to be convex and use
-            ConvexHull. If False, assume bounds are directly given as a loop.
+            If True, assumes the vertices are supposed to be convex and use
+            ConvexHull. If False, assume vertices are directly given as a loop.
 
         """
         self._mesh = None
-        bounds = np.asarray(bounds)
+        vertices = np.asarray(vertices)
 
-        if bounds.shape[1] != 3:
-            raise ValueError("Invalid shape of 'bounds' array.")
+        if vertices.shape[1] != 3:
+            raise ValueError("Invalid shape of 'vertices' array.")
 
         if flatten:
-            bounds = self.flatten_points(bounds)
-        if np.any(np.isnan(bounds)):
+            vertices = self.flatten_points(vertices)
+        if np.any(np.isnan(vertices)):
             raise ValueError("NaN found in points")
 
         # self._vertices = np.array([])
         # self._triangles = np.array([])
         # self._convex = True
 
-        projections = self.get_projections(bounds)
+        projections = self.get_projections(vertices)
 
         try:
             if convex:
                 chull = ConvexHull(projections)
-                self._bounds_indices = chull.vertices
-                self._bounds = bounds[chull.vertices]
-                self._bounds_projections = projections[chull.vertices]
+                self._vertices_indices = chull.vertices
+                self._vertices = vertices[chull.vertices]
+                self._vertices_projections = projections[chull.vertices]
             else:
-                self._bounds_indices = np.array(range(len(bounds)))
-                self._bounds = bounds
-                self._bounds_projections = projections
+                self._vertices_indices = np.array(range(len(vertices)))
+                self._vertices = vertices
+                self._vertices_projections = projections
 
-            self._is_clockwise = _is_clockwise(self._bounds_projections)
+            self._is_clockwise = _is_clockwise(self._vertices_projections)
             self._convex = convex
 
         except QhullError:
             warnings.warn(
-                "Convex hull failed, bounds probably not valid. "
-                "No bounds have been set."
+                "Convex hull failed, vertices probably not valid. "
+                "No vertices have been set."
             )
 
-    def add_bound_points(self, new_bound_points, flatten=True):
-        """Add points to current bounds.
+    def add_bound_points(self, new_vertices_points, flatten=True):
+        """Add points to current vertices.
 
         Parameters
         ----------
-        new_bound_points : N x 3 np.array
+        new_vertices_points : N x 3 np.array
             New points to be added.
         flatten : bool, optional
             If False, does not flatten points
@@ -903,11 +905,11 @@ class PlaneBounded(Plane):
 
         else:
             if flatten:
-                new_bound_points = self.flatten_points(new_bound_points)
-            bounds = np.vstack([self.bounds, new_bound_points])
-            self.set_bounds(bounds, flatten=False)
+                new_vertices_points = self.flatten_points(new_vertices_points)
+            vertices = np.vstack([self.vertices, new_vertices_points])
+            self.set_vertices(vertices, flatten=False)
 
-    def intersection_bounds(self, other, within_segment=True, eps=1e-3):
+    def intersection_vertices(self, other, within_segment=True, eps=1e-3):
         """Calculates intersection point between bounding lines.
 
         Parameters
@@ -928,11 +930,11 @@ class PlaneBounded(Plane):
         if not isinstance(other, PlaneBounded):
             raise ValueError("'other' must be an instance of PlaneBounded.")
 
-        if len(self.bounds) == 0 or len(other.bounds) == 0:
-            raise ValueError("Both planes must have bounds.")
+        if len(self.vertices) == 0 or len(other.vertices) == 0:
+            raise ValueError("Both planes must have vertices.")
 
-        lines = self.bound_lines
-        lines_other = other.bound_lines
+        lines = self.vertices_lines
+        lines_other = other.vertices_lines
 
         self._metrics = self._metrics.copy()
         self._color = self._color.copy()
@@ -947,9 +949,9 @@ class PlaneBounded(Plane):
         else:
             return np.vstack(points)
 
-    def simplify_bounds_colinear(self, angle_colinear=0, colinear_recursive=True):
+    def simplify_vertices_colinear(self, angle_colinear=0, colinear_recursive=True):
         """
-        Simplify bounds be removing some if they are colinear (or almost colinear).
+        Simplify vertices be removing some if they are colinear (or almost colinear).
 
         Parameters
         ----------
@@ -960,13 +962,13 @@ class PlaneBounded(Plane):
             it until no more simplification is possible. Default: True.
         """
         indices = TriangleMesh.simplify_loop_with_angle(
-            self.bounds, range(len(self.bounds)), angle_colinear, colinear_recursive
+            self.vertices, range(len(self.vertices)), angle_colinear, colinear_recursive
         )
 
-        bounds_new = self.bounds[indices]
-        self.set_bounds(bounds_new, flatten=False, convex=self.is_convex)
+        vertices_new = self.vertices[indices]
+        self.set_vertices(vertices_new, flatten=False, convex=self.is_convex)
 
-    def contract_bounds(self, points=None, contract_holes=True):
+    def contract_vertices(self, points=None, contract_holes=True):
         """
         Replace each plane bound with the closest point on the input points.
         If no input is used, use internal inlier points.
@@ -974,7 +976,7 @@ class PlaneBounded(Plane):
         Parameters
         ----------
         points : N x 3 array, optional
-            Points used to replace bounds. If None is given, use inliers.
+            Points used to replace vertices. If None is given, use inliers.
         contract_holes : boolean,
         """
         if points is None:
@@ -985,7 +987,7 @@ class PlaneBounded(Plane):
                 )
 
         indices = []
-        for p in self.bounds:
+        for p in self.vertices:
             indices.append(PointCloud([p]).find_closest_points_indices(points)[1][0])
 
         indices_unique = []
@@ -994,8 +996,8 @@ class PlaneBounded(Plane):
                 continue
             indices_unique.append(i)
 
-        bounds_new = points[indices_unique]
-        self.set_bounds(bounds_new, flatten=False, convex=self.is_convex)
+        vertices_new = points[indices_unique]
+        self.set_vertices(vertices_new, flatten=False, convex=self.is_convex)
 
     @staticmethod
     def glue_planes_with_intersections(shapes, intersections, fit_separated=False):
@@ -1038,15 +1040,15 @@ class PlaneBounded(Plane):
 
             if fit_separated:
                 lines_ij = [
-                    line.get_line_fitted_to_projections(shapes[i].bounds),
-                    line.get_line_fitted_to_projections(shapes[j].bounds),
+                    line.get_line_fitted_to_projections(shapes[i].vertices),
+                    line.get_line_fitted_to_projections(shapes[j].vertices),
                 ]
 
             if not fit_separated:
                 projections = np.array(
                     [
-                        line.projections_limits_from_points(shapes[i].bounds),
-                        line.projections_limits_from_points(shapes[j].bounds),
+                        line.projections_limits_from_points(shapes[i].vertices),
+                        line.projections_limits_from_points(shapes[j].vertices),
                     ]
                 )
 
@@ -1057,7 +1059,7 @@ class PlaneBounded(Plane):
                 lines_ij = [line.get_fitted_to_points(points)] * 2
 
             for shape, line_ in zip([shapes[i], shapes[j]], lines_ij):
-                # line_ = line.get_line_fitted_to_projections(shape.bounds)
+                # line_ = line.get_line_fitted_to_projections(shape.vertices)
                 # TODO: add vertices too?
                 shape.add_bound_points([line_.beginning, line_.ending])
                 shape.add_inliers([line_.beginning, line_.ending])
@@ -1074,7 +1076,7 @@ class PlaneBounded(Plane):
     #     Parameters
     #     ----------
     #     planes : N x 3 array, optional
-    #         Points used to replace bounds. If None is given, use inliers.
+    #         Points used to replace vertices. If None is given, use inliers.
     #     contract_holes : boolean,
     #     """
 

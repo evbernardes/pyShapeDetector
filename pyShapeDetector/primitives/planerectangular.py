@@ -65,12 +65,12 @@ class PlaneRectangular(Plane):
     parallel_vectors
     center
     vertices
-    bounds
-    bounds_projections
-    bound_lines
-    bound_LineSet
-    bounds_or_vertices
-    bounds_or_vertices_or_inliers
+    vertices
+    vertices_projections
+    vertices_lines
+    vertices_LineSet
+    vertices_or_vertices
+    vertices_or_vertices_or_inliers
 
     Methods
     -------
@@ -124,7 +124,7 @@ class PlaneRectangular(Plane):
     remove_hole
     get_fused_holes
     intersect
-    closest_bounds
+    closest_vertices
     get_unbounded_plane
     get_bounded_plane
     get_triangulated_plane
@@ -162,7 +162,7 @@ class PlaneRectangular(Plane):
 
         surface_area = np.prod(np.linalg.norm(self.parallel_vectors, axis=1))
         for hole in self.holes:
-            surface_area -= _shoelace(hole.bounds_projections)
+            surface_area -= _shoelace(hole.vertices_projections)
 
         return surface_area
 
@@ -180,35 +180,31 @@ class PlaneRectangular(Plane):
         return self.center + _get_vertices_from_vectors(v1, v2, assert_rect=False)
 
     @property
-    def bounds(self):
-        return self.vertices
+    def vertices_projections(self):
+        return self.get_projections(self.vertices)
 
     @property
-    def bounds_projections(self):
-        return self.get_projections(self.bounds)
-
-    @property
-    def bound_lines(self):
-        """Lines defining bounds."""
+    def vertices_lines(self):
+        """Lines defining vertices."""
         from .line import Line
 
-        return Line.from_bounds(self.bounds)
+        return Line.from_vertices(self.vertices)
 
     @property
-    def bound_LineSet(self):
-        """Lines defining bounds."""
+    def vertices_LineSet(self):
+        """Lines defining vertices."""
         from .line import Line
 
-        return Line.get_LineSet_from_list(self.bound_lines)
+        return Line.get_LineSet_from_list(self.vertices_lines)
 
     @property
     def bounds_or_vertices(self):
-        return self.bounds
+        return self.vertices
 
     @property
     def bounds_or_vertices_or_inliers(self):
         if len(self.vertices) > 0:
-            return self.bounds
+            return self.vertices
         else:
             return self.inlier_points
 
@@ -248,15 +244,15 @@ class PlaneRectangular(Plane):
 
                 elif isinstance(model, Plane) and model.has_inliers:
                     warnings.warn(
-                        "No bounds, vertices or input vectors and center, using inliers."
+                        "No vertices or input vectors and center, using inliers."
                     )
                     points = model.inliers.points
 
                 else:
                     warnings.warn(
-                        "No inliers, bounds, vertices or input vectors and center, returning square plane, possibly centered at [0, 0, 0]."
+                        "No inliers, vertices or input vectors and center, returning square plane, possibly centered at [0, 0, 0]."
                     )
-                    points = self.get_square_plane(1).bounds
+                    points = self.get_square_plane(1).vertices
 
                 vectors_, center_ = self.get_rectangular_vectors_from_points(
                     points=points,
@@ -443,8 +439,8 @@ class PlaneRectangular(Plane):
         """
         if slack < 0:
             raise ValueError("Slack must be non-negative.")
-        min_bound = np.min(self.bounds, axis=0)
-        max_bound = np.max(self.bounds, axis=0)
+        min_bound = np.min(self.vertices, axis=0)
+        max_bound = np.max(self.vertices, axis=0)
         return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
 
     @staticmethod
@@ -514,7 +510,7 @@ class PlaneRectangular(Plane):
             Two non unit vectors
         """
         if points is None:
-            points = self.bounds
+            points = self.vertices
 
         return super().get_rectangular_oriented_bounding_box_from_points(
             points, use_PCA=use_PCA
@@ -525,7 +521,7 @@ class PlaneRectangular(Plane):
     ):
         """Gives vectors defining a rectangle that roughly contains the plane.
 
-        If points are not given, use bounds.
+        If points are not given, use vertices.
 
         Parameters
         ----------
@@ -586,7 +582,7 @@ class PlaneRectangular(Plane):
 
     def contains_projections(self, points, input_is_2D=False):
         """For each point in points, check if its projection on the plane lies
-        inside of the plane's bounds.
+        inside of the plane's vertices.
 
         Parameters
         ----------
@@ -600,7 +596,7 @@ class PlaneRectangular(Plane):
         Returns
         -------
         array of booleans
-            True for points whose projection lies in plane's bounds
+            True for points whose projection lies in plane's vertices
         """
 
         from .planebounded import PlaneBounded

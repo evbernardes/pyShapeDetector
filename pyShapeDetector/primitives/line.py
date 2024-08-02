@@ -102,7 +102,7 @@ class Line(Primitive):
 
     from_point_vector
     from_two_points
-    from_bounds
+    from_vertices
     from_plane_intersection
     get_fitted_to_points
     closest_to_line
@@ -309,11 +309,11 @@ class Line(Primitive):
         return cls.from_point_vector(beginning, vector)
 
     @staticmethod
-    def from_bounds(bounds):
+    def from_vertices(vertices):
         """Gives list of lines from input boundary points. Supposes the points
         are ordered in a closed loop.
 
-        bounds : N x 3 array
+        vertices : N x 3 array
             N input points
 
         Returns
@@ -321,19 +321,21 @@ class Line(Primitive):
         list of Line instances
             N-1 lines
         """
-        num_points = len(bounds)
+        num_points = len(vertices)
         if num_points < 2:
             raise ValueError("More than one point needed.")
         lines = []
         for i in range(num_points):
-            lines.append(Line.from_two_points(bounds[i], bounds[(i + 1) % num_points]))
+            lines.append(
+                Line.from_two_points(vertices[i], vertices[(i + 1) % num_points])
+            )
         return lines
 
     @staticmethod
     def from_plane_intersection(
         plane1,
         plane2,
-        fit_bounds=True,
+        fit_vertices=True,
         intersect_parallel=False,
         eps_angle=np.deg2rad(5.0),
         eps_distance=1e-2,
@@ -348,7 +350,7 @@ class Line(Primitive):
             First plane
         plane2 : instance of Plane of PlaneBounded
             Second plane
-        fit_bounds : boolean, optional
+        fit_vertices : boolean, optional
             If True, fits points of line so that it the projections of both
             planes lie within the line. If False, returns a line with length 1.
             Default: True.
@@ -377,13 +379,13 @@ class Line(Primitive):
             if abs(dot1 - dot2) > eps_distance:
                 return None
 
-            # closest_points = plane1.closest_bounds(plane2)[0]
+            # closest_points = plane1.closest_vertices(plane2)[0]
             # point = (closest_points[0] + closest_points[1]) / 2
-            # axis = np.cross(plane1.bounds.mean(axis=0) - plane2.bounds.mean(axis=0), plane1.normal + plane2.normal)
+            # axis = np.cross(plane1.vertices.mean(axis=0) - plane2.vertices.mean(axis=0), plane1.normal + plane2.normal)
             # # axis = np.cross(closest_points[1] - closest_points[0], plane1.normal + plane2.normal)
-            pairs, _ = plane1.closest_bounds(plane2, 2)
+            pairs, _ = plane1.closest_vertices(plane2, 2)
             p1, p2 = np.array(pairs).sum(axis=1) / 2
-            # closest_points = plane1.closest_bounds(plane2, 10)
+            # closest_points = plane1.closest_vertices(plane2, 10)
             # pair1 = closest_points[0]
             # pair2 = closest_points[-1]
             # p1 = (pair1[0] + pair1[1]) / 2
@@ -393,7 +395,7 @@ class Line(Primitive):
             # point = pair1[0]
             # axis = np.cross(p2 - p1, plane1.normal + plane2.normal)
             axis = np.cross(
-                plane1.bounds.mean(axis=0) - plane2.bounds.mean(axis=0),
+                plane1.vertices.mean(axis=0) - plane2.vertices.mean(axis=0),
                 plane1.normal + plane2.normal,
             )
             norm = np.linalg.norm(axis)
@@ -404,11 +406,11 @@ class Line(Primitive):
         axis /= norm
         line = Line.from_point_vector(point, axis)
 
-        # if fit_bounds and plane1.is_convex and plane1.is_convex:
-        #     points = np.vstack([plane1.bounds, plane2.bounds])
+        # if fit_vertices and plane1.is_convex and plane1.is_convex:
+        #     points = np.vstack([plane1.vertices, plane2.vertices])
         #     line = line.get_fitted_to_points(points)
 
-        if fit_bounds:
+        if fit_vertices:
             points = []
             if len(p := plane1.bounds_or_vertices) > 0:
                 points.append(p)
@@ -417,7 +419,7 @@ class Line(Primitive):
 
             if len(points) == 0:
                 raise ValueError(
-                    "fit_bounds is True, but both planes have no bounds or vertices."
+                    "fit_vertices is True, but both planes have no vertices."
                 )
             points = np.vstack(points)
 

@@ -204,7 +204,6 @@ class PlaneTriangulated(Plane):
         flatten = True
         if vertices is None and triangles is None:
             if isinstance(model, Plane):
-                # warnings.warn("No input bounds, using plane's mesh.")
                 mesh = model.mesh
             else:
                 warnings.warn("No input vertices/triangles, returning square plane")
@@ -470,12 +469,12 @@ class PlaneTriangulated(Plane):
         #         shape.set_vertices_triangles(vertices, triangles)
 
         #     else:
-        #         bounds = np.vstack([shape.bounds for shape in shapes])
-        #         shape.set_bounds(bounds)
+        #         vertices = np.vstack([shape.vertices for shape in shapes])
+        #         shape.set_vertices(vertices)
 
         #         intersections = []
         #         for plane1, plane2 in combinations(shapes, 2):
-        #             points = plane1.intersection_bounds(plane2, True, eps=line_intersection_eps)
+        #             points = plane1.intersection_vertices(plane2, True, eps=line_intersection_eps)
         #             if len(points) > 0:
         #                 intersections.append(points)
 
@@ -519,7 +518,7 @@ class PlaneTriangulated(Plane):
     ):
         """Gives vectors defining a rectangle that roughly contains the plane.
 
-        If points are not given, use bounds.
+        If points are not given, use vertices.
 
         Parameters
         ----------
@@ -601,7 +600,7 @@ class PlaneTriangulated(Plane):
 
     def contains_projections(self, points):
         """For each point in points, check if its projection on the plane lies
-        inside of the plane's bounds.
+        inside of the plane's vertices.
 
         Parameters
         ----------
@@ -611,7 +610,7 @@ class PlaneTriangulated(Plane):
         Returns
         -------
         array of booleans
-            True for points whose projection lies in plane's bounds
+            True for points whose projection lies in plane's vertices
         """
         raise RuntimeError(
             "'contains_projections' not implemented for PlaneTriangulated instances."
@@ -654,8 +653,8 @@ class PlaneTriangulated(Plane):
         if np.any(np.isnan(vertices)):
             raise ValueError("NaN found in points")
 
-        # self._bounds = np.array([])
-        # self._bounds_indices = np.array([])
+        # self._vertices = np.array([])
+        # self._vertices_indices = np.array([])
         self._vertices = vertices
         self._triangles = triangles
         # self._mesh = self.get_mesh()
@@ -689,7 +688,7 @@ class PlaneTriangulated(Plane):
         add_inliers=True,
         angle_colinear=0,
         colinear_recursive=True,
-        contract_bounds=False,
+        contract_vertices=False,
         min_inliers=1,
     ):
         """Convert PlaneTriangulated instance into list of non-convex
@@ -713,8 +712,8 @@ class PlaneTriangulated(Plane):
         colinear_recursive : boolean, optional
             If False, only try to simplify loop once. If True, try to simplify
             it until no more simplification is possible. Default: True.
-        contract_bounds : boolean, optional
-            If True, contract bounds to closest inlier points. Default: False.
+        contract_vertices : boolean, optional
+            If True, contract vertices to closest inlier points. Default: False.
         min_inliers : int, optional
             If add_inliers is True, remove planes with less inliers than this
             value. Default: 1.
@@ -747,17 +746,17 @@ class PlaneTriangulated(Plane):
             for loop in loop_indexes
         ]
 
-        if contract_bounds:
+        if contract_vertices:
             for p in planes:
-                p.contract_bounds(self.inliers.points)
+                p.contract_vertices(self.inliers.points)
 
         if detect_holes and (N := len(planes)) > 1:
             fuse_dict = {key: [] for key in range(N)}
 
             for i, j in combinations(range(N), 2):
-                if np.all(planes[i].contains_projections(planes[j].bounds)):
+                if np.all(planes[i].contains_projections(planes[j].vertices)):
                     fuse_dict[i].append(j)
-                elif np.all(planes[j].contains_projections(planes[i].bounds)):
+                elif np.all(planes[j].contains_projections(planes[i].vertices)):
                     fuse_dict[j].append(i)
 
             all_holes = []

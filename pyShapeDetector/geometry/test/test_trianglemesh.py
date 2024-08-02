@@ -20,7 +20,7 @@ def test_get_triangle_boundary_indexes():
     square = plane.get_square_plane(1)
     points_inner = plane.get_square_plane(0.8).sample_points_uniformly(10)
 
-    vertices = np.vstack([square.bounds, points_inner])
+    vertices = np.vstack([square.vertices, points_inner])
     proj = plane.get_projections(vertices)
     triangles = Delaunay(proj).simplices
 
@@ -34,4 +34,4 @@ def test_get_triangle_boundary_indexes():
     points_in_boundary = vertices[idx]
 
     for p in points_in_boundary:
-        assert p in square.bounds
+        assert p in square.vertices

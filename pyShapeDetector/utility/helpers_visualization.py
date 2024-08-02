@@ -177,7 +177,7 @@ def draw_geometries(elements, **camera_options):
             pcds.append(element.inliers.as_open3d)
 
         if draw_boundary_lines and isinstance(element, PlaneBounded):
-            boundary_LineSet = element.bound_LineSet
+            boundary_LineSet = element.vertices_LineSet
             boundary_LineSet.paint_uniform_color((1, 0, 0))
             boundary_lines.append(boundary_LineSet)
 

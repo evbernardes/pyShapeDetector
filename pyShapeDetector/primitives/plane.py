@@ -667,7 +667,7 @@ class Plane(Primitive):
             if cos_theta < 0:
                 model = -model
 
-            inside1 = self.contains_projections(hole.bounds)
+            inside1 = self.contains_projections(hole.vertices)
             if sum(inside1) < 1:
                 warnings.warn("shape does not contain hole")
                 continue
@@ -680,19 +680,19 @@ class Plane(Primitive):
             elif remove_points:
                 if sum(~inside1) > 0:
                     intersections = []
-                    for l1, l2 in product(hole.bound_lines, self.bound_lines):
+                    for l1, l2 in product(hole.vertices_lines, self.vertices_lines):
                         if (point := l1.point_from_intersection(l2)) is not None:
                             intersections.append(point)
-                    bounds = np.vstack([hole.bounds[inside1]] + intersections)
+                    vertices = np.vstack([hole.vertices[inside1]] + intersections)
                 else:
-                    bounds = hole.bounds
+                    vertices = hole.vertices
 
-                inside2 = hole.contains_projections(self.bounds)
-                hole = PlaneBounded(model, bounds, convex=hole.is_convex)
-                self._bounds = self._bounds[~inside2]
-                self._bounds_projections = self._bounds_projections[~inside2]
+                inside2 = hole.contains_projections(self.vertices)
+                hole = PlaneBounded(model, vertices, convex=hole.is_convex)
+                self._vertices = self._vertices[~inside2]
+                self._vertices_projections = self._vertices_projections[~inside2]
             else:
-                hole = PlaneBounded(model, hole.bounds, convex=hole.is_convex)
+                hole = PlaneBounded(model, hole.vertices, convex=hole.is_convex)
             hole._is_hole = True
             fixed_holes.append(hole)
         self._holes += fixed_holes
@@ -710,7 +710,7 @@ class Plane(Primitive):
         self.mesh = None
 
     def get_fused_holes(self):
-        """Fuse bounds of all holes into single PlaneBounded instance.
+        """Fuse vertices of all holes into single PlaneBounded instance.
 
         Raises
         ------
@@ -726,9 +726,9 @@ class Plane(Primitive):
 
         if len(self.holes) == 1:
             # warnings.warn("Shape only has one hole, returning it.")
-            bounds = self.holes[0].bounds
+            vertices = self.holes[0].vertices
             if self.holes[0].is_clockwise:
-                bounds = bounds[::-1]
+                vertices = vertices[::-1]
 
         else:
             idx = {}
@@ -738,7 +738,7 @@ class Plane(Primitive):
                 h2 = holes[j]
                 idx[
                     PointCloud.find_closest_points(
-                        h1.bounds_projections, h2.bounds_projections
+                        h1.vertices_projections, h2.vertices_projections
                     )[1][0]
                 ] = (i, j)
 
@@ -748,17 +748,17 @@ class Plane(Primitive):
                 ordered += [i for i in idx[d] if i not in ordered]
 
             holes_ordered = np.array(holes)[ordered]
-            bounds = holes_ordered[0].bounds
+            vertices = holes_ordered[0].vertices
             if holes_ordered[0].is_clockwise:
-                bounds = bounds[::-1]
+                vertices = vertices[::-1]
 
             for hole in holes_ordered[1:]:
-                bounds_new = hole.bounds
+                vertices = hole.vertices
                 if hole.is_clockwise:
-                    bounds_new = bounds_new[::-1]
-                bounds = _fuse_loops(bounds, bounds_new)
+                    vertices = vertices[::-1]
+                vertices = _fuse_loops(vertices, vertices)
 
-        return self.get_bounded_plane(bounds, convex=False)
+        return self.get_bounded_plane(vertices, convex=False)
 
     def intersect(
         self,
@@ -819,11 +819,11 @@ class Plane(Primitive):
             intersect_parallel=intersect_parallel,
             eps_angle=eps_angle,
             eps_distance=eps_distance,
-            fit_bounds=False,
+            fit_vertices=False,
         )
 
-        line1 = line.get_line_fitted_to_projections(self.bounds)
-        line2 = line.get_line_fitted_to_projections(other_plane.bounds)
+        line1 = line.get_line_fitted_to_projections(self.vertices)
+        line2 = line.get_line_fitted_to_projections(other_plane.vertices)
 
         return line1, line2
 
@@ -839,7 +839,7 @@ class Plane(Primitive):
         plane.__copy_atributes__(self)
         return plane
 
-    def get_bounded_plane(self, bounds, convex=True):
+    def get_bounded_plane(self, vertices, convex=True):
         """Gives bounded version of plane, using input points to define
         border.
 
@@ -850,8 +850,8 @@ class Plane(Primitive):
         points : array_like, shape (N, 3).
             Bound points.
         convex : bool, optinal
-            If True, assumes the bounds are supposed to be convex and use
-            ConvexHull. If False, assume bounds are directly given as a loop.
+            If True, assumes the vertices are supposed to be convex and use
+            ConvexHull. If False, assume vertices are directly given as a loop.
 
         Returns
         -------
@@ -860,7 +860,7 @@ class Plane(Primitive):
         """
         from .planebounded import PlaneBounded
 
-        plane = PlaneBounded(self.model, bounds, convex)
+        plane = PlaneBounded(self.model, vertices, convex)
         Plane.__copy_atributes__(plane, self)
         return plane
 
@@ -973,7 +973,7 @@ class Plane(Primitive):
         add_inliers=True,
         angle_colinear=0,
         colinear_recursive=True,
-        contract_bounds=False,
+        contract_vertices=False,
         min_inliers=1,
         max_grid_points=100000,
     ):
@@ -981,7 +981,7 @@ class Plane(Primitive):
         Experimental method of triangulating plane with a grid.
 
         Uses Plane.get_triangulated_plane_from_grid to get a triangulated plane,
-        and then detects its bounds to create bounded planes with holes.
+        and then detects its vertices to create bounded planes with holes.
 
         See:
             Plane.get_triangulated_plane_from_grid
@@ -1017,8 +1017,8 @@ class Plane(Primitive):
         colinear_recursive : boolean, optional
             If False, only try to simplify loop once. If True, try to simplify
             it until no more simplification is possible. Default: True.
-        contract_bounds : boolean, optional
-            If True, contract bounds to closest inlier points. Default: False.
+        contract_vertices : boolean, optional
+            If True, contract bouverticesnds to closest inlier points. Default: False.
         min_inliers : int, optional
             If add_inliers is True, remove planes with less inliers than this
             value. Default: 1.
@@ -1060,7 +1060,7 @@ class Plane(Primitive):
             add_inliers=add_inliers,
             angle_colinear=angle_colinear,
             colinear_recursive=colinear_recursive,
-            contract_bounds=contract_bounds,
+            contract_vertices=contract_vertices,
             min_inliers=min_inliers,
         )
 
@@ -1309,9 +1309,7 @@ class Plane(Primitive):
         """
         if points is None:
             if not self.inliers.has_points():
-                raise RuntimeError(
-                    "If no inliers, bounds or vertices, must input points."
-                )
+                raise RuntimeError("If no inliers or vertices, must input points.")
             points = self.flatten_points(self.inliers.points)
 
         vectors, center = self.get_rectangular_vectors_from_points(

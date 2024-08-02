@@ -88,9 +88,9 @@ def test_plane_creation_methods():
         assert shape2.is_similar_to(shape3)
         assert shape3.is_similar_to(shape1)
 
-        if hasattr(shape1, "bounds"):
-            # assert_allclose(np.sort(shape1.bounds), np.sort(shape2.bounds))
-            assert_allclose(sort(shape2.bounds), sort(shape3.bounds))
+        if hasattr(shape1, "vertices"):
+            # assert_allclose(np.sort(shape1.vertices), np.sort(shape2.vertices))
+            assert_allclose(sort(shape2.vertices), sort(shape3.vertices))
 
     dimensions = abs(np.random.random(3) * 10)
     boxes = []
@@ -134,7 +134,7 @@ def test_plane_transformations():
     assert plane_unbounded.has_inliers
     assert plane_bounded.has_inliers
 
-    plane_bounded_two = plane_unbounded.get_bounded_plane(plane_bounded.bounds)
+    plane_bounded_two = plane_unbounded.get_bounded_plane(plane_bounded.vertices)
     assert plane_bounded_two.has_inliers
 
 
@@ -154,12 +154,12 @@ def test_init_primitives_regular():
 
 def test_init_plane_bounded():
     model = np.random.rand(PlaneBounded._model_args_n)
-    bounds = np.random.random((50, 3))
+    vertices = np.random.random((50, 3))
 
     with pytest.warns(UserWarning, match="returning square plane"):
         PlaneBounded(model)
 
-    PlaneBounded(model, bounds)
+    PlaneBounded(model, vertices)
 
 
 def test_plane_circle():
@@ -292,8 +292,8 @@ def test_copy_planebounded():
             assert shape.holes == shape_copy.holes
             if len(shape.holes) > 0:
                 assert id(shape.holes[0]) != id(shape_copy.holes[0])
-                assert np.all(shape.holes[0].bounds == shape_copy.holes[0].bounds)
-                assert id(shape.holes[0].bounds) != id(shape_copy.holes[0].bounds)
+                assert np.all(shape.holes[0].vertices == shape_copy.holes[0].vertices)
+                assert id(shape.holes[0].vertices) != id(shape_copy.holes[0].vertices)
 
 
 def test_deepcopy():
@@ -738,10 +738,10 @@ def test_plane_bounded_degenerated_line():
     )
 
     plane = Plane(model)
-    bounds = plane.get_points_from_projections(projections)
+    vertices = plane.get_points_from_projections(projections)
 
     with pytest.warns(UserWarning, match="Convex hull failed"):
-        plane.get_bounded_plane(bounds)
+        plane.get_bounded_plane(vertices)
 
 
 def test_save_load():
@@ -766,7 +766,7 @@ def test_save_load():
             )
 
         if primitive is PlaneBounded:
-            assert_allclose(shape.bounds, shape_loaded.bounds)
+            assert_allclose(shape.vertices, shape_loaded.vertices)
 
             if len(shape.holes) > 0:
                 for hole in shape.holes:
@@ -795,7 +795,7 @@ def test_save_load():
                     if primitive is PlaneBounded:
                         sides = np.random.randint(3, 8)
                         radius = np.sqrt(shape.surface_area / np.pi) / 3
-                        center = np.median(shape.bounds, axis=0)
+                        center = np.median(shape.vertices, axis=0)
                         hole = shape.get_polygon_plane(sides, radius, center)
                         shape.add_holes([hole])
 
