@@ -232,13 +232,6 @@ class PlaneBounded(Plane):
 
         return Line.get_LineSet_from_list(self.vertices_lines)
 
-    @property
-    def vertices_or_inliers(self):
-        if len(self.vertices) > 0:
-            return self.vertices
-        else:
-            return self.inlier_points
-
     def __init__(self, model, vertices=None, convex=None, decimals=None):
         """
         Parameters

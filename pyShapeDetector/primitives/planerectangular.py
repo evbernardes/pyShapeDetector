@@ -69,8 +69,6 @@ class PlaneRectangular(Plane):
     vertices_projections
     vertices_lines
     vertices_LineSet
-    vertices_or_vertices
-    vertices_or_vertices_or_inliers
 
     Methods
     -------
@@ -196,13 +194,6 @@ class PlaneRectangular(Plane):
         from .line import Line
 
         return Line.get_LineSet_from_list(self.vertices_lines)
-
-    @property
-    def vertices_or_inliers(self):
-        if len(self.vertices) > 0:
-            return self.vertices
-        else:
-            return self.inlier_points
 
     def __init__(self, model, vectors=None, center=None, decimals=None):
         """
