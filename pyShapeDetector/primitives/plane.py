@@ -1143,6 +1143,9 @@ class Plane(Primitive):
                 f"perimeter_eps has to be non-negative, got {perimeter_eps}"
             )
 
+        if max_point_dist is None:
+            max_point_dist = grid_width
+
         # Get rectangular plane
         vectors, center = self.get_rectangular_vectors_from_points(return_center=True)
 
