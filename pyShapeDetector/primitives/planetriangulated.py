@@ -680,7 +680,7 @@ class PlaneTriangulated(Plane):
         add_inliers=True,
         angle_colinear=0,
         colinear_recursive=True,
-        contract_vertices=False,
+        contract_boundary=False,
         min_inliers=1,
     ):
         """Convert PlaneTriangulated instance into list of non-convex
@@ -704,7 +704,7 @@ class PlaneTriangulated(Plane):
         colinear_recursive : boolean, optional
             If False, only try to simplify loop once. If True, try to simplify
             it until no more simplification is possible. Default: True.
-        contract_vertices : boolean, optional
+        contract_boundary : boolean, optional
             If True, contract vertices to closest inlier points. Default: False.
         min_inliers : int, optional
             If add_inliers is True, remove planes with less inliers than this
@@ -738,9 +738,9 @@ class PlaneTriangulated(Plane):
             for loop in loop_indexes
         ]
 
-        if contract_vertices:
+        if contract_boundary:
             for p in planes:
-                p.contract_vertices(self.inliers.points)
+                p.contract_boundary(self.inliers.points)
 
         if detect_holes and (N := len(planes)) > 1:
             fuse_dict = {key: [] for key in range(N)}

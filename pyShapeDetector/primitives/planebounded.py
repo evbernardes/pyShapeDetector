@@ -179,7 +179,7 @@ class PlaneBounded(Plane):
     add_bound_points
     intersection_vertices
     simplify_vertices_colinear
-    contract_vertices
+    contract_boundary
     glue_planes_with_intersections
     """
 
@@ -962,7 +962,7 @@ class PlaneBounded(Plane):
         vertices_new = self.vertices[indices]
         self.set_vertices(vertices_new, flatten=False, convex=self.is_convex)
 
-    def contract_vertices(self, points=None, contract_holes=True):
+    def contract_boundary(self, points=None, contract_holes=True):
         """
         Replace each plane bound with the closest point on the input points.
         If no input is used, use internal inlier points.
