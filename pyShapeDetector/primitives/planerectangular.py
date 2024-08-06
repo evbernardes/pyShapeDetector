@@ -686,10 +686,11 @@ class PlaneRectangular(Plane):
         if flatten:
             center = self.flatten_points([center])[0]
 
-        self._center = center
-        error = np.linalg.norm(self.get_distances(self.vertices))
+        error = self.get_distances([center])[0]
         if error > 1e-7:
             raise RuntimeError(
                 "PlaneRectangular instance generated with vertices far away "
                 "from plane model, the center is probably incompatible."
             )
+
+        self._center = center
