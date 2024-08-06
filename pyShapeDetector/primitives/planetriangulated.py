@@ -648,6 +648,10 @@ class PlaneTriangulated(Plane):
         # self._mesh = self.get_mesh()
         # self._convex = False
 
+        error = np.linalg.norm(self.get_distances(self.vertices))
+        if error > 1e-7:
+            raise RuntimeError("Vertices far away from plane model.")
+
     @staticmethod
     def from_plane_with_mesh(plane):
         """Convert plane instance's mesh into PlaneTriangulated instance by

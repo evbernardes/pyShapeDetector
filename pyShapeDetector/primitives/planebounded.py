@@ -296,6 +296,7 @@ class PlaneBounded(Plane):
         # TODO: check this
         if convex is None:
             convex = True
+
         self.set_vertices(vertices, flatten=flatten, convex=convex)
 
     @classmethod
@@ -876,6 +877,10 @@ class PlaneBounded(Plane):
                 "Convex hull failed, vertices probably not valid. "
                 "No vertices have been set."
             )
+
+        error = np.linalg.norm(self.get_distances(self.vertices))
+        if error > 1e-7:
+            raise RuntimeError("Vertices far away from plane model.")
 
     def add_bound_points(self, new_vertices_points, flatten=True):
         """Add points to current vertices.
