@@ -567,11 +567,18 @@ class PlaneBounded(Plane):
         # additional PlaneBounded related data:
         convex = data.get("convex", True)
         # Compatibility for when 'vertices' was still called 'bounds':
-        vertices = data.get("vertices", data["bounds"])
+        try:
+            vertices = data["vertices"]
+        except KeyError:
+            vertices = data["bounds"]
         self.set_vertices(_unflatten(vertices), flatten=False, convex=convex)
         self._fusion_intersections = np.array(data["_fusion_intersections"])
 
-        hole_vertices = data.get("hole_vertices", data["hole_bounds"])
+        try:
+            hole_vertices = data["hole_vertices"]
+        except KeyError:
+            hole_vertices = data["hole_bounds"]
+
         try:
             hole_convex = data["hole_convex"]
         except KeyError:
