@@ -878,9 +878,10 @@ class PlaneBounded(Plane):
                 "No vertices have been set."
             )
 
-        error = np.linalg.norm(self.get_distances(self.vertices))
-        if error > 1e-7:
-            raise RuntimeError("Vertices far away from plane model.")
+        if not flatten:
+            error = np.linalg.norm(self.get_distances(self.vertices))
+            if error > 1e-7:
+                raise RuntimeError("Vertices far away from plane model.")
 
     def add_bound_points(self, new_vertices_points, flatten=True):
         """Add points to current vertices.
