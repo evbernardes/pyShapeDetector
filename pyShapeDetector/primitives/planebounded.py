@@ -998,7 +998,7 @@ class PlaneBounded(Plane):
             indices_unique.append(i)
 
         vertices_new = points[indices_unique]
-        self.set_vertices(vertices_new, flatten=False, convex=self.is_convex)
+        self.set_vertices(vertices_new, flatten=True, convex=self.is_convex)
 
     @staticmethod
     def glue_planes_with_intersections(shapes, intersections, fit_separated=False):
