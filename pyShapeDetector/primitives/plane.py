@@ -1146,7 +1146,7 @@ class Plane(Primitive):
         if max_point_dist is None:
             max_point_dist = grid_width
 
-        # Get rectangular plane
+        # Get rectangular plane (TODO: Use PlaneRectangular?)
         vectors, center = self.get_rectangular_vectors_from_points(return_center=True)
 
         # Check if there are too many points, do the check assuming regular
@@ -1354,8 +1354,20 @@ class Plane(Primitive):
         numpy.array of shape (2, 3)
             Two non unit vectors
         """
+
         if points is None:
-            points = self.inlier_points_flattened
+            points = []
+
+            if hasattr(self, "vertices"):
+                points.append(self.vertices)
+
+            if self.inliers.has_points():
+                points.append(self.flatten_points(self.inliers.points))
+
+            if len(points) == 0:
+                raise RuntimeError("If no inliers or vertices, must input points.")
+            points = np.vstack(points)
+
         else:
             points = _set_and_check_3d_array(points, name="points")
 

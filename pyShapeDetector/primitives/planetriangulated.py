@@ -472,42 +472,6 @@ class PlaneTriangulated(Plane):
 
         # return shape
 
-    def get_rectangular_vectors_from_points(
-        self, points=None, return_center=False, use_PCA=True, normalized=False
-    ):
-        """Gives vectors defining a rectangle that roughly contains the plane.
-
-        If points are not given, use vertices.
-
-        Parameters
-        ----------
-        points : Nx3 array, optional
-            Points used to find rectangle.
-        return_center : boolean, optional
-            If True, return tuple containing both vectors and calculated center.
-        use_PCA : boolean, optional
-            If True, use PCA to detect vectors (better for rectangles). If False,
-            use eigenvectors from covariance matrix. Default: True.
-        normalized : boolean, optional
-            If True, return normalized vectors. Default: False.
-
-        Returns
-        -------
-        numpy.array of shape (2, 3)
-            Two non unit vectors
-        """
-        if points is None:
-            points = self.vertices
-            if self.has_inliers:
-                points = np.vstack([points, self.inliers.points])
-
-        return super().get_rectangular_vectors_from_points(
-            points=points,
-            return_center=return_center,
-            use_PCA=use_PCA,
-            normalized=normalized,
-        )
-
     @classmethod
     def from_vectors_center(cls, vectors, center):
         """
