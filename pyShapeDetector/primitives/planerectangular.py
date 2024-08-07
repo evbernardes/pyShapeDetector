@@ -13,7 +13,7 @@ from pyShapeDetector.geometry import (
     OrientedBoundingBox,
 )
 from .plane import Plane, _get_vertices_from_vectors, _get_vx_vy
-from pyShapeDetector.utility import get_area_with_shoelace
+from pyShapeDetector.utility import get_area_with_shoelace, midrange
 
 
 class PlaneRectangular(Plane):
@@ -664,7 +664,7 @@ class PlaneRectangular(Plane):
 
         elif self.has_inliers:
             points = self.inliers.points
-            center = (np.max(points, axis=0) + np.min(points, axis=0)) / 2
+            center = midrange(points)
 
         else:
             warnings.warn("No input center not inliers, setting center to centroid")

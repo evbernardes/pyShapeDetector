@@ -18,7 +18,7 @@ from pyShapeDetector.geometry import (
     OrientedBoundingBox,
 )
 
-from pyShapeDetector.utility import get_rotation_from_axis
+from pyShapeDetector.utility import get_rotation_from_axis, midrange
 
 from .primitivebase import Primitive, _set_and_check_3d_array, _check_distance
 # from alphashape import alphashape
@@ -920,7 +920,7 @@ class Plane(Primitive):
             if self.has_inliers:
                 points = self.inlier_points
                 # center = np.median(self.inlier_points, axis=0)
-                center = (np.max(points, axis=0) + np.min(points, axis=0)) / 2
+                center = midrange(points)
             else:
                 center = self.centroid
 
@@ -1354,7 +1354,7 @@ class Plane(Primitive):
         else:
             points = _set_and_check_3d_array(points, name="points")
 
-        center = (np.max(points, axis=0) + np.min(points, axis=0)) / 2
+        center = midrange(points)
         delta = points - center
 
         delta_projection, rot = self.get_projections(delta, return_rotation=True)

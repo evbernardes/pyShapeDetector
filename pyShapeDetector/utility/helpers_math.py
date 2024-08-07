@@ -24,6 +24,10 @@ RGB_TO_XYZ = np.array(
 )
 
 
+def midrange(points):
+    return (np.max(points, axis=0) + np.min(points, axis=0)) / 2
+
+
 def get_area_with_shoelace(projections):
     # Reference:
     # https://en.wikipedia.org/wiki/Shoelace_formula

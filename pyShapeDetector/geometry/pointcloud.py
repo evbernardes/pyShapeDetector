@@ -26,7 +26,7 @@ from sklearn.neighbors import KDTree
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
-from pyShapeDetector.utility import rgb_to_cielab, cielab_to_rgb, parallelize
+from pyShapeDetector.utility import rgb_to_cielab, cielab_to_rgb, parallelize, midrange
 from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
 
 
@@ -67,6 +67,10 @@ class PointCloud(Open3D_Geometry):
     """
 
     _curvature = np.empty(0)
+
+    @property
+    def midrange(self):
+        return midrange(self.points)
 
     @property
     def volume(self):
