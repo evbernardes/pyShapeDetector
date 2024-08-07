@@ -8,33 +8,17 @@ Created on Thu Feb 15 10:15:09 2024
 import warnings
 from itertools import product
 import numpy as np
-from importlib.util import find_spec
 from scipy.spatial import QhullError, ConvexHull, Delaunay
 
-from sklearn.decomposition import PCA
-
-# from scipy.spatial.transform import Rotation
-# from open3d.geometry import AxisAlignedBoundingBox
-from pyShapeDetector.geometry import (
-    PointCloud,
-    TriangleMesh,
-    AxisAlignedBoundingBox,
-    OrientedBoundingBox,
-)
+from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
 from .plane import Plane, _get_vertices_from_vectors
 
-from pyShapeDetector.utility import get_rotation_from_axis
+from pyShapeDetector.utility import check_vertices_clockwise, get_area_with_shoelace
+
+from importlib.util import find_spec
 
 if has_mapbox_earcut := find_spec("mapbox_earcut") is not None:
     from mapbox_earcut import triangulate_float32
-
-
-def _shoelace(projections):
-    # Reference:
-    # https://en.wikipedia.org/wiki/Shoelace_formula
-    i = np.arange(len(projections))
-    x, y = projections.T
-    return np.abs(np.sum(x[i - 1] * y[i] - x[i] * y[i - 1]) * 0.5)
 
 
 def _unflatten(values):
@@ -42,16 +26,6 @@ def _unflatten(values):
     if values.ndim == 1:
         values = values.reshape([len(values) // 3, 3])
     return values
-
-
-def _is_clockwise(vertices):
-    s = 0
-    N = len(vertices)
-    for i in range(N):
-        point = vertices[i]
-        point2 = vertices[(i + 1) % N]
-        s += (point2[0] - point[0]) * (point2[1] + point[1])
-    return s > 0
 
 
 class PlaneBounded(Plane):
@@ -194,9 +168,9 @@ class PlaneBounded(Plane):
     def surface_area(self):
         """Surface area of bounded plane."""
 
-        surface_area = _shoelace(self.vertices_projections)
+        surface_area = get_area_with_shoelace(self.vertices_projections)
         for hole in self.holes:
-            surface_area -= _shoelace(hole.vertices_projections)
+            surface_area -= get_area_with_shoelace(hole.vertices_projections)
 
         return surface_area
 
@@ -519,7 +493,7 @@ class PlaneBounded(Plane):
         self._vertices_indices = shape_original.vertices_indices.copy()
         self._vertices = shape_original._vertices.copy()
         self._vertices_projections = shape_original._vertices_projections.copy()
-        self._is_clockwise = _is_clockwise(self._vertices_projections)
+        self._is_clockwise = check_vertices_clockwise(self._vertices_projections)
         self._convex = shape_original._convex
 
     def translate(self, translation, translate_inliers=True):
@@ -876,7 +850,7 @@ class PlaneBounded(Plane):
                 self._vertices = vertices
                 self._vertices_projections = projections
 
-            self._is_clockwise = _is_clockwise(self._vertices_projections)
+            self._is_clockwise = check_vertices_clockwise(self._vertices_projections)
             self._convex = convex
 
         except QhullError:

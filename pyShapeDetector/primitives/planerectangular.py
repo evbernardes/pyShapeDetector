@@ -6,20 +6,14 @@ Created on Thu Feb 15 10:15:09 2024
 @author: ebernardes
 """
 import warnings
-from itertools import product
 import numpy as np
-from importlib.util import find_spec
-from scipy.spatial import QhullError, ConvexHull, Delaunay
 
-from sklearn.decomposition import PCA
-
-# from scipy.spatial.transform import Rotation
-# from open3d.geometry import AxisAlignedBoundingBox
 from pyShapeDetector.geometry import (
     AxisAlignedBoundingBox,
     OrientedBoundingBox,
 )
 from .plane import Plane, _get_vertices_from_vectors, _get_vx_vy
+from pyShapeDetector.utility import get_area_with_shoelace
 
 
 class PlaneRectangular(Plane):
@@ -156,11 +150,9 @@ class PlaneRectangular(Plane):
     def surface_area(self):
         """Surface area of rectangular plane."""
 
-        from .planebounded import _shoelace
-
         surface_area = np.prod(np.linalg.norm(self.parallel_vectors, axis=1))
         for hole in self.holes:
-            surface_area -= _shoelace(hole.vertices_projections)
+            surface_area -= get_area_with_shoelace(hole.vertices_projections)
 
         return surface_area
 

@@ -24,6 +24,24 @@ RGB_TO_XYZ = np.array(
 )
 
 
+def get_area_with_shoelace(projections):
+    # Reference:
+    # https://en.wikipedia.org/wiki/Shoelace_formula
+    i = np.arange(len(projections))
+    x, y = projections.T
+    return np.abs(np.sum(x[i - 1] * y[i] - x[i] * y[i - 1]) * 0.5)
+
+
+def check_vertices_clockwise(vertices):
+    s = 0
+    N = len(vertices)
+    for i in range(N):
+        point = vertices[i]
+        point2 = vertices[(i + 1) % N]
+        s += (point2[0] - point[0]) * (point2[1] + point[1])
+    return s > 0
+
+
 def get_rotation_from_axis(axis_origin, axis):
     """Rotation matrix that transforms `axis_origin` in `axis`.
 
