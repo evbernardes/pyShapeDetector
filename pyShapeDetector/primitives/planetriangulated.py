@@ -472,35 +472,6 @@ class PlaneTriangulated(Plane):
 
         # return shape
 
-    def get_rectangular_oriented_bounding_box_from_points(
-        self, points=None, use_PCA=True
-    ):
-        """Gives oriented bounding box contains the plane.
-
-        If points are not given, use inliers.
-
-        Parameters
-        ----------
-        points : Nx3 array, optional
-            Points used to find rectangle.
-        return_center : boolean, optional
-            If True, return tuple containing both vectors and calculated center.
-        use_PCA : boolean, optional
-            If True, use PCA to detect vectors (better for rectangles). If False,
-            use eigenvectors from covariance matrix. Default: True.
-
-        Returns
-        -------
-        numpy.array of shape (2, 3)
-            Two non unit vectors
-        """
-        if points is None:
-            points = self.vertices
-
-        return super().get_rectangular_oriented_bounding_box_from_points(
-            points, use_PCA=use_PCA
-        )
-
     def get_rectangular_vectors_from_points(
         self, points=None, return_center=False, use_PCA=True, normalized=False
     ):

@@ -1311,9 +1311,14 @@ class Plane(Primitive):
             Two non unit vectors
         """
         if points is None:
-            if not self.inliers.has_points():
+            if hasattr(self, "vertices"):
+                points = self.vertices
+
+            elif self.inliers.has_points():
+                points = self.flatten_points(self.inliers.points)
+
+            else:
                 raise RuntimeError("If no inliers or vertices, must input points.")
-            points = self.flatten_points(self.inliers.points)
 
         vectors, center = self.get_rectangular_vectors_from_points(
             points=points, return_center=True, normalized=True
