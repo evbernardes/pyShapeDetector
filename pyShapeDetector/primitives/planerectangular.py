@@ -209,22 +209,17 @@ class PlaneRectangular(Plane):
         """
         super().__init__(model, decimals)
 
-        from .planebounded import PlaneBounded
-        from .planetriangulated import PlaneTriangulated
-
         if vectors is None or center is None:
             if isinstance(model, PlaneRectangular):
                 vectors_ = model._parallel_vectors
                 center_ = model._center
 
             else:
-                if isinstance(model, (PlaneBounded, PlaneTriangulated)):
+                if isinstance(model, Plane) and hasattr(model, "vertices"):
                     points = model.vertices
 
                 elif isinstance(model, Plane) and model.has_inliers:
-                    warnings.warn(
-                        "No vertices or input vectors and center, using inliers."
-                    )
+                    warnings.warn("No vertices or input vectors/center, using inliers.")
                     points = model.inliers.points
 
                 else:

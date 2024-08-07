@@ -230,46 +230,28 @@ class PlaneBounded(Plane):
         """
         super().__init__(model, decimals)
 
-        from .planetriangulated import PlaneTriangulated
-        from .planerectangular import PlaneRectangular
-
         flatten = True
+        _convex = True
+
         if vertices is None:
-            if isinstance(model, PlaneBounded):
+            if isinstance(model, Plane) and hasattr(model, "vertices"):
                 vertices = model.vertices
-                if convex is None:
-                    convex = model.is_convex
-
-            elif isinstance(model, PlaneRectangular):
-                vertices = model.vertices
-                convex = True
-
-            elif isinstance(model, PlaneTriangulated):
-                if convex is True:
-                    warnings.warn(
-                        "Attempting to create a convex PlaneBounded from a "
-                        "PlaneTriangulated."
-                    )
-                else:
-                    convex = False
-                vertices = model.vertices
+                _convex = model.is_convex
 
             elif isinstance(model, Plane) and model.has_inliers:
                 warnings.warn("No vertices or input vertices, using inliers.")
                 vertices = model.inliers.points
-                convex = True
+                _convex = True
 
             else:
-                warnings.warn(
-                    "No vertices, input vertices or using inliers, returning square plane"
-                )
+                warnings.warn("No vertices, input or inliers, returning square plane.")
                 vertices = self.get_square_plane(1).vertices
                 flatten = False
-                convex = True
+                _convex = True
 
         # TODO: check this
         if convex is None:
-            convex = True
+            convex = _convex
 
         self.set_vertices(vertices, flatten=flatten, convex=convex)
 
@@ -320,7 +302,7 @@ class PlaneBounded(Plane):
         """
 
         plane = Plane.fit(points, normals)
-        return plane.get_bounded_plane(points)
+        return PlaneBounded(plane, points, convex=True)
 
     def get_oriented_bounding_box(self, slack=0):
         """Returns an oriented bounding box of the primitive.
