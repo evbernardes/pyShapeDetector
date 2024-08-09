@@ -538,7 +538,7 @@ class PlaneBounded(Plane):
         except KeyError:
             hole_vertices = data["hole_bounds"]
 
-        if data["file_version"] is not None and data["file_version"] >= 2:
+        if "file_version" in data is not None and data["file_version"] >= 2:
             hole_vertices = _unflatten(hole_vertices)
 
             # if hole_vertices.ndim != 1:
