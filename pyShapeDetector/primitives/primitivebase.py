@@ -1211,6 +1211,7 @@ class Primitive(ABC):
                 break
 
     def __put_attributes_in_dict__(self, data, save_inliers=True):
+        data["file_version"] = 0.1
         data["name"] = self.name
         data["model"] = self.model.tolist()
         if save_inliers:
