@@ -516,7 +516,7 @@ class PlaneBounded(Plane):
         data["hole_vertices"] = (
             np.vstack([h.vertices for h in self.holes]).flatten().tolist()
         )
-        data["hole_lenghts"] = [len(h.vertices) for h in self.holes]
+        data["hole_lengths"] = [len(h.vertices) for h in self.holes]
         data["convex"] = self.is_convex
         data["hole_convex"] = [h.is_convex for h in self.holes]
 
@@ -538,7 +538,7 @@ class PlaneBounded(Plane):
         except KeyError:
             hole_vertices = data["hole_bounds"]
 
-        if data["file_version"] is not None and data["file_version"] >= 0.2:
+        if data["file_version"] is not None and data["file_version"] >= 2:
             hole_vertices = _unflatten(hole_vertices)
 
             # if hole_vertices.ndim != 1:
@@ -546,14 +546,14 @@ class PlaneBounded(Plane):
             #         "Invalid hole_vertices shape for file of version {data['file_version']}."
             #     )
 
-            if "hole_lenghts" not in data:
+            if "hole_lengths" not in data:
                 raise RuntimeError(
                     "File of version {data['file_version']} should have 'hole_lengths'."
                 )
 
             hole_vertices_separated = []
             count = 0
-            for length in data["hole_lenghts"]:
+            for length in data["hole_lengths"]:
                 hole_vertices_separated.append(hole_vertices[count : count + length])
                 count += length
             hole_vertices = hole_vertices_separated
