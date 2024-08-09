@@ -513,7 +513,7 @@ class PlaneBounded(Plane):
         # additional PlaneBounded related data:
         data["vertices"] = self.vertices.flatten().tolist()
         data["_fusion_intersections"] = self._fusion_intersections.tolist()
-        data["hole_vertices"] = [h.vertices.tolist() for h in self.holes]
+        data["hole_vertices"] = [h.vertices.flatten().tolist() for h in self.holes]
         data["convex"] = self.is_convex
         data["hole_convex"] = [h.is_convex for h in self.holes]
 
