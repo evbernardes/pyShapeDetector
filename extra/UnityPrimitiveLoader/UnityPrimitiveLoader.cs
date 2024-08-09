@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 using System.Collections.Generic;
+using EarcutNet;
 
 public class PrimitiveLoader : Editor
 {
@@ -75,14 +76,16 @@ public class PrimitiveLoader : Editor
                 continue;
             }
 
-            if (primitive.name.Equals("plane") || primitive.name.Equals("bounded plane"))
+            if (primitive.name.Equals("plane"))
             {
                 // primitiveObject = CreatePlanePrefab(primitive);
-                Debug.LogWarning($"Not implemented for {primitive.name}, try converting it to a rectangular or triangulated plane instead.");
+                Debug.LogWarning($"Not implemented for {primitive.name}, try converting it to a bounded, rectangular or triangulated plane instead.");
                 continue;
             }
             else if (primitive.name.Equals("sphere"))
                 primitiveObject = CreateSpherePrefab(primitive);
+            else if (primitive.name.Equals("bounded plane"))
+                primitiveObject = CreatePlaneBoundedPrefab(primitive, meshesFolder);
             else if (primitive.name.Equals("rectangular plane"))
                 primitiveObject = CreatePlaneRectangularPrefab(primitive);
             else if (primitive.name.Equals("triangulated plane"))
@@ -138,6 +141,66 @@ public class PrimitiveLoader : Editor
         // TODO: discover how to make planes visible from both sides 
         // material.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off); // Disable backface culling
         return material;
+    }
+
+    private static GameObject CreatePlaneBoundedPrefab(Primitive primitive, string meshesFolder)
+    {
+        // Debug.Log($"holes: {primitive.hole_vertices.Length}");
+        // Debug.Log($"hole 1: {primitive.hole_vertices[0].Length}");
+        // Debug.Log($"holes vertices: {primitive.hole_vertices[0][0]}, {primitive.hole_vertices[1][0]}, {primitive.hole_vertices[2][0]}");
+        // Vector3[] vertices;
+        float[] all_vertices_flattened;
+        int[] holes;
+
+        if (primitive.hole_vertices != null && primitive.hole_lengths != null)
+        {
+            Debug.Log($"Plane contains {primitive.hole_lengths.Length} holes.");
+
+            if (primitive.hole_vertices.Length > 0 && primitive.hole_lengths.Length > 0)
+            {
+                all_vertices_flattened = concatenate_float_arrays(primitive.vertices, primitive.hole_vertices);
+                holes = new int[primitive.hole_lengths.Length];
+                holes[0] = primitive.vertices.Length / 3;
+                for (int i = 1; i < primitive.hole_lengths.Length; i++)
+                {
+                    holes[i] = holes[i - 1] + primitive.hole_lengths[i - 1];
+                }
+            }
+            else
+            {
+                all_vertices_flattened = primitive.vertices;
+                holes = new int[0];
+            }
+        }
+        else
+        {
+            Debug.Log($"Plane does not contain hole_vertices or hole_lengths, assuming no holes.");
+            all_vertices_flattened = primitive.vertices;
+            holes = new int[0];
+        }
+
+        // for (int i = 0; i < holes.Length; i++)
+        // {
+        //     Debug.Log($"holes[{i}] = {holes[i]}");
+        // }
+
+        Vector3[] vertices = unflatten_array(all_vertices_flattened);
+
+        Vector3 normal = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
+        Quaternion rot = Quaternion.FromToRotation(normal, Vector3.forward);
+        double[] projections = new double[2 * vertices.Length];
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            Vector3 rotated = rot * vertices[i];
+            projections[2 * i] = rotated.x;
+            projections[2 * i + 1] = rotated.y;
+        }
+        primitive.vertices = all_vertices_flattened;
+        primitive.triangles = Earcut.Tessellate(projections, holes).ToArray();
+        return CreatePlaneTriangulatedPrefab(primitive, meshesFolder);
+        // GameObject planeObject = GameObject.CreatePrimitive(PrimitiveType.Plane);
+
+        // return planeObject;
     }
 
     private static GameObject CreatePlaneRectangularPrefab(Primitive primitive)
@@ -263,11 +326,14 @@ public class PrimitiveLoader : Editor
     [System.Serializable]
     private class Primitive
     {
+        public int file_version;
         public string fileName;
         public string name;
         public float[] model;
         public float[] color;
         public float[] vertices;
+        public float[] hole_vertices;
+        public int[] hole_lengths;
         public int[] triangles;
         public float[] parallel_vectors;
         public float[] center;
@@ -306,6 +372,14 @@ public class PrimitiveLoader : Editor
                 {
                     this.is_primitive = false;
                 }
+                else if (jsonObj.name == "bounded plane" && (jsonObj.file_version == null || jsonObj.file_version < 2 || jsonObj.vertices == null))
+                {
+                    if (jsonObj.file_version < 0.2)
+                    {
+                        Debug.Log("For PlaneBounded instances, use file_version must be at least 2");
+                    }
+                    this.is_primitive = false;
+                }
                 else if (jsonObj.name == "triangulated plane" && (jsonObj.vertices == null || jsonObj.triangles == null))
                 {
                     this.is_primitive = false;
@@ -320,6 +394,8 @@ public class PrimitiveLoader : Editor
                     this.model = jsonObj.model;
                     this.color = jsonObj.color;
                     this.vertices = jsonObj.vertices;
+                    this.hole_vertices = jsonObj.hole_vertices;
+                    this.hole_lengths = jsonObj.hole_lengths;
                     this.triangles = jsonObj.triangles;
                     this.parallel_vectors = jsonObj.parallel_vectors;
                     this.center = jsonObj.center;
@@ -355,5 +431,22 @@ public class PrimitiveLoader : Editor
         }
 
         return doubled_triangles;
+    }
+
+    private static float[] concatenate_float_arrays(float[] array1, float[] array2)
+    {
+        float[] total_array = new float[array1.Length + array2.Length];
+
+        for (int i = 0; i < array1.Length; i++)
+        {
+            total_array[i] = array1[i];
+        }
+
+        for (int i = 0; i < array2.Length; i++)
+        {
+            total_array[array1.Length + i] = array2[i];
+        }
+
+        return total_array;
     }
 }
