@@ -17,6 +17,73 @@ from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
 
 @link_to_open3d_geometry(open3d_TriangleMesh)
 class TriangleMesh(Open3D_Geometry):
+    @classmethod
+    def create_arrow_from_points(
+        cls,
+        from_point,
+        to_point,
+        radius=0.01,
+        arrow_head_length=0.05,
+        arrow_head_radius=0.02,
+    ):
+        """
+        Create an arrow mesh defined by a cylinder (shaft) and a cone (head).
+
+        Parameters
+        ----------
+        from_point : list or np.array of length 3
+            The start point of the vector.
+        to_point : list or np.array of length 3
+            The end point of the vector.
+        radius : float, optional
+            Radius of the arrow shaft. Default: 0.01.
+        arrow_head_length : float, optional
+            Length of the cone (arrowhead). If set to None, this length will
+            be set to 1% of the total length. Default: 0.05.
+        arrow_head_radius : float, optional
+            Radius of the cone's base (arrowhead size). If set to None,
+            this radius will be set to twice the shaft radius. Default: 0.02.
+
+        Returns
+        -------
+            TriangleMesh
+        """
+
+        from pyShapeDetector.primitives import Cylinder, Cone
+
+        from_point = np.array(from_point)
+        to_point = np.array(to_point)
+
+        if arrow_head_radius is None:
+            radius_ratio = 2
+            arrow_head_radius = radius_ratio * radius
+
+        # Compute vector direction and length
+        vector = to_point - from_point
+        total_length = np.linalg.norm(vector)
+
+        if arrow_head_length is None:
+            length_ratio = 0.1
+            arrow_head_length = length_ratio * total_length
+        else:
+            arrow_head_length = min(arrow_head_length, total_length)
+
+        cylinder_length = total_length - arrow_head_length
+        direction_vector = vector / np.linalg.norm(vector)
+
+        # Cylinder: Shaft of the arrow
+        cylinder = Cylinder.from_base_vector_radius(
+            from_point, direction_vector * cylinder_length, radius
+        )
+
+        # Cone: Arrowhead
+        cone = Cone.from_appex_vector_radius(
+            to_point, -direction_vector * arrow_head_length, arrow_head_radius
+        )
+
+        mesh = cylinder.get_mesh() + cone.get_mesh()
+        return cls(mesh.vertices, mesh.triangles)
+
     def get_triangle_points(self):
         """Get positions of each triangle points.
 
