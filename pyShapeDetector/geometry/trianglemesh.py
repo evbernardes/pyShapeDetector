@@ -133,7 +133,7 @@ class TriangleMesh(Open3D_Geometry):
         return np.sqrt(s * np.prod(s[:, np.newaxis] - sides, axis=1))
 
     def get_triangle_circumradius(self):
-        """Fuse TriangleMesh instances into single mesh.
+        """Get circumradius of each triangle.
 
         Returns
         -------
