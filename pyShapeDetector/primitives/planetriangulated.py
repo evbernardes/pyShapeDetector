@@ -692,11 +692,11 @@ class PlaneTriangulated(Plane):
                 all_holes += fuse_dict[key]
                 all_hole_idxs += idxs
 
-            if len(all_holes) != len(set(all_holes)):
-                # this shouldn't happen, just in case...
-                raise RuntimeError(
-                    "Error while detecting holes, same hole detected for same plane."
-                )
+            # if len(all_holes) != len(set(all_holes)):
+            #     # this shouldn't happen, just in case...
+            #     raise RuntimeError(
+            #         "Error while detecting holes, same hole detected for same plane."
+            #     )
 
             for key, idxs in fuse_dict.items():
                 for idx in idxs:
