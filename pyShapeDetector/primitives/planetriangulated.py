@@ -121,6 +121,7 @@ class PlaneTriangulated(Plane):
     get_triangulated_plane
     get_bounded_planes_from_grid
     get_triangulated_plane_from_grid
+    get_triangulated_plane_from_alpha_shape
     get_projections
     get_points_from_projections
     get_mesh_alphashape
@@ -705,7 +706,10 @@ class PlaneTriangulated(Plane):
 
             all_hole_idxs.sort()
             for i in all_hole_idxs[::-1]:
-                planes.pop(i)
+                try:
+                    planes.pop(i)
+                except IndexError:
+                    warnings.warn(f"Error removing index {i}, ignoring...")
 
         idx = np.argsort([p.surface_area for p in planes])[::-1]
         planes = np.array(planes)[idx].tolist()

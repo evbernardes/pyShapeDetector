@@ -157,6 +157,7 @@ class Plane(Primitive):
     get_triangulated_plane
     get_bounded_planes_from_grid
     get_triangulated_plane_from_grid
+    get_triangulated_plane_from_alpha_shape
     get_projections
     get_points_from_projections
     get_mesh_alphashape
@@ -1067,6 +1068,38 @@ class Plane(Primitive):
         if return_rect_grid:
             return planes, plane_rect, grid
         return planes
+
+    def get_triangulated_plane_from_alpha_shape(self, alpha, points=None):
+        """
+        Parameters
+        ----------
+        alpha : float
+            Argument for alpha shape (TODO: Better Doc.).
+        points : N x 3 array, optional
+            Points for triangulation. If None, use inliers.
+
+        Return
+        ------
+        PlaneTriangulated
+            PlaneTriangulated instance from grid
+        """
+        from .planetriangulated import PlaneTriangulated
+
+        if points is None:
+            points = self.inliers.points
+
+        projections = self.get_projections(self.inliers.points)
+
+        triangles = Delaunay(projections).simplices
+        mesh = TriangleMesh(points, triangles)
+
+        if alpha == 0:
+            warnings.warn("Input alpha is 0, plane is equivalent to convex hull.")
+        else:
+            circumradii = mesh.get_triangle_circumradius()
+            mesh.triangles = mesh.triangles[circumradii < 1 / alpha]
+
+        return PlaneTriangulated(self.model, mesh.vertices, mesh.triangles)
 
     def get_triangulated_plane_from_grid(
         self,
