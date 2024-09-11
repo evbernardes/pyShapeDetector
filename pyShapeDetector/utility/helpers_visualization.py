@@ -118,11 +118,10 @@ def get_painted(elements, color="random"):
 #         camera_options['up'] = up
 
 
-def draw_geometries(elements, **camera_options):
+def get_open3d_geometries(elements, **camera_options):
     from pyShapeDetector.primitives import Primitive, Line, Plane, PlaneBounded
     from pyShapeDetector.geometry import PointCloud
 
-    # _treat_up_normal(camera_options)
     _ = camera_options.pop("dist", None)
 
     try:
@@ -139,6 +138,9 @@ def draw_geometries(elements, **camera_options):
         draw_planes = camera_options.pop("draw_planes")
     except KeyError:
         draw_planes = True
+
+    if "mesh_show_back_face" not in camera_options:
+        camera_options["mesh_show_back_face"] = True
 
     pcds = []
     geometries = []
@@ -193,12 +195,14 @@ def draw_geometries(elements, **camera_options):
     if draw_inliers:
         geometries += pcds
 
-    if "mesh_show_back_face" not in camera_options:
-        camera_options["mesh_show_back_face"] = True
-
     if draw_boundary_lines:
         geometries += boundary_lines + hole_boundary_lines
 
+    return geometries, camera_options
+
+
+def draw_geometries(elements, **camera_options):
+    geometries, camera_options = get_open3d_geometries(elements, **camera_options)
     visualization.draw_geometries(geometries, **camera_options)
 
 
