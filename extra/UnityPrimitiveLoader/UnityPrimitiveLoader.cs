@@ -283,11 +283,15 @@ public class PrimitiveLoader : Editor
         AssetDatabase.CreateAsset(mesh, meshPath);
         Debug.Log($"Mesh with {mesh.vertices.Length} vertices and {mesh.triangles.Length} triangles created at {meshPath}.");
 
-        GameObject planeObject = new GameObject("PlaneTriangulated");
-        // GameObject planeObject = new GameObject();
+        GameObject planeObject = new GameObject();
         MeshFilter meshFilter = planeObject.AddComponent<MeshFilter>();
         MeshRenderer meshRenderer = planeObject.AddComponent<MeshRenderer>();
         meshFilter.mesh = mesh;
+
+        // Create the collider
+        MeshCollider meshCollider = planeObject.AddComponent<MeshCollider>();
+        meshCollider.sharedMesh = mesh;
+        meshCollider.convex = false;
 
         return planeObject;
     }
