@@ -6,6 +6,7 @@ using EarcutNet;
 
 public class PrimitiveLoader : Editor
 {
+
     [MenuItem("Tools/Load pyShapeDetector shapes/From a single file")]
     public static void CreatePrefabFromSingleFile()
     {
@@ -21,7 +22,7 @@ public class PrimitiveLoader : Editor
             Debug.LogError("File not found: " + filePath);
             return;
         }
-        // string[] filePaths = { filePath };
+
         CreateShapePrefabs(new string[] { filePath });
     }
 
@@ -66,60 +67,73 @@ public class PrimitiveLoader : Editor
         Shader shader = Shader.Find(DEFAULT_SHADER);
         GameObject primitiveObject;
 
-        foreach (string filePath in filePaths)
+        int i = 0;
+        float progress = 0;
+
+        try
         {
-            Primitive primitive = new Primitive(filePath);
-
-            if (!primitive.is_primitive)
+            foreach (string filePath in filePaths)
             {
-                Debug.LogWarning($"{filePath} not a valid primitive!");
-                continue;
+                Primitive primitive = new Primitive(filePath);
+
+                if (!primitive.is_primitive)
+                {
+                    Debug.LogWarning($"{filePath} not a valid primitive!");
+                    continue;
+                }
+
+                // Create material
+                Material material = CreatePrimitiveMaterial(primitive, shader, materialFolder);
+                // primitiveObject.GetComponent<Renderer>().material = material;
+
+                if (primitive.name.Equals("plane"))
+                {
+                    // primitiveObject = CreatePlanePrefab(primitive, material);
+                    Debug.LogWarning($"Not implemented for {primitive.name}, try converting it to a bounded, rectangular or triangulated plane instead.");
+                    continue;
+                }
+                else if (primitive.name.Equals("sphere"))
+                    primitiveObject = CreateSpherePrefab(primitive, material);
+                else if (primitive.name.Equals("bounded plane"))
+                    primitiveObject = CreatePlaneBoundedPrefab(primitive, material, meshesFolder);
+                else if (primitive.name.Equals("rectangular plane"))
+                    primitiveObject = CreatePlaneRectangularPrefab(primitive, material);
+                else if (primitive.name.Equals("triangulated plane"))
+                    primitiveObject = CreatePlaneTriangulatedPrefab(primitive, material, meshesFolder);
+                else if (primitive.name.Equals("cylinder"))
+                    primitiveObject = CreateCylinderPrefab(primitive, material);
+                else
+                {
+                    Debug.LogWarning($"Not implemented for primitives of type {primitive.name}, ignoring file {primitive.fileName}.");
+                    continue;
+                }
+
+                Debug.Log($"Primitive of type {primitive.name} created!");
+
+                string prefabPath = $"{prefabFolder}/" + primitive.fileName + ".prefab";
+                PrefabUtility.SaveAsPrefabAsset(primitiveObject, prefabPath);
+
+                GameObject.DestroyImmediate(primitiveObject);
+
+                Debug.Log($"{primitive.name} created from file {primitive.fileName}.");
+                i += 1;
+                progress = (float)i / filePaths.Length;
+                EditorUtility.DisplayProgressBar("Loading Shape Prefabs", $"Processing file {i} of {filePaths.Length}", progress);
             }
-
-            // Create material
-            Material material = CreatePrimitiveMaterial(primitive, shader, materialFolder);
-            // primitiveObject.GetComponent<Renderer>().material = material;
-
-            if (primitive.name.Equals("plane"))
-            {
-                // primitiveObject = CreatePlanePrefab(primitive, material);
-                Debug.LogWarning($"Not implemented for {primitive.name}, try converting it to a bounded, rectangular or triangulated plane instead.");
-                continue;
-            }
-            else if (primitive.name.Equals("sphere"))
-                primitiveObject = CreateSpherePrefab(primitive, material);
-            else if (primitive.name.Equals("bounded plane"))
-                primitiveObject = CreatePlaneBoundedPrefab(primitive, material, meshesFolder);
-            else if (primitive.name.Equals("rectangular plane"))
-                primitiveObject = CreatePlaneRectangularPrefab(primitive, material);
-            else if (primitive.name.Equals("triangulated plane"))
-                primitiveObject = CreatePlaneTriangulatedPrefab(primitive, material, meshesFolder);
-            else if (primitive.name.Equals("cylinder"))
-                primitiveObject = CreateCylinderPrefab(primitive, material);
-            else
-            {
-                Debug.LogWarning($"Not implemented for primitives of type {primitive.name}, ignoring file {primitive.fileName}.");
-                continue;
-            }
-
-            Debug.Log($"Primitive of type {primitive.name} created!");
-
-            string prefabPath = $"{prefabFolder}/" + primitive.fileName + ".prefab";
-            PrefabUtility.SaveAsPrefabAsset(primitiveObject, prefabPath);
-
-            GameObject.DestroyImmediate(primitiveObject);
-
-            Debug.Log($"{primitive.name} created from file {primitive.fileName}.");
-            // }
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("Error occurred while creating prefabs: " + e.Message);
+        }
+        finally
+        {
+            EditorUtility.ClearProgressBar();
         }
 
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
-
-        // string unityPackagePath = folderPath + "/PrimitivesPackage.unitypackage";
-        // string[] assetsToInclude = Directory.GetFiles(prefabFolder, "*.prefab", SearchOption.AllDirectories);
-        // AssetDatabase.ExportPackage(assetsToInclude, unityPackagePath, ExportPackageOptions.IncludeDependencies);
-        // Debug.Log("Primitives package created at " + unityPackagePath);
+        // AssetDatabase.SaveAssets();
+        // AssetDatabase.Refresh();
     }
 
     private static Material CreatePrimitiveMaterial(Primitive primitive, Shader shader, string materialFolder)
@@ -213,8 +227,8 @@ public class PrimitiveLoader : Editor
         // Create a rotation matrix from the vectors
         Matrix4x4 matrix = new Matrix4x4();
         matrix.SetColumn(0, vectors[0].normalized);  // X axis
-        // matrix.SetColumn(1, vectors[1].normalized);  // Z axis
-        // matrix.SetColumn(2, normal);        // Y axis
+                                                     // matrix.SetColumn(1, vectors[1].normalized);  // Z axis
+                                                     // matrix.SetColumn(2, normal);        // Y axis
         matrix.SetColumn(2, vectors[1].normalized);  // Z axis
         matrix.SetColumn(1, normal);        // Y axis
         matrix.SetColumn(3, new Vector4(0, 0, 0, 1)); // Homogeneous coordinate
