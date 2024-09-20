@@ -76,22 +76,26 @@ public class PrimitiveLoader : Editor
                 continue;
             }
 
+            // Create material
+            Material material = CreatePrimitiveMaterial(primitive, shader, materialFolder);
+            // primitiveObject.GetComponent<Renderer>().material = material;
+
             if (primitive.name.Equals("plane"))
             {
-                // primitiveObject = CreatePlanePrefab(primitive);
+                // primitiveObject = CreatePlanePrefab(primitive, material);
                 Debug.LogWarning($"Not implemented for {primitive.name}, try converting it to a bounded, rectangular or triangulated plane instead.");
                 continue;
             }
             else if (primitive.name.Equals("sphere"))
-                primitiveObject = CreateSpherePrefab(primitive);
+                primitiveObject = CreateSpherePrefab(primitive, material);
             else if (primitive.name.Equals("bounded plane"))
-                primitiveObject = CreatePlaneBoundedPrefab(primitive, meshesFolder);
+                primitiveObject = CreatePlaneBoundedPrefab(primitive, material, meshesFolder);
             else if (primitive.name.Equals("rectangular plane"))
-                primitiveObject = CreatePlaneRectangularPrefab(primitive);
+                primitiveObject = CreatePlaneRectangularPrefab(primitive, material);
             else if (primitive.name.Equals("triangulated plane"))
-                primitiveObject = CreatePlaneTriangulatedPrefab(primitive, meshesFolder);
+                primitiveObject = CreatePlaneTriangulatedPrefab(primitive, material, meshesFolder);
             else if (primitive.name.Equals("cylinder"))
-                primitiveObject = CreateCylinderPrefab(primitive);
+                primitiveObject = CreateCylinderPrefab(primitive, material);
             else
             {
                 Debug.LogWarning($"Not implemented for primitives of type {primitive.name}, ignoring file {primitive.fileName}.");
@@ -99,14 +103,6 @@ public class PrimitiveLoader : Editor
             }
 
             Debug.Log($"Primitive of type {primitive.name} created!");
-
-            // Create material
-            Material material = CreatePrimitiveMaterial(primitive, shader, materialFolder);
-            primitiveObject.GetComponent<Renderer>().material = material;
-            // if (primitive.name.Equals("triangulated plane"))
-            //     primitiveObject.GetComponent<MeshRenderer>().material = material;
-            // else
-            //     primitiveObject.GetComponent<Renderer>().material = material;
 
             string prefabPath = $"{prefabFolder}/" + primitive.fileName + ".prefab";
             PrefabUtility.SaveAsPrefabAsset(primitiveObject, prefabPath);
@@ -143,7 +139,7 @@ public class PrimitiveLoader : Editor
         return material;
     }
 
-    private static GameObject CreatePlaneBoundedPrefab(Primitive primitive, string meshesFolder)
+    private static GameObject CreatePlaneBoundedPrefab(Primitive primitive, Material material, string meshesFolder)
     {
         // Debug.Log($"holes: {primitive.hole_vertices.Length}");
         // Debug.Log($"hole 1: {primitive.hole_vertices[0].Length}");
@@ -197,13 +193,13 @@ public class PrimitiveLoader : Editor
         }
         primitive.vertices = all_vertices_flattened;
         primitive.triangles = Earcut.Tessellate(projections, holes).ToArray();
-        return CreatePlaneTriangulatedPrefab(primitive, meshesFolder);
+        return CreatePlaneTriangulatedPrefab(primitive, material, meshesFolder);
         // GameObject planeObject = GameObject.CreatePrimitive(PrimitiveType.Plane);
 
         // return planeObject;
     }
 
-    private static GameObject CreatePlaneRectangularPrefab(Primitive primitive)
+    private static GameObject CreatePlaneRectangularPrefab(Primitive primitive, Material material)
     {
 
         GameObject planeObject = GameObject.CreatePrimitive(PrimitiveType.Plane);
@@ -226,6 +222,15 @@ public class PrimitiveLoader : Editor
 
         // Set the position of the plane
         planeObject.transform.position = new Vector3(primitive.center[0], primitive.center[1], primitive.center[2]);
+
+        // Creating copy to use as the back-side of the plane
+        GameObject backPlane = Instantiate(planeObject);
+        backPlane.name = "backside";
+        backPlane.transform.SetParent(planeObject.transform);
+        backPlane.transform.localRotation = new Quaternion(1, 0, 0, 0);
+
+        planeObject.GetComponent<Renderer>().material = material;
+        backPlane.GetComponent<Renderer>().material = material;
 
         // planeObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal);// * Quaternion.FromToRotation(Vector3.right, vectors[1]);
         return planeObject;
@@ -251,7 +256,7 @@ public class PrimitiveLoader : Editor
     //     return planeObject;
     // }
 
-    private static GameObject CreatePlaneTriangulatedPrefab(Primitive primitive, string meshesFolder)
+    private static GameObject CreatePlaneTriangulatedPrefab(Primitive primitive, Material material, string meshesFolder)
     {
         if (!Directory.Exists(meshesFolder))
             Directory.CreateDirectory(meshesFolder);
@@ -293,20 +298,24 @@ public class PrimitiveLoader : Editor
         meshCollider.sharedMesh = mesh;
         meshCollider.convex = false;
 
+        planeObject.GetComponent<Renderer>().material = material;
+
         return planeObject;
     }
 
 
-    private static GameObject CreateSpherePrefab(Primitive primitive)
+    private static GameObject CreateSpherePrefab(Primitive primitive, Material material)
     {
         GameObject sphereObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         sphereObject.transform.position = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
         sphereObject.transform.localScale = Vector3.one * primitive.model[3] * 2; // Scale to match the radius
 
+        sphereObject.GetComponent<Renderer>().material = material;
+
         return sphereObject;
     }
 
-    private static GameObject CreateCylinderPrefab(Primitive primitive)
+    private static GameObject CreateCylinderPrefab(Primitive primitive, Material material)
     {
         GameObject cylinderObject = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
 
@@ -323,6 +332,8 @@ public class PrimitiveLoader : Editor
 
         // Set the rotation of the cylinder to match the height vector
         cylinderObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, heightVector.normalized);
+
+        cylinderObject.GetComponent<Renderer>().material = material;
 
         return cylinderObject;
     }
