@@ -94,12 +94,13 @@ public class PrimitiveLoader : Editor
                 }
                 else if (primitive.name.Equals("sphere"))
                     primitiveObject = CreateSpherePrefab(primitive, material);
+                else if (primitive.name.Equals("triangulated plane"))
+                    primitiveObject = CreatePlaneTriangulatedPrefab(primitive, material, meshesFolder);
                 else if (primitive.name.Equals("bounded plane"))
                     primitiveObject = CreatePlaneBoundedPrefab(primitive, material, meshesFolder);
                 else if (primitive.name.Equals("rectangular plane"))
                     primitiveObject = CreatePlaneRectangularPrefab(primitive, material);
-                else if (primitive.name.Equals("triangulated plane"))
-                    primitiveObject = CreatePlaneTriangulatedPrefab(primitive, material, meshesFolder);
+
                 else if (primitive.name.Equals("cylinder"))
                     primitiveObject = CreateCylinderPrefab(primitive, material);
                 else
@@ -112,7 +113,6 @@ public class PrimitiveLoader : Editor
 
                 string prefabPath = $"{prefabFolder}/" + primitive.fileName + ".prefab";
                 PrefabUtility.SaveAsPrefabAsset(primitiveObject, prefabPath);
-
                 GameObject.DestroyImmediate(primitiveObject);
 
                 Debug.Log($"{primitive.name} created from file {primitive.fileName}.");
@@ -151,205 +151,6 @@ public class PrimitiveLoader : Editor
         // TODO: discover how to make planes visible from both sides 
         // material.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off); // Disable backface culling
         return material;
-    }
-
-    private static GameObject CreatePlaneBoundedPrefab(Primitive primitive, Material material, string meshesFolder)
-    {
-        // Debug.Log($"holes: {primitive.hole_vertices.Length}");
-        // Debug.Log($"hole 1: {primitive.hole_vertices[0].Length}");
-        // Debug.Log($"holes vertices: {primitive.hole_vertices[0][0]}, {primitive.hole_vertices[1][0]}, {primitive.hole_vertices[2][0]}");
-        // Vector3[] vertices;
-        float[] all_vertices_flattened;
-        int[] holes;
-
-        if (primitive.hole_vertices != null && primitive.hole_lengths != null)
-        {
-            Debug.Log($"Plane contains {primitive.hole_lengths.Length} holes.");
-
-            if (primitive.hole_vertices.Length > 0 && primitive.hole_lengths.Length > 0)
-            {
-                all_vertices_flattened = concatenate_float_arrays(primitive.vertices, primitive.hole_vertices);
-                holes = new int[primitive.hole_lengths.Length];
-                holes[0] = primitive.vertices.Length / 3;
-                for (int i = 1; i < primitive.hole_lengths.Length; i++)
-                {
-                    holes[i] = holes[i - 1] + primitive.hole_lengths[i - 1];
-                }
-            }
-            else
-            {
-                all_vertices_flattened = primitive.vertices;
-                holes = new int[0];
-            }
-        }
-        else
-        {
-            Debug.Log($"Plane does not contain hole_vertices or hole_lengths, assuming no holes.");
-            all_vertices_flattened = primitive.vertices;
-            holes = new int[0];
-        }
-
-        // for (int i = 0; i < holes.Length; i++)
-        // {
-        //     Debug.Log($"holes[{i}] = {holes[i]}");
-        // }
-
-        Vector3[] vertices = unflatten_array(all_vertices_flattened);
-
-        Vector3 normal = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
-        Quaternion rot = Quaternion.FromToRotation(normal, Vector3.forward);
-        double[] projections = new double[2 * vertices.Length];
-        for (int i = 0; i < vertices.Length; i++)
-        {
-            Vector3 rotated = rot * vertices[i];
-            projections[2 * i] = rotated.x;
-            projections[2 * i + 1] = rotated.y;
-        }
-        primitive.vertices = all_vertices_flattened;
-        primitive.triangles = Earcut.Tessellate(projections, holes).ToArray();
-        return CreatePlaneTriangulatedPrefab(primitive, material, meshesFolder);
-        // GameObject planeObject = GameObject.CreatePrimitive(PrimitiveType.Plane);
-
-        // return planeObject;
-    }
-
-    private static GameObject CreatePlaneRectangularPrefab(Primitive primitive, Material material)
-    {
-
-        GameObject planeObject = GameObject.CreatePrimitive(PrimitiveType.Plane);
-
-        // Vector3 normal = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
-        Vector3[] vectors = unflatten_array(primitive.parallel_vectors);
-        Vector3 normal = Vector3.Cross(vectors[1], vectors[0]).normalized;
-
-        planeObject.transform.localScale = new Vector3(0.1f * vectors[0].magnitude, 1, 0.1f * vectors[1].magnitude); // 10x10 default plane scaled down to 1x1
-
-        // Create a rotation matrix from the vectors
-        Matrix4x4 matrix = new Matrix4x4();
-        matrix.SetColumn(0, vectors[0].normalized);  // X axis
-                                                     // matrix.SetColumn(1, vectors[1].normalized);  // Z axis
-                                                     // matrix.SetColumn(2, normal);        // Y axis
-        matrix.SetColumn(2, vectors[1].normalized);  // Z axis
-        matrix.SetColumn(1, normal);        // Y axis
-        matrix.SetColumn(3, new Vector4(0, 0, 0, 1)); // Homogeneous coordinate
-        planeObject.transform.rotation = matrix.rotation;
-
-        // Set the position of the plane
-        planeObject.transform.position = new Vector3(primitive.center[0], primitive.center[1], primitive.center[2]);
-
-        // Creating copy to use as the back-side of the plane
-        GameObject backPlane = Instantiate(planeObject);
-        backPlane.name = "backside";
-        backPlane.transform.SetParent(planeObject.transform);
-        backPlane.transform.localRotation = new Quaternion(1, 0, 0, 0);
-
-        planeObject.GetComponent<Renderer>().material = material;
-        backPlane.GetComponent<Renderer>().material = material;
-
-        // planeObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal);// * Quaternion.FromToRotation(Vector3.right, vectors[1]);
-        return planeObject;
-    }
-
-    // private static GameObject CreatePlanePrefab(Primitive primitive)
-    // {
-    //     GameObject planeObject = GameObject.CreatePrimitive(PrimitiveType.Plane);
-
-    //     Vector3 normal = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
-    //     Vector3 centroid = -normal * primitive.model[3];
-
-    //     // Set the position of the plane
-    //     planeObject.transform.position = centroid;
-
-    //     // Set the rotation of the plane to match the plane normal
-    //     // planeObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal);
-
-    //     planeObject.transform.localScale = new Vector3(0.1f, 1, 0.1f); // 10x10 default plane scaled down to 1x1
-
-    //     planeObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal);
-
-    //     return planeObject;
-    // }
-
-    private static GameObject CreatePlaneTriangulatedPrefab(Primitive primitive, Material material, string meshesFolder)
-    {
-        if (!Directory.Exists(meshesFolder))
-            Directory.CreateDirectory(meshesFolder);
-
-        if (primitive.vertices.Length % 3 != 0 || primitive.vertices.Length == 0)
-        {
-            Debug.LogWarning($"{primitive.fileName} is a PlaneTriangulated but does not have valid vertices.");
-            return null;
-        }
-
-        if (primitive.triangles.Length % 3 != 0 || primitive.triangles.Length == 0)
-        {
-            Debug.LogWarning($"{primitive.fileName} is a PlaneTriangulated but does not have valid triangles.");
-            return null;
-        }
-
-        Vector3[] vertices = unflatten_array(primitive.vertices);
-
-        // Workaround for planes visible from both sides
-        int[] triangles = double_triangles(primitive.triangles);
-        // int[] triangles = primitive.triangles;
-
-        // Create the mesh
-        Mesh mesh = new Mesh();
-        mesh.vertices = vertices;
-        mesh.triangles = triangles;
-        mesh.RecalculateNormals();
-        string meshPath = $"{meshesFolder}/" + primitive.fileName + ".asset";
-        AssetDatabase.CreateAsset(mesh, meshPath);
-        Debug.Log($"Mesh with {mesh.vertices.Length} vertices and {mesh.triangles.Length} triangles created at {meshPath}.");
-
-        GameObject planeObject = new GameObject();
-        MeshFilter meshFilter = planeObject.AddComponent<MeshFilter>();
-        MeshRenderer meshRenderer = planeObject.AddComponent<MeshRenderer>();
-        meshFilter.mesh = mesh;
-
-        // Create the collider
-        MeshCollider meshCollider = planeObject.AddComponent<MeshCollider>();
-        meshCollider.sharedMesh = mesh;
-        meshCollider.convex = false;
-
-        planeObject.GetComponent<Renderer>().material = material;
-
-        return planeObject;
-    }
-
-
-    private static GameObject CreateSpherePrefab(Primitive primitive, Material material)
-    {
-        GameObject sphereObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        sphereObject.transform.position = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
-        sphereObject.transform.localScale = Vector3.one * primitive.model[3] * 2; // Scale to match the radius
-
-        sphereObject.GetComponent<Renderer>().material = material;
-
-        return sphereObject;
-    }
-
-    private static GameObject CreateCylinderPrefab(Primitive primitive, Material material)
-    {
-        GameObject cylinderObject = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-
-        Vector3 basePoint = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
-        Vector3 heightVector = new Vector3(primitive.model[3], primitive.model[4], primitive.model[5]);
-        float radius = primitive.model[6];
-
-        // Set the position of the cylinder at the center
-        cylinderObject.transform.position = basePoint + heightVector / 2;
-
-        // Set the scale of the cylinder
-        // Unity's default cylinder height is 2 units, so scale the height accordingly
-        cylinderObject.transform.localScale = new Vector3(radius * 2, heightVector.magnitude / 2, radius * 2);
-
-        // Set the rotation of the cylinder to match the height vector
-        cylinderObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, heightVector.normalized);
-
-        cylinderObject.GetComponent<Renderer>().material = material;
-
-        return cylinderObject;
     }
 
     [System.Serializable]
@@ -445,21 +246,31 @@ public class PrimitiveLoader : Editor
         }
         return vectors;
     }
-
-    private static int[] double_triangles(int[] triangles)
+    private static int[] triangles_reversed(int[] triangles)
     {
         int num_triangles = triangles.Length;
-        int[] doubled_triangles = new int[num_triangles * 2];
+        int[] new_triangles = new int[num_triangles];
         for (int i = 0; i < num_triangles; i++)
         {
-            doubled_triangles[i] = triangles[i];
+            new_triangles[i] = triangles[num_triangles - 1 - i];
+        }
+        return new_triangles;
+    }
+
+    private static int[] triangles_doubled(int[] triangles)
+    {
+        int num_triangles = triangles.Length;
+        int[] new_triangles = new int[num_triangles * 2];
+        for (int i = 0; i < num_triangles; i++)
+        {
+            new_triangles[i] = triangles[i];
         }
         for (int i = 0; i < num_triangles; i++)
         {
-            doubled_triangles[num_triangles + i] = triangles[num_triangles - 1 - i];
+            new_triangles[num_triangles + i] = triangles[num_triangles - 1 - i];
         }
 
-        return doubled_triangles;
+        return new_triangles;
     }
 
     private static float[] concatenate_float_arrays(float[] array1, float[] array2)
@@ -477,5 +288,225 @@ public class PrimitiveLoader : Editor
         }
 
         return total_array;
+    }
+
+    private static Vector3 midrange_center(Vector3[] vectors)
+    {
+        Vector3 bounds_min = vectors[0];
+        Vector3 bounds_max = vectors[0];
+
+        for (int i = 1; i < vectors.Length; i++)
+        {
+            bounds_min = Vector3.Min(bounds_min, vectors[i]);
+            bounds_max = Vector3.Max(bounds_min, vectors[i]);
+        }
+
+        return (bounds_max + bounds_min) / 2;
+    }
+
+    private static Matrix4x4 matrix_from_vectors(Vector3 vx, Vector3 vy, Vector3 vz)
+    {
+        Matrix4x4 matrix = new Matrix4x4();
+        matrix.SetColumn(0, vx.normalized);  // X axis
+
+        // note switching between axis to align with Unity default
+        matrix.SetColumn(2, vy.normalized);  // Z axis
+        matrix.SetColumn(1, vz.normalized);  // Y axis
+        matrix.SetColumn(3, new Vector4(0, 0, 0, 1)); // Homogeneous coordinate
+        return matrix;
+    }
+
+    // ***************************************
+    // ***** PREFAB GENERATING FUNCTIONS *****
+    // ***************************************
+
+    private static GameObject CreateSpherePrefab(Primitive primitive, Material material)
+    {
+        GameObject sphereObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sphereObject.transform.position = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
+        sphereObject.transform.localScale = Vector3.one * primitive.model[3] * 2; // Scale to match the radius
+
+        sphereObject.GetComponent<Renderer>().material = material;
+
+        return sphereObject;
+    }
+
+    private static GameObject CreateTwoSidedPlaneByRotating(GameObject planeObject, Material material)
+    {
+        GameObject twoSidedPlane = new GameObject(planeObject.name);
+        twoSidedPlane.transform.localRotation = planeObject.transform.localRotation;
+
+        GameObject frontPlane = Instantiate(planeObject);
+        frontPlane.name = "front";
+        frontPlane.transform.SetParent(twoSidedPlane.transform);
+        frontPlane.transform.localRotation = new Quaternion(0, 0, 0, 1);
+
+        GameObject backPlane = Instantiate(planeObject);
+        backPlane.name = "back";
+        backPlane.transform.SetParent(twoSidedPlane.transform);
+        backPlane.transform.localRotation = new Quaternion(1, 0, 0, 0);
+
+        // planeObject.GetComponent<Renderer>().material = material;
+        // Material material = planeObject.GetComponent<Renderer>().material;
+        frontPlane.GetComponent<Renderer>().material = material;
+        backPlane.GetComponent<Renderer>().material = material;
+
+        GameObject.DestroyImmediate(planeObject);
+
+        return twoSidedPlane;
+    }
+
+    private static void addMeshToPlane(GameObject planeObject, string meshPath, Vector3[] vertices, int[] triangles)
+    {
+        // Create the mesh
+        Mesh mesh = new Mesh();
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.RecalculateNormals();
+        // string meshPath = $"{meshesFolder}/" + primitive.fileName + ".asset";
+        AssetDatabase.CreateAsset(mesh, meshPath);
+        Debug.Log($"Mesh with {mesh.vertices.Length} vertices and {mesh.triangles.Length} triangles created at {meshPath}.");
+
+        // GameObject planeObject = new GameObject();
+        MeshFilter meshFilter = planeObject.AddComponent<MeshFilter>();
+        MeshRenderer meshRenderer = planeObject.AddComponent<MeshRenderer>();
+        meshFilter.mesh = mesh;
+
+        // Create the collider
+        MeshCollider meshCollider = planeObject.AddComponent<MeshCollider>();
+        meshCollider.sharedMesh = mesh;
+        meshCollider.convex = false;
+    }
+
+    private static GameObject CreatePlaneTriangulatedPrefab(Primitive primitive, Material material, string meshesFolder)
+    {
+        if (!Directory.Exists(meshesFolder))
+            Directory.CreateDirectory(meshesFolder);
+
+        if (primitive.vertices.Length % 3 != 0 || primitive.vertices.Length == 0)
+        {
+            Debug.LogWarning($"{primitive.fileName} is a PlaneTriangulated but does not have valid vertices.");
+            return null;
+        }
+
+        if (primitive.triangles.Length % 3 != 0 || primitive.triangles.Length == 0)
+        {
+            Debug.LogWarning($"{primitive.fileName} is a PlaneTriangulated but does not have valid triangles.");
+            return null;
+        }
+
+        Vector3[] vertices = unflatten_array(primitive.vertices);
+
+        // Creates two-sided plane with two different meshes
+        GameObject twoSidedPlane = new GameObject(primitive.name);
+        // twoSidedPlane.transform.localRotation = planeObject.transform.localRotation;
+
+        GameObject frontPlane = new GameObject("front");
+        string meshFrontPath = $"{meshesFolder}/" + primitive.fileName + "_front.asset";
+        addMeshToPlane(frontPlane, meshFrontPath, vertices, primitive.triangles);
+        frontPlane.transform.SetParent(twoSidedPlane.transform);
+
+        GameObject backPlane = new GameObject("back");
+        string meshBackPath = $"{meshesFolder}/" + primitive.fileName + "_back.asset";
+        addMeshToPlane(backPlane, meshBackPath, vertices, triangles_reversed(primitive.triangles));
+        backPlane.transform.SetParent(twoSidedPlane.transform);
+
+        frontPlane.GetComponent<Renderer>().material = material;
+        backPlane.GetComponent<Renderer>().material = material;
+
+        return twoSidedPlane;
+    }
+    private static GameObject CreatePlaneBoundedPrefab(Primitive primitive, Material material, string meshesFolder)
+    {
+        float[] all_vertices_flattened;
+        int[] holes;
+
+        if (primitive.hole_vertices != null && primitive.hole_lengths != null)
+        {
+            Debug.Log($"Plane contains {primitive.hole_lengths.Length} holes.");
+
+            if (primitive.hole_vertices.Length > 0 && primitive.hole_lengths.Length > 0)
+            {
+                all_vertices_flattened = concatenate_float_arrays(primitive.vertices, primitive.hole_vertices);
+                holes = new int[primitive.hole_lengths.Length];
+                holes[0] = primitive.vertices.Length / 3;
+                for (int i = 1; i < primitive.hole_lengths.Length; i++)
+                {
+                    holes[i] = holes[i - 1] + primitive.hole_lengths[i - 1];
+                }
+            }
+            else
+            {
+                all_vertices_flattened = primitive.vertices;
+                holes = new int[0];
+            }
+        }
+        else
+        {
+            Debug.Log($"Plane does not contain hole_vertices or hole_lengths, assuming no holes.");
+            all_vertices_flattened = primitive.vertices;
+            holes = new int[0];
+        }
+
+        Vector3[] vertices = unflatten_array(all_vertices_flattened);
+
+        Vector3 normal = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
+        Quaternion rot = Quaternion.FromToRotation(normal, Vector3.forward);
+        double[] projections = new double[2 * vertices.Length];
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            Vector3 rotated = rot * vertices[i];
+            projections[2 * i] = rotated.x;
+            projections[2 * i + 1] = rotated.y;
+        }
+        primitive.vertices = all_vertices_flattened;
+        primitive.triangles = Earcut.Tessellate(projections, holes).ToArray();
+        return CreatePlaneTriangulatedPrefab(primitive, material, meshesFolder);
+    }
+
+    private static GameObject CreatePlaneRectangularPrefab(Primitive primitive, Material material)
+    {
+
+        GameObject planeObject = GameObject.CreatePrimitive(PrimitiveType.Plane);
+
+        // Vector3 normal = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
+        Vector3[] vectors = unflatten_array(primitive.parallel_vectors);
+        Vector3 normal = Vector3.Cross(vectors[1], vectors[0]).normalized;
+
+        planeObject.transform.localScale = new Vector3(0.1f * vectors[0].magnitude, 1, 0.1f * vectors[1].magnitude); // 10x10 default plane scaled down to 1x1
+
+        // Create a rotation matrix from the vectors
+        Matrix4x4 matrix = matrix_from_vectors(vectors[0], vectors[1], normal);
+        planeObject.transform.rotation = matrix.rotation;
+
+        // Set the position of the plane
+        planeObject.transform.position = new Vector3(primitive.center[0], primitive.center[1], primitive.center[2]);
+
+        // planeObject.GetComponent<Renderer>().material = material;
+
+        return CreateTwoSidedPlaneByRotating(planeObject, material);
+    }
+
+    private static GameObject CreateCylinderPrefab(Primitive primitive, Material material)
+    {
+        GameObject cylinderObject = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+
+        Vector3 basePoint = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]);
+        Vector3 heightVector = new Vector3(primitive.model[3], primitive.model[4], primitive.model[5]);
+        float radius = primitive.model[6];
+
+        // Set the position of the cylinder at the center
+        cylinderObject.transform.position = basePoint + heightVector / 2;
+
+        // Set the scale of the cylinder
+        // Unity's default cylinder height is 2 units, so scale the height accordingly
+        cylinderObject.transform.localScale = new Vector3(radius * 2, heightVector.magnitude / 2, radius * 2);
+
+        // Set the rotation of the cylinder to match the height vector
+        cylinderObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, heightVector.normalized);
+
+        cylinderObject.GetComponent<Renderer>().material = material;
+
+        return cylinderObject;
     }
 }
