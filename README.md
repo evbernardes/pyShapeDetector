@@ -12,6 +12,9 @@ Python 3 module to detect geometrical primitives in pointclouds.
 ### Optional
 - `mapbox_earcut`: for proper triangulation of concave plane boundaries
 
+### Extra
+- `UnityPrimitiveLoader`: CSharp extension for the Unity Editor to create game objects for primitive descriptors. 
+
 ## Installation
 
 To install from GitHub source, first clone repo using `git`:
