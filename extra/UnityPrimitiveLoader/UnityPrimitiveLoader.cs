@@ -298,7 +298,7 @@ public class PrimitiveLoader : Editor
         for (int i = 1; i < vectors.Length; i++)
         {
             bounds_min = Vector3.Min(bounds_min, vectors[i]);
-            bounds_max = Vector3.Max(bounds_min, vectors[i]);
+            bounds_max = Vector3.Max(bounds_max, vectors[i]);
         }
 
         return (bounds_max + bounds_min) / 2;
@@ -356,6 +356,56 @@ public class PrimitiveLoader : Editor
         return twoSidedPlane;
     }
 
+    public static void MirrorAcrossPlaneWithNormal(Transform transform, Vector3 normal)
+    {
+        // Normalize the normal vector
+        Vector3 normal_normalized = normal.normalized;
+
+        // 1. Calculate the rotation needed to align the Z axis with the normal
+        Quaternion rotationToAlignWithNormal = Quaternion.FromToRotation(Vector3.forward, normal_normalized);
+
+        // 2. Apply the rotation to align with the reflection plane
+        transform.rotation = rotationToAlignWithNormal * transform.rotation;
+
+        // 3. Mirror the object by flipping the scale along the Z-axis (or the axis aligned with the normal)
+        transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, -transform.localScale.z);
+
+        // 4. Adjust the position: Reflect the position across the plane
+        Vector3 reflectionPlanePosition = Vector3.ProjectOnPlane(transform.position, normal_normalized); // Project position onto the reflection plane
+        Vector3 mirroredPosition = transform.position - 2 * (transform.position - reflectionPlanePosition); // Mirror position across the plane
+
+        transform.position = mirroredPosition;
+
+        // 5. Optionally, revert the rotation (undoing step 2) to keep the original orientation
+        transform.rotation = Quaternion.Inverse(rotationToAlignWithNormal) * transform.rotation;
+    }
+
+    private static GameObject CreateTwoSidedPlaneByMirrowing(GameObject planeObject, Material material, Vector3 normal)
+    {
+        GameObject twoSidedPlane = new GameObject(planeObject.name);
+        twoSidedPlane.transform.localRotation = planeObject.transform.localRotation;
+
+        GameObject frontPlane = Instantiate(planeObject);
+        frontPlane.name = "front";
+        frontPlane.transform.SetParent(twoSidedPlane.transform);
+        // frontPlane.transform.localRotation = new Quaternion(0, 0, 0, 1);
+
+        GameObject backPlane = Instantiate(planeObject);
+        backPlane.name = "back";
+        backPlane.transform.SetParent(twoSidedPlane.transform);
+        MirrorAcrossPlaneWithNormal(backPlane.transform, normal);
+        // backPlane.transform.localRotation = new Quaternion(1, 0, 0, 0);
+
+        // planeObject.GetComponent<Renderer>().material = material;
+        // Material material = planeObject.GetComponent<Renderer>().material;
+        frontPlane.GetComponent<Renderer>().material = material;
+        backPlane.GetComponent<Renderer>().material = material;
+
+        GameObject.DestroyImmediate(planeObject);
+
+        return twoSidedPlane;
+    }
+
     private static void addMeshToPlane(GameObject planeObject, string meshPath, Vector3[] vertices, int[] triangles)
     {
         // Create the mesh
@@ -396,23 +446,35 @@ public class PrimitiveLoader : Editor
         }
 
         Vector3[] vertices = unflatten_array(primitive.vertices);
+        Vector3 normal = new Vector3(primitive.model[0], primitive.model[1], primitive.model[2]).normalized;
+        Vector3 direction = Vector3.forward;
 
-        // Creates two-sided plane with two different meshes
-        GameObject twoSidedPlane = new GameObject(primitive.name);
-        // twoSidedPlane.transform.localRotation = planeObject.transform.localRotation;
+        // First align vertices without centering...
+        Quaternion rotation = Quaternion.FromToRotation(normal, direction);
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            vertices[i] = rotation * vertices[i];
+        }
 
-        GameObject frontPlane = new GameObject("front");
-        string meshFrontPath = $"{meshesFolder}/" + primitive.fileName + "_front.asset";
+        // ... then calculate center in new rotate reference frame
+        // This allows meshes to have component along direction equal to 0 
+        // making it possible to mirrow the mesh in this direction later on 
+        Vector3 center = midrange_center(vertices);
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            vertices[i] -= center;
+        }
+
+        GameObject frontPlane = new GameObject(primitive.name);
+        string meshFrontPath = $"{meshesFolder}/" + primitive.fileName + ".asset";
         addMeshToPlane(frontPlane, meshFrontPath, vertices, primitive.triangles);
-        frontPlane.transform.SetParent(twoSidedPlane.transform);
 
-        GameObject backPlane = new GameObject("back");
-        string meshBackPath = $"{meshesFolder}/" + primitive.fileName + "_back.asset";
-        addMeshToPlane(backPlane, meshBackPath, vertices, triangles_reversed(primitive.triangles));
-        backPlane.transform.SetParent(twoSidedPlane.transform);
+        GameObject twoSidedPlane = CreateTwoSidedPlaneByMirrowing(frontPlane, material, normal);
 
-        frontPlane.GetComponent<Renderer>().material = material;
-        backPlane.GetComponent<Renderer>().material = material;
+        // set position after reflecting
+        // Center must be rotated back to original reference frame
+        twoSidedPlane.transform.localRotation = Quaternion.Inverse(rotation);
+        twoSidedPlane.transform.position = twoSidedPlane.transform.localRotation * center;
 
         return twoSidedPlane;
     }
