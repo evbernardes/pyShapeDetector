@@ -84,6 +84,18 @@ class TriangleMesh(Open3D_Geometry):
         mesh = cylinder.get_mesh() + cone.get_mesh()
         return cls(mesh.vertices, mesh.triangles)
 
+    def add_reverse_triangles(self):
+        """Add necessary triangles so that each triangle has a
+        back-side counterpart.
+
+        """
+        triangles = self.triangles
+        triangles_sorted = np.sort(triangles, axis=1)
+
+        triangles_set = set(tuple(t) for t in triangles_sorted)
+        one_side = np.vstack(list(triangles_set))
+        self.triangles = np.vstack([one_side, one_side[:, ::-1]])
+
     def get_triangle_points(self):
         """Get positions of each triangle points.
 
