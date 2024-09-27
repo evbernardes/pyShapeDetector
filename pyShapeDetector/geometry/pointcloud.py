@@ -37,15 +37,15 @@ class PointCloud(Open3D_Geometry):
 
     Almost every method and property are automatically copied and decorated.
 
-    Attributes
-    ----------
+    Extra Attributes
+    ----------------
     volume
     curvature
     has_curvature
     colors_cielab
 
-    Methods
-    -------
+    Extra Methods
+    -------------
     from_points_normals_colors
     distribute_to_closest
     estimate_curvature

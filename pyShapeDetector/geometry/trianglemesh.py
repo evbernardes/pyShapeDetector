@@ -17,6 +17,41 @@ from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
 
 @link_to_open3d_geometry(open3d_TriangleMesh)
 class TriangleMesh(Open3D_Geometry):
+    """
+    TriangleMesh class that uses Open3D.geometry.TriangleMesh internally.
+
+    Almost every method and property are automatically copied and decorated.
+
+    Extra Attributes
+    ----------------
+    volume
+    curvature
+    has_curvature
+    colors_cielab
+
+    Extra Methods
+    -------------
+    create_arrow_from_points
+    add_reverse_triangles
+    get_triangle_points
+    get_triangle_sides
+    get_triangle_perimeters
+    get_triangle_surface_areas
+    get_triangle_circumradius
+    get_triangle_lines
+    get_triangle_LineSet
+    get_triangle_boundary_indexes
+    _get_sliceplane
+    clean_crop
+    _get_obj_vertices_triangles
+    get_obj_description
+    get_loop_indexes_from_boundary_indexes
+    get_fused_mesh
+    triangulate_earclipping
+    simplify_loop_with_angle
+    fuse_vertices_triangles
+    """
+
     @classmethod
     def create_arrow_from_points(
         cls,

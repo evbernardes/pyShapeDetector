@@ -21,8 +21,8 @@ class OrientedBoundingBox(Open3D_Geometry):
 
     Almost every method and property are automatically copied and decorated.
 
-    Methods
-    -------
+    Extra Methods
+    -------------
     contains_points
     expanded
     split

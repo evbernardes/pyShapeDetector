@@ -71,53 +71,6 @@ def get_painted(elements, color="random"):
         return elements[0]
 
 
-# def paint_random(elements, paint_inliers=False, return_copy=False):
-#     """ Paint each pointcloud/mesh with a different random color.
-
-#     Parameters
-#     ----------
-#     elements : list of geomery elements
-#         Elements to be painted
-#     """
-
-#     from pyShapeDetector.primitives import Primitive
-
-#     if return_copy:
-#         elements = copy.deepcopy(elements)
-
-#     if not isinstance(elements, list):
-#         elements = [elements]
-
-#     for element in elements:
-#         color = np.random.random(3)
-#         if isinstance(element, Primitive):
-#             element._color = color
-#             if paint_inliers:
-#                 element._inlier_colors[:] = color
-#         else:
-#             element.paint_uniform_color(color)
-
-#     if return_copy:
-#         return elements
-
-# def _treat_up_normal(camera_options):
-
-#     normal = camera_options.pop('normal', None)
-#     up = camera_options.get('up', None)
-
-#     if normal is not None and  up is not None:
-#             raise ValueError("Cannot enter both 'up' and 'normal'")
-
-#     elif normal is not None:
-#         x = np.cross(np.random.random(3), normal)
-#         x /= np.linalg.norm(x)
-#         # camera_options['up'] = np.cross(normal, x)
-#         camera_options['up'] = x
-
-#     elif 'up' in camera_options:
-#         camera_options['up'] = up
-
-
 def get_open3d_geometries(elements, **camera_options):
     from pyShapeDetector.primitives import Primitive, Line, Plane, PlaneBounded
     from pyShapeDetector.geometry import PointCloud

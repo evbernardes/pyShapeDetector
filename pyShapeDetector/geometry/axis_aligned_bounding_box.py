@@ -21,8 +21,8 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
 
     Almost every method and property are automatically copied and decorated.
 
-    Methods
-    -------
+    Extra Methods
+    -------------
     __add__
     contains_points
     intersects
