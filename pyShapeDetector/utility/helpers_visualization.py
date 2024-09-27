@@ -262,6 +262,7 @@ def select_manually(
     paint_selected=True,
     window_name="",
     return_finish_flag=False,
+    show_planes_boundaries=False,
     **camera_options,
 ):
     elements = copy.deepcopy(elements)
@@ -269,49 +270,57 @@ def select_manually(
     from pyShapeDetector.geometry import OrientedBoundingBox, TriangleMesh, PointCloud
     from pyShapeDetector.primitives import Primitive
 
-    NUM_POINTS_DIST = 40
+    if "mesh_show_back_face" not in camera_options:
+        camera_options["mesh_show_back_face"] = True
 
     if not isinstance(elements, list):
         elements = [elements]
 
+    if not isinstance(fixed_elements, list):
+        fixed_elements = [fixed_elements]
+
     if len(elements) == 0:
         raise ValueError("Elements cannot be an empty list.")
 
-    bboxes = []
-    for element in elements:
-        if element is None:
-            bbox = None
-        else:
-            # bbox = AxisAlignedBoundingBox(element.get_axis_aligned_bounding_box()).expanded(bbox_expand)
-            bbox = OrientedBoundingBox(element.get_oriented_bounding_box()).expanded(
-                bbox_expand
-            )
-            bbox.color = (1, 0, 0)
-            bbox = bbox.as_open3d
-            bboxes.append(bbox)
-
-    for i in range(len(elements)):
+    # makes sure that TriangleMeshes can be seen from both sides
+    def get_open3d(elem):
         try:
-            elements[i] = elements[i].as_open3d
+            elem_new = elem.as_open3d
+            mesh_show_back_face = camera_options["mesh_show_back_face"]
+            if mesh_show_back_face and TriangleMesh.is_instance_or_open3d(elem_new):
+                mesh = TriangleMesh(elem_new)
+                mesh.add_reverse_triangles()
+                elem_new = mesh.as_open3d
         except Exception:
-            pass
+            elem_new = elem
 
-    if not isinstance(fixed_elements, list):
-        fixed_elements = [fixed_elements]
-    fixed_elements = [elem.as_open3d for elem in fixed_elements]
+        return elem_new
 
-    fixed_bboxes = []
-    for element in fixed_elements:
-        if element is None:
-            bbox = None
-        else:
-            # bbox = AxisAlignedBoundingBox(element.get_axis_aligned_bounding_box()).expanded(bbox_expand)
-            bbox = OrientedBoundingBox(element.get_oriented_bounding_box()).expanded(
-                bbox_expand
-            )
-            bbox.color = (0, 0, 0)
-            bbox = bbox.as_open3d
-            fixed_bboxes.append(bbox)
+    def get_bboxes(elements, color):
+        bboxes = []
+        from open3d.geometry import LineSet
+
+        for element in elements:
+            if isinstance(element, LineSet):
+                continue
+
+            if element is None:
+                bbox = None
+            else:
+                # bbox = AxisAlignedBoundingBox(element.get_axis_aligned_bounding_box()).expanded(bbox_expand)
+                bbox_original = element.get_oriented_bounding_box()
+                bbox = OrientedBoundingBox(bbox_original).expanded(bbox_expand)
+                bbox.color = color
+                bbox = bbox.as_open3d
+                bboxes.append(bbox)
+
+        return bboxes
+
+    bboxes = get_bboxes(elements, (1, 0, 0))
+    fixed_bboxes = get_bboxes(fixed_elements, (0, 0, 0))
+
+    elements = [get_open3d(elem) for elem in elements]
+    fixed_elements = [get_open3d(elem) for elem in fixed_elements]
 
     color_bbox_selected = (0, 0.8, 0)
     color_bbox_unselected = (1, 0, 0)
@@ -331,15 +340,20 @@ def select_manually(
     # these are used for distance testing with the mouse
     elements_distance = []
     for elem in elements:
+        NUM_POINTS_FOR_DISTANCE_CALC = 40
 
         if isinstance(elem, Primitive):
             elements_distance.append(elem)
 
         elif TriangleMesh.is_instance_or_open3d(elem):
-            elements_distance.append(elem.sample_points_uniformly(NUM_POINTS_DIST))
+            elements_distance.append(
+                elem.sample_points_uniformly(NUM_POINTS_FOR_DISTANCE_CALC)
+            )
 
         elif PointCloud.is_instance_or_open3d(elem):
-            elements_distance.append(elem.uniform_down_sample(NUM_POINTS_DIST))
+            elements_distance.append(
+                elem.uniform_down_sample(NUM_POINTS_FOR_DISTANCE_CALC)
+            )
 
         else:
             elements_distance.append(None)
@@ -536,9 +550,8 @@ def select_manually(
     vis.register_key_action_callback(GLFW_KEY_LEFT_CONTROL, switch_mouse_toggle)
 
     vis.create_window(window_name)
-
+    fixed_bboxes = []
     for elem in fixed_elements + fixed_bboxes + data["elements_painted"] + [bboxes[0]]:
-        # for elem in fixed_elements + data["elements_painted"]:
         vis.add_geometry(elem)
 
     vis.run()
