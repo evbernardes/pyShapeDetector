@@ -262,7 +262,7 @@ def select_manually(
     paint_selected=True,
     window_name="",
     return_finish_flag=False,
-    show_planes_boundaries=False,
+    show_plane_boundaries=False,
     **camera_options,
 ):
     elements = copy.deepcopy(elements)
@@ -281,6 +281,15 @@ def select_manually(
 
     if len(elements) == 0:
         raise ValueError("Elements cannot be an empty list.")
+
+    if show_plane_boundaries:
+        for element in elements:
+            try:
+                lineset = element.vertices_LineSet
+            except AttributeError:
+                continue
+            lineset.paint_uniform_color((0, 0, 0))
+            fixed_elements.append(lineset)
 
     # makes sure that TriangleMeshes can be seen from both sides
     def get_open3d(elem):
