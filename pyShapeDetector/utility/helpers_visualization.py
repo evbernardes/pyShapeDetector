@@ -331,11 +331,12 @@ def select_manually(
     # these are used for distance testing with the mouse
     elements_distance = []
     for elem in elements:
+
         if isinstance(elem, Primitive):
             elements_distance.append(elem)
 
         elif TriangleMesh.is_instance_or_open3d(elem):
-            elements_distance.append(elem.sample_uniform_point(NUM_POINTS_DIST))
+            elements_distance.append(elem.sample_points_uniformly(NUM_POINTS_DIST))
 
         elif PointCloud.is_instance_or_open3d(elem):
             elements_distance.append(elem.uniform_down_sample(NUM_POINTS_DIST))
