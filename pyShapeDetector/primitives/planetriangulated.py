@@ -716,10 +716,11 @@ class PlaneTriangulated(Plane):
 
         if add_inliers:
             if not self.has_inliers:
-                warnings.warn(
-                    "Option 'add_inliers' is True but plane has no "
-                    "inliers, ignoring..."
-                )
+                pass
+                # warnings.warn(
+                #     "Option 'add_inliers' is True but plane has no "
+                #     "inliers, ignoring..."
+                # )
 
             else:
                 pcd = self.inliers
