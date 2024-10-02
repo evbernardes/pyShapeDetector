@@ -104,6 +104,7 @@ class Line(Primitive):
     from_two_points
     from_vertices
     from_plane_intersection
+    get_angle
     get_fitted_to_points
     closest_to_line
     get_orthogonal_component
@@ -426,6 +427,38 @@ class Line(Primitive):
             line = line.get_fitted_to_points(points)
 
         return line
+
+    def get_angle(self, other_element):
+        """ Calculates angle between line axis and other element's axis.
+
+        If the other element is not a line, check if it has an element called
+        "axis".
+
+        Parameters
+        ----------
+        other_element : Line, vector or other class instance
+            Vector, or element containing an "axis" attribute.
+
+        Returns
+        -------
+        float
+            angle in radians
+        """
+        if isinstance(other_element, Line):
+            axis2 = other_element.axis
+        else:
+            if hasattr(other_element, "axis"):
+                axis2 = other_element.axis
+            elif len(other_element) == 3:
+                axis2 = np.array(other_element)
+                if not np.issubdtype(axis2.dtype, np.number):
+                    raise ValueError("other_element is a non-numeric array.")
+            else:
+                raise ValueError("Invalid other_element.")
+
+            axis2 /= np.linalg.norm(other_element.axis)
+
+        return np.arccos(self.axis.dot(axis2))
 
     def get_fitted_to_points(self, points):
         """Creates a new line with beginning and end points fitted to
