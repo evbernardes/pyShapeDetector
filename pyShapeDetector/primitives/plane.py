@@ -155,7 +155,6 @@ class Plane(Primitive):
     get_unbounded_plane
     get_bounded_plane
     get_triangulated_plane
-    get_bounded_planes_from_grid
     get_triangulated_plane_from_grid
     get_triangulated_plane_from_alpha_shape
     get_projections
@@ -959,115 +958,6 @@ class Plane(Primitive):
         vectors = _get_vx_vy(self.normal)
 
         return self.get_rectangular_plane(np.array(vectors) * length, center)
-
-    def get_bounded_planes_from_grid(
-        self,
-        grid_width,
-        max_point_dist=None,
-        grid_type="hexagonal",
-        perimeter_multiplier=1,
-        return_rect_grid=False,
-        perimeter_eps=1e-3,
-        only_inside=False,
-        add_boundary=False,
-        detect_holes=False,
-        add_inliers=True,
-        angle_colinear=0,
-        colinear_recursive=True,
-        contract_boundary=False,
-        min_inliers=1,
-        max_grid_points=100000,
-    ):
-        """
-        Experimental method of triangulating plane with a grid.
-
-        Uses Plane.get_triangulated_plane_from_grid to get a triangulated plane,
-        and then detects its vertices to create bounded planes with holes.
-
-        See:
-            Plane.get_triangulated_plane_from_grid
-
-        Parameters
-        ----------
-        grid_width : float
-            Distance between two points in first dimension (and also second
-            dimension for regular grids).
-        max_point_dist : float, optional
-            Max distance allowed between grid points and inlier points. If not
-            given, same value for "grid_width" will be used.
-        grid_type : str, optional
-            Type of grid, can be "hexagonal" or "regular". Default: "hexagonal".
-        perimeter_multiplier : float, option
-            Multiplies expected perimeter to create cutout value. Cannot be
-            smaller than 1. Default: 1.
-        return_rect_grid : boolean, optional
-            If True, tuple containing rectangular plane and grid. Default: False.
-        perimeter_eps : float, option
-            Small slack value added to perimeter testing. Default: 1e-3.
-        only_inside : boolean, optional
-            If True, remove grid points not contained in original convex
-            boundary. Default: False.
-        add_boundary : boolean, optional
-            If True, add convex boundary points to grid. Default: False.
-        detect_holes : boolean, optional
-            If True, try to detect holes. Default: False.
-        add_inliers : boolean, optional
-            If True, add inlier points.
-        angle_colinear : float, optional
-            Small angle value for assuming two lines are colinear. Default: 0
-        colinear_recursive : boolean, optional
-            If False, only try to simplify loop once. If True, try to simplify
-            it until no more simplification is possible. Default: True.
-        contract_boundary : boolean, optional
-            If True, contract bouverticesnds to closest inlier points. Default: False.
-        min_inliers : int, optional
-            If add_inliers is True, remove planes with less inliers than this
-            value. Default: 1.
-        max_grid_points : int, optional
-            Max grid points possible. Default: 100000
-
-        Return
-        ------
-        PlaneTriangulated
-            PlaneTriangulated instance from grid
-
-        """
-
-        result = self.get_triangulated_plane_from_grid(
-            grid_width=grid_width,
-            max_point_dist=max_point_dist,
-            grid_type=grid_type,
-            perimeter_multiplier=perimeter_multiplier,
-            perimeter_eps=perimeter_eps,
-            return_rect_grid=return_rect_grid,
-            only_inside=only_inside,
-            add_boundary=add_boundary,
-            max_grid_points=max_grid_points,
-        )
-
-        if return_rect_grid:
-            plane_triangulated, plane_rect, grid = result
-        else:
-            plane_triangulated = result
-
-        from .planetriangulated import PlaneTriangulated
-
-        if not isinstance(plane_triangulated, PlaneTriangulated):
-            print("No points selected, returning self...")
-            return [self]
-
-        planes = plane_triangulated.get_bounded_planes_from_boundaries(
-            detect_holes=detect_holes,
-            add_inliers=add_inliers,
-            angle_colinear=angle_colinear,
-            colinear_recursive=colinear_recursive,
-            contract_boundary=contract_boundary,
-            min_inliers=min_inliers,
-        )
-
-        if return_rect_grid:
-            return planes, plane_rect, grid
-        return planes
 
     def get_triangulated_plane_from_alpha_shape(self, alpha, points=None):
         """
