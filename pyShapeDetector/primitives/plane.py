@@ -1574,7 +1574,7 @@ class Plane(Primitive):
         Checking aabb_intersection is much quicker than checking inlier_max_distance,
         which is why it is a good idea to check both.
 
-        See: group_shape_groups, fuse_shape_groups, PlaneBounded.glue_nearby_planes
+        See: group_shape_groups, fuse_shape_groups
 
         Parameters
         ----------

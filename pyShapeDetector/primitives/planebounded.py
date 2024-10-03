@@ -934,7 +934,7 @@ class PlaneBounded(Plane):
 
         Also returns dictionary of all intersection lines.
 
-        See: group_shape_groups, fuse_shape_groups, find_plane_intersections, glue_nearby_planes
+        See: group_shape_groups, fuse_shape_groups, glue_nearby_planes
 
         Parameters
         ----------
