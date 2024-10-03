@@ -886,7 +886,7 @@ class PlaneBounded(Plane):
             If the distance of two points is bigger than this value, they will
             not be simplified. Default: np.inf
         """
-        indices = TriangleMesh.simplify_loop_with_angle(
+        indices = TriangleMesh.simplify_loop(
             self.vertices,
             range(len(self.vertices)),
             angle_colinear=angle_colinear,

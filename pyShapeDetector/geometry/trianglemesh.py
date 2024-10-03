@@ -48,7 +48,7 @@ class TriangleMesh(Open3D_Geometry):
     get_loop_indexes_from_boundary_indexes
     get_fused_mesh
     triangulate_earclipping
-    simplify_loop_with_angle
+    simplify_loop
     fuse_vertices_triangles
     """
 
@@ -682,7 +682,7 @@ class TriangleMesh(Open3D_Geometry):
         return triangles
 
     @staticmethod
-    def simplify_loop_with_angle(
+    def simplify_loop(
         vertices,
         loop_indexes,
         angle_colinear,

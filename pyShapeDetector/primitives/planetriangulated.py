@@ -664,7 +664,7 @@ class PlaneTriangulated(Plane):
 
         if angle_colinear is not None:
             for i in range(len(loop_indexes)):
-                loop_indexes[i] = TriangleMesh.simplify_loop_with_angle(
+                loop_indexes[i] = TriangleMesh.simplify_loop(
                     self.vertices, loop_indexes[i], angle_colinear, colinear_recursive
                 )
 
