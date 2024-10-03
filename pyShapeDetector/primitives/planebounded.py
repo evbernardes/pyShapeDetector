@@ -868,7 +868,9 @@ class PlaneBounded(Plane):
         else:
             return np.vstack(points)
 
-    def simplify_vertices_colinear(self, angle_colinear=0, colinear_recursive=True):
+    def simplify_vertices_colinear(
+        self, angle_colinear=0, colinear_recursive=True, max_point_dist=np.inf
+    ):
         """
         Simplify vertices be removing some if they are colinear (or almost colinear).
 
@@ -879,9 +881,16 @@ class PlaneBounded(Plane):
         colinear_recursive : boolean, optional
             If False, only try to simplify loop once. If True, try to simplify
             it until no more simplification is possible. Default: True.
+        max_point_dist : float, optional
+            If the distance of two points is bigger than this value, they will
+            not be simplified. Default: np.inf
         """
         indices = TriangleMesh.simplify_loop_with_angle(
-            self.vertices, range(len(self.vertices)), angle_colinear, colinear_recursive
+            self.vertices,
+            range(len(self.vertices)),
+            angle_colinear=angle_colinear,
+            colinear_recursive=colinear_recursive,
+            max_point_dist=max_point_dist,
         )
 
         vertices_new = self.vertices[indices]
