@@ -614,6 +614,8 @@ class PlaneTriangulated(Plane):
         detect_holes=False,
         add_inliers=True,
         angle_colinear=0,
+        min_point_dist=0,
+        max_point_dist=np.inf,
         contract_boundary=False,
         min_inliers=1,
     ):
@@ -633,8 +635,13 @@ class PlaneTriangulated(Plane):
         add_inliers : boolean, optional
             If True, add inlier points.
         angle_colinear : float, optional
-            Small angle value for assuming two lines are colinear. If None is
-            given, then no simplification is done. Default: 0.
+            Small angle value for assuming two lines are colinear. Default: 0
+        min_point_dist : float, optional
+            If the simplified distance is bigger than this value, simplify
+            regardless of angle. Default: 0.
+        max_point_dist : float, optional
+            If the simplified distance is bigger than this value, do not
+            simplify. Default: np.inf
         contract_boundary : boolean, optional
             If True, contract vertices to closest inlier points. Default: False.
         min_inliers : int, optional
@@ -661,7 +668,11 @@ class PlaneTriangulated(Plane):
         if angle_colinear is not None:
             for i in range(len(loop_indexes)):
                 loop_indexes[i] = TriangleMesh.simplify_loop(
-                    self.vertices, loop_indexes[i], angle_colinear
+                    self.vertices,
+                    loop_indexes[i],
+                    angle_colinear=angle_colinear,
+                    min_point_dist=min_point_dist,
+                    max_point_dist=max_point_dist,
                 )
 
         planes = [
