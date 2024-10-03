@@ -868,7 +868,9 @@ class PlaneBounded(Plane):
         else:
             return np.vstack(points)
 
-    def simplify_vertices(self, angle_colinear=0, max_point_dist=np.inf):
+    def simplify_vertices(
+        self, angle_colinear=0, min_point_dist=0, max_point_dist=np.inf
+    ):
         """
         Simplify vertices be removing some if they are colinear (or almost colinear)
         or distance between them are too small.
@@ -877,14 +879,18 @@ class PlaneBounded(Plane):
         ----------
         angle_colinear : float, optional
             Small angle value for assuming two lines are colinear. Default: 0
+        min_point_dist : float, optional
+            If the simplified distance is bigger than this value, simplify
+            regardless of angle. Default: 0.
         max_point_dist : float, optional
-            If the distance of two points is bigger than this value, they will
-            not be simplified. Default: np.inf
+            If the simplified distance is bigger than this value, do not
+            simplify. Default: np.inf
         """
         indices = TriangleMesh.simplify_loop(
             self.vertices,
             range(len(self.vertices)),
             angle_colinear=angle_colinear,
+            min_point_dist=min_point_dist,
             max_point_dist=max_point_dist,
         )
 

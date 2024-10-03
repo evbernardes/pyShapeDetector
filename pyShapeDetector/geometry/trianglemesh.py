@@ -686,6 +686,7 @@ class TriangleMesh(Open3D_Geometry):
         vertices,
         loop_indexes,
         angle_colinear,
+        min_point_dist=0,
         max_point_dist=np.inf,
     ):
         """For each consecutive line in boundary points, simplify it if they are
@@ -705,9 +706,12 @@ class TriangleMesh(Open3D_Geometry):
             Ordered indices defining which points in `vertices` define the loop.
         angle_colinear : float, optional
             Small angle value for assuming two lines are colinear
+        min_point_dist : float, optional
+            If the simplified distance is bigger than this value, simplify
+            regardless of angle. Default: 0.
         max_point_dist : float, optional
-            If the distance of two points is bigger than this value, they will
-            not be simplified. Default: np.inf
+            If the simplified distance is bigger than this value, do not
+            simplify. Default: np.inf
 
         Returns
         -------
@@ -738,7 +742,10 @@ class TriangleMesh(Open3D_Geometry):
 
                 angle_calc = line.get_angle(other)
 
-                if angle_calc >= angle_colinear or line_new.length > max_point_dist:
+                if (length := line_new.length) < min_point_dist:
+                    pass
+
+                elif angle_calc >= angle_colinear or length > max_point_dist:
                     break
 
                 line = lines[i] = line_new
