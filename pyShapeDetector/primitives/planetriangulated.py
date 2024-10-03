@@ -649,14 +649,14 @@ class PlaneTriangulated(Plane):
         -------
         list of PlaneBounded instances
         """
-        from .planebounded import PlaneBounded
-
-        boundary_indexes = self.mesh.get_triangle_boundary_indexes()
-
         if not isinstance(min_inliers, int) or (min_inliers < 1):
             raise ValueError(
                 f"min_inliers must be a positive integer, got {min_inliers}."
             )
+
+        from .planebounded import PlaneBounded
+
+        boundary_indexes = self.mesh.get_triangle_boundary_indexes()
 
         loop_indexes = TriangleMesh.get_loop_indexes_from_boundary_indexes(
             boundary_indexes
