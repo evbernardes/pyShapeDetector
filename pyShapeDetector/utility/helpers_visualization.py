@@ -216,6 +216,7 @@ def select_manually(
     window_name="",
     return_finish_flag=False,
     show_plane_boundaries=False,
+    pre_selected=None,
     **camera_options,
 ):
     elements = copy.deepcopy(elements)
@@ -223,11 +224,23 @@ def select_manually(
     from pyShapeDetector.geometry import OrientedBoundingBox, TriangleMesh, PointCloud
     from pyShapeDetector.primitives import Primitive
 
+    if not isinstance(elements, list):
+        raise ValueError("Input elements must be a list.")
+
+    if pre_selected is None:
+        pre_selected = [False] * len(elements)
+    else:
+        if not isinstance(pre_selected, list):
+            raise ValueError("Pre-select must be a list.")
+
+        if len(pre_selected) != len(elements):
+            raise ValueError("Pre-select and input elements must have same length.")
+
+        if not np.array(pre_selected).dtype == bool:
+            raise ValueError("Pre-select must be a list of booleans.")
+
     if "mesh_show_back_face" not in camera_options:
         camera_options["mesh_show_back_face"] = True
-
-    if not isinstance(elements, list):
-        elements = [elements]
 
     if not isinstance(fixed_elements, list):
         fixed_elements = [fixed_elements]
@@ -331,7 +344,7 @@ def select_manually(
     global data
 
     data = {
-        "selected": [False] * len(elements),
+        "selected": pre_selected,
         "elements_painted": elements_painted,
         "elements_distance": elements_distance,
         "i_old": 0,
@@ -340,6 +353,12 @@ def select_manually(
         "mouse_select": False,
         "mouse_toggle": False,
     }
+
+    for i in np.where(pre_selected)[0]:
+        bboxes[i].color = color_bbox_selected
+        data["elements_painted"][i] = get_painted(
+            data["elements_painted"][i], color_selected
+        )
 
     def update(vis, idx=None):
         global data
