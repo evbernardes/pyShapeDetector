@@ -15,16 +15,19 @@ def test_get_bounded_planes_from_grid():
     eps = plane_input.inliers.average_nearest_dist(k=k)
     grid_width = np.sqrt(plane_input.surface_area / num_grid_points)
 
-    concave_planes = plane_input.get_bounded_planes_from_grid(
+    plane_triagulated = plane_input.get_triangulated_plane_from_grid(
         grid_width=grid_width,
         max_point_dist=eps * 2,
         grid_type="regular",
         perimeter_multiplier=1.5,
         perimeter_eps=1e-3,
+        max_grid_points=20000,
+    )
+
+    concave_planes = plane_triagulated.get_bounded_planes_from_boundaries(
+        contract_boundary=True,
         add_inliers=True,
         angle_colinear=np.deg2rad(0),
-        contract_boundary=True,
-        max_grid_points=20000,
     )
 
     assert len(concave_planes) == 2

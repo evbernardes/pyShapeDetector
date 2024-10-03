@@ -119,7 +119,6 @@ class PlaneTriangulated(Plane):
     get_unbounded_plane
     get_bounded_plane
     get_triangulated_plane
-    get_bounded_planes_from_grid
     get_triangulated_plane_from_grid
     get_triangulated_plane_from_alpha_shape
     get_projections
