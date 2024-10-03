@@ -614,7 +614,6 @@ class PlaneTriangulated(Plane):
         detect_holes=False,
         add_inliers=True,
         angle_colinear=0,
-        colinear_recursive=True,
         contract_boundary=False,
         min_inliers=1,
     ):
@@ -636,9 +635,6 @@ class PlaneTriangulated(Plane):
         angle_colinear : float, optional
             Small angle value for assuming two lines are colinear. If None is
             given, then no simplification is done. Default: 0.
-        colinear_recursive : boolean, optional
-            If False, only try to simplify loop once. If True, try to simplify
-            it until no more simplification is possible. Default: True.
         contract_boundary : boolean, optional
             If True, contract vertices to closest inlier points. Default: False.
         min_inliers : int, optional
@@ -665,7 +661,7 @@ class PlaneTriangulated(Plane):
         if angle_colinear is not None:
             for i in range(len(loop_indexes)):
                 loop_indexes[i] = TriangleMesh.simplify_loop(
-                    self.vertices, loop_indexes[i], angle_colinear, colinear_recursive
+                    self.vertices, loop_indexes[i], angle_colinear
                 )
 
         planes = [
