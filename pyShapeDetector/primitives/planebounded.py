@@ -152,7 +152,7 @@ class PlaneBounded(Plane):
     set_vertices
     add_bound_points
     intersection_vertices
-    simplify_vertices_colinear
+    simplify_vertices
     contract_boundary
     glue_planes_with_intersections
     """
@@ -868,11 +868,12 @@ class PlaneBounded(Plane):
         else:
             return np.vstack(points)
 
-    def simplify_vertices_colinear(
+    def simplify_vertices(
         self, angle_colinear=0, colinear_recursive=True, max_point_dist=np.inf
     ):
         """
-        Simplify vertices be removing some if they are colinear (or almost colinear).
+        Simplify vertices be removing some if they are colinear (or almost colinear)
+        or distance between them are too small.
 
         Parameters
         ----------
