@@ -10,8 +10,8 @@ import random
 import copy
 import numpy as np
 import open3d as o3d
-from open3d.geometry import LineSet, TriangleMesh, PointCloud, AxisAlignedBoundingBox
-from open3d.utility import Vector2iVector, Vector3iVector, Vector3dVector
+from open3d.geometry import LineSet, AxisAlignedBoundingBox
+from open3d.utility import Vector2iVector, Vector3dVector
 
 from .primitivebase import Primitive
 from .cylinder import Cylinder
@@ -113,6 +113,7 @@ class Line(Primitive):
     points_from_projections
     point_from_intersection
     get_LineSet_from_list
+    simplify_loop
     """
 
     _fit_n_min = 2
@@ -429,7 +430,7 @@ class Line(Primitive):
         return line
 
     def get_angle(self, other_element):
-        """ Calculates angle between line axis and other element's axis.
+        """Calculates angle between line axis and other element's axis.
 
         If the other element is not a line, check if it has an element called
         "axis".
@@ -654,3 +655,78 @@ class Line(Primitive):
         lineset.lines = Vector2iVector(lines_indices)
         lineset.colors = Vector3dVector([line.color for line in lines])
         return lineset
+
+    @classmethod
+    def simplify_loop(
+        cls,
+        vertices,
+        angle_colinear,
+        min_point_dist=0,
+        max_point_dist=np.inf,
+    ):
+        """Construct lines from a list of vertices that form a closed loop.
+
+        For each consecutive line in boundary points, simplify it if they are
+        almost colinear, or too small.
+
+        For example, defining:
+            line1 = (vertices[0], vertices[1])
+            line2 = (vertices[1], vertices[2])
+        If angle(line1, line2) < angle_colinear, then loop_indexes[1] is removed
+        from loop_indexes.
+
+        Parameters
+        ----------
+        vertices : array_like of shape (N, 3)
+            List of all points.
+        loop_indexes : list
+            Ordered indices defining which points in `vertices` define the loop.
+        angle_colinear : float, optional
+            Small angle value for assuming two lines are colinear
+        min_point_dist : float, optional
+            If the simplified distance is bigger than this value, simplify
+            regardless of angle. Default: 0.
+        max_point_dist : float, optional
+            If the simplified distance is bigger than this value, do not
+            simplify. Default: np.inf
+
+        Returns
+        -------
+        list
+            Indexes of fimplified loop.
+        """
+        if angle_colinear < 0:
+            raise ValueError(
+                "angle_colinear must be a positive value, " f"got {angle_colinear}"
+            )
+
+        lines = cls.from_vertices(vertices)
+        i = 0
+        while True:
+            if i >= len(lines):
+                break
+
+            line = lines[i]
+
+            while True:
+                if i + 1 >= len(lines):
+                    break
+
+                other = lines[i + 1]
+                line_new = Line.from_two_points(line.beginning, other.ending)
+
+                angle_calc = line.get_angle(other)
+
+                if (length := line_new.length) < min_point_dist:
+                    pass
+
+                elif angle_calc >= angle_colinear or length > max_point_dist:
+                    break
+
+                line = lines[i] = line_new
+                del lines[i + 1]
+
+            i += 1
+
+        new_vertices = [line.beginning for line in lines]
+        return [np.where(np.all(v == vertices, axis=1))[0][0] for v in new_vertices]
