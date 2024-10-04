@@ -210,7 +210,7 @@ def draw_two_columns(objs_left, objs_right, **camera_options):
 
 def select_manually(
     elements,
-    fixed_elements=[],
+    fixed_elements=None,
     bbox_expand=0.0,
     paint_selected=True,
     window_name="",
@@ -242,7 +242,9 @@ def select_manually(
     if "mesh_show_back_face" not in camera_options:
         camera_options["mesh_show_back_face"] = True
 
-    if not isinstance(fixed_elements, list):
+    if fixed_elements is None:
+        fixed_elements = []
+    elif not isinstance(fixed_elements, list):
         fixed_elements = [fixed_elements]
 
     if len(elements) == 0:
@@ -252,8 +254,14 @@ def select_manually(
         for element in elements:
             try:
                 lineset = element.vertices_LineSet
+
+                if hasattr(element, "holes"):
+                    for hole in element.holes:
+                        lineset += hole.vertices_LineSet
+
             except AttributeError:
                 continue
+
             lineset.paint_uniform_color((0, 0, 0))
             fixed_elements.append(lineset)
 
