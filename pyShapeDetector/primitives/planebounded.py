@@ -156,6 +156,7 @@ class PlaneBounded(Plane):
     simplify_vertices
     contract_boundary
     glue_planes_with_intersections
+    get_convex
     """
 
     _name = "bounded plane"
@@ -997,6 +998,30 @@ class PlaneBounded(Plane):
                 # new_points = [line.beginning, line.ending]
 
         return lines
+
+    def get_convex(self, apply_to_holes=False):
+        """Get convex copy of bounded planes.
+
+        Parameters
+        ----------
+        apply_to_holes : boolean, optional
+            If True, make holes also convex. Default: False.
+
+        Returns
+        -------
+        list
+            List of convex bounded planes.
+        """
+        plane = self.copy()
+        if plane.is_convex:
+            warnings.warn("Plane already convex, returning copy.")
+        else:
+            plane.set_vertices(self.vertices, flatten=False, convex=True)
+
+        if apply_to_holes:
+            with warnings.catch_warnings():
+                plane._holes = [p.get_convex() for p in plane._holes]
+        return plane
 
     # @classmethod
     # def planes_ressample_and_triangulate(cls, planes, density, radius_ratio=None):
