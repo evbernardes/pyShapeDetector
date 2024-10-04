@@ -48,7 +48,6 @@ class TriangleMesh(Open3D_Geometry):
     get_loop_indexes_from_boundary_indexes
     get_fused_mesh
     triangulate_earclipping
-    simplify_loop
     fuse_vertices_triangles
     """
 
@@ -680,106 +679,6 @@ class TriangleMesh(Open3D_Geometry):
         )
 
         return triangles
-
-    @staticmethod
-    def simplify_loop(
-        vertices,
-        loop_indexes,
-        angle_colinear,
-        min_point_dist=0,
-        max_point_dist=np.inf,
-    ):
-        """For each consecutive line in boundary points, simplify it if they are
-        almost colinear.
-
-        For example, defining:
-            line1 = (vertices[loop_indexes[0]], vertices[loop_indexes[1]])
-            line2 = (vertices[loop_indexes[1]], vertices[loop_indexes[2]])
-        If angle(line1, line2) < angle_colinear, then loop_indexes[1] is removed
-        from loop_indexes.
-
-        Parameters
-        ----------
-        vertices : array_like of shape (N, 3)
-            List of all points.
-        loop_indexes : list
-            Ordered indices defining which points in `vertices` define the loop.
-        angle_colinear : float, optional
-            Small angle value for assuming two lines are colinear
-        min_point_dist : float, optional
-            If the simplified distance is bigger than this value, simplify
-            regardless of angle. Default: 0.
-        max_point_dist : float, optional
-            If the simplified distance is bigger than this value, do not
-            simplify. Default: np.inf
-
-        Returns
-        -------
-        list
-            Simplified loop.
-        """
-        if angle_colinear < 0:
-            raise ValueError(
-                "angle_colinear must be a positive value, " f"got {angle_colinear}"
-            )
-
-        from pyShapeDetector.primitives import Line
-
-        lines = Line.from_vertices(vertices[loop_indexes])
-        i = 0
-        while True:
-            if i >= len(lines):
-                break
-
-            line = lines[i]
-
-            while True:
-                if i + 1 >= len(lines):
-                    break
-
-                other = lines[i + 1]
-                line_new = Line.from_two_points(line.beginning, other.ending)
-
-                angle_calc = line.get_angle(other)
-
-                if (length := line_new.length) < min_point_dist:
-                    pass
-
-                elif angle_calc >= angle_colinear or length > max_point_dist:
-                    break
-
-                line = lines[i] = line_new
-                del lines[i + 1]
-
-            i += 1
-
-        new_vertices = [line.beginning for line in lines]
-        return [np.where(np.all(v == vertices, axis=1))[0][0] for v in new_vertices]
-
-    # cos_angle_colinear = np.cos(angle_colinear)
-    # vertices = np.array(vertices)
-    # loop_indexes = np.array(loop_indexes)
-
-    # count = -1
-    # while count != 0:
-    #     loop_vertices = vertices[loop_indexes]
-    #     lines = Line.from_vertices(loop_vertices)
-    #     keep = []
-    #     N = len(lines)
-    #     for i in range(N):
-    #         line1 = lines[i]
-    #         line2 = lines[(i + 1) % len(lines)]
-    #         # for bigger angle, smaller dot product/cossine
-    #         cos_angle = line1.axis.dot(line2.axis)
-    #         keep.append(cos_angle < cos_angle_colinear or line1.length > max_point_dist)
-    #     loop_indexes = loop_indexes[keep]
-    #     if colinear_recursive:
-    #         count = N - sum(keep)
-    #     else:
-    #         count = 0
-    #     # print(f"N = {N}, keep = {sum(keep)}")
-
-    # return list(loop_indexes)
 
     @staticmethod
     def fuse_vertices_triangles(vertices_list, triangles_list):

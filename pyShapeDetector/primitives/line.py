@@ -113,7 +113,7 @@ class Line(Primitive):
     points_from_projections
     point_from_intersection
     get_LineSet_from_list
-    simplify_loop
+    get_simplified_loop_indices
     """
 
     _fit_n_min = 2
@@ -657,12 +657,13 @@ class Line(Primitive):
         return lineset
 
     @classmethod
-    def simplify_loop(
+    def get_simplified_loop_indices(
         cls,
         vertices,
-        angle_colinear,
+        angle_colinear=0,
         min_point_dist=0,
         max_point_dist=np.inf,
+        loop_indexes=None,
     ):
         """Construct lines from a list of vertices that form a closed loop.
 
@@ -679,8 +680,6 @@ class Line(Primitive):
         ----------
         vertices : array_like of shape (N, 3)
             List of all points.
-        loop_indexes : list
-            Ordered indices defining which points in `vertices` define the loop.
         angle_colinear : float, optional
             Small angle value for assuming two lines are colinear
         min_point_dist : float, optional
@@ -689,6 +688,8 @@ class Line(Primitive):
         max_point_dist : float, optional
             If the simplified distance is bigger than this value, do not
             simplify. Default: np.inf
+        loop_indexes : list, optional
+            Ordered indices defining which points in `vertices` define the loop.
 
         Returns
         -------
@@ -700,7 +701,13 @@ class Line(Primitive):
                 "angle_colinear must be a positive value, " f"got {angle_colinear}"
             )
 
-        lines = cls.from_vertices(vertices)
+        if loop_indexes is None:
+            loop_vertices = vertices.copy()
+        else:
+            loop_vertices = vertices[loop_indexes]
+
+        lines = cls.from_vertices(loop_vertices)
+
         i = 0
         while True:
             if i >= len(lines):

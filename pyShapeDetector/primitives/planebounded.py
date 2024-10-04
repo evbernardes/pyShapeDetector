@@ -886,9 +886,10 @@ class PlaneBounded(Plane):
             If the simplified distance is bigger than this value, do not
             simplify. Default: np.inf
         """
-        indices = TriangleMesh.simplify_loop(
+        from .line import Line
+
+        indices = Line.get_simplified_loop_indices(
             self.vertices,
-            range(len(self.vertices)),
             angle_colinear=angle_colinear,
             min_point_dist=min_point_dist,
             max_point_dist=max_point_dist,

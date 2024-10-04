@@ -658,6 +658,7 @@ class PlaneTriangulated(Plane):
             )
 
         from .planebounded import PlaneBounded
+        from .line import Line
 
         boundary_indexes = self.mesh.get_triangle_boundary_indexes()
 
@@ -667,12 +668,12 @@ class PlaneTriangulated(Plane):
 
         if angle_colinear is not None:
             for i in range(len(loop_indexes)):
-                loop_indexes[i] = TriangleMesh.simplify_loop(
+                loop_indexes[i] = Line.get_simplified_loop_indices(
                     self.vertices,
-                    loop_indexes[i],
                     angle_colinear=angle_colinear,
                     min_point_dist=min_point_dist,
                     max_point_dist=max_point_dist,
+                    loop_indexes=loop_indexes[i],
                 )
 
         planes = [
