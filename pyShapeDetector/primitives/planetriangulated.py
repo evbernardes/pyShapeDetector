@@ -619,6 +619,7 @@ class PlaneTriangulated(Plane):
         max_point_dist=np.inf,
         contract_boundary=False,
         min_inliers=1,
+        min_area=0.0,
     ):
         """Convert PlaneTriangulated instance into list of non-convex
         PlaneBounded instances.
@@ -648,6 +649,9 @@ class PlaneTriangulated(Plane):
         min_inliers : int, optional
             If add_inliers is True, remove planes with less inliers than this
             value. Default: 1.
+        min_area : float, optional
+            If a value is given, remove every plane whose area is smaller than
+            this value. Default: 0.
 
         Returns
         -------
@@ -681,6 +685,9 @@ class PlaneTriangulated(Plane):
             PlaneBounded(self, self.vertices[loop], convex=False)
             for loop in loop_indexes
         ]
+
+        if min_area > 0:
+            planes = [p for p in planes if p.surface_area > min_area]
 
         if contract_boundary:
             for p in planes:
