@@ -686,34 +686,26 @@ class PlaneTriangulated(Plane):
             for p in planes:
                 p.contract_boundary(self.inliers.points)
 
-        if detect_holes:
-            Plane.detect_and_insert_holes(planes)
-
         idx = np.argsort([p.surface_area for p in planes])[::-1]
         planes = np.array(planes)[idx].tolist()
 
-        if add_inliers:
-            if not self.has_inliers:
-                pass
-                # warnings.warn(
-                #     "Option 'add_inliers' is True but plane has no "
-                #     "inliers, ignoring..."
-                # )
+        if detect_holes:
+            Plane.detect_and_insert_holes(planes)
 
-            else:
-                pcd = self.inliers
-                projections = self.get_projections(pcd.points)
+        if add_inliers and self.has_inliers:
+            pcd = self.inliers
+            projections = self.get_projections(pcd.points)
 
-                for plane in planes:
-                    if len(projections) == 0:
-                        break
-                    inside = plane.contains_projections(projections, input_is_2D=True)
-                    inside_idx = np.where(inside)[0]
-                    plane.set_inliers(pcd.select_by_index(inside_idx))
-                    pcd = pcd.select_by_index(inside_idx, invert=True)
-                    projections = projections[~inside]
+            for plane in planes:
+                if len(projections) == 0:
+                    break
+                inside = plane.contains_projections(projections, input_is_2D=True)
+                inside_idx = np.where(inside)[0]
+                plane.set_inliers(pcd.select_by_index(inside_idx))
+                pcd = pcd.select_by_index(inside_idx, invert=True)
+                projections = projections[~inside]
 
-                num_inliers = np.array([len(p.inlier_points) for p in planes])
-                planes = np.array(planes)[num_inliers > min_inliers].tolist()
+            num_inliers = np.array([len(p.inlier_points) for p in planes])
+            planes = np.array(planes)[num_inliers > min_inliers].tolist()
 
         return planes
