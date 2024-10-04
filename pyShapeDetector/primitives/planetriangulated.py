@@ -135,6 +135,7 @@ class PlaneTriangulated(Plane):
     create_ellipse
     create_box
     get_plane_intersections
+    detect_and_insert_holes
 
     closest_vertices
     set_vertices_triangles
@@ -685,38 +686,8 @@ class PlaneTriangulated(Plane):
             for p in planes:
                 p.contract_boundary(self.inliers.points)
 
-        if detect_holes and (N := len(planes)) > 1:
-            fuse_dict = {key: [] for key in range(N)}
-
-            for i, j in combinations(range(N), 2):
-                if np.all(planes[i].contains_projections(planes[j].vertices)):
-                    fuse_dict[i].append(j)
-                elif np.all(planes[j].contains_projections(planes[i].vertices)):
-                    fuse_dict[j].append(i)
-
-            all_holes = []
-            all_hole_idxs = []
-            for key, idxs in fuse_dict.items():
-                all_holes += fuse_dict[key]
-                all_hole_idxs += idxs
-
-            # if len(all_holes) != len(set(all_holes)):
-            #     # this shouldn't happen, just in case...
-            #     raise RuntimeError(
-            #         "Error while detecting holes, same hole detected for same plane."
-            #     )
-
-            for key, idxs in fuse_dict.items():
-                for idx in idxs:
-                    # print(f"Adding {idx} to {key}")
-                    planes[key].add_holes(planes[idx])
-
-            all_hole_idxs.sort()
-            for i in all_hole_idxs[::-1]:
-                try:
-                    planes.pop(i)
-                except IndexError:
-                    warnings.warn(f"Error removing index {i}, ignoring...")
+        if detect_holes:
+            Plane.detect_and_insert_holes(planes)
 
         idx = np.argsort([p.surface_area for p in planes])[::-1]
         planes = np.array(planes)[idx].tolist()

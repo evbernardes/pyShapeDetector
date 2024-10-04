@@ -171,6 +171,7 @@ class Plane(Primitive):
     create_ellipse
     create_box
     get_plane_intersections
+    detect_and_insert_holes
     """
 
     _fit_n_min = 3
@@ -1681,3 +1682,54 @@ class Plane(Primitive):
             intersections[i, j] = line
 
         return intersections
+
+    @staticmethod
+    def detect_and_insert_holes(planes):
+        """Detects if any plane is a hole of another by checking if all
+        vertices are inside of the outer plane.
+
+        When a hole is detected, it is removed from the list and added to the
+        outer plane as a hole.
+
+        Parameters
+        ----------
+        planes : list of shapes
+            List containing all planes.
+        """
+        if not np.all([isinstance(p, Plane) for p in planes]):
+            raise ValueError("Input expected to be list of planes.")
+
+        if (N := len(planes)) < 2:
+            return
+
+        fuse_dict = {key: [] for key in range(N)}
+
+        for i, j in combinations(range(N), 2):
+            if np.all(planes[i].contains_projections(planes[j].vertices)):
+                fuse_dict[i].append(j)
+            elif np.all(planes[j].contains_projections(planes[i].vertices)):
+                fuse_dict[j].append(i)
+
+        all_holes = []
+        all_hole_idxs = []
+        for key, idxs in fuse_dict.items():
+            all_holes += fuse_dict[key]
+            all_hole_idxs += idxs
+
+        # if len(all_holes) != len(set(all_holes)):
+        #     # this shouldn't happen, just in case...
+        #     raise RuntimeError(
+        #         "Error while detecting holes, same hole detected for same plane."
+        #     )
+
+        for key, idxs in fuse_dict.items():
+            for idx in idxs:
+                # print(f"Adding {idx} to {key}")
+                planes[key].add_holes(planes[idx])
+
+        all_hole_idxs.sort()
+        for i in all_hole_idxs[::-1]:
+            try:
+                planes.pop(i)
+            except IndexError:
+                warnings.warn(f"Error removing index {i}, ignoring...")

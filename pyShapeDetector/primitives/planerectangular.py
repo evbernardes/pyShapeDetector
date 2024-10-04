@@ -135,6 +135,7 @@ class PlaneRectangular(Plane):
     create_ellipse
     create_box
     get_plane_intersections
+    detect_and_insert_holes
 
     contains_projections
     set_parallel_vectors

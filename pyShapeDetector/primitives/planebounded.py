@@ -145,6 +145,7 @@ class PlaneBounded(Plane):
     create_ellipse
     create_box
     get_plane_intersections
+    detect_and_insert_holes
 
     closest_vertices
     contains_projections
