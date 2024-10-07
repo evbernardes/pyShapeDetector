@@ -932,7 +932,9 @@ class PlaneBounded(Plane):
         self.set_vertices(vertices_new, flatten=True, convex=self.is_convex)
 
     @staticmethod
-    def glue_planes_with_intersections(shapes, intersections, fit_separated=False):
+    def glue_planes_with_intersections(
+        shapes, intersections, fit_separated=False, add_as_inliers=False
+    ):
         """Glue shapes using intersections in a dict.
 
         Also returns dictionary of all intersection lines.
@@ -947,6 +949,8 @@ class PlaneBounded(Plane):
             Dictionary with keys of type `(i, j)` and values of type Primitive.Line.
         fit_separated : bool, optional
             If True, find projections separated for each shape. Default: True.
+        add_as_inliers : bool, optional
+            If True, adds new vertex points as inliers too. Default: False.
 
         Returns
         -------
@@ -994,7 +998,8 @@ class PlaneBounded(Plane):
                 # line_ = line.get_line_fitted_to_projections(shape.vertices)
                 # TODO: add vertices too?
                 shape.add_bound_points([line_.beginning, line_.ending])
-                shape.add_inliers([line_.beginning, line_.ending])
+                if add_as_inliers:
+                    shape.add_inliers([line_.beginning, line_.ending])
                 # new_points = [line.beginning, line.ending]
 
         return lines
