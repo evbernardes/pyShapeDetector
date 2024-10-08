@@ -53,6 +53,7 @@ class Line(Primitive):
 
     beginning
     ending
+    points
     vector
     axis
     length
@@ -143,6 +144,11 @@ class Line(Primitive):
     def ending(self):
         """End point of line."""
         return self.beginning + self.vector
+
+    @property
+    def points(self):
+        """Start and end points."""
+        return np.vstack([self.beginning, self.ending])
 
     @property
     def vector(self):
