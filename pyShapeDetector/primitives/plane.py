@@ -1524,7 +1524,7 @@ class Plane(Primitive):
         """Gives list of planes that create, together, a closed box.
 
         Parameters
-        ----------plane_unbounded
+        ----------
         center : array
             Center point of box
         dimensions : array
