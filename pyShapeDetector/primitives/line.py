@@ -481,6 +481,7 @@ class Line(Primitive):
             self.points_from_projections(min(projections)),
             self.points_from_projections(max(projections)),
         )
+        new_line.color = self.color
         return new_line
 
     def closest_to_line(self, points):
