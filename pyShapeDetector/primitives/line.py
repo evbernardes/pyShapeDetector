@@ -116,6 +116,8 @@ class Line(Primitive):
     get_LineSet_from_list
     get_simplified_loop_indices
     check_colinear
+    get_segment_intersection
+    get_segment_union
     """
 
     _fit_n_min = 2
@@ -702,7 +704,7 @@ class Line(Primitive):
         Returns
         -------
         list
-            Indexes of fimplified loop.
+            Indexes of simplified loop.
         """
         if angle_colinear < 0:
             raise ValueError(
@@ -771,9 +773,74 @@ class Line(Primitive):
         if distance_eps < 0 or angle_eps < 0:
             raise ValueError("distance_eps and angle_eps should be non-negative.")
 
-        points = [self.beginning, self.ending]
-
-        distance_test = np.all(other_line.get_distances(points) <= distance_eps)
+        distance_test = np.all(other_line.get_distances(self.points) <= distance_eps)
         angle_test = self.axis.dot(other_line.axis) <= np.cos(angle_eps)
 
         return distance_test and angle_test
+
+    def get_segment_intersection(
+        self, colinear_line, distance_eps=1e-8, angle_eps=1e-8
+    ):
+        """Return line intersection.
+
+        Should only be used with colinear lines.
+
+        Parameters
+        ----------
+        colinear_line : Line
+            Colinear line.
+        distance_eps : float, optional
+            Distance threshold to decide if line is colinear. Default: 1e-8.
+        angle_eps : float, optional
+            Angle threshold to decide if line is colinear. Default: 1e-8.
+
+        Returns
+        -------
+        Line or None
+            Line intersection
+        """
+
+        if not self.check_colinear(colinear_line, distance_eps, angle_eps):
+            raise ValueError("Lines are not colinear.")
+
+        a_start, a_ending = self.projections_limits_from_points(self.points)
+        b_start, b_ending = self.projections_limits_from_points(colinear_line.points)
+
+        if (b_start > a_ending) or (a_start > b_ending):
+            return None
+
+        interval = [max(a_start, b_start), min(a_ending, b_ending)]
+        output_points = self.points_from_projections(interval)
+        new_line = Line.from_two_points(*output_points)
+        new_line.color = self.color
+        return new_line
+
+    def get_segment_union(self, colinear_line, distance_eps=1e-8, angle_eps=1e-8):
+        """Return line union.
+
+        Should only be used with colinear lines.
+
+        Parameters
+        ----------
+        colinear_line : Line
+            Colinear line.
+        distance_eps : float, optional
+            Distance threshold to decide if line is colinear. Default: 1e-8.
+        angle_eps : float, optional
+            Angle threshold to decide if line is colinear. Default: 1e-8.
+
+        Returns
+        -------
+        Line
+            Line union.
+        """
+
+        if not self.check_colinear(colinear_line, distance_eps, angle_eps):
+            raise ValueError("Lines are not colinear.")
+
+        points = np.vstack([self.points, colinear_line.points])
+        interval = self.projections_limits_from_points(points)
+        output_points = self.points_from_projections(interval)
+        new_line = Line.from_two_points(*output_points)
+        new_line.color = self.color
+        return new_line
