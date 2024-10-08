@@ -114,6 +114,7 @@ class Line(Primitive):
     point_from_intersection
     get_LineSet_from_list
     get_simplified_loop_indices
+    check_colinear
     """
 
     _fit_n_min = 2
@@ -738,3 +739,35 @@ class Line(Primitive):
 
         new_vertices = [line.beginning for line in lines]
         return [np.where(np.all(v == vertices, axis=1))[0][0] for v in new_vertices]
+
+    def check_colinear(self, other_line, distance_eps=1e-8, angle_eps=1e-8):
+        """Check if lines are colinear.
+
+        Parameters
+        ----------
+        other_line : Line
+            Other line.
+        distance_eps : float, optional
+            Distance threshold to decide if line is colinear. Default: 1e-8.
+        angle_eps : float, optional
+            Angle threshold to decide if line is colinear. Default: 1e-8.
+
+        Returns
+        -------
+        bool
+            True if lines are colinear.
+        """
+        if not isinstance(other_line, Line):
+            raise ValueError(
+                f"other_line should be instance of Line, got {type(other_line)}."
+            )
+
+        if distance_eps < 0 or angle_eps < 0:
+            raise ValueError("distance_eps and angle_eps should be non-negative.")
+
+        points = [self.beginning, self.ending]
+
+        distance_test = np.all(other_line.get_distances(points) <= distance_eps)
+        angle_test = self.axis.dot(other_line.axis) <= np.cos(angle_eps)
+
+        return distance_test and angle_test
