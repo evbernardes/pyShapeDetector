@@ -976,8 +976,8 @@ class PlaneBounded(Plane):
 
             if fit_separated:
                 lines_ij = [
-                    line.get_line_fitted_to_projections(shapes[i].vertices),
-                    line.get_line_fitted_to_projections(shapes[j].vertices),
+                    line.get_fitted_to_points(shapes[i].vertices),
+                    line.get_fitted_to_points(shapes[j].vertices),
                 ]
 
             if not fit_separated:
