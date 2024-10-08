@@ -53,6 +53,7 @@ class Line(Primitive):
 
     beginning
     ending
+    center
     points
     vector
     axis
@@ -146,6 +147,11 @@ class Line(Primitive):
     def ending(self):
         """End point of line."""
         return self.beginning + self.vector
+
+    @property
+    def center(self):
+        """Center point of line."""
+        return self.beginning + self.vector / 2
 
     @property
     def points(self):
