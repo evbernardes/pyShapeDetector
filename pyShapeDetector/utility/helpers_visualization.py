@@ -220,6 +220,7 @@ def select_manually(
     **camera_options,
 ):
     elements = copy.deepcopy(elements)
+    # print(fixed_elements)
 
     from pyShapeDetector.geometry import OrientedBoundingBox, TriangleMesh, PointCloud
     from pyShapeDetector.primitives import Primitive
@@ -545,7 +546,7 @@ def select_manually(
 
     vis.run()
     vis.destroy_window()
-    # vis.close()
+    vis.close()
 
     if return_finish_flag:
         return data["selected"], data["finish"]
