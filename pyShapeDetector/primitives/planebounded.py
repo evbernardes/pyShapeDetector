@@ -933,11 +933,17 @@ class PlaneBounded(Plane):
 
     @staticmethod
     def glue_planes_with_intersections(
-        shapes, intersections, fit_separated=False, add_as_inliers=False
+        shapes, intersections, fit_mode="segment_intersection", add_as_inliers=False
     ):
         """Glue shapes using intersections in a dict.
 
         Also returns dictionary of all intersection lines.
+
+        `fit_mode` decides how lines are supposed to be added to planes:
+            "direct": line is added exactly as input
+            "separated": two lines are created, each one fitted to each plane
+            "segment_union": a union of the separated lines is used
+            "segment_intersection": an intersection of separated liens is used
 
         See: group_shape_groups, fuse_shape_groups, glue_nearby_planes
 
@@ -947,8 +953,9 @@ class PlaneBounded(Plane):
             List containing all shapes to be glued.
         intersections : dict
             Dictionary with keys of type `(i, j)` and values of type Primitive.Line.
-        fit_separated : bool, optional
-            If True, find projections separated for each shape. Default: True.
+        fit_mode : string, optional
+            Decides how to treat line for each pair of planes to be glued.
+            Default: "segment_intersection".
         add_as_inliers : bool, optional
             If True, adds new vertex points as inliers too. Default: False.
 
@@ -957,8 +964,19 @@ class PlaneBounded(Plane):
         list of Line instances
             Only intersections that were actually used
         """
+        fit_mode_options = [
+            "direct",
+            "separated",
+            "segment_union",
+            "segment_intersection",
+        ]
 
-        # new_intersections = {}
+        if fit_mode not in fit_mode_options:
+            raise ValueError(
+                "fit_mode must be one of the options in "
+                f"{fit_mode_options}, got {fit_mode}."
+            )
+
         lines = []
 
         for (i, j), line in intersections.items():
@@ -971,28 +989,24 @@ class PlaneBounded(Plane):
             if not shapes[i].is_convex or not shapes[j].is_convex:
                 continue
 
-            # new_intersections[i, j] = line
             lines.append(line)
 
-            if fit_separated:
-                lines_ij = [
-                    line.get_fitted_to_points(shapes[i].vertices),
-                    line.get_fitted_to_points(shapes[j].vertices),
-                ]
+            if fit_mode == "direct":
+                line_i = line_j = line
+            else:
+                line_i = line.get_fitted_to_points(shapes[i].vertices)
+                line_j = line.get_fitted_to_points(shapes[j].vertices)
+                if fit_mode == "segment_union":
+                    line_i = line_j = line_i.get_segment_union(line_j)
+                if fit_mode == "segment_intersection":
+                    line_i = line_j = line_i.get_segment_intersection(line_j)
 
-            if not fit_separated:
-                projections = np.array(
-                    [
-                        line.projections_limits_from_points(shapes[i].vertices),
-                        line.projections_limits_from_points(shapes[j].vertices),
-                    ]
-                )
+            if line_i is None or line_j is None:
+                # this happens if fit_mode == "segment_intersection and the
+                # lines do not intersect
+                continue
 
-                points = line.points_from_projections(
-                    [projections.min(axis=1).max(), projections.max(axis=1).min()]
-                )
-
-                lines_ij = [line.get_fitted_to_points(points)] * 2
+            lines_ij = [line_i, line_j]
 
             for shape, line_ in zip([shapes[i], shapes[j]], lines_ij):
                 # line_ = line.get_line_fitted_to_projections(shape.vertices)
