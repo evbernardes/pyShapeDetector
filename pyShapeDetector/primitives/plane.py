@@ -1548,7 +1548,7 @@ class Plane(Primitive):
             center_face = center + sign * normal / 2
             points = center_face + _get_vertices_from_vectors(vx, vy)
 
-            plane_unbounded = Plane.from_normal_point(normal, center_face)
+            plane_unbounded = Plane.from_normal_point(sign * normal, center_face)
             plane_unbounded.set_inliers(points)
 
             with warnings.catch_warnings():
