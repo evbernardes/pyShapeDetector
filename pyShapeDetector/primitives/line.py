@@ -106,6 +106,7 @@ class Line(Primitive):
     from_two_points
     from_vertices
     from_plane_intersection
+    get_extended
     get_angle
     get_fitted_to_points
     closest_to_line
@@ -443,6 +444,23 @@ class Line(Primitive):
             line = line.get_fitted_to_points(points)
 
         return line
+
+    def get_extended(self, multiplier):
+        """Get extended (or shrinked) version of line.
+
+        Parameters
+        ----------
+        multiplier : float
+            Extension value.
+
+        Returns
+        -------
+        Line
+        """
+        new_points = self.center + (self.points - self.center) * multiplier
+        new_line = Line.from_two_points(*new_points)
+        new_line.color = self.color
+        return new_line
 
     def get_angle(self, other_element):
         """Calculates angle between line axis and other element's axis.
