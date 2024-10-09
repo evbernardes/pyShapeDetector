@@ -155,6 +155,7 @@ class PlaneBounded(Plane):
     intersection_vertices
     simplify_vertices
     contract_boundary
+    add_line
     glue_planes_with_intersections
     get_convex
     """
@@ -931,6 +932,35 @@ class PlaneBounded(Plane):
         vertices_new = points[indices_unique]
         self.set_vertices(vertices_new, flatten=True, convex=self.is_convex)
 
+    def add_line(self, line, add_as_inliers=False):
+        """Add line to plane.
+
+        For convex planes: add both extremities of the line to its vertices
+        and recalculate boundary.
+
+        For non-convex planes: not implemented.
+
+        See: glue_planes_with_intersections
+
+        Parameters
+        ----------
+        line : Line
+            Line instance to be added.
+        add_as_inliers : bool, optional
+            If True, adds new vertex points as inliers too. Default: False.
+        """
+        from .line import Line
+
+        if not isinstance(line, Line):
+            raise ValueError(f"Expected instance of Line, got {type(line)}.")
+
+        if self.is_convex:
+            self.add_bound_points([line.beginning, line.ending])
+            if add_as_inliers:
+                self.add_inliers([line.beginning, line.ending])
+        else:
+            warnings.warn("Not yet implemented for non-convex planes.")
+
     @staticmethod
     def glue_planes_with_intersections(
         shapes, intersections, fit_mode="segment_intersection", add_as_inliers=False
@@ -1006,15 +1036,18 @@ class PlaneBounded(Plane):
                 # lines do not intersect
                 continue
 
-            lines_ij = [line_i, line_j]
+            shapes[i].add_line(line_i)
+            shapes[j].add_line(line_j)
 
-            for shape, line_ in zip([shapes[i], shapes[j]], lines_ij):
-                # line_ = line.get_line_fitted_to_projections(shape.vertices)
-                # TODO: add vertices too?
-                shape.add_bound_points([line_.beginning, line_.ending])
-                if add_as_inliers:
-                    shape.add_inliers([line_.beginning, line_.ending])
-                # new_points = [line.beginning, line.ending]
+            # lines_ij = [line_i, line_j]
+
+            # for shape, line_ in zip([shapes[i], shapes[j]], lines_ij):
+            #     # line_ = line.get_line_fitted_to_projections(shape.vertices)
+            #     # TODO: add vertices too?
+            #     shape.add_bound_points([line_.beginning, line_.ending])
+            #     if add_as_inliers:
+            #         shape.add_inliers([line_.beginning, line_.ending])
+            #     # new_points = [line.beginning, line.ending]
 
         return lines
 
