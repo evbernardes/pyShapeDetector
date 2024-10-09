@@ -797,7 +797,7 @@ class Line(Primitive):
         if distance_eps < 0 or angle_eps < 0:
             raise ValueError("distance_eps and angle_eps should be non-negative.")
 
-        distance_test = np.all(other_line.get_distances(self.points) <= distance_eps)
+        distance_test = np.all(self.get_distances(other_line.points) <= distance_eps)
         angle_test = self.axis.dot(other_line.axis) <= np.cos(angle_eps)
 
         return distance_test and angle_test
