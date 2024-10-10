@@ -7,6 +7,8 @@ Created on Wed Feb 28 10:59:02 2024
 """
 import copy
 import warnings
+import signal
+import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from open3d import visualization
@@ -332,7 +334,6 @@ def select_manually(
     # these are used for distance testing with the mouse
     elements_distance = []
     for elem in elements:
-
         if isinstance(elem, Primitive):
             elements_distance.append(elem)
 
@@ -528,9 +529,6 @@ def select_manually(
             else:
                 distances.append(elem.get_distances(point))
 
-        # distances = [
-        #     _get_element_distance(elem, point) for elem in data["elements_painted"]
-        # ]
         data["i_old"] = data["i"]
         data["i"] = np.argmin(distances)
         if data["mouse_toggle"]:
@@ -538,6 +536,14 @@ def select_manually(
         update(vis)
 
     vis = visualization.VisualizerWithKeyCallback()
+
+    # Without this SIGINT handling, stopping the program resets Python kernel
+    def signal_handler(sig, frame):
+        vis.destroy_window()
+        vis.close()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
 
     vis.register_key_action_callback(ord("S"), toggle)
     vis.register_key_action_callback(ord("D"), next)
@@ -632,7 +638,6 @@ def select_combinations_manually(
     window_name="",
     **camera_options,
 ):
-
     if not isinstance(elements, list):
         raise ValueError("'elements' must be a list.")
 
