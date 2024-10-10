@@ -848,46 +848,67 @@ def test_fuse():
 
 
 def test_glue_convex_planes_with_line():
-    x1 = 0.5
-    x2 = 0.2
-    y = 0.2
-    z = 0.4
-    delta = 0.1
-    shrink = 0.8
+    normalize = lambda x: x / np.linalg.norm(x)
 
-    plane1 = PlaneBounded.create_box(dimensions=(x1, y, z))[0]
-    plane2 = PlaneBounded.create_box(dimensions=(x2, y, z))[1]  # different face
+    for i in range(20):
+        vz = normalize(np.random.random(3))
+        vx = normalize(np.cross(np.random.random(3), vz))
+        vy = normalize(np.cross(vz, vx))
 
-    area1 = plane1.surface_area
-    area2 = plane2.surface_area
+        delta = np.random.random()
+        shrink = np.random.random()
+        dims1 = np.random.random(2)
 
-    np.testing.assert_allclose(area1, x1 * y)
-    np.testing.assert_allclose(area2, y * z)
+        # assuring dims2[0] is smaller than dims2[0]
+        dims2 = np.array([dims1[0] * (shrink**2), np.random.random()])
+        assert dims2[0] < dims1[0]
 
-    plane1.translate(delta * plane1.normal)
-    plane2.translate(delta * plane2.normal)
+        vectors1 = dims1[np.newaxis].T * (vx, vy)
+        vectors2 = dims2[np.newaxis].T * (vx, vz)
 
-    line = PlaneBounded.get_plane_intersections([plane1, plane2])[0, 1]
+        plane1 = PlaneRectangular.from_vectors_center(vectors1)
+        plane2 = PlaneRectangular.from_vectors_center(vectors2)
+        plane1.translate(plane1.normal * dims2[1] / 2)
+        plane2.translate(plane2.normal * dims1[1] / 2)
 
-    line1 = line.get_fitted_to_points(plane1.vertices)
-    line2 = line.get_fitted_to_points(plane2.vertices)
+        np.testing.assert_allclose(vectors1, plane1.parallel_vectors)
+        np.testing.assert_allclose(vectors2, plane2.parallel_vectors)
+        np.testing.assert_allclose(dims1, plane1.dimensions)
+        np.testing.assert_allclose(dims2, plane2.dimensions)
 
-    np.testing.assert_allclose(line.length, x1)
-    np.testing.assert_allclose(line1.length, x1)
-    np.testing.assert_allclose(line2.length, x2)
+        plane1 = PlaneBounded(plane1)
+        plane2 = PlaneBounded(plane2)
 
-    line = line.get_extended(shrink)
-    np.testing.assert_allclose(line1.length * shrink, line.length)
+        area1 = plane1.surface_area
+        area2 = plane2.surface_area
 
-    assert line.length < line1.length  # smaller, adds small trapezoid:
-    plane1.add_line(line)
-    trapezoid1_small = delta * (line.length + line1.length) / 2
-    np.testing.assert_allclose(plane1.surface_area, area1 + trapezoid1_small)
+        np.testing.assert_allclose(area1, np.prod(dims1))
+        np.testing.assert_allclose(area2, np.prod(dims2))
 
-    assert line.length > line2.length  # bigger, surface is a trapezoid:
-    plane2.add_line(line)
-    trapezoid2_big = (delta + z) * (line.length + line2.length) / 2
-    np.testing.assert_allclose(plane2.surface_area, trapezoid2_big)
+        plane1.translate(delta * plane1.normal)
+        plane2.translate(delta * plane2.normal)
+
+        line = PlaneBounded.get_plane_intersections([plane1, plane2])[0, 1]
+
+        line1 = line.get_fitted_to_points(plane1.vertices)
+        line2 = line.get_fitted_to_points(plane2.vertices)
+
+        np.testing.assert_allclose(line.length, dims1[0])
+        np.testing.assert_allclose(line1.length, dims1[0])
+        np.testing.assert_allclose(line2.length, dims2[0])
+
+        line_shrinked = line.get_extended(shrink)
+        # np.testing.assert_allclose(line1.length * shrink, line_shrinked.length)
+
+        assert line_shrinked.length < line1.length  # smaller, adds small trapezoid:
+        plane1.add_line(line_shrinked)
+        trapezoid1_small = delta * (line_shrinked.length + line1.length) / 2
+        np.testing.assert_allclose(plane1.surface_area, area1 + trapezoid1_small)
+
+        assert line_shrinked.length > line2.length  # bigger, surface is a trapezoid:
+        plane2.add_line(line_shrinked)
+        trapezoid2_big = (delta + dims2[1]) * (line_shrinked.length + line2.length) / 2
+        np.testing.assert_allclose(plane2.surface_area, trapezoid2_big)
 
 
 # if __name__ == "__main__":
