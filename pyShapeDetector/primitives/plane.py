@@ -552,6 +552,43 @@ class Plane(Primitive):
     #     [mesh.paint_uniform_color(color) for mesh in meshes]
     #     return meshes
 
+    @staticmethod
+    def fuse(shapes, detector=None, ignore_extra_data=False, **extra_options):
+        """Find weigthed average of shapes, where the weight is the fitness
+        metric.
+
+        If a detector is given, use it to compute the metrics of the resulting
+        average shapes.
+
+        Also copies holes.
+
+        Parameters
+        ----------
+        shapes : list
+            Grouped shapes. All shapes must be of the same type.
+        detector : instance of some Detector, optional
+            Used to recompute metrics. Default: None.
+        ignore_extra_data : boolean, optional
+            If True, ignore everything and only fuse model. Default: False.
+
+        Returns
+        -------
+        Plane
+            Averaged Plane instance.
+        """
+        fused_plane = Primitive.fuse(shapes, detector, ignore_extra_data)
+        model = fused_plane.model
+
+        from .planebounded import PlaneBounded
+        all_holes = []
+        for shape in shapes:
+            for hole in shape._holes:
+                new_hole = PlaneBounded(model, hole.vertices, convex=hole.is_convex)
+                all_holes.append(new_hole)
+        fused_plane._holes = all_holes
+
+        return fused_plane
+
     @classmethod
     def from_normal_dist(cls, normal, dist):
         """Creates plane from normal vector and distance to origin.

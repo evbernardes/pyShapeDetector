@@ -631,6 +631,7 @@ class PlaneBounded(Plane):
             )
 
         shape = PlaneBounded(plane_unbounded.model, vertices)
+        shape._holes = plane_unbounded._holes
 
         if not ignore_extra_data:
             shape._inliers = plane_unbounded._inliers
