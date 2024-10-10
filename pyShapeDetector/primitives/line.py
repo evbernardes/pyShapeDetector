@@ -772,7 +772,7 @@ class Line(Primitive):
         new_vertices = [line.beginning for line in lines]
         return [np.where(np.all(v == vertices, axis=1))[0][0] for v in new_vertices]
 
-    def check_colinear(self, other_line, distance_eps=1e-8, angle_eps=1e-8):
+    def check_colinear(self, other_line, distance_eps=1e-5, angle_eps=1e-5):
         """Check if lines are colinear.
 
         Parameters
@@ -804,16 +804,14 @@ class Line(Primitive):
 
         return distance_test and angle_test
 
-    def get_segment_intersection(
-        self, colinear_line, distance_eps=1e-8, angle_eps=1e-8
-    ):
+    def get_segment_intersection(self, other_line, distance_eps=1e-8, angle_eps=1e-5):
         """Return line intersection.
 
         Should only be used with colinear lines.
 
         Parameters
         ----------
-        colinear_line : Line
+        other_line : Line
             Colinear line.
         distance_eps : float, optional
             Distance threshold to decide if line is colinear. Default: 1e-8.
@@ -826,11 +824,11 @@ class Line(Primitive):
             Line intersection
         """
 
-        if not self.check_colinear(colinear_line, distance_eps, angle_eps):
+        if not self.check_colinear(other_line, distance_eps, angle_eps):
             raise ValueError("Lines are not colinear.")
 
         a_start, a_ending = self.projections_limits_from_points(self.points)
-        b_start, b_ending = self.projections_limits_from_points(colinear_line.points)
+        b_start, b_ending = self.projections_limits_from_points(other_line.points)
 
         if (b_start > a_ending) or (a_start > b_ending):
             return None
