@@ -468,7 +468,7 @@ class PlaneRectangular(Plane):
         return shape
 
     @classmethod
-    def from_vectors_center(cls, vectors, center):
+    def from_vectors_center(cls, vectors, center=(0, 0, 0)):
         """
         Creates plane from two vectors representing rectangle and center point.
 
@@ -476,8 +476,8 @@ class PlaneRectangular(Plane):
         ----------
         vectors : arraylike of shape (2, 3)
             The two orthogonal unit vectors defining the rectangle plane.
-        center : arraylike of length 3
-            Center of rectangle.
+        center : arraylike of length 3, optional.
+            Center of rectangle. Default: (0, 0, 0).
 
         Returns
         -------
