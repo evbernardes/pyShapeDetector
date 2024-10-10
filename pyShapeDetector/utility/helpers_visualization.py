@@ -218,6 +218,7 @@ def select_manually(
     show_plane_boundaries=False,
     pre_selected=None,
     ELEMENTS_NUMBER_WARNING=60,
+    NUM_POINTS_FOR_DISTANCE_CALC=30,
     **camera_options,
 ):
     elements = copy.deepcopy(elements)
@@ -331,7 +332,6 @@ def select_manually(
     # these are used for distance testing with the mouse
     elements_distance = []
     for elem in elements:
-        NUM_POINTS_FOR_DISTANCE_CALC = 40
 
         if isinstance(elem, Primitive):
             elements_distance.append(elem)
@@ -629,8 +629,10 @@ def select_combinations_manually(
     return_grouped=False,
     bbox_expand=0.0,
     paint_selected=True,
+    window_name="",
     **camera_options,
 ):
+
     if not isinstance(elements, list):
         raise ValueError("'elements' must be a list.")
 
@@ -656,6 +658,9 @@ def select_combinations_manually(
 
     partitions = np.arange(N := len(elements))
 
+    if window_name != "":
+        window_name += " - "
+
     for i in range(N):
         if elements[i] is None:
             # if len(elements_test[i]) == 0:
@@ -670,7 +675,7 @@ def select_combinations_manually(
         selected, finish_flag = select_manually(
             elements[i + 1 :],
             fixed_elements=elements_fused[i],
-            window_name=f"Element {i}",
+            window_name=f"{window_name}Element {i}",
             bbox_expand=bbox_expand,
             paint_selected=paint_selected,
             return_finish_flag=True,
