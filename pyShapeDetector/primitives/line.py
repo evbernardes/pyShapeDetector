@@ -388,7 +388,7 @@ class Line(Primitive):
         """
         axis = np.cross(plane1.normal, plane2.normal)
         norm = np.linalg.norm(axis)
-        if abs(np.arcsin(norm)) < eps_angle:
+        if norm < np.sin(eps_angle):
             if not intersect_parallel:
                 return None
 
