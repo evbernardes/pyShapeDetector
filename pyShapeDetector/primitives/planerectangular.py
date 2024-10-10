@@ -57,6 +57,7 @@ class PlaneRectangular(Plane):
     is_hole
 
     parallel_vectors
+    dimensions
     center
     vertices
     vertices
@@ -160,6 +161,10 @@ class PlaneRectangular(Plane):
     @property
     def parallel_vectors(self):
         return self._parallel_vectors
+
+    @property
+    def dimensions(self):
+        return np.linalg.norm(self.parallel_vectors, axis=1)
 
     @property
     def center(self):
