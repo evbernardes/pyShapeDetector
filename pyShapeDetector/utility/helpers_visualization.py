@@ -217,10 +217,17 @@ def select_manually(
     return_finish_flag=False,
     show_plane_boundaries=False,
     pre_selected=None,
+    ELEMENTS_NUMBER_WARNING=60,
     **camera_options,
 ):
     elements = copy.deepcopy(elements)
     # print(fixed_elements)
+
+    if (L := len(elements)) > ELEMENTS_NUMBER_WARNING:
+        warnings.warn(
+            f"There are {L} elements, this is too many and may "
+            "cause segmentation fault errors."
+        )
 
     from pyShapeDetector.geometry import OrientedBoundingBox, TriangleMesh, PointCloud
     from pyShapeDetector.primitives import Primitive
