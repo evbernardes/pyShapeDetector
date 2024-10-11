@@ -117,7 +117,8 @@ class Line(Primitive):
     point_from_intersection
     get_LineSet_from_list
     get_simplified_loop_indices
-    check_colinear
+    check_axes_coplanar
+    check_axes_colinear
     get_segment_intersection
     get_segment_union
     """
@@ -772,7 +773,26 @@ class Line(Primitive):
         new_vertices = [line.beginning for line in lines]
         return [np.where(np.all(v == vertices, axis=1))[0][0] for v in new_vertices]
 
-    def check_colinear(self, other_line, distance_eps=1e-5, angle_eps=1e-5):
+    def check_axes_coplanar(self, other_line, eps=1e-7):
+        """Check if lines are colinear.
+
+        Parameters
+        ----------
+        other_line : Line
+            Other line.
+        eps : float, optional
+            Threshold to decide if line is colinear. Default: 1e-5.
+
+        Returns
+        -------
+        bool
+            True if lines are coplanar.
+        """
+        vector_distance = self.beginning - other_line.beginning
+        vector_cross = np.cross(self.axis, other_line.axis)
+        return abs(vector_distance.dot(vector_cross)) <= eps
+
+    def check_axes_colinear(self, other_line, distance_eps=1e-5, angle_eps=1e-5):
         """Check if lines are colinear.
 
         Parameters
@@ -780,9 +800,9 @@ class Line(Primitive):
         other_line : Line
             Other line.
         distance_eps : float, optional
-            Distance threshold to decide if line is colinear. Default: 1e-8.
+            Distance threshold to decide if line is colinear. Default: 1e-5.
         angle_eps : float, optional
-            Angle threshold to decide if line is colinear. Default: 1e-8.
+            Angle threshold to decide if line is colinear. Default: 1e-5.
 
         Returns
         -------
@@ -824,7 +844,7 @@ class Line(Primitive):
             Line intersection
         """
 
-        if not self.check_colinear(other_line, distance_eps, angle_eps):
+        if not self.check_axes_colinear(other_line, distance_eps, angle_eps):
             raise ValueError("Lines are not colinear.")
 
         a_start, a_ending = self.projections_limits_from_points(self.points)
@@ -859,7 +879,7 @@ class Line(Primitive):
             Line union.
         """
 
-        if not self.check_colinear(colinear_line, distance_eps, angle_eps):
+        if not self.check_axes_colinear(colinear_line, distance_eps, angle_eps):
             raise ValueError("Lines are not colinear.")
 
         points = np.vstack([self.points, colinear_line.points])

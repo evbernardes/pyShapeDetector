@@ -12,7 +12,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 import warnings
 import tempfile
-from itertools import combinations
+from itertools import combinations, pairwise
 
 from scipy.spatial.transform import Rotation
 
@@ -47,6 +47,10 @@ all_primitives_regular_bounded = [
     Cone,
 ]
 all_primitives_bounded = all_primitives_regular_bounded + [Line]
+
+
+def normalized(x):
+    return x / np.linalg.norm(x)
 
 
 def rmse(x):
@@ -847,13 +851,54 @@ def test_fuse():
         # assert_allclose(shape_fused.model, np.mean(models, axis=0))
 
 
-def test_glue_convex_planes_with_line():
-    normalize = lambda x: x / np.linalg.norm(x)
+def test_line_checks():
+    points = np.random.random([50, 3]) * 10
 
+    plane = PlaneBounded.fit(points)
+    points = plane.flatten_points(points)
+    plane.set_inliers(points)
+    lines = plane.vertices_lines
+
+    for line1, line2 in combinations(lines, 2):
+        assert line1.check_axes_coplanar(line2)
+        assert not line1.check_axes_colinear(line2)
+
+    # out of plane
+    lines[0].translate(plane.normal)
+
+    for line2 in lines[1:]:
+        assert not lines[0].check_axes_coplanar(line2)
+
+    # back to plane, displaced along planne
+    lines[0].translate(-plane.normal)
+    delta = np.cross(plane.normal, np.random.random(3))
+    lines[0].translate(delta)
+    for line2 in lines[1:]:
+        assert lines[0].check_axes_coplanar(line2)
+    lines[0].translate(-delta)  # back to boundary
+
+    for line in lines:
+        point = line.beginning + np.random.random() * line.axis
+        other_line = Line.from_point_vector(point, line.axis)
+        assert line.check_axes_colinear(other_line)
+        other_line.translate(delta)
+        assert not line.check_axes_colinear(other_line)
+        other_line.translate(-delta)
+
+    lines.append(lines[0].copy())
+
+    for line1, line2 in pairwise(lines):
+        intersection = line1.point_from_intersection(line2)
+        assert_allclose(intersection, line1.ending)
+        line1.translate(plane.normal)
+        assert line1.point_from_intersection(line2) is None
+
+
+def test_glue_convex_planes_with_line():
     for i in range(20):
-        vz = normalize(np.random.random(3))
-        vx = normalize(np.cross(np.random.random(3), vz))
-        vy = normalize(np.cross(vz, vx))
+        vz = normalized(np.random.random(3))
+        vx = normalized(np.cross(np.random.random(3), vz))
+        vy = normalized(np.cross(vz, vx))
 
         delta = np.random.random()
         shrink = np.random.random()
