@@ -933,7 +933,7 @@ class PlaneBounded(Plane):
         vertices_new = points[indices_unique]
         self.set_vertices(vertices_new, flatten=True, convex=self.is_convex)
 
-    def add_line(self, line, add_as_inliers=False):
+    def add_line(self, line, add_as_inliers=False, split=False):
         """Add line to plane.
 
         For convex planes: add both extremities of the line to its vertices
@@ -949,11 +949,18 @@ class PlaneBounded(Plane):
             Line instance to be added.
         add_as_inliers : bool, optional
             If True, adds new vertex points as inliers too. Default: False.
+        split : bool, optional
+            If True, split planes at intersection and keep bigger one.
+            Default: False.
+
         """
         from .line import Line
 
         if not isinstance(line, Line):
             raise ValueError(f"Expected instance of Line, got {type(line)}.")
+
+        if split:
+            self._vertices = self.split(line, return_bigger=True)._vertices
 
         if self.is_convex:
             self.add_bound_points([line.beginning, line.ending])
@@ -964,7 +971,11 @@ class PlaneBounded(Plane):
 
     @staticmethod
     def glue_planes_with_intersections(
-        shapes, intersections, fit_mode="segment_intersection", add_as_inliers=False
+        shapes,
+        intersections,
+        fit_mode="segment_intersection",
+        add_as_inliers=False,
+        split=False,
     ):
         """Glue shapes using intersections in a dict.
 
@@ -989,6 +1000,9 @@ class PlaneBounded(Plane):
             Default: "segment_intersection".
         add_as_inliers : bool, optional
             If True, adds new vertex points as inliers too. Default: False.
+        split : bool, optional
+            If True, split planes at intersection and keep bigger one.
+            Default: False.
 
         Returns
         -------
@@ -1037,18 +1051,8 @@ class PlaneBounded(Plane):
                 # lines do not intersect
                 continue
 
-            shapes[i].add_line(line_i)
-            shapes[j].add_line(line_j)
-
-            # lines_ij = [line_i, line_j]
-
-            # for shape, line_ in zip([shapes[i], shapes[j]], lines_ij):
-            #     # line_ = line.get_line_fitted_to_projections(shape.vertices)
-            #     # TODO: add vertices too?
-            #     shape.add_bound_points([line_.beginning, line_.ending])
-            #     if add_as_inliers:
-            #         shape.add_inliers([line_.beginning, line_.ending])
-            #     # new_points = [line.beginning, line.ending]
+            shapes[i].add_line(line_i, split=split)
+            shapes[j].add_line(line_j, split=split)
 
         return lines
 
@@ -1076,7 +1080,7 @@ class PlaneBounded(Plane):
                 plane._holes = [p.get_convex() for p in plane._holes]
         return plane
 
-    def split(self, element):
+    def split(self, element, return_bigger=False):
         """Split plane in two according to line.
 
         If a plane is given instead, then the line intersection between then is
@@ -1086,6 +1090,8 @@ class PlaneBounded(Plane):
         ----------
         element : Line or Plane
             Line or intersecting Plane used to split original plane.
+        return_bigger : bool, optional
+            If True, return only bigger plane. Default: False.
 
         Returns
         -------
@@ -1118,7 +1124,9 @@ class PlaneBounded(Plane):
             if not self.is_hole:
                 warnings.warn(f"{len(idx)} intersections found instead of 2.")
 
-            if right[0]:
+            if return_bigger:
+                return self
+            elif right[0]:
                 return [None, self]
             else:
                 return [self, None]
@@ -1157,6 +1165,16 @@ class PlaneBounded(Plane):
             for plane, hole in zip(planes, split_holes):
                 if hole is not None and plane is not None:
                     plane.add_holes(hole)
+
+        if return_bigger:
+            if planes[0] is None:
+                planes = planes[1]
+            elif planes[1] is None:
+                planes = planes[0]
+            elif planes[0].surface_area > planes[1].surface_area:
+                planes = planes[0]
+            else:
+                planes = planes[1]
 
         return planes
 
