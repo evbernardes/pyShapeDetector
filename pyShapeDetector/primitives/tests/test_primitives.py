@@ -322,6 +322,8 @@ def test_get_rectangular_vectors_from_points():
 
         (V1, V2), center = plane.get_rectangular_vectors_from_points(return_center=True)
 
+        assert abs(plane.get_distances(center)) < 1e-8
+
         # making vectors slightly bigger for boundary points
         V1 *= 1 + 1e-7
         V2 *= 1 + 1e-7
@@ -860,29 +862,29 @@ def test_line_checks():
     lines = plane.vertices_lines
 
     for line1, line2 in combinations(lines, 2):
-        assert line1.check_axes_coplanar(line2)
-        assert not line1.check_axes_colinear(line2)
+        assert line1.check_coplanar(line2)
+        assert not line1.check_colinear(line2)
 
     # out of plane
     lines[0].translate(plane.normal)
 
     for line2 in lines[1:]:
-        assert not lines[0].check_axes_coplanar(line2)
+        assert not lines[0].check_coplanar(line2)
 
     # back to plane, displaced along planne
     lines[0].translate(-plane.normal)
     delta = np.cross(plane.normal, np.random.random(3))
     lines[0].translate(delta)
     for line2 in lines[1:]:
-        assert lines[0].check_axes_coplanar(line2)
+        assert lines[0].check_coplanar(line2)
     lines[0].translate(-delta)  # back to boundary
 
     for line in lines:
         point = line.beginning + np.random.random() * line.axis
         other_line = Line.from_point_vector(point, line.axis)
-        assert line.check_axes_colinear(other_line)
+        assert line.check_colinear(other_line)
         other_line.translate(delta)
-        assert not line.check_axes_colinear(other_line)
+        assert not line.check_colinear(other_line)
         other_line.translate(-delta)
 
     lines.append(lines[0].copy())

@@ -1332,7 +1332,7 @@ class Plane(Primitive):
         else:
             points = _set_and_check_3d_array(points, name="points")
 
-        center = midrange(points)
+        center = self.flatten_points([midrange(points)])[0]
         delta = points - center
 
         delta_projection, rot = self.get_projections(delta, return_rotation=True)
