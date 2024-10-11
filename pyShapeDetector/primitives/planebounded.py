@@ -960,7 +960,9 @@ class PlaneBounded(Plane):
             raise ValueError(f"Expected instance of Line, got {type(line)}.")
 
         if split:
-            self._vertices = self.split(line, return_bigger=True)._vertices
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                self._vertices = self.split(line, return_bigger=True)._vertices
 
         if self.is_convex:
             self.add_bound_points([line.beginning, line.ending])
