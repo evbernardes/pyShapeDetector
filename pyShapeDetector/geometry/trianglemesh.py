@@ -24,6 +24,7 @@ class TriangleMesh(Open3D_Geometry):
 
     Extra Attributes
     ----------------
+    surface_area
     volume
     curvature
     has_curvature
@@ -50,6 +51,10 @@ class TriangleMesh(Open3D_Geometry):
     triangulate_earclipping
     fuse_vertices_triangles
     """
+
+    @property
+    def surface_area(self):
+        return self.get_surface_area()
 
     @classmethod
     def create_arrow_from_points(
