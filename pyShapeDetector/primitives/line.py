@@ -15,6 +15,7 @@ from open3d.utility import Vector2iVector, Vector3dVector
 
 from .primitivebase import Primitive
 from .cylinder import Cylinder
+from .plane import Plane
 
 
 class Line(Primitive):
@@ -117,8 +118,8 @@ class Line(Primitive):
     point_from_intersection
     get_LineSet_from_list
     get_simplified_loop_indices
-    check_axes_coplanar
-    check_axes_colinear
+    check_coplanar
+    check_colinear
     get_segment_intersection
     get_segment_union
     """
@@ -773,12 +774,12 @@ class Line(Primitive):
         new_vertices = [line.beginning for line in lines]
         return [np.where(np.all(v == vertices, axis=1))[0][0] for v in new_vertices]
 
-    def check_axes_coplanar(self, other_line, eps=1e-7):
+    def check_coplanar(self, other, eps=1e-7):
         """Check if lines are colinear.
 
         Parameters
         ----------
-        other_line : Line
+        other : Line or Plane
             Other line.
         eps : float, optional
             Threshold to decide if line is colinear. Default: 1e-5.
@@ -786,13 +787,20 @@ class Line(Primitive):
         Returns
         -------
         bool
-            True if lines are coplanar.
+            True if elements are coplanar.
         """
-        vector_distance = self.beginning - other_line.beginning
-        vector_cross = np.cross(self.axis, other_line.axis)
-        return abs(vector_distance.dot(vector_cross)) <= eps
+        if isinstance(other, Line):
+            vector_distance = self.beginning - other.beginning
+            vector_cross = np.cross(self.axis, other.axis)
+            return abs(vector_distance.dot(vector_cross)) <= eps
+        elif isinstance(other, Plane):
+            dist_test = other.get_distances(self.beginning)
+            axes_test = other.normal.dot(self.axis)
+            return (abs(dist_test) <= eps) and (abs(axes_test) <= eps)
 
-    def check_axes_colinear(self, other_line, distance_eps=1e-5, angle_eps=1e-5):
+        raise ValueError(f"Expected Line or Plane instance, got {type(other)}.")
+
+    def check_colinear(self, other_line, distance_eps=1e-5, angle_eps=1e-5):
         """Check if lines are colinear.
 
         Parameters
@@ -844,7 +852,7 @@ class Line(Primitive):
             Line intersection
         """
 
-        if not self.check_axes_colinear(other_line, distance_eps, angle_eps):
+        if not self.check_colinear(other_line, distance_eps, angle_eps):
             raise ValueError("Lines are not colinear.")
 
         a_start, a_ending = self.projections_limits_from_points(self.points)
@@ -879,7 +887,7 @@ class Line(Primitive):
             Line union.
         """
 
-        if not self.check_axes_colinear(colinear_line, distance_eps, angle_eps):
+        if not self.check_colinear(colinear_line, distance_eps, angle_eps):
             raise ValueError("Lines are not colinear.")
 
         points = np.vstack([self.points, colinear_line.points])
