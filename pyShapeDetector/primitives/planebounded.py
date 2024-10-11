@@ -1076,6 +1076,90 @@ class PlaneBounded(Plane):
                 plane._holes = [p.get_convex() for p in plane._holes]
         return plane
 
+    def split(self, element):
+        """Split plane in two according to line.
+
+        If a plane is given instead, then the line intersection between then is
+        used to split the plane.
+
+        Parameters
+        ----------
+        element : Line or Plane
+            Line or intersecting Plane used to split original plane.
+
+        Returns
+        -------
+        list
+            List containing the two slit planes
+        """
+        from .line import Line
+
+        if isinstance(element, Plane):
+            element = Line.from_plane_intersection(self, element)
+            if element is None:
+                warnings.warn("Planes do not intersect, nothing is done.")
+                return
+
+        if not isinstance(element, Line):
+            raise ValueError(f"Expected Line or Plane, got {type(element)}.")
+
+        if not element.check_coplanar(self):
+            warnings.warn("Line is not coplanar, nothing is done.")
+            return
+
+        intersections = [
+            element.point_from_intersection(line) for line in self.vertices_lines
+        ]
+        vertices = self.vertices
+        idx = np.where([l is not None for l in intersections])[0]
+        direction = np.cross(self.normal, element.axis)
+        right = (vertices - element.beginning).dot(direction) > 0
+        if len(idx) != 2:
+            if not self.is_hole:
+                warnings.warn(f"{len(idx)} intersections found instead of 2.")
+
+            if right[0]:
+                return [None, self]
+            else:
+                return [self, None]
+        p1 = intersections[idx[0]]
+        p2 = intersections[idx[1]]
+
+        roll_idx = idx[0] + 1
+        vertices = np.roll(vertices, -roll_idx, axis=0)
+        right = np.roll(right, -roll_idx)
+
+        # not 100% sure why this works, but without this the planes would be
+        # twisted
+        if not right[0]:
+            p1, p2 = p2, p1
+
+        if self.is_hole:
+            # without this, the boundary of the split hole will be too close to
+            # plane boundary and triangulate wrong
+            # TODO: actually add hole points to the vertex in this case
+            eps = 1e-5
+            delta = eps * direction
+        else:
+            delta = 0
+        vertices_left = np.vstack([p2 - delta, vertices[~right], p1 - delta])
+        vertices_right = np.vstack([p1 + delta, vertices[right], p2 + delta])
+
+        planes = []
+        for vertices in [vertices_left, vertices_right]:
+            if len(vertices) < 3:
+                planes.append(None)
+            else:
+                planes.append(PlaneBounded(self.model, vertices, self.is_convex))
+
+        for hole in self.holes:
+            split_holes = hole.split(element)
+            for plane, hole in zip(planes, split_holes):
+                if hole is not None and plane is not None:
+                    plane.add_holes(hole)
+
+        return planes
+
     # @classmethod
     # def planes_ressample_and_triangulate(cls, planes, density, radius_ratio=None):
     #     """

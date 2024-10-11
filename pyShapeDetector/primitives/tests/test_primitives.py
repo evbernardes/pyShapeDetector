@@ -49,6 +49,14 @@ all_primitives_regular_bounded = [
 all_primitives_bounded = all_primitives_regular_bounded + [Line]
 
 
+def get_random_convex_plane(scale=10, N=50):
+    points = np.random.random([N, 3]) * scale
+    plane = PlaneBounded.fit(points)
+    points = plane.flatten_points(points)
+    plane.set_inliers(points)
+    return plane
+
+
 def normalized(x):
     return x / np.linalg.norm(x)
 
@@ -894,6 +902,35 @@ def test_line_checks():
         assert_allclose(intersection, line1.ending)
         line1.translate(plane.normal)
         assert line1.point_from_intersection(line2) is None
+
+
+def test_plane_split():
+    for i in range(20):
+        plane = get_random_convex_plane()
+        plane = PlaneBounded(plane.model, plane.vertices, convex=False)
+
+        (vx, vy), center = plane.get_rectangular_vectors_from_points(return_center=True)
+        line = Line.from_point_vector(center - vx / 2, vx)
+
+        radius = 0.5
+        hole = PlaneBounded.create_circle(center, plane.normal, 0.5)
+        plane.add_holes(hole)
+        hole.translate(2 * radius * vy / np.linalg.norm(vy))
+        plane.add_holes(hole)
+
+        # to be sure the holes are added correctly
+        assert_allclose(plane.surface_area, plane.mesh.surface_area)
+
+        plane_left, plane_right = plane.split(line)
+        assert_allclose(
+            plane.surface_area,
+            plane_left.surface_area + plane_right.surface_area,
+            rtol=1e-5,
+        )
+
+        # to be sure the holes are added split correctly
+        assert_allclose(plane_left.surface_area, plane_left.mesh.surface_area)
+        assert_allclose(plane_right.surface_area, plane_right.mesh.surface_area)
 
 
 def test_glue_convex_planes_with_line():
