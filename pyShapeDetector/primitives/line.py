@@ -289,8 +289,8 @@ class Line(Primitive):
 
     @classmethod
     def from_point_vector(cls, beginning, vector):
-        """Creates cylinder from center base point, vector and radius as
-        separated arguments.
+        """Creates line point and normed direction vector as separated
+        arguments.
 
         Parameters
         ----------
