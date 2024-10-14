@@ -752,7 +752,7 @@ class PlaneBounded(Plane):
         [mesh.paint_uniform_color(color) for mesh in meshes]
         return meshes
 
-    def set_vertices(self, vertices, flatten=True, convex=True):
+    def set_vertices(self, vertices, flatten=True, convex=None):
         """Flatten points according to plane model, get projections of
         flattened points in the model and compute its boundary using either
         the convex hull or alpha shapes.
@@ -768,10 +768,13 @@ class PlaneBounded(Plane):
         convex : bool, optinal
             If True, assumes the vertices are supposed to be convex and use
             ConvexHull. If False, assume vertices are directly given as a loop.
+            If nothing is given, assumes same convexity as before.
 
         """
         self._mesh = None
         vertices = np.asarray(vertices)
+        if convex is None:
+            convex = self.is_convex
 
         if vertices.shape[1] != 3:
             raise ValueError("Invalid shape of 'vertices' array.")
@@ -933,7 +936,7 @@ class PlaneBounded(Plane):
         vertices_new = points[indices_unique]
         self.set_vertices(vertices_new, flatten=True, convex=self.is_convex)
 
-    def add_line(self, line, add_as_inliers=False, split=False):
+    def add_line(self, line, add_as_inliers=False):
         """Add line to plane.
 
         For convex planes: add both extremities of the line to its vertices
@@ -958,11 +961,6 @@ class PlaneBounded(Plane):
 
         if not isinstance(line, Line):
             raise ValueError(f"Expected instance of Line, got {type(line)}.")
-
-        if split:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                self._vertices = self.split(line, return_bigger=True)._vertices
 
         if self.is_convex:
             self.add_bound_points([line.beginning, line.ending])
@@ -1024,39 +1022,55 @@ class PlaneBounded(Plane):
                 f"{fit_mode_options}, got {fit_mode}."
             )
 
-        lines = []
+        all_lines = []
 
         for (i, j), line in intersections.items():
+            shapes_to_glue = [shapes[i], shapes[j]]
+
             if not isinstance(shapes[i], PlaneBounded) or not isinstance(
                 shapes[j], PlaneBounded
             ):
                 # del intersections[i, j]
                 continue
 
-            if not shapes[i].is_convex or not shapes[j].is_convex:
+            if np.any([not shape.is_convex for shape in shapes_to_glue]):
                 continue
 
-            lines.append(line)
+            all_lines.append(line)
 
             if fit_mode == "direct":
-                line_i = line_j = line
+                lines = [line] * 2
+                # line_i = line_j = line
             else:
-                line_i = line.get_fitted_to_points(shapes[i].vertices)
-                line_j = line.get_fitted_to_points(shapes[j].vertices)
-                if fit_mode == "segment_union":
-                    line_i = line_j = line_i.get_segment_union(line_j)
-                if fit_mode == "segment_intersection":
-                    line_i = line_j = line_i.get_segment_intersection(line_j)
+                lines = [
+                    line.get_fitted_to_points(shape.vertices)
+                    for shape in shapes_to_glue
+                ]
 
-            if line_i is None or line_j is None:
+                if fit_mode == "segment_union":
+                    lines[0] = lines[1] = lines[0].get_segment_union(lines[1])
+                if fit_mode == "segment_intersection":
+                    lines[0] = lines[1] = lines[0].get_segment_intersection(lines[1])
+
+            if np.any([line is None for line in lines]):
                 # this happens if fit_mode == "segment_intersection and the
-                # lines do not intersect
+                # line segments do not intersect
                 continue
 
-            shapes[i].add_line(line_i, add_as_inliers=add_as_inliers, split=split)
-            shapes[j].add_line(line_j, add_as_inliers=add_as_inliers, split=split)
+            # if a split is caused, the plane is already glued
+            for shape, line in zip(shapes_to_glue, lines):
+                split_happened = False
+                if split:
+                    split_shape = shape.split(line, return_bigger=True)
+                    if split_happened := split_shape is shape:
+                        # did not split, try to add
+                        shape.add_line(line, add_as_inliers=add_as_inliers)
 
-        return lines
+                if not split_happened:
+                    # no need to add line
+                    shape.set_vertices(split_shape.vertices, flatten=False)
+
+        return all_lines
 
     def get_convex(self, apply_to_holes=False):
         """Get convex copy of bounded planes.
@@ -1124,7 +1138,10 @@ class PlaneBounded(Plane):
         right = (vertices - element.beginning).dot(direction) > 0
         if len(idx) != 2:
             if not self.is_hole:
-                warnings.warn(f"{len(idx)} intersections found instead of 2.")
+                warnings.warn(
+                    f"{len(idx)} intersections found instead of 2, "
+                    "no split was made."
+                )
 
             if return_bigger:
                 return self
