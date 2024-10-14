@@ -962,6 +962,10 @@ class PlaneBounded(Plane):
         if not isinstance(line, Line):
             raise ValueError(f"Expected instance of Line, got {type(line)}.")
 
+        if np.any(self.contains_projections(line.points)):
+            warnings.warn("At least one point of line inside plane, doing nothing.")
+            return
+
         if self.is_convex:
             self.add_bound_points([line.beginning, line.ending])
             if add_as_inliers:
