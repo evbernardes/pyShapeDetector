@@ -1030,8 +1030,8 @@ class PlaneBounded(Plane):
             if np.any([not isinstance(shape, PlaneBounded) for shape in to_glue]):
                 continue
 
-            if np.any([not shape.is_convex for shape in to_glue]):
-                continue
+            # if np.any([not shape.is_convex for shape in to_glue]):
+            #     continue
 
             all_lines.append(line)
 
