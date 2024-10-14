@@ -1027,10 +1027,9 @@ class PlaneBounded(Plane):
         for (i, j), line in intersections.items():
             shapes_to_glue = [shapes[i], shapes[j]]
 
-            if not isinstance(shapes[i], PlaneBounded) or not isinstance(
-                shapes[j], PlaneBounded
+            if np.any(
+                [not isinstance(shape, PlaneBounded) for shape in shapes_to_glue]
             ):
-                # del intersections[i, j]
                 continue
 
             if np.any([not shape.is_convex for shape in shapes_to_glue]):
