@@ -6,6 +6,7 @@ Created on Fri Oct  6 15:57:08 2023
 @author: ebernardes
 """
 from abc import ABC, abstractmethod
+import warnings
 import random
 import copy
 import numpy as np
@@ -183,6 +184,27 @@ class Line(Primitive):
         )
         line.paint_uniform_color(self.color)
         return line
+
+    def __init__(self, model, decimals=None):
+        """
+        Parameters
+        ----------
+        model : Line or list of 4 values
+            Parameters defining the shape model
+        decimals : int, optional
+            Number of decimal places to round to (default: 0). If
+            decimals is negative, it specifies the number of positions to
+            the left of the decimal point. Default: None.
+
+        Raises
+        ------
+        ValueError
+            If number of parameters is incompatible with Line model.
+        """
+        super().__init__(model, decimals)
+
+        if (length := self.length) < 1e-8:
+            warnings.warn(f"Line instance has very small length equal to {length}.")
 
     @staticmethod
     def fit(points, normals=None):
