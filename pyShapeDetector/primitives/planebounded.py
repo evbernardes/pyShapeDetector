@@ -1053,8 +1053,8 @@ class PlaneBounded(Plane):
                 # lines do not intersect
                 continue
 
-            shapes[i].add_line(line_i, split=split)
-            shapes[j].add_line(line_j, split=split)
+            shapes[i].add_line(line_i, add_as_inliers=add_as_inliers, split=split)
+            shapes[j].add_line(line_j, add_as_inliers=add_as_inliers, split=split)
 
         return lines
 
