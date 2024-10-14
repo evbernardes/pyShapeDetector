@@ -1060,7 +1060,9 @@ class PlaneBounded(Plane):
             for shape, line in zip(shapes_to_glue, lines):
                 split_happened = False
                 if split:
-                    split_shape = shape.split(line, return_bigger=True)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        split_shape = shape.split(line, return_bigger=True)
                     if split_happened := split_shape is shape:
                         # did not split, try to add
                         shape.add_line(line, add_as_inliers=add_as_inliers)
