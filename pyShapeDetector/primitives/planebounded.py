@@ -1025,14 +1025,12 @@ class PlaneBounded(Plane):
         all_lines = []
 
         for (i, j), line in intersections.items():
-            shapes_to_glue = [shapes[i], shapes[j]]
+            to_glue = [shapes[i], shapes[j]]
 
-            if np.any(
-                [not isinstance(shape, PlaneBounded) for shape in shapes_to_glue]
-            ):
+            if np.any([not isinstance(shape, PlaneBounded) for shape in to_glue]):
                 continue
 
-            if np.any([not shape.is_convex for shape in shapes_to_glue]):
+            if np.any([not shape.is_convex for shape in to_glue]):
                 continue
 
             all_lines.append(line)
@@ -1041,10 +1039,7 @@ class PlaneBounded(Plane):
                 lines = [line] * 2
                 # line_i = line_j = line
             else:
-                lines = [
-                    line.get_fitted_to_points(shape.vertices)
-                    for shape in shapes_to_glue
-                ]
+                lines = [line.get_fitted_to_points(shape.vertices) for shape in to_glue]
 
                 if fit_mode == "segment_union":
                     lines[0] = lines[1] = lines[0].get_segment_union(lines[1])
@@ -1057,7 +1052,7 @@ class PlaneBounded(Plane):
                 continue
 
             # if a split is caused, the plane is already glued
-            for shape, line in zip(shapes_to_glue, lines):
+            for shape, line in zip(to_glue, lines):
                 split_happened = False
                 if split:
                     with warnings.catch_warnings():
