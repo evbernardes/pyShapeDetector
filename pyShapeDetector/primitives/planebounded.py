@@ -940,7 +940,7 @@ class PlaneBounded(Plane):
         vertices_new = points[indices_unique]
         self.set_vertices(vertices_new, flatten=True, convex=self.is_convex)
 
-    def add_line(self, line, add_as_inliers=False, eps_adjust=1e-8):
+    def add_line(self, line, add_as_inliers=False, eps_adjust=1e-5):
         """Add line to plane.
 
         For convex planes: add both extremities of the line to its vertices
@@ -988,12 +988,15 @@ class PlaneBounded(Plane):
                 axis = -axis
 
             parallel_lines = [
-                Line.from_point_vector(p, axis).get_fitted_to_points(np.vstack([line.beginning, self.vertices]))
+                Line.from_point_vector(p, axis).get_fitted_to_points(
+                    np.vstack([line.beginning, self.vertices])
+                )
                 for p in line.points
             ]
 
             points_closest = [
-                line._get_closest_intersection_or_point(vertices_lines) + line.axis * eps_adjust
+                line._get_closest_intersection_or_point(vertices_lines)
+                + line.axis * eps_adjust
                 for line in parallel_lines
             ]
 
@@ -1011,11 +1014,29 @@ class PlaneBounded(Plane):
 
             union_polygon = unary_union([polygon_original, polygon_new])
 
-            if isinstance(union_polygon, MultiPolygon):
-                raise RuntimeError("Polygon union could not be calculated, "
-                                   "try changing eps_adjust.")
-            else:
-                new_points = self.get_points_from_projections(union_polygon.boundary.coords)
+            # try:
+            #     new_projections = union_polygon.boundary.coords
+
+            # except NotImplementedError:
+            #     warnings.warn(
+            #             "Polygon union could not be calculated, try changing eps_adjust."
+            #         )
+            #     new_projections = [geom.coords for geom in union_polygon.boundary.geoms]
+            #     new_projections = np.vstack(new_projections)
+
+            # new_points = self.get_points_from_projections(new_projections)
+
+            try:
+                new_points = self.get_points_from_projections(
+                    union_polygon.boundary.coords
+                )
+            except NotImplementedError:
+                if isinstance(union_polygon, MultiPolygon):
+                    raise RuntimeError(
+                        "Polygon union could not be calculated, "
+                        "try changing eps_adjust."
+                    )
+
             self.set_vertices(new_points, flatten=False, convex=False)
 
     @staticmethod
@@ -1024,7 +1045,7 @@ class PlaneBounded(Plane):
         intersections,
         fit_mode="segment_intersection",
         add_as_inliers=False,
-        split=False,
+        split=True,
     ):
         """Glue shapes using intersections in a dict.
 
@@ -1103,17 +1124,23 @@ class PlaneBounded(Plane):
             # if a split is caused, the plane is already glued
             for shape, line in zip(to_glue, lines):
                 split_happened = False
+
                 if split:
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
                         split_shape = shape.split(line, return_bigger=True)
-                    if split_happened := split_shape is shape:
+
+                    if split_happened := split_shape is not shape:
                         # did not split, try to add
-                        shape.add_line(line, add_as_inliers=add_as_inliers)
+                        # shape.add_line(line, add_as_inliers=add_as_inliers)
+                        shape.set_vertices(
+                            split_shape.vertices, flatten=False, convex=False
+                        )
 
                 if not split_happened:
                     # no need to add line
-                    shape.set_vertices(shape.vertices, flatten=False)
+                    shape.add_line(line, add_as_inliers=add_as_inliers)
+                    # shape.set_vertices(shape.vertices, flatten=False, convex=False)
 
         return all_lines
 
@@ -1177,12 +1204,14 @@ class PlaneBounded(Plane):
         intersections = [
             element.point_from_intersection(line) for line in self.vertices_lines
         ]
+
         idx = np.where([l is not None for l in intersections])[0]
 
         vertices = self.vertices
         direction = np.cross(self.normal, element.axis)
         right = (vertices - element.beginning).dot(direction) > 0
-        if len(idx) != 2:
+
+        if len(idx) < 2:
             if not self.is_hole:
                 warnings.warn(
                     f"{len(idx)} intersections found instead of 2, "
@@ -1195,10 +1224,22 @@ class PlaneBounded(Plane):
                 return [None, self]
             else:
                 return [self, None]
-        p1 = intersections[idx[0]]
-        p2 = intersections[idx[1]]
 
-        roll_idx = idx[0] + 1
+        i = idx[0]
+        j = idx[-1]
+
+        if len(idx) > 2:
+            if not self.is_hole:
+                warnings.warn(
+                    f"{len(idx)} intersections found instead of 2, "
+                    "using first and last intersection."
+                )
+            right[i + 1 : j - 1] = right[i + 1]
+
+        p1 = intersections[i]
+        p2 = intersections[j]
+
+        roll_idx = i + 1
         vertices = np.roll(vertices, -roll_idx, axis=0)
         right = np.roll(right, -roll_idx)
 
