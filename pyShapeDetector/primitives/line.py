@@ -124,6 +124,7 @@ class Line(Primitive):
     check_colinear
     get_segment_intersection
     get_segment_union
+    _get_closest_intersection_or_point
     """
 
     _fit_n_min = 2
@@ -953,3 +954,40 @@ class Line(Primitive):
         new_line = Line.from_two_points(*output_points)
         new_line.color = self.color
         return new_line
+
+    def _get_closest_intersection_or_point(line, other_lines):
+        """Subfunction used by PlaneBounded.add_line, gives closest
+        intersection. If no intersection is found, gives closest point"""
+        for other in other_lines:
+            if not isinstance(other, Line):
+                raise ValueError(
+                    "other_lines should be a list of Line instances, "
+                    f"found {type(other)}."
+                )
+
+        intersection_points = [
+            line.point_from_intersection(other) for other in other_lines
+        ]
+
+        if np.all([p is None for p in intersection_points]):
+            points = [l.beginning for l in other_lines]
+            distances = line.get_distances(points)
+            idx = np.argmin(distances)
+            return points[idx]
+            # return {"idx": idx, "point": points[idx], "is_intersection": False}
+
+        else:
+            distances = []
+            for point in intersection_points:
+                if point is None:
+                    distances.append(np.inf)
+                else:
+                    # distances.append(np.linalg.norm(line.beginning - point))
+                    distances.append(line.get_distances([point])[0])
+            idx = np.argmin(distances)
+            return intersection_points[idx]
+            # return {
+            #     "idx": idx,
+            #     "point": intersection_points[idx],
+            #     "is_intersection": True,
+            # }

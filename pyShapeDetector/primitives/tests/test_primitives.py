@@ -933,7 +933,7 @@ def test_plane_split():
         assert_allclose(plane_right.surface_area, plane_right.mesh.surface_area)
 
 
-def test_glue_convex_planes_with_line():
+def test_add_lines_to_planes():
     for i in range(20):
         vz = normalized(np.random.random(3))
         vx = normalized(np.cross(np.random.random(3), vz))
@@ -981,6 +981,10 @@ def test_glue_convex_planes_with_line():
         np.testing.assert_allclose(line1.length, dims1[0])
         np.testing.assert_allclose(line2.length, dims2[0])
 
+        # saving concave versions for later
+        plane1_concave = PlaneBounded(plane1.model, plane1.vertices, convex=False)
+        # plane2_concave = PlaneBounded(plane2.model, plane2.vertices, convex=False)
+
         line_shrinked = line.get_extended(shrink)
         # np.testing.assert_allclose(line1.length * shrink, line_shrinked.length)
 
@@ -993,6 +997,19 @@ def test_glue_convex_planes_with_line():
         plane2.add_line(line_shrinked)
         trapezoid2_big = (delta + dims2[1]) * (line_shrinked.length + line2.length) / 2
         np.testing.assert_allclose(plane2.surface_area, trapezoid2_big)
+
+        plane1_concave.add_line(line_shrinked)
+        rectangle1_small = delta * line_shrinked.length
+        np.testing.assert_allclose(
+            plane1_concave.surface_area, area1 + rectangle1_small
+        )
+
+        # not testing because this exact behaviour is not completely understood
+        # plane2_concave.add_line(line_shrinked)
+        # rectangle2_small = delta * line_shrinked.length
+        # np.testing.assert_allclose(
+        #     plane2_concave.surface_area, area2 + rectangle2_small
+        # )
 
 
 # if __name__ == "__main__":

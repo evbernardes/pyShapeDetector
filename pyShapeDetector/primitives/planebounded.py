@@ -20,6 +20,10 @@ from importlib.util import find_spec
 if has_mapbox_earcut := find_spec("mapbox_earcut") is not None:
     from mapbox_earcut import triangulate_float32
 
+if has_shapely := find_spec("shapely") is not None:
+    from shapely.geometry import Polygon, MultiPolygon
+    from shapely.ops import unary_union
+
 
 def _unflatten(values):
     values = np.array(values)
@@ -936,7 +940,7 @@ class PlaneBounded(Plane):
         vertices_new = points[indices_unique]
         self.set_vertices(vertices_new, flatten=True, convex=self.is_convex)
 
-    def add_line(self, line, add_as_inliers=False):
+    def add_line(self, line, add_as_inliers=False, eps_adjust=1e-8):
         """Add line to plane.
 
         For convex planes: add both extremities of the line to its vertices
@@ -955,6 +959,8 @@ class PlaneBounded(Plane):
         split : bool, optional
             If True, split planes at intersection and keep bigger one.
             Default: False.
+        eps_adjust : float, optional
+            Adjusts points to be sure they are inside
 
         """
         from .line import Line
@@ -968,10 +974,49 @@ class PlaneBounded(Plane):
 
         if self.is_convex:
             self.add_bound_points([line.beginning, line.ending])
-            if add_as_inliers:
-                self.add_inliers([line.beginning, line.ending])
         else:
-            warnings.warn("Not yet implemented for non-convex planes.")
+            if not has_shapely:
+                warnings.warn("To add lines to non-convex shapes, shapely is needed.")
+                return
+
+            vertices_lines = self.vertices_lines
+            axis = np.cross(line.axis, self.normal)
+
+            # correct axis, important for adjustment
+            negative = np.dot(self.vertices - line.beginning, axis) < 0
+            if sum(negative) > sum(~negative):
+                axis = -axis
+
+            parallel_lines = [
+                Line.from_point_vector(p, axis).get_fitted_to_points(np.vstack([line.beginning, self.vertices]))
+                for p in line.points
+            ]
+
+            points_closest = [
+                line._get_closest_intersection_or_point(vertices_lines) + line.axis * eps_adjust
+                for line in parallel_lines
+            ]
+
+            polygon_original = Polygon(self.vertices_projections)
+            polygon_new = Polygon(
+                self.get_projections(
+                    [
+                        line.beginning,
+                        points_closest[0],
+                        points_closest[1],
+                        line.ending,
+                    ]
+                )
+            )
+
+            union_polygon = unary_union([polygon_original, polygon_new])
+
+            if isinstance(union_polygon, MultiPolygon):
+                raise RuntimeError("Polygon union could not be calculated, "
+                                   "try changing eps_adjust.")
+            else:
+                new_points = self.get_points_from_projections(union_polygon.boundary.coords)
+            self.set_vertices(new_points, flatten=False, convex=False)
 
     @staticmethod
     def glue_planes_with_intersections(
@@ -1132,8 +1177,9 @@ class PlaneBounded(Plane):
         intersections = [
             element.point_from_intersection(line) for line in self.vertices_lines
         ]
-        vertices = self.vertices
         idx = np.where([l is not None for l in intersections])[0]
+
+        vertices = self.vertices
         direction = np.cross(self.normal, element.axis)
         right = (vertices - element.beginning).dot(direction) > 0
         if len(idx) != 2:
