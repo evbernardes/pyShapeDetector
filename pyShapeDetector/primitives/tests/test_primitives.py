@@ -909,7 +909,7 @@ def test_line_checks():
 
 
 def test_plane_split():
-    for i in range(20):
+    for i in range(50):
         plane = get_random_convex_plane()
         plane = PlaneBounded(plane.model, plane.vertices, convex=False)
 
@@ -926,15 +926,27 @@ def test_plane_split():
         assert_allclose(plane.surface_area, plane.mesh.surface_area)
 
         plane_left, plane_right = plane.split(line)
-        assert_allclose(
-            plane.surface_area,
-            plane_left.surface_area + plane_right.surface_area,
-            rtol=1e-5,
-        )
+        if plane_left is None:
+            area_sum = plane_right.surface_area
+            assert_allclose(
+                plane_right.surface_area, plane_right.mesh.surface_area, rtol=1e-5
+            )
+        elif plane_right is None:
+            area_sum = plane_left.surface_area
+            assert_allclose(
+                plane_left.surface_area, plane_left.mesh.surface_area, rtol=1e-5
+            )
+        else:
+            area_sum = plane_left.surface_area + plane_right.surface_area
+            # to be sure the holes are added split correctly
+            assert_allclose(
+                plane_left.surface_area, plane_left.mesh.surface_area, rtol=1e-5
+            )
+            assert_allclose(
+                plane_right.surface_area, plane_right.mesh.surface_area, rtol=1e-5
+            )
 
-        # to be sure the holes are added split correctly
-        assert_allclose(plane_left.surface_area, plane_left.mesh.surface_area)
-        assert_allclose(plane_right.surface_area, plane_right.mesh.surface_area)
+        assert_allclose(plane.surface_area, area_sum, rtol=1e-5)
 
 
 def test_add_lines_to_planes():
