@@ -1704,8 +1704,6 @@ class Plane(Primitive):
                 continue
 
             if distance_max is not None:
-                # TODO: bounds_or_vertices should be changed for bounds if we are
-                # sure that it will never be implemented for non convex planes
                 points = shapes[i].vertices
 
                 if min(line.get_distances(points)) > distance_max:
