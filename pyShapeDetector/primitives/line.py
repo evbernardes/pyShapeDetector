@@ -255,8 +255,16 @@ class Line(Primitive):
         normals
             Nx3 array containing normal vectors.
         """
+        normal_random = np.cross(np.random.random(3), self.axis)
+        normal_random /= np.linalg.norm(normal_random)
         normals = self.get_orthogonal_component(points)
-        normals /= np.linalg.norm(normals, axis=1)[..., np.newaxis]
+
+        for i in range(len(normals)):
+            norm = np.linalg.norm(normals[i])
+            if norm < 1e-8:
+                normals[i] = normal_random
+            else:
+                normals[i] /= norm
         return normals
 
     def get_axis_aligned_bounding_box(self, slack=0):
@@ -796,7 +804,7 @@ class Line(Primitive):
         new_vertices = [line.beginning for line in lines]
         return [np.where(np.all(v == vertices, axis=1))[0][0] for v in new_vertices]
 
-    def check_coplanar(self, other, eps=1e-7):
+    def check_coplanar(self, other, eps=1e-5):
         """Check if lines are colinear.
 
         Parameters
