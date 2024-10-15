@@ -1113,7 +1113,7 @@ class PlaneBounded(Plane):
 
                 if not split_happened:
                     # no need to add line
-                    shape.set_vertices(split_shape.vertices, flatten=False)
+                    shape.set_vertices(shape.vertices, flatten=False)
 
         return all_lines
 
