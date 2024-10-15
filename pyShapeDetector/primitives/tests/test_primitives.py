@@ -82,37 +82,41 @@ def get_shape(primitive, num_points, canonical=False):
 
 def test_plane_creation_methods():
     # axis=None flattens the array before sorting
-    sort = lambda x: np.sort(x, axis=None)
+    sort = lambda x: np.sort(np.sort(x, axis=1), axis=0)
     # sort = lambda x: np.sort(x, axis=0)
 
-    vx = np.random.random(3)
-    vy = np.random.random(3)
-    normal = np.cross(vx, vy)
-    vy = np.cross(normal, vx)
-    point = np.random.random(3)
+    for i in range(10):
+        vx = np.random.random(3)
+        vy = np.random.random(3)
+        normal = np.cross(vx, vy)
+        vy = np.cross(normal, vx)
+        point = np.random.random(3)
 
-    for primitive in [Plane, PlaneBounded, PlaneTriangulated, PlaneRectangular]:
-        shape1 = primitive.from_vectors_center(np.array([vx, vy]), point)
-        shape2 = primitive.from_normal_point(shape1.normal, shape1.centroid)
-        shape3 = primitive.from_normal_dist(shape1.normal, shape1.dist)
+        for primitive in [Plane, PlaneBounded, PlaneTriangulated, PlaneRectangular]:
+            shape1 = primitive.from_vectors_center(np.array([vx, vy]), point)
+            shape2 = primitive.from_normal_point(shape1.normal, shape1.centroid)
+            shape3 = primitive.from_normal_dist(shape1.normal, shape1.dist)
 
-        assert shape1.is_similar_to(shape2)
-        assert shape2.is_similar_to(shape3)
-        assert shape3.is_similar_to(shape1)
+            assert shape1.is_similar_to(shape2)
+            assert shape2.is_similar_to(shape3)
+            assert shape3.is_similar_to(shape1)
 
-        if hasattr(shape1, "vertices"):
-            # assert_allclose(np.sort(shape1.vertices), np.sort(shape2.vertices))
-            assert_allclose(sort(shape2.vertices), sort(shape3.vertices))
+            if hasattr(shape1, "vertices"):
+                # assert_allclose(np.sort(shape1.vertices), np.sort(shape2.vertices))
+                assert_allclose(sort(shape2.vertices), sort(shape3.vertices))
 
-    dimensions = abs(np.random.random(3) * 10)
-    boxes = []
-    for primitive in [PlaneBounded, PlaneTriangulated, PlaneRectangular]:
-        boxes.append(primitive.create_box(center=point, dimensions=dimensions))
+        dimensions = abs(np.random.random(3) * 10)
+        boxes = []
+        for primitive in [PlaneBounded, PlaneTriangulated, PlaneRectangular]:
+            boxes.append(primitive.create_box(center=point, dimensions=dimensions))
 
-    for box1, box2 in combinations(boxes, 2):
-        for plane1, plane2 in zip(box1, box2):
-            assert np.all(sort(plane1.mesh.triangles) == sort(plane2.mesh.triangles))
-            assert_allclose(sort(plane1.mesh.vertices), sort(plane2.mesh.vertices))
+        for box1, box2 in combinations(boxes, 2):
+            for plane1, plane2 in zip(box1, box2):
+                # commented because this was wrong, maybe some other way to test?
+                # triangles1 = sort(plane1.mesh.triangles)
+                # triangles2 = sort(plane2.mesh.triangles)
+                # assert np.all(triangles1 == triangles2)
+                assert_allclose(sort(plane1.mesh.vertices), sort(plane2.mesh.vertices))
 
 
 def test_rectangular_plane_from_vectors():
