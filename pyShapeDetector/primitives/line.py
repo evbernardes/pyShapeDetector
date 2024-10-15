@@ -119,6 +119,7 @@ class Line(Primitive):
     point_from_intersection
     get_LineSet_from_list
     get_simplified_loop_indices
+    check_points_in_segment
     check_coplanar
     check_colinear
     get_segment_intersection
@@ -803,6 +804,32 @@ class Line(Primitive):
 
         new_vertices = [line.beginning for line in lines]
         return [np.where(np.all(v == vertices, axis=1))[0][0] for v in new_vertices]
+
+    def check_points_in_segment(self, points, within_segment=True, eps=1e-5):
+        """Check if lines are colinear.
+
+        Parameters
+        ----------
+        points : np array
+            Points to test.
+        within_segment : boolean, optional
+            If False, test if it's a part of the infinite line. Default: True.
+        eps : float, optional
+            Threshold to decide if line is colinear. Default: 1e-5.
+
+        Returns
+        -------
+        list of booleans
+            True for points in line.
+        """
+        test_colinear = self.get_distances(points) < eps
+        if not within_segment:
+            return test_colinear
+
+        points_flattened = self.flatten_points(points)
+        dot = np.dot(points_flattened - self.beginning, self.axis)
+        test_within_segment = np.logical_and(dot >= 0, dot <= self.length + eps)
+        return np.logical_and(test_colinear, test_within_segment)
 
     def check_coplanar(self, other, eps=1e-5):
         """Check if lines are colinear.
