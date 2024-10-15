@@ -1030,14 +1030,14 @@ class PlaneBounded(Plane):
                 new_points = self.get_points_from_projections(
                     union_polygon.boundary.coords
                 )
+                self.set_vertices(new_points, flatten=False, convex=False)
             except NotImplementedError:
-                if isinstance(union_polygon, MultiPolygon):
-                    raise RuntimeError(
-                        "Polygon union could not be calculated, "
-                        "try changing eps_adjust."
-                    )
+                warnings.warn(
+                    "Polygon union could not be calculated, "
+                    "try changing eps_adjust."
+                )
 
-            self.set_vertices(new_points, flatten=False, convex=False)
+            # self.set_vertices(new_points, flatten=False, convex=False)
 
     @staticmethod
     def glue_planes_with_intersections(
@@ -1271,6 +1271,10 @@ class PlaneBounded(Plane):
             for plane, hole in zip(planes, split_holes):
                 if hole is not None and plane is not None:
                     plane.add_holes(hole)
+
+        for i, plane in enumerate(planes):
+            if plane is not None and len(plane.vertices) == 0:
+                planes[i] = None
 
         if return_bigger:
             if planes[0] is None:
