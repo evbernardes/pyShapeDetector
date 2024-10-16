@@ -1025,7 +1025,7 @@ class PlaneBounded(Plane):
         fit_mode="segment_intersection",
         add_as_inliers=False,
         split=True,
-        eps_adjust=1e-5,
+        eps=1e-5,
     ):
         """Glue shapes using intersections in a dict.
 
@@ -1053,8 +1053,8 @@ class PlaneBounded(Plane):
         split : bool, optional
             If True, split planes at intersection and keep bigger one.
             Default: False.
-        eps_adjust : float, optional
-            Adjusts points to be sure they are inside
+        eps : float, optional
+            Adjusts points to be sure they are inside. Default: 1e-4.
 
         Returns
         -------
@@ -1121,9 +1121,7 @@ class PlaneBounded(Plane):
 
                 if not split_happened:
                     # no need to add line
-                    shape.add_line(
-                        line, add_as_inliers=add_as_inliers, eps_adjust=eps_adjust
-                    )
+                    shape.add_line(line, add_as_inliers=add_as_inliers, eps=eps)
                     # shape.set_vertices(shape.vertices, flatten=False, convex=False)
 
         return all_lines

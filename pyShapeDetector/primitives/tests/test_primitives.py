@@ -1023,7 +1023,7 @@ def test_plane_split():
 
 
 def test_add_lines_to_planes():
-    eps_adjust = 1e-8
+    eps = 1e-8
     for i in range(20):
         vz = normalized(np.random.random(3))
         vx = normalized(np.cross(np.random.random(3), vz))
@@ -1088,13 +1088,13 @@ def test_add_lines_to_planes():
         trapezoid2_big = (delta + dims2[1]) * (line_shrinked.length + line2.length) / 2
         np.testing.assert_allclose(plane2.surface_area, trapezoid2_big)
 
-        plane1_concave.add_line(line_shrinked, eps=eps_adjust)
+        plane1_concave.add_line(line_shrinked, eps=eps)
         rectangle1_small = delta * line_shrinked.length
         np.testing.assert_allclose(
             plane1_concave.surface_area,
             area1 + rectangle1_small,
-            atol=2 * eps_adjust,
-            rtol=2 * eps_adjust,
+            atol=2 * eps,
+            rtol=2 * eps,
         )
 
         # not testing because this exact behaviour is not completely understood
