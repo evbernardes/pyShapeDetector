@@ -1373,7 +1373,7 @@ class Plane(Primitive):
         radius : float
             Distance from center of polygon to any of its points
         center : arraylike of length 3, optional
-            Center of rectangle. If not given, either inliers or centroid are
+            Center of polygon. If not given, either inliers or centroid are
             used.
 
         Returns
