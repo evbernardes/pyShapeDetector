@@ -219,8 +219,8 @@ def select_manually(
     return_finish_flag=False,
     show_plane_boundaries=False,
     pre_selected=None,
-    ELEMENTS_NUMBER_WARNING=60,
-    NUM_POINTS_FOR_DISTANCE_CALC=30,
+    ELEMENTS_NUMBER_WARNING=200,
+    NUM_POINTS_FOR_DISTANCE_CALC=50,
     **camera_options,
 ):
     elements = copy.deepcopy(elements)
