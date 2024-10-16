@@ -940,7 +940,6 @@ class Line(Primitive):
             Distance threshold to decide if line is colinear. Default: 1e-8.
         angle_eps : float, optional
             Angle threshold to decide if line is colinear. Default: 1e-8.
-
         Returns
         -------
         Line
@@ -996,7 +995,7 @@ class Line(Primitive):
             # }
 
     @staticmethod
-    def split_lines_with_points(lines, points, eps=1e-5):
+    def split_lines_with_points(lines, points, eps=1e-5, return_vertices=False):
         """Split connected list of lines in line groups.
 
         Parameters
@@ -1007,6 +1006,8 @@ class Line(Primitive):
             Points to break lines.
         eps : float, optional
             Threshold to decide if line is colinear. Default: 1e-5.
+        return_vertices : boolean, optional
+            If True, also return vertices. Default: False.
 
         Returns
         -------
@@ -1122,5 +1123,13 @@ class Line(Primitive):
         #     last_group = [first]
         #     last_group += copy.deepcopy(lines[j + 1 :])
         #     line_groups.append(last_group)
+
+        if return_vertices:
+            point_groups = []
+            for line_group in line_groups:
+                points = [line.beginning for line in line_group]
+                points.append(line_group[-1].ending)
+                point_groups.append(np.asarray(points))
+            return line_groups, point_groups
 
         return line_groups
