@@ -1033,8 +1033,7 @@ class PlaneBounded(Plane):
                 self.set_vertices(new_points, flatten=False, convex=False)
             except NotImplementedError:
                 warnings.warn(
-                    "Polygon union could not be calculated, "
-                    "try changing eps_adjust."
+                    "Polygon union could not be calculated, " "try changing eps_adjust."
                 )
 
             # self.set_vertices(new_points, flatten=False, convex=False)
@@ -1046,7 +1045,7 @@ class PlaneBounded(Plane):
         fit_mode="segment_intersection",
         add_as_inliers=False,
         split=True,
-        eps_adjust=1e-5
+        eps_adjust=1e-5,
     ):
         """Glue shapes using intersections in a dict.
 
@@ -1142,7 +1141,9 @@ class PlaneBounded(Plane):
 
                 if not split_happened:
                     # no need to add line
-                    shape.add_line(line, add_as_inliers=add_as_inliers, eps_adjust=eps_adjust)
+                    shape.add_line(
+                        line, add_as_inliers=add_as_inliers, eps_adjust=eps_adjust
+                    )
                     # shape.set_vertices(shape.vertices, flatten=False, convex=False)
 
         return all_lines
