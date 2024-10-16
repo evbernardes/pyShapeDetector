@@ -995,9 +995,9 @@ class PlaneBounded(Plane):
             ]
 
             points_closest = [
-                line._get_closest_intersection_or_point(vertices_lines)
-                + line.axis * eps_adjust
-                for line in parallel_lines
+                parallel_line._get_closest_intersection_or_point(vertices_lines, line)
+                + parallel_line.axis * eps_adjust
+                for parallel_line in parallel_lines
             ]
 
             polygon_original = Polygon(self.vertices_projections)

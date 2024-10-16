@@ -957,7 +957,7 @@ class Line(Primitive):
         new_line.color = self.color
         return new_line
 
-    def _get_closest_intersection_or_point(line, other_lines):
+    def _get_closest_intersection_or_point(self, other_lines, base_line):
         """Subfunction used by PlaneBounded.add_line, gives closest
         intersection. If no intersection is found, gives closest point"""
         for other in other_lines:
@@ -968,15 +968,14 @@ class Line(Primitive):
                 )
 
         intersection_points = [
-            line.point_from_intersection(other) for other in other_lines
+            self.point_from_intersection(other) for other in other_lines
         ]
 
         if np.all([p is None for p in intersection_points]):
             points = [l.beginning for l in other_lines]
-            distances = line.get_distances(points)
+            distances = self.get_distances(points)
             idx = np.argmin(distances)
             return points[idx]
-            # return {"idx": idx, "point": points[idx], "is_intersection": False}
 
         else:
             distances = []
@@ -985,7 +984,7 @@ class Line(Primitive):
                     distances.append(np.inf)
                 else:
                     # distances.append(np.linalg.norm(line.beginning - point))
-                    distances.append(line.get_distances([point])[0])
+                    distances.append(base_line.get_distances([point])[0])
             idx = np.argmin(distances)
             return intersection_points[idx]
             # return {
