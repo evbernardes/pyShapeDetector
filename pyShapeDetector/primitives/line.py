@@ -973,8 +973,10 @@ class Line(Primitive):
 
         if np.all([p is None for p in intersection_points]):
             points = [l.beginning for l in other_lines]
-            distances = self.get_distances(points)
-            idx = np.argmin(distances)
+            distances_squared = (
+                self.get_distances(points) ** 2 + base_line.get_distances(points) ** 2
+            )
+            idx = np.argmin(distances_squared)
             return points[idx]
 
         else:
