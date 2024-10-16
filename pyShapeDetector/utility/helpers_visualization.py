@@ -355,7 +355,7 @@ def select_manually(
 
     window_name += f"{len(elements)} elements. " + (
         " Green: selected. White: unselected. Blue: current. "
-        " (T)oggle | (D) next | (A) previous | (LShift) Mouse select + (LCtrl) Toggle| (F)inish"
+        " (S)oggle | (T)oggle all | (D) next | (A) previous | (LShift) Mouse select + (LCtrl) Toggle| (F)inish"
     )
 
     global data
@@ -440,6 +440,19 @@ def select_manually(
     def switch_mouse_toggle(vis, action, mods):
         global data
         data["mouse_toggle"] = bool(action)
+
+    def toggle_all(vis, action, mods):
+        if action == 1:
+            return
+
+        global data
+        idx = data["i"]
+
+        value = not np.sum(data["selected"]) == len(data["selected"])
+        for i in range(len(data["selected"])):
+            data["selected"][i] = value
+            update(vis, i)
+        update(vis, idx)
 
     def toggle(vis, action, mods):
         if action == 1:
@@ -549,6 +562,7 @@ def select_manually(
     vis.register_key_action_callback(ord("D"), next)
     vis.register_key_action_callback(ord("A"), previous)
     vis.register_key_action_callback(ord("F"), finish_process)
+    vis.register_key_action_callback(ord("T"), toggle_all)
     vis.register_key_action_callback(GLFW_KEY_LEFT_SHIFT, switch_mouse_selection)
     vis.register_key_action_callback(GLFW_KEY_LEFT_CONTROL, switch_mouse_toggle)
 
