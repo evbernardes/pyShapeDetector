@@ -1084,65 +1084,51 @@ class Line(Primitive):
 
         line_groups = []
 
-        # if not closed:
-        #     i = found_indices[0]
-        #     first_group = copy.deepcopy(lines[:i])
-        #     last = Line.from_two_points(lines[i].beginning, points_in_segments[i][0])
-        #     last.color = lines[i].color
-        #     first_group.append(last)
-        #     line_groups.append(first_group)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=".*Line instance has very small length.*"
+            )
+            for i, j in pairwise(found_indices):
+                # assert i != j
 
-        for i, j in pairwise(found_indices):
-            # assert i != j
+                points_i = points_in_segments[i]
+                points_j = points_in_segments[j]
 
-            points_i = points_in_segments[i]
-            points_j = points_in_segments[j]
+                # if multiple points in ith line
+                if not closed:
+                    for p1, p2 in pairwise(points_i):
+                        subline = Line.from_two_points(p1, p2)
+                        subline.color = lines[j].color
+                        line_groups.append([subline])
 
-            # if multiple points in ith line
-            if not closed:
-                for p1, p2 in pairwise(points_i):
+                new_line = Line.from_two_points(points_i[-1], lines[i].ending)
+                new_line.color = lines[i].color
+                new_lines = [new_line]
+
+                # copy lines between i and j
+                if j > i:
+                    new_lines += copy.deepcopy(lines[i + 1 : j])
+                else:
+                    new_lines += copy.deepcopy(lines[i + 1 :])
+                    new_lines += copy.deepcopy(lines[:j])
+
+                new_line = Line.from_two_points(lines[j].beginning, points_j[0])
+                new_line.color = lines[j].color
+                new_lines.append(new_line)
+                line_groups.append(new_lines)
+
+                # if multiple points in jth line
+                for p1, p2 in pairwise(points_j):
                     subline = Line.from_two_points(p1, p2)
                     subline.color = lines[j].color
                     line_groups.append([subline])
 
-            new_line = Line.from_two_points(points_i[-1], lines[i].ending)
-            new_line.color = lines[i].color
-            new_lines = [new_line]
-
-            # copy lines between i and j
-            if j > i:
-                new_lines += copy.deepcopy(lines[i + 1 : j])
-            else:
-                new_lines += copy.deepcopy(lines[i + 1 :])
-                new_lines += copy.deepcopy(lines[:j])
-
-            new_line = Line.from_two_points(lines[j].beginning, points_j[0])
-            new_line.color = lines[j].color
-            new_lines.append(new_line)
-            line_groups.append(new_lines)
-
-            # if multiple points in jth line
-            # sub_lines_second = []
-            for p1, p2 in pairwise(points_j):
-                subline = Line.from_two_points(p1, p2)
-                subline.color = lines[j].color
-                line_groups.append([subline])
-            # line_groups.append(sub_lines_second)
-
-        # if not closed:
-        #     j = found_indices[-1]
-        #     first = Line.from_two_points(lines[j].ending, points_in_segments[j][-1])
-        #     first.color = lines[j].color
-        #     last_group = [first]
-        #     last_group += copy.deepcopy(lines[j + 1 :])
-        #     line_groups.append(last_group)
-
-        if return_vertices:
-            point_groups = []
-            for line_group in line_groups:
-                points = [line.beginning for line in line_group]
-                points.append(line_group[-1].ending)
-                point_groups.append(np.asarray(points))
-            return line_groups, point_groups
+            if return_vertices:
+                point_groups = []
+                for line_group in line_groups:
+                    points = [line.beginning for line in line_group]
+                    points.append(line_group[-1].ending)
+                    point_groups.append(np.asarray(points))
+                return line_groups, point_groups
 
         return line_groups
