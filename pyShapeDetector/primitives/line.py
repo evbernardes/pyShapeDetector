@@ -656,7 +656,9 @@ class Line(Primitive):
             points = points[0]
         return points
 
-    def point_from_intersection(self, other, within_segment=True, eps=1e-3):
+    def point_from_intersection(
+        self, other, not_edge=False, within_segment=True, eps=1e-3
+    ):
         """Calculates intersection point between two lines.
 
         Parameters
@@ -665,6 +667,8 @@ class Line(Primitive):
             Other line to instersect.
         within_segment : boolean, optional
             If set to False, will suppose lines are infinite. Default: True.
+        not_edge = boolean, optional
+            Does not count if point is in edges of Line. Default: False
         eps : float, optional
             Acceptable slack added to intervals in order to check if point
             lies on both lines, if 'within_segment' is True. Default: 1e-3.
@@ -704,7 +708,18 @@ class Line(Primitive):
         if np.linalg.norm(pa - pb) > eps:
             return None
 
-        return (pa + pb) / 2
+        point = (pa + pb) / 2
+
+        if not_edge:
+            if np.linalg.norm(point - self.beginning) < eps:
+                point = None
+            elif np.linalg.norm(point - self.ending) < eps:
+                point = None
+            elif np.linalg.norm(point - other.beginning) < eps:
+                point = None
+            elif np.linalg.norm(point - other.ending) < eps:
+                point = None
+        return point
 
     @staticmethod
     def get_LineSet_from_list(lines):
