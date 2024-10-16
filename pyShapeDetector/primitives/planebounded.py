@@ -20,10 +20,6 @@ from importlib.util import find_spec
 if has_mapbox_earcut := find_spec("mapbox_earcut") is not None:
     from mapbox_earcut import triangulate_float32
 
-if has_shapely := find_spec("shapely") is not None:
-    from shapely.geometry import Polygon, MultiPolygon
-    from shapely.ops import unary_union
-
 
 def _unflatten(values):
     values = np.array(values)
@@ -940,7 +936,7 @@ class PlaneBounded(Plane):
         vertices_new = points[indices_unique]
         self.set_vertices(vertices_new, flatten=True, convex=self.is_convex)
 
-    def add_line(self, line, add_as_inliers=False, eps_adjust=1e-5):
+    def add_line(self, line, add_as_inliers=False, eps=1e-4):
         """Add line to plane.
 
         For convex planes: add both extremities of the line to its vertices
@@ -959,8 +955,8 @@ class PlaneBounded(Plane):
         split : bool, optional
             If True, split planes at intersection and keep bigger one.
             Default: False.
-        eps_adjust : float, optional
-            Adjusts points to be sure they are inside
+        eps : float, optional
+            Adjusts points to be sure they are inside. Default: 1e-4.
 
         """
         from .line import Line
@@ -975,9 +971,6 @@ class PlaneBounded(Plane):
         if self.is_convex:
             self.add_bound_points([line.beginning, line.ending])
         else:
-            if not has_shapely:
-                warnings.warn("To add lines to non-convex shapes, shapely is needed.")
-                return
 
             vertices_lines = self.vertices_lines
             axis = np.cross(line.axis, self.normal)
@@ -996,47 +989,30 @@ class PlaneBounded(Plane):
 
             points_closest = [
                 parallel_line._get_closest_intersection_or_point(vertices_lines, line)
-                + parallel_line.axis * eps_adjust
                 for parallel_line in parallel_lines
             ]
 
-            polygon_original = Polygon(self.vertices_projections)
-            polygon_new = Polygon(
-                self.get_projections(
-                    [
-                        line.beginning,
-                        points_closest[0],
-                        points_closest[1],
-                        line.ending,
-                    ]
-                )
+            _, point_groups = Line.split_lines_with_points(
+                vertices_lines, points_closest, return_vertices=True, eps=eps
             )
 
-            union_polygon = unary_union([polygon_original, polygon_new])
+            def add_line_to_separated_points(line, points):
+                dist_beginning = np.linalg.norm(line.beginning - points[0])
+                dist_ending = np.linalg.norm(line.ending - points[0])
+                if dist_beginning < dist_ending:
+                    return np.vstack([line.beginning, points, line.ending])
+                else:
+                    return np.vstack([line.ending, points, line.beginning])
 
-            # try:
-            #     new_projections = union_polygon.boundary.coords
+            vertices_1 = add_line_to_separated_points(line, point_groups[0])
+            vertices_2 = add_line_to_separated_points(line, point_groups[1])
+            plane1 = PlaneBounded(self.model, vertices_1, convex=False)
+            plane2 = PlaneBounded(self.model, vertices_2, convex=False)
 
-            # except NotImplementedError:
-            #     warnings.warn(
-            #             "Polygon union could not be calculated, try changing eps_adjust."
-            #         )
-            #     new_projections = [geom.coords for geom in union_polygon.boundary.geoms]
-            #     new_projections = np.vstack(new_projections)
-
-            # new_points = self.get_points_from_projections(new_projections)
-
-            try:
-                new_points = self.get_points_from_projections(
-                    union_polygon.boundary.coords
-                )
-                self.set_vertices(new_points, flatten=False, convex=False)
-            except NotImplementedError:
-                warnings.warn(
-                    "Polygon union could not be calculated, " "try changing eps_adjust."
-                )
-
-            # self.set_vertices(new_points, flatten=False, convex=False)
+            if plane1.surface_area > plane2.surface_area:
+                self.set_vertices(plane1.vertices, flatten=False, convex=False)
+            else:
+                self.set_vertices(plane2.vertices, flatten=False, convex=False)
 
     @staticmethod
     def glue_planes_with_intersections(

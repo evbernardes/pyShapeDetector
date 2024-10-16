@@ -1088,7 +1088,7 @@ def test_add_lines_to_planes():
         trapezoid2_big = (delta + dims2[1]) * (line_shrinked.length + line2.length) / 2
         np.testing.assert_allclose(plane2.surface_area, trapezoid2_big)
 
-        plane1_concave.add_line(line_shrinked, eps_adjust=eps_adjust)
+        plane1_concave.add_line(line_shrinked, eps=eps_adjust)
         rectangle1_small = delta * line_shrinked.length
         np.testing.assert_allclose(
             plane1_concave.surface_area,

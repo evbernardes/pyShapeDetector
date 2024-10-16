@@ -1010,7 +1010,7 @@ class Line(Primitive):
             # }
 
     @staticmethod
-    def split_lines_with_points(lines, points, eps=1e-5, return_vertices=False):
+    def split_lines_with_points(lines, points, eps=1e-4, return_vertices=False):
         """Split connected list of lines in line groups.
 
         Parameters
@@ -1020,7 +1020,7 @@ class Line(Primitive):
         points : np array
             Points to break lines.
         eps : float, optional
-            Threshold to decide if line is colinear. Default: 1e-5.
+            Threshold to decide if line is colinear. Default: 1e-4.
         return_vertices : boolean, optional
             If True, also return vertices. Default: False.
 
@@ -1043,7 +1043,6 @@ class Line(Primitive):
         points_in_segments = {}
 
         if not closed:
-            print("added points")
             points = np.vstack([lines[0].beginning, points, lines[-1].ending])
 
         for i, point in enumerate(points):
@@ -1067,7 +1066,6 @@ class Line(Primitive):
 
         # order if multiple points in line
         for idx, points in points_in_segments.items():
-            print(len(points))
             line = lines[idx]
 
             assert np.all(
