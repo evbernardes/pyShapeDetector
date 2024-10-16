@@ -1068,9 +1068,12 @@ class Line(Primitive):
         for idx, points in points_in_segments.items():
             line = lines[idx]
 
-            assert np.all(
+
+            if not np.all(
                 line.check_points_in_segment(points, within_segment=True, eps=eps)
-            )
+            ):
+                warnings.warn("Intersected points are not in segment, "
+                              "should not have happened.")
 
             projection = [line.axis.dot(p - line.beginning) for p in points]
             points = np.array(points)[np.argsort(projection)]
