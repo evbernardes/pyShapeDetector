@@ -970,8 +970,9 @@ class PlaneBounded(Plane):
 
         if self.is_convex:
             self.add_bound_points([line.beginning, line.ending])
+            if add_as_inliers:
+                self.add_inliers([line.beginning, line.ending])
         else:
-
             vertices_lines = self.vertices_lines
             axis = np.cross(line.axis, self.normal)
 
@@ -1013,6 +1014,9 @@ class PlaneBounded(Plane):
                 self.set_vertices(plane1.vertices, flatten=False, convex=False)
             else:
                 self.set_vertices(plane2.vertices, flatten=False, convex=False)
+
+            if add_as_inliers:
+                self.add_inliers([line.beginning, line.ending])
 
     @staticmethod
     def glue_planes_with_intersections(
