@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 import warnings
 import random
 import copy
+from itertools import pairwise, combinations
 import numpy as np
 import open3d as o3d
 from open3d.geometry import LineSet, AxisAlignedBoundingBox
@@ -125,6 +126,7 @@ class Line(Primitive):
     get_segment_intersection
     get_segment_union
     _get_closest_intersection_or_point
+    split_lines_with_points
     """
 
     _fit_n_min = 2
@@ -991,3 +993,133 @@ class Line(Primitive):
             #     "point": intersection_points[idx],
             #     "is_intersection": True,
             # }
+
+    @staticmethod
+    def split_lines_with_points(lines, points, eps=1e-5):
+        """Split connected list of lines in line groups.
+
+        Parameters
+        ----------
+        lines : list of Lines
+            Lines must be connected.
+        points : np array
+            Points to break lines.
+        eps : float, optional
+            Threshold to decide if line is colinear. Default: 1e-5.
+
+        Returns
+        -------
+        Line
+            Line union.
+        """
+        points = np.asarray(points)
+        closed = np.linalg.norm(lines[-1].ending - lines[0].beginning) < eps
+        for line1, line2 in pairwise(lines):
+            if np.linalg.norm(line1.ending - line2.beginning) > eps:
+                raise ValueError("Lines should be connected.")
+
+        for point1, point2 in combinations(points, 2):
+            if np.linalg.norm(point1 - point2) < eps:
+                raise ValueError("Input points must be unique.")
+
+        # found_indices = []
+        points_in_segments = {}
+
+        if not closed:
+            print("added points")
+            points = np.vstack([lines[0].beginning, points, lines[-1].ending])
+
+        for i, point in enumerate(points):
+            is_in_segment = [
+                line.check_points_in_segment([point], within_segment=True, eps=eps)[0]
+                for line in lines
+            ]
+
+            if sum(is_in_segment) == 0:
+                warnings.warn(f"Point number {i}: {point} not in lines, ignoring...")
+                continue
+
+            idx = np.where(is_in_segment)[0][0]
+            # found_indices.append(idx)
+            if idx in points_in_segments:
+                points_in_segments[idx].append(point)
+            else:
+                points_in_segments[idx] = [point]
+
+        found_indices = list(list(points_in_segments.keys()))
+
+        # order if multiple points in line
+        for idx, points in points_in_segments.items():
+            print(len(points))
+            line = lines[idx]
+
+            assert np.all(
+                line.check_points_in_segment(points, within_segment=True, eps=eps)
+            )
+
+            projection = [line.axis.dot(p - line.beginning) for p in points]
+            points = np.array(points)[np.argsort(projection)]
+            points_in_segments[idx] = points
+
+        # argsort = np.argsort(found_indices)
+        found_indices = np.sort(found_indices).tolist()
+
+        if closed and len(found_indices) > 0:
+            found_indices.append(found_indices[0])
+
+        line_groups = []
+
+        # if not closed:
+        #     i = found_indices[0]
+        #     first_group = copy.deepcopy(lines[:i])
+        #     last = Line.from_two_points(lines[i].beginning, points_in_segments[i][0])
+        #     last.color = lines[i].color
+        #     first_group.append(last)
+        #     line_groups.append(first_group)
+
+        for i, j in pairwise(found_indices):
+            # assert i != j
+
+            points_i = points_in_segments[i]
+            points_j = points_in_segments[j]
+
+            # if multiple points in ith line
+            if not closed:
+                for p1, p2 in pairwise(points_i):
+                    subline = Line.from_two_points(p1, p2)
+                    subline.color = lines[j].color
+                    line_groups.append([subline])
+
+            new_line = Line.from_two_points(points_i[-1], lines[i].ending)
+            new_line.color = lines[i].color
+            new_lines = [new_line]
+
+            # copy lines between i and j
+            if j > i:
+                new_lines += copy.deepcopy(lines[i + 1 : j])
+            else:
+                new_lines += copy.deepcopy(lines[i + 1 :])
+                new_lines += copy.deepcopy(lines[:j])
+
+            new_line = Line.from_two_points(lines[j].beginning, points_j[0])
+            new_line.color = lines[j].color
+            new_lines.append(new_line)
+            line_groups.append(new_lines)
+
+            # if multiple points in jth line
+            # sub_lines_second = []
+            for p1, p2 in pairwise(points_j):
+                subline = Line.from_two_points(p1, p2)
+                subline.color = lines[j].color
+                line_groups.append([subline])
+            # line_groups.append(sub_lines_second)
+
+        # if not closed:
+        #     j = found_indices[-1]
+        #     first = Line.from_two_points(lines[j].ending, points_in_segments[j][-1])
+        #     first.color = lines[j].color
+        #     last_group = [first]
+        #     last_group += copy.deepcopy(lines[j + 1 :])
+        #     line_groups.append(last_group)
+
+        return line_groups

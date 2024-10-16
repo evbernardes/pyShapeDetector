@@ -908,6 +908,74 @@ def test_line_checks():
         assert line1.point_from_intersection(line2) is None
 
 
+def test_line_split_with_points():
+    eps = 1e-5
+    n = np.random.randint(8, 12)
+    r = 1
+    polygon = Plane.random().get_polygon_plane(n, r)
+
+    lines = polygon.vertices_lines
+
+    with pytest.raises(ValueError, match="points must be unique"):
+        points = [[0, 0, 0], [0, 0, 0]]
+        Line.split_lines_with_points(lines, points)
+
+    delta = np.array([0, 0, 1])
+    lines[0].translate(delta)
+    with pytest.raises(ValueError, match="should be connected"):
+        points = [[0, 0, 0], [1, 1, 1]]
+        Line.split_lines_with_points(lines, points)
+    lines[0].translate(-delta)
+
+    # testing number of results
+    def test(lines, points):
+        closed = np.linalg.norm(lines[-1].ending - lines[0].beginning) < eps
+        expected = len(points) + 1 - closed
+        line_groups = Line.split_lines_with_points(lines, points)
+        assert len(line_groups) == expected
+
+    # closed, simple
+    points = [lines[i].center for i in [1, 2]]
+    test(lines, points)
+
+    # closed, point in first and last
+    points = [lines[i].center for i in [0, 1, len(lines) - 1]]
+    test(lines, points)
+
+    # closed, first line split
+    i = 0
+    points.append(lines[i].center + 0.3 * lines[i].vector)
+    points.append(lines[i].center - 0.3 * lines[i].vector)
+    test(lines, points)
+
+    # closed, first and last line split
+    i = len(lines) - 1
+    points.append(lines[i].center + 0.3 * lines[i].vector)
+    points.append(lines[i].center - 0.3 * lines[i].vector)
+    test(lines, points)
+
+    lines = lines[:-1]
+    # non closed, simple
+    points = [lines[i].center for i in [1, 2]]
+    test(lines, points)
+
+    # non closed, point in first and last
+    points = [lines[i].center for i in [0, 1, len(lines) - 1]]
+    test(lines, points)
+
+    # non closed, first line split
+    i = 0
+    points.append(lines[i].center + 0.3 * lines[i].vector)
+    points.append(lines[i].center - 0.3 * lines[i].vector)
+    test(lines, points)
+
+    # non closed, first and last line split
+    i = len(lines) - 1
+    points.append(lines[i].center + 0.3 * lines[i].vector)
+    points.append(lines[i].center - 0.3 * lines[i].vector)
+    test(lines, points)
+
+
 def test_plane_split():
     for i in range(50):
         plane = get_random_convex_plane()
