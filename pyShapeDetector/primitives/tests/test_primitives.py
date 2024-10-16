@@ -934,6 +934,11 @@ def test_line_split_with_points():
         line_groups = Line.split_lines_with_points(lines, points)
         assert len(line_groups) == expected
 
+        assert_allclose(
+            sum([line.length for line in lines]),
+            sum([line.length for group in line_groups for line in group]),
+        )
+
     # closed, simple
     points = [lines[i].center for i in [1, 2]]
     test(lines, points)
