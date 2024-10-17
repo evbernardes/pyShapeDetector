@@ -79,29 +79,26 @@ def unproject_screen_to_world(vis, x, y):
 class ElementSelector:
     def __init__(
         self,
-        elements,
-        fixed_elements=None,
         bbox_expand=0.0,
-        paint_selected=True,
         window_name="",
+        paint_selected=True,
         return_finish_flag=False,
         show_plane_boundaries=False,
-        pre_selected=None,
         **camera_options,
     ):
-        self._elements = copy.deepcopy(elements)
-        self._fixed_elements = fixed_elements
+        self._elements = []
+        self._fixed_elements = []
+        self._selected = []
         self.bbox_expand = bbox_expand
         self.paint_selected = paint_selected
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
         self.show_plane_boundaries = show_plane_boundaries
-        self.pre_selected = pre_selected or [False] * len(elements)
         self.ELEMENTS_NUMBER_WARNING = ELEMENTS_NUMBER_WARNING
         self.NUM_POINTS_FOR_DISTANCE_CALC = NUM_POINTS_FOR_DISTANCE_CALC
         self.camera_options = camera_options
 
-        self.selected = self.pre_selected.copy()
+        # self.selected = self.pre_selected.copy()
         # self._elements_painted = []
         self.elements_distance = []
         self.i_old = 0
@@ -114,23 +111,55 @@ class ElementSelector:
         self.vis = None
 
         # Set up colors and elements
-        self._color_bbox_selected = COLOR_BBOX_SELECTED
-        self._color_bbox_unselected = COLOR_BBOX_UNSELECTED
-        self._color_selected = COLOR_SELECTED
-        self._color_selected_current = COLOR_SELECTED_CURRENT
-        self._color_unselected = COLOR_UNSELECTED
-        self._color_unselected_current = COLOR_UNSELECTED_CURRENT
+        self.color_bbox_selected = COLOR_BBOX_SELECTED
+        self.color_bbox_unselected = COLOR_BBOX_UNSELECTED
+        self.color_selected = COLOR_SELECTED
+        self.color_selected_current = COLOR_SELECTED_CURRENT
+        self.color_unselected = COLOR_UNSELECTED
+        self.color_unselected_current = COLOR_UNSELECTED_CURRENT
 
-        # Ensure proper format of inputs, check elements and raise warnings
-        self._check_and_initialize_inputs()
+    @property
+    def elements(self):
+        return self._elements
 
-        # Prepare elements for visualization
-        self._paint_elements()
+    @property
+    def fixed_elements(self):
+        return self._fixed_elements
 
-        self.elements_distance = self._compute_element_distances()
+    @property
+    def selected(self):
+        return self._selected
 
-        # Set up the visualizer
-        self._setup_visualizer()
+    @selected.setter
+    def selected(self, pre_selected_values):
+        if len(pre_selected_values) != len(self.elements):
+            raise ValueError(
+                "Length of input expected to be the same as the "
+                f"current number of elements ({len(self.elements)}), "
+                f"got {len(pre_selected_values)}."
+            )
+
+        for value in pre_selected_values:
+            if not isinstance(value, bool):
+                raise ValueError("Expected boolean, got {type(value)}")
+
+        self._selected = copy.deepcopy(pre_selected_values)
+
+    def add_elements(self, element, fixed=False):
+        if isinstance(element, (list, tuple)):
+            new_elements = copy.deepcopy(list(element))
+        else:
+            new_elements = [copy.deepcopy(element)]
+
+        if fixed:
+            self._fixed_elements += new_elements
+        else:
+            self._elements += new_elements
+            self._selected += [False] * len(new_elements)
+
+    def remove_element(self, idx):
+        del self._elements[idx]
+        del self._selected[idx]
 
     def _check_and_initialize_inputs(self):
         # check correct input of elements and fixed elements
@@ -158,11 +187,11 @@ class ElementSelector:
         # if not isinstance(self._elements, list):
         #     raise ValueError("Input elements must be a list.")
 
-        if len(self.pre_selected) != len(self._elements):
+        if len(self.selected) != len(self.elements):
             raise ValueError("Pre-select and input elements must have same length.")
 
-        if not np.array(self.pre_selected).dtype == bool:
-            raise ValueError("Pre-select must be a list of booleans.")
+        # if not np.array(self.pre_selected).dtype == bool:
+        #     raise ValueError("Pre-select must be a list of booleans.")
 
         if "mesh_show_back_face" not in self.camera_options:
             self.camera_options["mesh_show_back_face"] = True
@@ -181,10 +210,10 @@ class ElementSelector:
         # self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
         # self._fixed_bboxes = self._get_bboxes(self._fixed_elements, (0, 0, 0))
 
-        painted = self._get_painted(self._elements, self._color_unselected)
+        painted = self._get_painted(self._elements, self.color_unselected)
 
         if self.paint_selected:
-            painted[0] = self._get_painted(painted[0], self._color_unselected_current)
+            painted[0] = self._get_painted(painted[0], self.color_unselected_current)
         else:
             painted[0] = self._elements[0]
 
@@ -264,7 +293,7 @@ class ElementSelector:
                 distances.append(None)
         return distances
 
-    def _setup_visualizer(self):
+    def _get_visualizer(self):
         vis = visualization.VisualizerWithKeyCallback()
 
         # Register signal handler to gracefully stop the program
@@ -282,7 +311,15 @@ class ElementSelector:
             GLFW_KEY_LEFT_CONTROL, self.switch_mouse_toggle
         )
 
-        self.vis = vis
+        window_name = self.window_name
+        if window_name != "":
+            window_name += " - "
+
+        window_name += f"{len(self.elements)} elements. " + INSTRUCTIONS
+
+        vis.create_window(window_name)
+
+        return vis
 
     def _signal_handler(self, sig, frame):
         self.vis.destroy_window()
@@ -299,12 +336,12 @@ class ElementSelector:
         vis.remove_geometry(self._bboxes[self.i_old], reset_bounding_box=False)
 
         if not self.selected[self.i_old]:
-            self._bboxes[self.i_old].color = self._color_bbox_unselected
-            element = self._get_painted(element, self._color_unselected)
+            self._bboxes[self.i_old].color = self.color_bbox_unselected
+            element = self._get_painted(element, self.color_unselected)
         else:
-            self._bboxes[self.i_old].color = self._color_bbox_selected
+            self._bboxes[self.i_old].color = self.color_bbox_selected
             if self.paint_selected:
-                element = self._get_painted(element, self._color_selected)
+                element = self._get_painted(element, self.color_selected)
             else:
                 element = self._elements[self.i_old]
 
@@ -316,9 +353,9 @@ class ElementSelector:
         if not self.paint_selected:
             element = self._elements[self.i]
         elif self.selected[self.i]:
-            element = self._get_painted(element, self._color_selected_current)
+            element = self._get_painted(element, self.color_selected_current)
         else:
-            element = self._get_painted(element, self._color_unselected_current)
+            element = self._get_painted(element, self.color_unselected_current)
         self._elements_painted[self.i] = element
 
         vis.add_geometry(element, reset_bounding_box=False)
@@ -405,7 +442,18 @@ class ElementSelector:
         self.update(vis)
 
     def run(self):
-        vis = self.vis
+        if len(self.elements) == 0:
+            raise RuntimeError("No elements added!")
+
+        # Ensure proper format of inputs, check elements and raise warnings
+        self._check_and_initialize_inputs()
+
+        # Prepare elements for visualization
+        self._paint_elements()
+        self.elements_distance = self._compute_element_distances()
+
+        # Set up the visualizer
+        vis = self._get_visualizer()
 
         elements = (
             self._fixed_elements
@@ -414,14 +462,11 @@ class ElementSelector:
             + [self._bboxes[0]]
         )
 
-        vis.create_window(self.window_name)
+        # vis.create_window()
+
         for elem in elements:
             vis.add_geometry(elem)
 
         vis.run()
-        vis.destroy_window()
         vis.close()
-
-        # if self.return_finish_flag:
-        #     return self.selected, self.finish
-        # return self.selected
+        vis.destroy_window()

@@ -213,9 +213,18 @@ def draw_two_columns(objs_left, objs_right, **camera_options):
 
 def select_manually(
     elements,
+    fixed_elements=[],
+    pre_selected=None,
     **args,
 ):
-    element_selector = ElementSelector(elements, **args)
+    if pre_selected is None:
+        pre_selected = [False] * len(elements)
+
+    element_selector = ElementSelector(**args)
+    element_selector.add_elements(elements)
+    element_selector.pre_selected = pre_selected
+    element_selector.add_elements(fixed_elements, fixed=True)
+
     element_selector.run()
 
     return_finish_flag = args.get("return_finish_flag", False)
