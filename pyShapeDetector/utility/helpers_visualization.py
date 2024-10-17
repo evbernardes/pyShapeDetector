@@ -12,6 +12,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from open3d import visualization
+from .manual_selector import ElementSelector
 
 
 GLFW_KEY_LEFT_SHIFT = 340
@@ -211,6 +212,31 @@ def draw_two_columns(objs_left, objs_right, **camera_options):
 
 
 def select_manually(
+    elements,
+    **args,
+    # elements,
+    # fixed_elements=None,
+    # bbox_expand=0.0,
+    # paint_selected=True,
+    # window_name="",
+    # return_finish_flag=False,
+    # show_plane_boundaries=False,
+    # pre_selected=None,
+    # ELEMENTS_NUMBER_WARNING=200,
+    # NUM_POINTS_FOR_DISTANCE_CALC=50,
+    # **camera_options,
+):
+    element_selector = ElementSelector(elements, **args)
+    element_selector.run()
+
+    return_finish_flag = args.get("return_finish_flag", False)
+
+    if return_finish_flag:
+        return element_selector.selected, element_selector.finish
+    return element_selector.selected
+
+
+def select_manually_old(
     elements,
     fixed_elements=None,
     bbox_expand=0.0,
@@ -574,6 +600,8 @@ def select_manually(
     vis.run()
     vis.destroy_window()
     vis.close()
+
+    # return_finish_flag = args.get("return_finish_flag", False)
 
     if return_finish_flag:
         return data["selected"], data["finish"]
