@@ -126,6 +126,7 @@ class Line(Primitive):
     get_segment_intersection
     get_segment_union
     _get_closest_intersection_or_point
+    add_to_points
     split_lines_with_points
     """
 
@@ -1009,6 +1010,30 @@ class Line(Primitive):
             #     "is_intersection": True,
             # }
 
+    def add_to_points(self, points):
+        """Creates new array of points, containing the input points between
+        the line extremities.
+
+        Parameters
+        ----------
+        points : N x 3 array
+            Input points
+
+        Returns
+        -------
+        np.array
+            Output points
+        """
+        points = np.asarray(points)
+
+        dist_beginning = np.linalg.norm(self.beginning - points[0])
+        dist_ending = np.linalg.norm(self.ending - points[0])
+
+        if dist_beginning < dist_ending:
+            return np.vstack([self.beginning, points, self.ending])
+        else:
+            return np.vstack([self.ending, points, self.beginning])
+
     @staticmethod
     def split_lines_with_points(lines, points, eps=1e-4, return_vertices=False):
         """Split connected list of lines in line groups.
@@ -1068,12 +1093,13 @@ class Line(Primitive):
         for idx, points in points_in_segments.items():
             line = lines[idx]
 
-
             if not np.all(
                 line.check_points_in_segment(points, within_segment=True, eps=eps)
             ):
-                warnings.warn("Intersected points are not in segment, "
-                              "should not have happened.")
+                warnings.warn(
+                    "Intersected points are not in segment, "
+                    "should not have happened."
+                )
 
             projection = [line.axis.dot(p - line.beginning) for p in points]
             points = np.array(points)[np.argsort(projection)]
