@@ -204,7 +204,11 @@ class PlaneBounded(Plane):
         """Lines defining vertices."""
         from .line import Line
 
-        return Line.from_vertices(self.vertices)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=".*Line instance has very small length.*"
+            )
+            return Line.from_vertices(self.vertices)
 
     @property
     def vertices_LineSet(self):
