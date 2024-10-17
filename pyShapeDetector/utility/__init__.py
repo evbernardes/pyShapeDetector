@@ -31,6 +31,7 @@ ask_and_save
 from .multidetector import MultiDetector
 from .primitivelimits import PrimitiveLimits
 from .detector_options import DetectorOptions
+from .element_selector import ElementSelector
 
 from .helpers_internal import (
     parallelize,
@@ -53,7 +54,6 @@ from .helpers_visualization import (
     draw_two_columns,
     # draw_and_ask,
     select_manually,
-    select_manually_old,
     select_combinations_manually,
 )
 

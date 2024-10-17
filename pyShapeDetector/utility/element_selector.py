@@ -16,12 +16,34 @@ from open3d import visualization
 # from pyShapeDetector.primitives import Primitive
 
 
+ELEMENTS_NUMBER_WARNING = 60
+NUM_POINTS_FOR_DISTANCE_CALC = 30
+
 COLOR_BBOX_SELECTED = (0, 0.8, 0)
 COLOR_BBOX_UNSELECTED = (1, 0, 0)
 COLOR_SELECTED = (0, 0.4, 0)
 COLOR_SELECTED_CURRENT = COLOR_BBOX_SELECTED
 COLOR_UNSELECTED = (0.9, 0.9, 0.9)
 COLOR_UNSELECTED_CURRENT = (0.0, 0.0, 0.6)
+
+KEYS_DESCRIPTOR = {
+    "TOGGLE": "S",
+    "TOGGLE ALL": "T",
+    "NEXT": "D",
+    "PREVIOUS": "A",
+    "FINISH": "F",
+}
+
+KEYS_CONFIG = {k: ord(value) for k, value in KEYS_DESCRIPTOR.items()}
+
+GLFW_KEY_LEFT_SHIFT = 340
+GLFW_KEY_LEFT_CONTROL = 341
+
+INSTRUCTIONS = (
+    " Green: selected. White: unselected. Blue: current. "
+    + " | ".join([f"({k}) {desc.lower()}" for desc, k in KEYS_DESCRIPTOR.items()])
+    + " | (LShift) Mouse select + (LCtrl) Toggle"
+)
 
 
 class ElementSelector:
@@ -35,8 +57,6 @@ class ElementSelector:
         return_finish_flag=False,
         show_plane_boundaries=False,
         pre_selected=None,
-        ELEMENTS_NUMBER_WARNING=60,
-        NUM_POINTS_FOR_DISTANCE_CALC=30,
         **camera_options,
     ):
         self._elements = copy.deepcopy(elements)
@@ -117,15 +137,15 @@ class ElementSelector:
         if "mesh_show_back_face" not in self.camera_options:
             self.camera_options["mesh_show_back_face"] = True
 
-        # ... and now get them in Open3D form
         self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
         self._fixed_bboxes = self._get_bboxes(self._fixed_elements, (0, 0, 0))
 
+        if self.show_plane_boundaries:
+            self._fixed_elements += self._add_plane_boundaries()
+
+        # IMPORTANT: respect order, only get Open3D elements at the very end
         self._elements = [self._get_open3d(elem) for elem in self._elements]
         self._fixed_elements = [self._get_open3d(elem) for elem in self._fixed_elements]
-
-        if self.show_plane_boundaries:
-            self._add_plane_boundaries()
 
     def _paint_elements(self):
         # self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
@@ -141,6 +161,7 @@ class ElementSelector:
         self._elements_painted = painted
 
     def _add_plane_boundaries(self):
+        plane_boundaries = []
         for element in self._elements:
             try:
                 lineset = element.vertices_LineSet
@@ -150,7 +171,8 @@ class ElementSelector:
             except AttributeError:
                 continue
             lineset.paint_uniform_color((0, 0, 0))
-            self._fixed_elements.append(lineset)
+            plane_boundaries.append(lineset)
+        return plane_boundaries
 
     def _get_open3d(self, elem):
         from pyShapeDetector.geometry import TriangleMesh
@@ -213,21 +235,24 @@ class ElementSelector:
         return distances
 
     def _setup_visualizer(self):
-        self.vis = visualization.VisualizerWithKeyCallback()
+        vis = visualization.VisualizerWithKeyCallback()
 
         # Register signal handler to gracefully stop the program
         signal.signal(signal.SIGINT, self._signal_handler)
 
-        self.vis.register_key_action_callback(ord("S"), self.toggle)
-        self.vis.register_key_action_callback(ord("D"), self.next)
-        self.vis.register_key_action_callback(ord("A"), self.previous)
-        self.vis.register_key_action_callback(ord("F"), self.finish_process)
-        self.vis.register_key_action_callback(
-            340, self.switch_mouse_selection
-        )  # GLFW_KEY_LEFT_SHIFT
-        self.vis.register_key_action_callback(
-            341, self.switch_mouse_toggle
-        )  # GLFW_KEY_LEFT_CONTROL
+        vis.register_key_action_callback(KEYS_CONFIG["TOGGLE"], self.toggle)
+        vis.register_key_action_callback(KEYS_CONFIG["TOGGLE ALL"], self.toggle_all)
+        vis.register_key_action_callback(KEYS_CONFIG["NEXT"], self.next)
+        vis.register_key_action_callback(KEYS_CONFIG["PREVIOUS"], self.previous)
+        vis.register_key_action_callback(KEYS_CONFIG["FINISH"], self.finish_process)
+        vis.register_key_action_callback(
+            GLFW_KEY_LEFT_SHIFT, self.switch_mouse_selection
+        )
+        vis.register_key_action_callback(
+            GLFW_KEY_LEFT_CONTROL, self.switch_mouse_toggle
+        )
+
+        self.vis = vis
 
     def _signal_handler(self, sig, frame):
         self.vis.destroy_window()
@@ -275,6 +300,18 @@ class ElementSelector:
         self.selected[self.i] = not self.selected[self.i]
         self.update(vis)
 
+    def toggle_all(self, vis, action, mods):
+        if action == 1:
+            return
+
+        idx = self.i
+
+        value = not np.sum(self.selected) == (L := len(self.selected))
+        for i in range(L):
+            self.selected[i] = value
+            self.update(vis, i)
+        self.update(vis, idx)
+
     def next(self, vis, action, mods):
         if action == 1:
             return
@@ -297,9 +334,11 @@ class ElementSelector:
         self.mouse_select = bool(action)
 
         if self.mouse_select:
+            print("using mouse!")
             vis.register_mouse_button_callback(self.on_mouse_button)
             vis.register_mouse_move_callback(self.on_mouse_move)
         else:
+            print("not using mouse!")
             vis.register_mouse_button_callback(None)
             vis.register_mouse_move_callback(None)
 
@@ -336,6 +375,8 @@ class ElementSelector:
         self.update(vis)
 
     def run(self):
+        vis = self.vis
+
         elements = (
             self._fixed_elements
             + self._fixed_bboxes
@@ -343,10 +384,13 @@ class ElementSelector:
             + [self._bboxes[0]]
         )
 
+        vis.create_window(self.window_name)
         for elem in elements:
-            self.vis.add_geometry(elem)
-        self.vis.run()
-        self.vis.destroy_window()
+            vis.add_geometry(elem)
+
+        vis.run()
+        vis.destroy_window()
+        vis.close()
 
         # if self.return_finish_flag:
         #     return self.selected, self.finish
