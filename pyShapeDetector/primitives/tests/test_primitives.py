@@ -1024,85 +1024,98 @@ def test_plane_split():
 
 def test_add_lines_to_planes():
     eps = 1e-8
-    for i in range(20):
-        vz = normalized(np.random.random(3))
-        vx = normalized(np.cross(np.random.random(3), vz))
-        vy = normalized(np.cross(vz, vx))
 
-        delta = np.random.random()
-        shrink = np.random.random()
-        dims1 = np.random.random(2)
+    def do_test(number_of_tests, use_shapely):
+        for i in range(number_of_tests):
+            vz = normalized(np.random.random(3))
+            vx = normalized(np.cross(np.random.random(3), vz))
+            vy = normalized(np.cross(vz, vx))
 
-        # assuring dims2[0] is smaller than dims2[0]
-        dims2 = np.array([dims1[0] * (shrink**2), np.random.random()])
-        assert dims2[0] < dims1[0]
+            delta = np.random.random()
+            shrink = np.random.random()
+            dims1 = np.random.random(2)
 
-        vectors1 = dims1[np.newaxis].T * (vx, vy)
-        vectors2 = dims2[np.newaxis].T * (vx, vz)
+            # assuring dims2[0] is smaller than dims2[0]
+            dims2 = np.array([dims1[0] * (shrink**2), np.random.random()])
+            assert dims2[0] < dims1[0]
 
-        plane1 = PlaneRectangular.from_vectors_center(vectors1)
-        plane2 = PlaneRectangular.from_vectors_center(vectors2)
-        plane1.translate(plane1.normal * dims2[1] / 2)
-        plane2.translate(plane2.normal * dims1[1] / 2)
+            vectors1 = dims1[np.newaxis].T * (vx, vy)
+            vectors2 = dims2[np.newaxis].T * (vx, vz)
 
-        np.testing.assert_allclose(vectors1, plane1.parallel_vectors)
-        np.testing.assert_allclose(vectors2, plane2.parallel_vectors)
-        np.testing.assert_allclose(dims1, plane1.dimensions)
-        np.testing.assert_allclose(dims2, plane2.dimensions)
+            plane1 = PlaneRectangular.from_vectors_center(vectors1)
+            plane2 = PlaneRectangular.from_vectors_center(vectors2)
+            plane1.translate(plane1.normal * dims2[1] / 2)
+            plane2.translate(plane2.normal * dims1[1] / 2)
 
-        plane1 = PlaneBounded(plane1)
-        plane2 = PlaneBounded(plane2)
+            np.testing.assert_allclose(vectors1, plane1.parallel_vectors)
+            np.testing.assert_allclose(vectors2, plane2.parallel_vectors)
+            np.testing.assert_allclose(dims1, plane1.dimensions)
+            np.testing.assert_allclose(dims2, plane2.dimensions)
 
-        area1 = plane1.surface_area
-        area2 = plane2.surface_area
+            plane1 = PlaneBounded(plane1)
+            plane2 = PlaneBounded(plane2)
 
-        np.testing.assert_allclose(area1, np.prod(dims1))
-        np.testing.assert_allclose(area2, np.prod(dims2))
+            area1 = plane1.surface_area
+            area2 = plane2.surface_area
 
-        plane1.translate(delta * plane1.normal)
-        plane2.translate(delta * plane2.normal)
+            np.testing.assert_allclose(area1, np.prod(dims1))
+            np.testing.assert_allclose(area2, np.prod(dims2))
 
-        line = PlaneBounded.get_plane_intersections([plane1, plane2])[0, 1]
+            plane1.translate(delta * plane1.normal)
+            plane2.translate(delta * plane2.normal)
 
-        line1 = line.get_fitted_to_points(plane1.vertices)
-        line2 = line.get_fitted_to_points(plane2.vertices)
+            line = PlaneBounded.get_plane_intersections([plane1, plane2])[0, 1]
 
-        np.testing.assert_allclose(line.length, dims1[0])
-        np.testing.assert_allclose(line1.length, dims1[0])
-        np.testing.assert_allclose(line2.length, dims2[0])
+            line1 = line.get_fitted_to_points(plane1.vertices)
+            line2 = line.get_fitted_to_points(plane2.vertices)
 
-        # saving concave versions for later
-        plane1_concave = PlaneBounded(plane1.model, plane1.vertices, convex=False)
-        # plane2_concave = PlaneBounded(plane2.model, plane2.vertices, convex=False)
+            np.testing.assert_allclose(line.length, dims1[0])
+            np.testing.assert_allclose(line1.length, dims1[0])
+            np.testing.assert_allclose(line2.length, dims2[0])
 
-        line_shrinked = line.get_extended(shrink)
-        # np.testing.assert_allclose(line1.length * shrink, line_shrinked.length)
+            # saving concave versions for later
+            plane1_concave = PlaneBounded(plane1.model, plane1.vertices, convex=False)
+            # plane2_concave = PlaneBounded(plane2.model, plane2.vertices, convex=False)
 
-        assert line_shrinked.length < line1.length  # smaller, adds small trapezoid:
-        plane1.add_line(line_shrinked)
-        trapezoid1_small = delta * (line_shrinked.length + line1.length) / 2
-        np.testing.assert_allclose(plane1.surface_area, area1 + trapezoid1_small)
+            line_shrinked = line.get_extended(shrink)
+            # np.testing.assert_allclose(line1.length * shrink, line_shrinked.length)
 
-        assert line_shrinked.length > line2.length  # bigger, surface is a trapezoid:
-        plane2.add_line(line_shrinked)
-        trapezoid2_big = (delta + dims2[1]) * (line_shrinked.length + line2.length) / 2
-        np.testing.assert_allclose(plane2.surface_area, trapezoid2_big)
+            assert line_shrinked.length < line1.length  # smaller, adds small trapezoid:
+            plane1.add_line(line_shrinked, use_shapely=use_shapely)
+            trapezoid1_small = delta * (line_shrinked.length + line1.length) / 2
+            np.testing.assert_allclose(plane1.surface_area, area1 + trapezoid1_small)
 
-        plane1_concave.add_line(line_shrinked, eps=eps)
-        rectangle1_small = delta * line_shrinked.length
-        np.testing.assert_allclose(
-            plane1_concave.surface_area,
-            area1 + rectangle1_small,
-            atol=2 * eps,
-            rtol=2 * eps,
-        )
+            assert (
+                line_shrinked.length > line2.length
+            )  # bigger, surface is a trapezoid:
+            plane2.add_line(line_shrinked, use_shapely=use_shapely)
+            trapezoid2_big = (
+                (delta + dims2[1]) * (line_shrinked.length + line2.length) / 2
+            )
+            np.testing.assert_allclose(plane2.surface_area, trapezoid2_big)
 
-        # not testing because this exact behaviour is not completely understood
-        # plane2_concave.add_line(line_shrinked)
-        # rectangle2_small = delta * line_shrinked.length
-        # np.testing.assert_allclose(
-        #     plane2_concave.surface_area, area2 + rectangle2_small
-        # )
+            # this one is problematic for shapely
+            if use_shapely:
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore",
+                        message="Shapely could not glue points, trying without it.",
+                    )
+                    plane1_concave.add_line(
+                        line_shrinked, eps=eps, use_shapely=use_shapely
+                    )
+            else:
+                plane1_concave.add_line(line_shrinked, eps=eps, use_shapely=use_shapely)
+            rectangle1_small = delta * line_shrinked.length
+            np.testing.assert_allclose(
+                plane1_concave.surface_area,
+                area1 + rectangle1_small,
+                atol=2 * eps,
+                rtol=2 * eps,
+            )
+
+    do_test(20, use_shapely=False)
+    do_test(20, use_shapely=True)
 
 
 # if __name__ == "__main__":

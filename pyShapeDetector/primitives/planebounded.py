@@ -20,6 +20,10 @@ from importlib.util import find_spec
 if has_mapbox_earcut := find_spec("mapbox_earcut") is not None:
     from mapbox_earcut import triangulate_float32
 
+if has_shapely := find_spec("shapely") is not None:
+    from shapely.geometry import Polygon, MultiPolygon
+    from shapely.ops import unary_union
+
 
 def _unflatten(values):
     values = np.array(values)
@@ -936,13 +940,18 @@ class PlaneBounded(Plane):
         vertices_new = points[indices_unique]
         self.set_vertices(vertices_new, flatten=True, convex=self.is_convex)
 
-    def add_line(self, line, add_as_inliers=False, eps=1e-4):
+    def add_line(
+        self,
+        line,
+        add_as_inliers=False,
+        eps=1e-4,
+        glue_non_convex=True,
+        use_shapely=False,
+    ):
         """Add line to plane.
 
         For convex planes: add both extremities of the line to its vertices
         and recalculate boundary.
-
-        For non-convex planes: not implemented.
 
         See: glue_planes_with_intersections
 
@@ -957,8 +966,19 @@ class PlaneBounded(Plane):
             Default: False.
         eps : float, optional
             Adjusts points to be sure they are inside. Default: 1e-4.
+        glue_non_convex : boolean, optional
+            If True, tries to glue non-convex planes too. Default: True.
+        use_shapely : boolean, optional
+            If True, tries using shapely union to fuse shapes. Only works if
+            the side of the original plane is convex. Default: False.
+
 
         """
+        if use_shapely and not has_shapely:
+            raise RuntimeError(
+                "use_shapely option cannot be used because shapely is not installed."
+            )
+
         from .line import Line
 
         if not isinstance(line, Line):
@@ -968,11 +988,11 @@ class PlaneBounded(Plane):
             warnings.warn("At least one point of line inside plane, doing nothing.")
             return
 
+        final_vertices = None
         if self.is_convex:
-            self.add_bound_points([line.beginning, line.ending])
-            if add_as_inliers:
-                self.add_inliers([line.beginning, line.ending])
-        else:
+            final_vertices = line.add_to_points(self.vertices)
+
+        elif glue_non_convex:
             vertices_lines = self.vertices_lines
             axis = np.cross(line.axis, self.normal)
 
@@ -993,28 +1013,55 @@ class PlaneBounded(Plane):
                 for parallel_line in parallel_lines
             ]
 
+            # Get new vertices by separating lines and then creating separate planes
             _, point_groups = Line.split_lines_with_points(
                 vertices_lines, points_closest, return_vertices=True, eps=eps
             )
 
-            def add_line_to_separated_points(line, points):
-                dist_beginning = np.linalg.norm(line.beginning - points[0])
-                dist_ending = np.linalg.norm(line.ending - points[0])
-                if dist_beginning < dist_ending:
-                    return np.vstack([line.beginning, points, line.ending])
+            if len(point_groups) != 2:
+                warnings.warn(
+                    f"{len(point_groups)} point loops found instead of 2, "
+                    "doing nothing."
+                )
+                return
+
+            final_vertices = None
+            if use_shapely:
+                polygon_original = Polygon(self.vertices_projections)
+                polygon_new = Polygon(
+                    self.get_projections(
+                        [
+                            line.beginning,
+                            points_closest[0],
+                            points_closest[1],
+                            line.ending,
+                        ]
+                    )
+                )
+
+                union_polygon = unary_union([polygon_original, polygon_new])
+
+                try:
+                    final_vertices = self.get_points_from_projections(
+                        union_polygon.boundary.coords
+                    )
+                except NotImplementedError:
+                    warnings.warn("Shapely could not glue points, trying without it.")
+                    final_vertices = None
+
+            if not use_shapely or final_vertices is None:
+                plane1, plane2 = [
+                    PlaneBounded(self.model, line.add_to_points(points), convex=False)
+                    for points in point_groups
+                ]
+
+                if plane1.surface_area > plane2.surface_area:
+                    final_vertices = plane1.vertices
                 else:
-                    return np.vstack([line.ending, points, line.beginning])
+                    final_vertices = plane2.vertices
 
-            vertices_1 = add_line_to_separated_points(line, point_groups[0])
-            vertices_2 = add_line_to_separated_points(line, point_groups[1])
-            plane1 = PlaneBounded(self.model, vertices_1, convex=False)
-            plane2 = PlaneBounded(self.model, vertices_2, convex=False)
-
-            if plane1.surface_area > plane2.surface_area:
-                self.set_vertices(plane1.vertices, flatten=False, convex=False)
-            else:
-                self.set_vertices(plane2.vertices, flatten=False, convex=False)
-
+        if final_vertices is not None:
+            self.set_vertices(final_vertices, flatten=False, convex=self.is_convex)
             if add_as_inliers:
                 self.add_inliers([line.beginning, line.ending])
 
