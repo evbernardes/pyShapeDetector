@@ -38,12 +38,42 @@ KEYS_CONFIG = {k: ord(value) for k, value in KEYS_DESCRIPTOR.items()}
 
 GLFW_KEY_LEFT_SHIFT = 340
 GLFW_KEY_LEFT_CONTROL = 341
+# GLFW_KEY_ENTER = 257
 
 INSTRUCTIONS = (
     " Green: selected. White: unselected. Blue: current. "
     + " | ".join([f"({k}) {desc.lower()}" for desc, k in KEYS_DESCRIPTOR.items()])
     + " | (LShift) Mouse select + (LCtrl) Toggle"
 )
+
+
+def unproject_screen_to_world(vis, x, y):
+    """
+    Convert screen coordinates (x, y, depth) to 3D coordinates.
+    """
+
+    depth = vis.capture_depth_float_buffer(True)
+    depth = np.asarray(depth)[y, x]
+
+    intrinsic = vis.get_view_control().convert_to_pinhole_camera_parameters().intrinsic
+    extrinsic = vis.get_view_control().convert_to_pinhole_camera_parameters().extrinsic
+
+    fx = intrinsic.intrinsic_matrix[0, 0]
+    fy = intrinsic.intrinsic_matrix[1, 1]
+    cx = intrinsic.intrinsic_matrix[0, 2]
+    cy = intrinsic.intrinsic_matrix[1, 2]
+
+    # Convert screen space to camera space
+    z = depth
+    x = (x - cx) * z / fx
+    y = (y - cy) * z / fy
+
+    # Convert camera space to world space
+    camera_space_point = np.array([x, y, z, 1.0]).reshape(4, 1)
+    world_space_point = np.dot(np.linalg.inv(extrinsic), camera_space_point)
+
+    point = world_space_point[:3].flatten()
+    return point
 
 
 class ElementSelector:
@@ -329,22 +359,21 @@ class ElementSelector:
         vis.close()
 
     def switch_mouse_selection(self, vis, action, mods):
-        if action == 1:
+        if self.mouse_select == bool(action):
             return
+
         self.mouse_select = bool(action)
 
         if self.mouse_select:
-            print("using mouse!")
+            # print("[Info] Mouse mode: selection")
             vis.register_mouse_button_callback(self.on_mouse_button)
             vis.register_mouse_move_callback(self.on_mouse_move)
         else:
-            print("not using mouse!")
+            # print("[Info] Mouse mode: camera control")
             vis.register_mouse_button_callback(None)
             vis.register_mouse_move_callback(None)
 
     def switch_mouse_toggle(self, vis, action, mods):
-        if action == 1:
-            return
         self.mouse_toggle = bool(action)
 
     def on_mouse_move(self, vis, x, y):
@@ -355,7 +384,8 @@ class ElementSelector:
 
         if action == 1:
             return
-        point = self.unproject(vis, *self.mouse_position)
+
+        point = unproject_screen_to_world(vis, *self.mouse_position)
 
         distances = []
         for elem in self.elements_distance:
