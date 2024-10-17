@@ -140,7 +140,11 @@ class PointCloud(Open3D_Geometry):
 
     def get_oriented_bounding_box(self):
         try:
-            oriented_bbox = self.get_minimal_oriented_bounding_box()
+            if len(self.points) == 0:
+                warnings.warn("PointCloud is empty, retuning None.")
+                oriented_bbox = None
+            else:
+                oriented_bbox = self.get_minimal_oriented_bounding_box()
 
         except RuntimeError as e:
             if "Qhull precision error" in str(e):
