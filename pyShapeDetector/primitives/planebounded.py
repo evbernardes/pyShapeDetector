@@ -988,8 +988,12 @@ class PlaneBounded(Plane):
         if not isinstance(line, Line):
             raise ValueError(f"Expected instance of Line, got {type(line)}.")
 
-        if np.any(self.contains_projections(line.points)):
-            warnings.warn("At least one point of line inside plane, doing nothing.")
+        # if np.any(self.contains_projections(line.points)):
+        #     warnings.warn("At least one point of line inside plane, doing nothing.")
+        #     return
+
+        if np.all(self.contains_projections(line.points)):
+            warnings.warn("Both points of line inside plane, doing nothing.")
             return
 
         final_vertices = None
