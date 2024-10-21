@@ -215,6 +215,7 @@ def select_manually(
     elements,
     fixed_elements=[],
     pre_selected=None,
+    return_finish_flag=False,
     **args,
 ):
     if pre_selected is None:
@@ -224,14 +225,35 @@ def select_manually(
     element_selector.add_elements(elements)
     element_selector.pre_selected = pre_selected
     element_selector.add_elements(fixed_elements, fixed=True)
-
     element_selector.run()
 
-    return_finish_flag = args.get("return_finish_flag", False)
+    if "function" in args:
+        warnings.warn("To use a function, try 'apply_function_manually' instead.")
 
     if return_finish_flag:
         return element_selector.selected, element_selector.finish
     return element_selector.selected
+
+
+def apply_function_manually(
+    elements,
+    function,
+    fixed_elements=[],
+    pre_selected=None,
+    **args,
+):
+    if pre_selected is None:
+        pre_selected = [False] * len(elements)
+
+    element_selector = ElementSelector(**args)
+    element_selector.add_elements(elements)
+    element_selector.function = function
+    element_selector.pre_selected = pre_selected
+    element_selector.add_elements(fixed_elements, fixed=True)
+
+    element_selector.run()
+
+    return element_selector.selected, element_selector.elements
 
 
 # def draw_and_ask(elements, return_not_selected=False, **camera_options):

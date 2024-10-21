@@ -9,6 +9,7 @@ import copy
 import signal
 import sys
 import warnings
+import inspect
 import numpy as np
 from open3d import visualization
 # from .helpers_visualization import get_painted
@@ -36,12 +37,13 @@ KEYS_DESCRIPTOR = {
 
 GLFW_KEY_LEFT_SHIFT = 340
 GLFW_KEY_LEFT_CONTROL = 341
-# GLFW_KEY_ENTER = 257
+GLFW_KEY_ENTER = 257
 
 INSTRUCTIONS = (
     " Green: selected. White: unselected. Blue: current. "
     + " | ".join([f"({chr(k)}) {desc.lower()}" for desc, k in KEYS_DESCRIPTOR.items()])
     + " | (LShift) Mouse select + (LCtrl) Toggle"
+    + " | (LShift) + (Enter) Apply function"
 )
 
 
@@ -88,6 +90,7 @@ class ElementSelector:
         self._fixed_elements = []
         self._elements_painted = []
         self._selected = []
+        self._function = None
         self.bbox_expand = bbox_expand
         self.paint_selected = paint_selected
         self.window_name = window_name
@@ -117,6 +120,20 @@ class ElementSelector:
         self.color_unselected_current = COLOR_UNSELECTED_CURRENT
 
     @property
+    def function(self):
+        return self._function
+
+    @function.setter
+    def function(self, new_function):
+        if new_function is None:
+            pass
+        elif (N := len(inspect.signature(new_function).parameters)) != 1:
+            raise ValueError(
+                f"Expected function with 1 parameter (list of elements), got {N}."
+            )
+        self._function = new_function
+
+    @property
     def elements(self):
         return self._elements
 
@@ -130,7 +147,9 @@ class ElementSelector:
 
     @selected.setter
     def selected(self, pre_selected_values):
-        if len(pre_selected_values) != len(self.elements):
+        if isinstance(pre_selected_values, bool):
+            pre_selected_values = [pre_selected_values] * len(self.selected)
+        elif len(pre_selected_values) != len(self.elements):
             raise ValueError(
                 "Length of input expected to be the same as the "
                 f"current number of elements ({len(self.elements)}), "
@@ -142,6 +161,22 @@ class ElementSelector:
                 raise ValueError("Expected boolean, got {type(value)}")
 
         self._selected = copy.deepcopy(pre_selected_values)
+
+    def distances_to_point(self, point):
+        from pyShapeDetector.geometry import PointCloud
+
+        distances = []
+        for elem in self.elements_distance:
+            if elem is None:
+                distances.append(np.inf)
+            elif PointCloud.is_instance_or_open3d(elem):
+                distances.append(
+                    PointCloud([point]).compute_point_cloud_distance(elem)[0]
+                )
+            else:  # it is a Primitive
+                distances.append(elem.get_distances(point))
+
+        return distances
 
     def add_elements(self, element, fixed=False):
         if isinstance(element, (list, tuple)):
@@ -194,26 +229,28 @@ class ElementSelector:
         if "mesh_show_back_face" not in self.camera_options:
             self.camera_options["mesh_show_back_face"] = True
 
-        self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
-        self._fixed_bboxes = self._get_bboxes(self._fixed_elements, (0, 0, 0))
-
         if self.show_plane_boundaries:
             self._fixed_elements += self._add_plane_boundaries()
 
         # IMPORTANT: respect order, only get Open3D elements at the very end
-        self._elements = [self._get_open3d(elem) for elem in self._elements]
+        self._fixed_bboxes = self._get_bboxes(self._fixed_elements, (0, 0, 0))
         self._fixed_elements = [self._get_open3d(elem) for elem in self._fixed_elements]
+
+        # self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
+        # self._elements = [self._get_open3d(elem) for elem in self._elements]
 
     def _paint_elements(self):
         # self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
         # self._fixed_bboxes = self._get_bboxes(self._fixed_elements, (0, 0, 0))
 
-        painted = self._get_painted(self._elements, self.color_unselected)
+        painted = self._get_painted(self._elements_drawable, self.color_unselected)
 
         if self.paint_selected:
-            painted[0] = self._get_painted(painted[0], self.color_unselected_current)
+            painted[self.i] = self._get_painted(
+                painted[self.i], self.color_unselected_current
+            )
         else:
-            painted[0] = self._elements[0]
+            painted[self.i] = self._elements_drawable[self.i]
 
         self._elements_painted = painted
 
@@ -275,21 +312,21 @@ class ElementSelector:
         from pyShapeDetector.primitives import Primitive
         from pyShapeDetector.geometry import TriangleMesh, PointCloud
 
-        distances = []
+        elements_distance = []
         for elem in self._elements:
             if isinstance(elem, Primitive):
-                distances.append(elem)
+                elements_distance.append(elem)
             elif TriangleMesh.is_instance_or_open3d(elem):
-                distances.append(
+                elements_distance.append(
                     elem.sample_points_uniformly(self._NUM_POINTS_FOR_DISTANCE_CALC)
                 )
             elif PointCloud.is_instance_or_open3d(elem):
-                distances.append(
+                elements_distance.append(
                     elem.uniform_down_sample(self._NUM_POINTS_FOR_DISTANCE_CALC)
                 )
             else:
-                distances.append(None)
-        return distances
+                elements_distance.append(None)
+        return elements_distance
 
     def _get_visualizer(self):
         vis = visualization.VisualizerWithKeyCallback()
@@ -302,12 +339,19 @@ class ElementSelector:
         vis.register_key_action_callback(KEYS_DESCRIPTOR["NEXT"], self.next)
         vis.register_key_action_callback(KEYS_DESCRIPTOR["PREVIOUS"], self.previous)
         vis.register_key_action_callback(KEYS_DESCRIPTOR["FINISH"], self.finish_process)
-        vis.register_key_action_callback(
-            GLFW_KEY_LEFT_SHIFT, self.switch_mouse_selection
-        )
+        vis.register_key_action_callback(GLFW_KEY_LEFT_SHIFT, self.switch_mode)
         vis.register_key_action_callback(
             GLFW_KEY_LEFT_CONTROL, self.switch_mouse_toggle
         )
+        vis.register_key_action_callback(GLFW_KEY_ENTER, self.apply_function)
+
+        # vis.register_key_action_callback(
+        #     GLFW_KEY_LEFT_SHIFT, self.switch_mouse_selection
+        # )
+        # vis.register_key_action_callback(
+        #     GLFW_KEY_LEFT_CONTROL, self.switch_mouse_toggle
+        # )
+        # vis.register_key_action_callback(GLFW_KEY_ENTER, self.apply_function)
 
         window_name = self.window_name
         if window_name != "":
@@ -323,6 +367,14 @@ class ElementSelector:
         self._vis.destroy_window()
         self._vis.close()
         sys.exit(0)
+
+    def update_all(self, vis):
+        idx = self.i
+        # value = not np.sum(self.selected) == (L := len(self.selected))
+        for i in range(len(self.selected)):
+            # self.selected[i] = value
+            self.update(vis, i)
+        self.update(vis, idx)
 
     def update(self, vis, idx=None):
         if idx is not None:
@@ -343,7 +395,7 @@ class ElementSelector:
             if self.paint_selected:
                 element = self._get_painted(element, self.color_selected)
             else:
-                element = self._elements[self.i_old]
+                element = self._elements_drawable[self.i_old]
         self._elements_painted[self.i_old] = element
         vis.add_geometry(element, reset_bounding_box=False)
 
@@ -351,7 +403,7 @@ class ElementSelector:
         element = self._elements_painted[self.i]
         vis.remove_geometry(element, reset_bounding_box=False)
         if not self.paint_selected:
-            element = self._elements[self.i]
+            element = self._elements_drawable[self.i]
         elif self.selected[self.i]:
             element = self._get_painted(element, self.color_selected_current)
         else:
@@ -361,40 +413,45 @@ class ElementSelector:
         vis.add_geometry(self._bboxes[self.i], reset_bounding_box=False)
 
     def toggle(self, vis, action, mods):
+        """Toggle the current highlighted element between selected/unselected."""
         if action == 1:
             return
         self.selected[self.i] = not self.selected[self.i]
         self.update(vis)
 
     def toggle_all(self, vis, action, mods):
+        """Toggle the all elements between all selected/all unselected."""
         if action == 1:
             return
 
-        idx = self.i
-
         value = not np.sum(self.selected) == (L := len(self.selected))
-        for i in range(L):
-            self.selected[i] = value
-            self.update(vis, i)
-        self.update(vis, idx)
+        self.selected = value
+        # for i in range(L):
+        # self.selected[i] = value
+
+        self.update_all(vis)
 
     def next(self, vis, action, mods):
+        """Highlight next element in list."""
         if action == 1:
             return
         self.update(vis, min(self.i + 1, len(self._elements) - 1))
 
     def previous(self, vis, action, mods):
+        """Highlight previous element in list."""
         if action == 1:
             return
         self.update(vis, max(self.i - 1, 0))
 
     def finish_process(self, vis, action, mods):
+        """Signal ending."""
         if action == 1:
             return
         self.finish = True
         vis.close()
 
-    def switch_mouse_selection(self, vis, action, mods):
+    def switch_mode(self, vis, action, mods):
+        """Switch to mouse selection + extra LCtrl mode."""
         if self.mouse_select == bool(action):
             return
 
@@ -410,35 +467,79 @@ class ElementSelector:
             vis.register_mouse_move_callback(None)
 
     def switch_mouse_toggle(self, vis, action, mods):
+        """Switch to mouse selection + extra LCtrl mode."""
         self.mouse_toggle = bool(action)
 
+    def apply_function(self, vis, action, mods):
+        """Apply function to selected elements."""
+        if not self.mouse_select or action == 1 or self.function is None:
+            print("not applying")
+            return
+
+        print("applying")
+        print(self.function)
+
+        indices = np.where(self._selected)[0].tolist()
+        input_elements = [self._elements[i] for i in indices]
+        output_elements = self.function(input_elements)
+
+        self.remove_all_visualiser_elements(vis)
+        for i, output_element in zip(indices, output_elements):
+            self._elements[i] = output_element
+        self.reset_visualiser_elements(vis)
+
     def on_mouse_move(self, vis, x, y):
+        """Get mouse position."""
         self.mouse_position = (int(x), int(y))
 
     def on_mouse_button(self, vis, button, action, mods):
-        from pyShapeDetector.geometry import PointCloud
-
         if action == 1:
             return
 
         point = unproject_screen_to_world(vis, *self.mouse_position)
 
-        distances = []
-        for elem in self.elements_distance:
-            if elem is None:
-                distances.append(np.inf)
-            elif PointCloud.is_instance_or_open3d(elem):
-                distances.append(
-                    PointCloud([point]).compute_point_cloud_distance(elem)[0]
-                )
-            else:  # it is a Primitive
-                distances.append(elem.get_distances(point))
+        distances = self.distances_to_point(point)
 
         self.i_old = self.i
         self.i = np.argmin(distances)
         if self.mouse_toggle:
             self.toggle(vis, 0, None)
         self.update(vis)
+
+    def remove_all_visualiser_elements(self, vis):
+        elements = (
+            self._fixed_elements
+            + self._fixed_bboxes
+            + self._elements_painted
+            + [self._bboxes[self.i]]
+        )
+
+        for elem in elements:
+            try:
+                vis.remove_geometry(elem, reset_bounding_box=False)
+            except Exception:
+                pass
+
+    def reset_visualiser_elements(self, vis, startup=False):
+        # Prepare elements for visualization
+        self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
+        self._elements_drawable = [self._get_open3d(elem) for elem in self._elements]
+        self._paint_elements()
+        self.elements_distance = self._compute_element_distances()
+
+        elements = (
+            self._fixed_elements
+            + self._fixed_bboxes
+            + self._elements_painted
+            + [self._bboxes[self.i]]
+        )
+
+        for elem in elements:
+            vis.add_geometry(elem, reset_bounding_box=startup)
+
+        if not startup:
+            self.selected = False
+            self.update_all(vis)
 
     def run(self):
         if len(self.elements) == 0:
@@ -447,24 +548,9 @@ class ElementSelector:
         # Ensure proper format of inputs, check elements and raise warnings
         self._check_and_initialize_inputs()
 
-        # Prepare elements for visualization
-        self._paint_elements()
-        self.elements_distance = self._compute_element_distances()
-
         # Set up the visualizer
         vis = self._get_visualizer()
-
-        elements = (
-            self._fixed_elements
-            + self._fixed_bboxes
-            + self._elements_painted
-            + [self._bboxes[0]]
-        )
-
-        # vis.create_window()
-
-        for elem in elements:
-            vis.add_geometry(elem)
+        self.reset_visualiser_elements(vis, startup=True)
 
         vis.run()
         vis.close()

@@ -54,6 +54,7 @@ from .helpers_visualization import (
     draw_two_columns,
     # draw_and_ask,
     select_manually,
+    apply_function_manually,
     select_combinations_manually,
 )
 
