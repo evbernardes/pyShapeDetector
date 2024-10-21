@@ -35,9 +35,9 @@ KEYS_DESCRIPTOR = {
     "FINISH": ord("F"),
 }
 
-GLFW_KEY_LEFT_SHIFT = 340
-GLFW_KEY_LEFT_CONTROL = 341
-GLFW_KEY_ENTER = 257
+GLFW_LSHIFT = 340
+GLFW_LCTRL = 341
+GLFW_ENTER = 257
 
 INSTRUCTIONS = (
     " Green: selected. White: unselected. Blue: current. "
@@ -229,8 +229,10 @@ class ElementSelector:
         if "mesh_show_back_face" not in self.camera_options:
             self.camera_options["mesh_show_back_face"] = True
 
-        if self.show_plane_boundaries:
-            self._fixed_elements += self._add_plane_boundaries()
+        # if self.show_plane_boundaries:
+        #     self._plane_boundaries = self._get_plane_boundaries()
+        # else:
+        #     self._plane_boundaries = []
 
         # IMPORTANT: respect order, only get Open3D elements at the very end
         self._fixed_bboxes = self._get_bboxes(self._fixed_elements, (0, 0, 0))
@@ -240,9 +242,6 @@ class ElementSelector:
         # self._elements = [self._get_open3d(elem) for elem in self._elements]
 
     def _paint_elements(self):
-        # self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
-        # self._fixed_bboxes = self._get_bboxes(self._fixed_elements, (0, 0, 0))
-
         painted = self._get_painted(self._elements_drawable, self.color_unselected)
 
         if self.paint_selected:
@@ -254,8 +253,12 @@ class ElementSelector:
 
         self._elements_painted = painted
 
-    def _add_plane_boundaries(self):
+    def _get_plane_boundaries(self):
         plane_boundaries = []
+
+        if not self.show_plane_boundaries:
+            return plane_boundaries
+
         for element in self._elements:
             try:
                 lineset = element.vertices_LineSet
@@ -339,11 +342,9 @@ class ElementSelector:
         vis.register_key_action_callback(KEYS_DESCRIPTOR["NEXT"], self.next)
         vis.register_key_action_callback(KEYS_DESCRIPTOR["PREVIOUS"], self.previous)
         vis.register_key_action_callback(KEYS_DESCRIPTOR["FINISH"], self.finish_process)
-        vis.register_key_action_callback(GLFW_KEY_LEFT_SHIFT, self.switch_mode)
-        vis.register_key_action_callback(
-            GLFW_KEY_LEFT_CONTROL, self.switch_mouse_toggle
-        )
-        vis.register_key_action_callback(GLFW_KEY_ENTER, self.apply_function)
+        vis.register_key_action_callback(GLFW_LSHIFT, self.switch_mode)
+        vis.register_key_action_callback(GLFW_LCTRL, self.switch_mouse_toggle)
+        vis.register_key_action_callback(GLFW_ENTER, self.apply_function)
 
         # vis.register_key_action_callback(
         #     GLFW_KEY_LEFT_SHIFT, self.switch_mouse_selection
@@ -473,11 +474,7 @@ class ElementSelector:
     def apply_function(self, vis, action, mods):
         """Apply function to selected elements."""
         if not self.mouse_select or action == 1 or self.function is None:
-            print("not applying")
             return
-
-        print("applying")
-        print(self.function)
 
         indices = np.where(self._selected)[0].tolist()
         input_elements = [self._elements[i] for i in indices]
@@ -486,6 +483,7 @@ class ElementSelector:
         self.remove_all_visualiser_elements(vis)
         for i, output_element in zip(indices, output_elements):
             self._elements[i] = output_element
+            self._bboxes[i] = self._get_bboxes([output_element], (1, 0, 0))[0]
         self.reset_visualiser_elements(vis)
 
     def on_mouse_move(self, vis, x, y):
@@ -510,19 +508,24 @@ class ElementSelector:
         elements = (
             self._fixed_elements
             + self._fixed_bboxes
+            + self._plane_boundaries
             + self._elements_painted
-            + [self._bboxes[self.i]]
+            + self._bboxes
+            + [self._bboxes[self.i]]  # TODO: investigate, not sure why this is needed
         )
 
         for elem in elements:
-            try:
-                vis.remove_geometry(elem, reset_bounding_box=False)
-            except Exception:
-                pass
+            if elem is not None:
+                try:
+                    vis.remove_geometry(elem, reset_bounding_box=False)
+                except Exception:
+                    pass
 
     def reset_visualiser_elements(self, vis, startup=False):
         # Prepare elements for visualization
-        self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
+        if startup:
+            self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
+        self._plane_boundaries = self._get_plane_boundaries()
         self._elements_drawable = [self._get_open3d(elem) for elem in self._elements]
         self._paint_elements()
         self.elements_distance = self._compute_element_distances()
@@ -530,12 +533,16 @@ class ElementSelector:
         elements = (
             self._fixed_elements
             + self._fixed_bboxes
+            + self._plane_boundaries
             + self._elements_painted
-            + [self._bboxes[self.i]]
         )
 
+        if startup:
+            elements += [self._bboxes[self.i]]
+
         for elem in elements:
-            vis.add_geometry(elem, reset_bounding_box=startup)
+            if elem is not None:
+                vis.add_geometry(elem, reset_bounding_box=startup)
 
         if not startup:
             self.selected = False
