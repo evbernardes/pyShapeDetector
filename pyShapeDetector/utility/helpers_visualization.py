@@ -240,6 +240,7 @@ def apply_function_manually(
     function,
     fixed_elements=[],
     pre_selected=None,
+    return_indices=False,
     **args,
 ):
     if pre_selected is None:
@@ -253,7 +254,11 @@ def apply_function_manually(
 
     element_selector.run()
 
-    return element_selector.selected, element_selector.elements
+    if return_indices:
+        indices = [state["indices"] for state in element_selector._past_states]
+        return element_selector.elements, indices
+
+    return element_selector.elements
 
 
 # def draw_and_ask(elements, return_not_selected=False, **camera_options):

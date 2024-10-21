@@ -42,8 +42,8 @@ GLFW_ENTER = 257
 INSTRUCTIONS = (
     " Green: selected. White: unselected. Blue: current. "
     + " | ".join([f"({chr(k)}) {desc.lower()}" for desc, k in KEYS_DESCRIPTOR.items()])
-    + " | (LShift) Mouse select + (LCtrl) Toggle"
-    + " | (LShift) + (Enter) Apply function"
+    + " | (LCtrl) Mouse select + (LShift) Toggle"
+    + " | (LCtrl) + (Enter) Apply function"
 )
 
 
@@ -86,6 +86,7 @@ class ElementSelector:
         show_plane_boundaries=False,
         **camera_options,
     ):
+        self._past_states = []
         self._elements = []
         self._fixed_elements = []
         self._elements_painted = []
@@ -342,9 +343,10 @@ class ElementSelector:
         vis.register_key_action_callback(KEYS_DESCRIPTOR["NEXT"], self.next)
         vis.register_key_action_callback(KEYS_DESCRIPTOR["PREVIOUS"], self.previous)
         vis.register_key_action_callback(KEYS_DESCRIPTOR["FINISH"], self.finish_process)
-        vis.register_key_action_callback(GLFW_LSHIFT, self.switch_mode)
-        vis.register_key_action_callback(GLFW_LCTRL, self.switch_mouse_toggle)
+        vis.register_key_action_callback(GLFW_LCTRL, self.switch_mode)
+        vis.register_key_action_callback(GLFW_LSHIFT, self.switch_mouse_toggle)
         vis.register_key_action_callback(GLFW_ENTER, self.apply_function)
+        vis.register_key_action_callback(ord("Z"), self.undo)
 
         # vis.register_key_action_callback(
         #     GLFW_KEY_LEFT_SHIFT, self.switch_mouse_selection
@@ -478,12 +480,36 @@ class ElementSelector:
 
         indices = np.where(self._selected)[0].tolist()
         input_elements = [self._elements[i] for i in indices]
+
+        current_state = {
+            "indices": copy.deepcopy(indices),
+            "elements": copy.deepcopy(input_elements),
+        }
+
         output_elements = self.function(input_elements)
 
         self.remove_all_visualiser_elements(vis)
         for i, output_element in zip(indices, output_elements):
             self._elements[i] = output_element
             self._bboxes[i] = self._get_bboxes([output_element], (1, 0, 0))[0]
+
+        self._past_states.append(current_state)
+
+        self.reset_visualiser_elements(vis)
+
+    def undo(self, vis, action, mods):
+        if not self.mouse_select or action == 1 or len(self._past_states) == 0:
+            return
+
+        self.remove_all_visualiser_elements(vis)
+
+        last_state = self._past_states.pop()
+        indices = last_state["indices"]
+        elements = last_state["elements"]
+        for i, element in zip(indices, elements):
+            self._elements[i] = element
+            self._bboxes[i] = self._get_bboxes([element], (1, 0, 0))[0]
+
         self.reset_visualiser_elements(vis)
 
     def on_mouse_move(self, vis, x, y):
