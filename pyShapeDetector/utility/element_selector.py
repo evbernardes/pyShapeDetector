@@ -27,14 +27,12 @@ COLOR_UNSELECTED = (0.9, 0.9, 0.9)
 COLOR_UNSELECTED_CURRENT = (0.0, 0.0, 0.6)
 
 KEYS_DESCRIPTOR = {
-    "TOGGLE": "S",
-    "TOGGLE ALL": "T",
-    "NEXT": "D",
-    "PREVIOUS": "A",
-    "FINISH": "F",
+    "TOGGLE": ord("S"),
+    "TOGGLE ALL": ord("T"),
+    "NEXT": ord("D"),
+    "PREVIOUS": ord("A"),
+    "FINISH": ord("F"),
 }
-
-KEYS_CONFIG = {k: ord(value) for k, value in KEYS_DESCRIPTOR.items()}
 
 GLFW_KEY_LEFT_SHIFT = 340
 GLFW_KEY_LEFT_CONTROL = 341
@@ -42,7 +40,7 @@ GLFW_KEY_LEFT_CONTROL = 341
 
 INSTRUCTIONS = (
     " Green: selected. White: unselected. Blue: current. "
-    + " | ".join([f"({k}) {desc.lower()}" for desc, k in KEYS_DESCRIPTOR.items()])
+    + " | ".join([f"({chr(k)}) {desc.lower()}" for desc, k in KEYS_DESCRIPTOR.items()])
     + " | (LShift) Mouse select + (LCtrl) Toggle"
 )
 
@@ -88,18 +86,18 @@ class ElementSelector:
     ):
         self._elements = []
         self._fixed_elements = []
+        self._elements_painted = []
         self._selected = []
         self.bbox_expand = bbox_expand
         self.paint_selected = paint_selected
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
         self.show_plane_boundaries = show_plane_boundaries
-        self.ELEMENTS_NUMBER_WARNING = ELEMENTS_NUMBER_WARNING
-        self.NUM_POINTS_FOR_DISTANCE_CALC = NUM_POINTS_FOR_DISTANCE_CALC
+        self._ELEMENTS_NUMBER_WARNING = ELEMENTS_NUMBER_WARNING
+        self._NUM_POINTS_FOR_DISTANCE_CALC = NUM_POINTS_FOR_DISTANCE_CALC
         self.camera_options = camera_options
 
         # self.selected = self.pre_selected.copy()
-        # self._elements_painted = []
         self.elements_distance = []
         self.i_old = 0
         self.i = 0
@@ -108,7 +106,7 @@ class ElementSelector:
         self.mouse_toggle = False
         self.mouse_position = (0, 0)
 
-        self.vis = None
+        self._vis = None
 
         # Set up colors and elements
         self.color_bbox_selected = COLOR_BBOX_SELECTED
@@ -178,7 +176,7 @@ class ElementSelector:
         if (L := len(self._elements)) == 0:
             raise ValueError("Elements cannot be an empty list.")
 
-        if L > self.ELEMENTS_NUMBER_WARNING:
+        if L > self._ELEMENTS_NUMBER_WARNING:
             warnings.warn(
                 f"There are {L} elements, this is too many and may "
                 "cause segmentation fault errors."
@@ -283,11 +281,11 @@ class ElementSelector:
                 distances.append(elem)
             elif TriangleMesh.is_instance_or_open3d(elem):
                 distances.append(
-                    elem.sample_points_uniformly(self.NUM_POINTS_FOR_DISTANCE_CALC)
+                    elem.sample_points_uniformly(self._NUM_POINTS_FOR_DISTANCE_CALC)
                 )
             elif PointCloud.is_instance_or_open3d(elem):
                 distances.append(
-                    elem.uniform_down_sample(self.NUM_POINTS_FOR_DISTANCE_CALC)
+                    elem.uniform_down_sample(self._NUM_POINTS_FOR_DISTANCE_CALC)
                 )
             else:
                 distances.append(None)
@@ -299,11 +297,11 @@ class ElementSelector:
         # Register signal handler to gracefully stop the program
         signal.signal(signal.SIGINT, self._signal_handler)
 
-        vis.register_key_action_callback(KEYS_CONFIG["TOGGLE"], self.toggle)
-        vis.register_key_action_callback(KEYS_CONFIG["TOGGLE ALL"], self.toggle_all)
-        vis.register_key_action_callback(KEYS_CONFIG["NEXT"], self.next)
-        vis.register_key_action_callback(KEYS_CONFIG["PREVIOUS"], self.previous)
-        vis.register_key_action_callback(KEYS_CONFIG["FINISH"], self.finish_process)
+        vis.register_key_action_callback(KEYS_DESCRIPTOR["TOGGLE"], self.toggle)
+        vis.register_key_action_callback(KEYS_DESCRIPTOR["TOGGLE ALL"], self.toggle_all)
+        vis.register_key_action_callback(KEYS_DESCRIPTOR["NEXT"], self.next)
+        vis.register_key_action_callback(KEYS_DESCRIPTOR["PREVIOUS"], self.previous)
+        vis.register_key_action_callback(KEYS_DESCRIPTOR["FINISH"], self.finish_process)
         vis.register_key_action_callback(
             GLFW_KEY_LEFT_SHIFT, self.switch_mouse_selection
         )
@@ -322,8 +320,8 @@ class ElementSelector:
         return vis
 
     def _signal_handler(self, sig, frame):
-        self.vis.destroy_window()
-        self.vis.close()
+        self._vis.destroy_window()
+        self._vis.close()
         sys.exit(0)
 
     def update(self, vis, idx=None):
@@ -331,23 +329,25 @@ class ElementSelector:
             self.i_old = self.i
             self.i = idx
 
+        # revert current element color to normal color...
         element = self._elements_painted[self.i_old]
         vis.remove_geometry(element, reset_bounding_box=False)
         vis.remove_geometry(self._bboxes[self.i_old], reset_bounding_box=False)
-
         if not self.selected[self.i_old]:
+            # ... if not selected
             self._bboxes[self.i_old].color = self.color_bbox_unselected
             element = self._get_painted(element, self.color_unselected)
         else:
+            # ... or if not selected
             self._bboxes[self.i_old].color = self.color_bbox_selected
             if self.paint_selected:
                 element = self._get_painted(element, self.color_selected)
             else:
                 element = self._elements[self.i_old]
-
         self._elements_painted[self.i_old] = element
         vis.add_geometry(element, reset_bounding_box=False)
 
+        # change new current element color to highlighted color...
         element = self._elements_painted[self.i]
         vis.remove_geometry(element, reset_bounding_box=False)
         if not self.paint_selected:
@@ -357,7 +357,6 @@ class ElementSelector:
         else:
             element = self._get_painted(element, self.color_unselected_current)
         self._elements_painted[self.i] = element
-
         vis.add_geometry(element, reset_bounding_box=False)
         vis.add_geometry(self._bboxes[self.i], reset_bounding_box=False)
 
