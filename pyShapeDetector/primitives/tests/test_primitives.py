@@ -81,9 +81,6 @@ def get_shape(primitive, num_points, canonical=False):
 
 
 def test_methods_with_one_or_multiple_elements():
-    def is_numeric(value):
-        return np.issubdtype(np.asarray(value).dtype, np.number)
-
     for primitive in all_primitives:
         shape = primitive.random()
         point = np.random.random(3)
