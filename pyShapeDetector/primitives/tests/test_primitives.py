@@ -212,25 +212,26 @@ def test_plane_ellipse():
 
 
 def test_plane_box():
-    center = (0, 0, 0)
-    dimensions = (1, 2, 3)
+    for i in range(5):
+        center = np.random.random(3)
+        dimensions = np.random.random(3)
 
-    box_unbounded = Plane.create_box(center, dimensions)
-    for p in box_unbounded:
-        assert isinstance(p, Plane)
+        box_unbounded = Plane.create_box(center, dimensions)
+        for p in box_unbounded:
+            assert isinstance(p, Plane)
 
-    box_bounded = PlaneBounded.create_box(center, dimensions)
-    for p in box_bounded:
-        assert isinstance(p, PlaneBounded)
+        box_bounded = PlaneBounded.create_box(center, dimensions)
+        for p in box_bounded:
+            assert isinstance(p, PlaneBounded)
 
-    box_triangulated = PlaneTriangulated.create_box(center, dimensions)
-    for p in box_triangulated:
-        assert isinstance(p, PlaneTriangulated)
+        box_triangulated = PlaneTriangulated.create_box(center, dimensions)
+        for p in box_triangulated:
+            assert isinstance(p, PlaneTriangulated)
 
-    box_rectangular = PlaneRectangular.create_box(center, dimensions)
-    for p in box_rectangular:
-        assert isinstance(p, PlaneRectangular)
-        assert_allclose(p.mesh.vertices.mean(axis=0), p.center)
+        box_rectangular = PlaneRectangular.create_box(center, dimensions)
+        for p in box_rectangular:
+            assert isinstance(p, PlaneRectangular)
+            assert np.linalg.norm(p.mesh.vertices.mean(axis=0) - p.center) < 1e-7
 
 
 def test_canonical():
