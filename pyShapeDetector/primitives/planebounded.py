@@ -154,6 +154,7 @@ class PlaneBounded(Plane):
     closest_vertices
     contains_projections
     bound_lines_meshes
+    remove_repeated_vertices
     set_vertices
     add_bound_points
     intersection_vertices
@@ -760,6 +761,13 @@ class PlaneBounded(Plane):
         [mesh.paint_uniform_color(color) for mesh in meshes]
         return meshes
 
+    def remove_repeated_vertices(self):
+        """Remove consecutive repeated points."""
+        mask = np.insert(np.any(np.diff(self.vertices, axis=0) != 0, axis=1), 0, True)
+        self._vertices = self._vertices[mask]
+        self._vertices_indices = self._vertices_indices[mask]
+        self._vertices_projections = self._vertices_projections[mask]
+
     def set_vertices(self, vertices, flatten=True, convex=None):
         """Flatten points according to plane model, get projections of
         flattened points in the model and compute its boundary using either
@@ -978,6 +986,10 @@ class PlaneBounded(Plane):
 
 
         """
+        if np.any([line.length == 0 for line in self.vertices_lines]):
+            warnings.warn("Plane has repeated vertices, removing them...")
+            self.remove_repeated_vertices()
+
         if use_shapely and not has_shapely:
             raise RuntimeError(
                 "use_shapely option cannot be used because shapely is not installed."
@@ -992,8 +1004,8 @@ class PlaneBounded(Plane):
         #     warnings.warn("At least one point of line inside plane, doing nothing.")
         #     return
 
-        points_in_plane = self.contains_projections(line.get_extended(1 - 1e-3).points)
-        print(f"points in plane: {points_in_plane}")
+        points_in_plane = self.contains_projections(line.points)
+        # print(f"points in plane: {points_in_plane}")
         if np.all(points_in_plane):
             warnings.warn("Both points of line inside plane, doing nothing.")
             return

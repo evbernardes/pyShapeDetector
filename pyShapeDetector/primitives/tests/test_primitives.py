@@ -602,6 +602,22 @@ def test_translate_and_rotate():
 #             # if not shape.get_axis_aligned_bounding_box() == bbox:
 #                 # print(shape)
 #                 # assert False
+def test_repeated_vertices():
+    projections = [
+        [1, 1],
+        [0, 1],
+        [1 / 2, 1 / 2],
+        [1 / 2, 1 / 2],
+        [0, 0],
+        [1, 0],
+    ]
+
+    plane = Plane.from_normal_point([0, 0, 1], [0, 0, 0])
+    points = plane.get_points_from_projections(projections)
+    zigzag = PlaneBounded(plane.model, points, convex=False)
+    assert np.any([line.length == 0 for line in zigzag.vertices_lines])
+    zigzag.remove_repeated_vertices()
+    assert not np.any([line.length == 0 for line in zigzag.vertices_lines])
 
 
 def test_axis_aligned_bounding_box_no_planes():
@@ -1117,6 +1133,46 @@ def test_add_lines_to_planes():
 
     do_test(20, use_shapely=False)
     do_test(20, use_shapely=True)
+
+
+def test_add_lines_zigzag():
+    vz = [0, 0, 1]
+    center = [0, 0, 0]
+    d = 2
+    # dz = 0.0
+
+    projections = [
+        [d, d],
+        [0, d],
+        [d / 2, d / 2],
+        # [d / 2, d / 2],
+        [0, 0],
+        [d, 0],
+    ]
+
+    plane = Plane.from_normal_point(vz, center)
+
+    points = plane.get_points_from_projections(projections)
+    zigzag = PlaneBounded(plane.model, points, convex=False)
+
+    line_original = Line.from_two_points(points[0], points[-1])
+    axis = np.cross(line_original.axis, zigzag.normal)
+
+    for translation in np.linspace(1, 3, 10) * d:
+        line = line_original.copy()
+        line.translate(+translation * axis)
+        line = line.get_extended(0.3)
+
+        area_before = (d**2) * 3 / 4
+        area_after = (
+            d**2 - ((d - line.length) / 2) ** 2 + max(translation - d, 0) * line.length
+        )
+
+        zigzag_test = zigzag.copy()
+        assert abs(zigzag_test.surface_area - area_before) < 1e-7
+        zigzag_test.add_line(line)
+
+        assert abs(zigzag_test.surface_area - area_after) < 1e-7
 
 
 # if __name__ == "__main__":
