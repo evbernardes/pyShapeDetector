@@ -36,6 +36,7 @@ from .element_selector import ElementSelector
 from .helpers_internal import (
     parallelize,
     _set_and_check_3d_array,
+    accept_one_or_multiple_elements,
 )
 
 from .helpers_math import (

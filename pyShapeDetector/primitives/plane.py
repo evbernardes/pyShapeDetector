@@ -18,7 +18,11 @@ from pyShapeDetector.geometry import (
     OrientedBoundingBox,
 )
 
-from pyShapeDetector.utility import get_rotation_from_axis, midrange
+from pyShapeDetector.utility import (
+    get_rotation_from_axis,
+    midrange,
+    accept_one_or_multiple_elements,
+)
 
 from .primitivebase import Primitive, _set_and_check_3d_array, _check_distance
 # from alphashape import alphashape
@@ -340,6 +344,7 @@ class Plane(Primitive):
 
         return Plane.from_normal_point(abc / norm, centroid)
 
+    @accept_one_or_multiple_elements(dimensions=3)
     def get_signed_distances(self, points):
         """Gives the minimum distance between each point to the model.
 
@@ -358,6 +363,7 @@ class Plane(Primitive):
         points = np.asarray(points)
         return points.dot(self.normal) + self.dist
 
+    @accept_one_or_multiple_elements(dimensions=3)
     def get_normals(self, points):
         """Gives, for each input point, the normal vector of the point closest
         to the primitive.
@@ -580,6 +586,7 @@ class Plane(Primitive):
         model = fused_plane.model
 
         from .planebounded import PlaneBounded
+
         all_holes = []
         for shape in shapes:
             for hole in shape._holes:
@@ -1332,7 +1339,7 @@ class Plane(Primitive):
         else:
             points = _set_and_check_3d_array(points, name="points")
 
-        center = self.flatten_points([midrange(points)])[0]
+        center = self.flatten_points(midrange(points))
         delta = points - center
 
         delta_projection, rot = self.get_projections(delta, return_rotation=True)

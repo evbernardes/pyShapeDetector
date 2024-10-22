@@ -80,6 +80,41 @@ def get_shape(primitive, num_points, canonical=False):
         return shape
 
 
+def test_methods_with_one_or_multiple_elements():
+    def is_numeric(value):
+        return np.issubdtype(np.asarray(value).dtype, np.number)
+
+    for primitive in all_primitives:
+        shape = primitive.random()
+        point = np.random.random(3)
+
+        # single element
+        normal = shape.get_normals(point)
+        assert normal.shape == (3,)
+        assert isinstance(shape.get_signed_distances(point), float)
+        assert isinstance(shape.get_distances(point), float)
+        assert isinstance(shape.get_angles(point, normal), float)
+        assert isinstance(shape.get_angles_cos(point, normal), float)
+        distance, angle = shape.get_residuals(point, normal)
+        assert isinstance(distance, float)
+        assert isinstance(angle, float)
+        assert shape.flatten_points(point).shape == (3,)
+
+        # array
+        for N in (1, 2):
+            points = np.random.random((N, 3))
+            normals = shape.get_normals(points)
+            assert normals.shape == (N, 3)
+            assert shape.get_signed_distances(points).shape == (N,)
+            assert shape.get_distances(points).shape == (N,)
+            assert shape.get_angles(points, normals).shape == (N,)
+            assert shape.get_angles_cos(points, normals).shape == (N,)
+            distance, angle = shape.get_residuals(points, normals)
+            assert distance.shape == (N,)
+            assert angle.shape == (N,)
+            assert shape.flatten_points(points).shape == (N, 3)
+
+
 def test_plane_creation_methods():
     # axis=None flattens the array before sorting
     sort = lambda x: np.sort(np.sort(x, axis=1), axis=0)

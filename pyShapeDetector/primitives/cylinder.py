@@ -10,7 +10,10 @@ import numpy as np
 from pyShapeDetector.geometry import TriangleMesh
 # from skspatial.objects.cylinder import Cylinder as skcylinder
 
-from pyShapeDetector.utility import get_rotation_from_axis
+from pyShapeDetector.utility import (
+    get_rotation_from_axis,
+    accept_one_or_multiple_elements,
+)
 from .primitivebase import Primitive
 from .plane import Plane
 from .planebounded import PlaneBounded
@@ -307,6 +310,7 @@ class Cylinder(Primitive):
         # return Cylinder(center+vector+[radius])
         return Cylinder.from_base_vector_radius(base, vector, radius)
 
+    @accept_one_or_multiple_elements(dimensions=3)
     def get_signed_distances(self, points):
         """Gives the minimum distance between each point to the cylinder.
 
@@ -325,6 +329,7 @@ class Cylinder(Primitive):
 
         return distances - self.radius
 
+    @accept_one_or_multiple_elements(dimensions=3)
     def get_normals(self, points):
         """Gives, for each input point, the normal vector of the point closest
         to the cylinder.

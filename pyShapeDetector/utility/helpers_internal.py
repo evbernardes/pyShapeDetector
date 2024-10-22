@@ -5,6 +5,7 @@ Created on Fri May  3 10:50:14 2024
 
 @author: ebernardes
 """
+import functools
 import numpy as np
 from multiprocessing import Manager, Process
 
@@ -14,7 +15,7 @@ def parallelize(cores=2):
         def wrapper(*args, **kwargs):
             if cores == 1:
                 return func(*args, **kwargs)
-            
+
             array = args[0]
             args = args[1:]
             array_split = np.array_split(array, cores)
@@ -68,3 +69,78 @@ def _set_and_check_3d_array(input_array, name="array", num_points=None):
         )
 
     return array
+
+
+def accept_one_or_multiple_elements(dimensions, num_outputs=1):
+    if not isinstance(dimensions, (tuple, list)):
+        dimensions = [dimensions]
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if not isinstance(num_outputs, int) or num_outputs < 1:
+                raise ValueError(
+                    f"num_outputs should be a positive integer, got {num_outputs}."
+                )
+
+            if len(args) != len(dimensions):
+                raise ValueError(
+                    f"Expected {len(dimensions)} arguments, got {len(args)}."
+                )
+
+            num_args = len(dimensions)
+            args = list(args)
+            for i in range(num_args):
+                args[i] = np.asarray(args[i])
+
+            input_ndim = [x.ndim for x in args[:num_args]]
+            ndim = input_ndim[0]
+            if input_ndim.count(ndim) != num_args:
+                raise ValueError(
+                    f"Number of dimensions should all be equal, got {input_ndim}."
+                )
+
+            if ndim == 1:
+                input_nelems = 1
+
+            elif ndim == 2:
+                input_nelems = [x.shape[1] for x in args[:num_args]]
+                nelems = input_nelems[0]
+                if input_nelems.count(nelems) != num_args:
+                    raise ValueError(
+                        "Number of elements should all be equal, got "
+                        f"{input_nelems}."
+                    )
+
+            else:
+                raise ValueError(f"Inputs must be either 1D or 2D, got {ndim}D.")
+
+            for i, (x, expected_dim) in enumerate(zip(args, dimensions)):
+                if ndim == 1:  # Input is 1D, shape: (D,)
+                    if x.shape[0] != expected_dim:
+                        raise ValueError(
+                            f"Input {i} dimension does not match expected D={expected_dim}. Got shape {x.shape[0]}."
+                        )
+                elif ndim == 2:  # Input is 2D, shape: (nelems, D)
+                    if x.shape[1] != expected_dim:
+                        raise ValueError(
+                            f"Input {i} dimension does not match expected D={expected_dim}. Got shape {x.shape[1]}."
+                        )
+
+                # If input is 1D, reshape to (1, D)
+                if x.ndim == 1:
+                    args[i] = np.expand_dims(x, axis=0)  # Reshape to (1, D)
+
+            results = func(self, *args, **kwargs)
+
+            if ndim == 1:
+                if num_outputs == 1:
+                    results = results[0]
+                else:
+                    results = tuple([result[0] for result in results])
+
+            return results
+
+        return wrapper
+
+    return decorator

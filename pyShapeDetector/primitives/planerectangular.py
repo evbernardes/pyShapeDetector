@@ -604,9 +604,9 @@ class PlaneRectangular(Plane):
             center = self.centroid
 
         if flatten:
-            center = self.flatten_points([center])[0]
+            center = self.flatten_points(center)
 
-        error = self.get_distances([center])[0]
+        error = self.get_distances(center)
         if error > 1e-7:
             raise RuntimeError(
                 "PlaneRectangular instance generated with vertices far away "

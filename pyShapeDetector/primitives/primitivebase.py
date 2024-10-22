@@ -19,7 +19,10 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 from pyShapeDetector.utility import get_rotation_from_axis, _set_and_check_3d_array
 from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
-from pyShapeDetector.utility import mesh_to_obj_description
+from pyShapeDetector.utility import (
+    mesh_to_obj_description,
+    accept_one_or_multiple_elements,
+)
 
 
 def _check_distance(shape1, shape2, aabb_intersection, inlier_max_distance):
@@ -528,6 +531,7 @@ class Primitive(ABC):
         """
         pass
 
+    @accept_one_or_multiple_elements(dimensions=3)
     def get_distances(self, points):
         """Gives the absolute value of the minimum distance between each point
         to the model.
@@ -563,6 +567,7 @@ class Primitive(ABC):
         """
         pass
 
+    @accept_one_or_multiple_elements(dimensions=(3, 3))
     def get_angles_cos(self, points, normals):
         """Gives the absolute value of cosines of the angles between the input
         normal vectors and the calculated normal vectors from the input points.
@@ -596,6 +601,7 @@ class Primitive(ABC):
         angles_cos = np.clip(np.sum(normals * normals_from_points, axis=1), -1, 1)
         return np.abs(angles_cos)
 
+    @accept_one_or_multiple_elements(dimensions=(3, 3))
     def get_angles(self, points, normals):
         """Gives the angles between the input normal vectors and the
         calculated normal vectors from the input points.
@@ -623,6 +629,7 @@ class Primitive(ABC):
 
         return np.arccos(self.get_angles_cos(points, normals))
 
+    @accept_one_or_multiple_elements(dimensions=(3, 3), num_outputs=2)
     def get_residuals(self, points, normals):
         """Convenience function returning both distances and angles.
 
@@ -630,7 +637,7 @@ class Primitive(ABC):
         ----------
         points : N x 3 array
             N input points
-        normals : N x 3 arrayopen3d
+        normals : N x 3 array
             N normal vectors
 
         Raises
@@ -646,6 +653,7 @@ class Primitive(ABC):
         """
         return self.get_distances(points), self.get_angles(points, normals)
 
+    @accept_one_or_multiple_elements(dimensions=3)
     def flatten_points(self, points):
         """Stick each point in input to the closest point in shape's surface.
 
@@ -660,10 +668,6 @@ class Primitive(ABC):
             N points on the surface
 
         """
-        if len(points) == 0:
-            return points
-
-        points = np.asarray(points)
         difference = self.get_signed_distances(points)[
             ..., np.newaxis
         ] * self.get_normals(points)
