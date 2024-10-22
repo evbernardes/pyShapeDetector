@@ -992,7 +992,9 @@ class PlaneBounded(Plane):
         #     warnings.warn("At least one point of line inside plane, doing nothing.")
         #     return
 
-        if np.all(self.contains_projections(line.points)):
+        points_in_plane = self.contains_projections(line.get_extended(1 - 1e-3).points)
+        print(f"points in plane: {points_in_plane}")
+        if np.all(points_in_plane):
             warnings.warn("Both points of line inside plane, doing nothing.")
             return
 
@@ -1137,14 +1139,10 @@ class PlaneBounded(Plane):
             if np.any([not isinstance(shape, PlaneBounded) for shape in to_glue]):
                 continue
 
-            # if np.any([not shape.is_convex for shape in to_glue]):
-            #     continue
-
             all_lines.append(line)
 
             if fit_mode == "direct":
                 lines = [line] * 2
-                # line_i = line_j = line
             else:
                 lines = [line.get_fitted_to_points(shape.vertices) for shape in to_glue]
 
@@ -1154,30 +1152,26 @@ class PlaneBounded(Plane):
                     lines[0] = lines[1] = lines[0].get_segment_intersection(lines[1])
 
             if np.any([line is None for line in lines]):
-                # this happens if fit_mode == "segment_intersection and the
-                # line segments do not intersect
+                warnings.warn(
+                    "segment_intersection mode was chosen, "
+                    "but lines do not intersect. Doing nothing."
+                )
                 continue
 
             # if a split is caused, the plane is already glued
             for shape, line in zip(to_glue, lines):
-                split_happened = False
-
                 if split:
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
                         split_shape = shape.split(line, return_bigger=True)
 
-                    if split_happened := split_shape is not shape:
-                        # did not split, try to add
-                        # shape.add_line(line, add_as_inliers=add_as_inliers)
+                    if split_shape is not shape:
+                        # split happened, switching vertices
                         shape.set_vertices(
                             split_shape.vertices, flatten=False, convex=False
                         )
 
-                if not split_happened:
-                    # no need to add line
-                    shape.add_line(line, add_as_inliers=add_as_inliers, eps=eps)
-                    # shape.set_vertices(shape.vertices, flatten=False, convex=False)
+                shape.add_line(line, add_as_inliers=add_as_inliers, eps=eps)
 
         return all_lines
 
