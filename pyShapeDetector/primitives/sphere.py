@@ -97,7 +97,7 @@ class Sphere(Primitive):
     _name = "sphere"
     _translatable = [0, 1, 2]
     _rotatable = []
-    _color = np.array([0, 1, 0])
+    _color = np.array([0.0, 1.0, 0.0])
 
     @property
     def equation(self):

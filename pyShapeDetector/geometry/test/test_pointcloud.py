@@ -21,7 +21,7 @@ def test_distribute():
     pcds = [sphere.inliers for sphere in spheres]
     N_before = sum([len(pcd.points) for pcd in pcds])
     bbox = PointCloud.fuse_pointclouds(pcds).get_axis_aligned_bounding_box()
-    bbox.color = (0, 0, 1)
+    bbox.color = (0.0, 0.0, 1.0)
 
     pcd_sampled = bbox.sample_PointCloud_uniformly(10000)
     pcd_sampled.distribute_to_closest(pcds)

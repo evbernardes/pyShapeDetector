@@ -12,9 +12,9 @@ import copy
 from itertools import pairwise, combinations
 import numpy as np
 import open3d as o3d
-from open3d.geometry import LineSet, AxisAlignedBoundingBox
-from open3d.utility import Vector2iVector, Vector3dVector
+from open3d.geometry import AxisAlignedBoundingBox
 
+from pyShapeDetector.geometry import LineSet
 from pyShapeDetector.utility import accept_one_or_multiple_elements
 from .primitivebase import Primitive
 from .cylinder import Cylinder
@@ -136,7 +136,7 @@ class Line(Primitive):
     _name = "line"
     _translatable = [0, 1, 2]
     _rotatable = [3, 4, 5]
-    _color = np.array([0, 0, 0])
+    _color = np.array([0.0, 0.0, 0.0])
 
     @property
     def surface_area(self):
@@ -185,9 +185,7 @@ class Line(Primitive):
 
     @property
     def as_LineSet(self):
-        line = LineSet(
-            Vector3dVector([self.beginning, self.ending]), Vector2iVector([[0, 1]])
-        )
+        line = LineSet([self.beginning, self.ending], [[0, 1]])
         line.paint_uniform_color(self.color)
         return line
 
@@ -532,7 +530,8 @@ class Line(Primitive):
 
             axis2 /= np.linalg.norm(other_element.axis)
 
-        return np.arccos(self.axis.dot(axis2))
+        cos = self.axis.dot(axis2)
+        return np.arccos(np.clip(cos, -1, 1))
 
     def get_fitted_to_points(self, points):
         """Creates a new line with beginning and end points fitted to
@@ -727,23 +726,7 @@ class Line(Primitive):
 
     @staticmethod
     def get_LineSet_from_list(lines):
-        if isinstance(lines, Line):
-            lines = [lines]
-
-        points = []
-        lines_indices = []
-        N = 0
-        for line in lines:
-            points.append(line.beginning)
-            points.append(line.ending)
-            lines_indices.append([N, N + 1])
-            N += 2
-
-        lineset = LineSet()
-        lineset.points = Vector3dVector(points)
-        lineset.lines = Vector2iVector(lines_indices)
-        lineset.colors = Vector3dVector([line.color for line in lines])
-        return lineset
+        return LineSet.from_lines(lines)
 
     @classmethod
     def get_simplified_loop_indices(

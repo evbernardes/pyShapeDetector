@@ -9,10 +9,10 @@ import copy
 import warnings
 import numpy as np
 from open3d.geometry import TriangleMesh as open3d_TriangleMesh
-from open3d.utility import Vector3dVector, Vector2iVector
 
 from pyShapeDetector.utility import mesh_to_obj_description
 from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
+from .lineset import LineSet
 
 
 @link_to_open3d_geometry(open3d_TriangleMesh)
@@ -226,14 +226,13 @@ class TriangleMesh(Open3D_Geometry):
         Open3d.geometry.LineSet
             Three lines for each triangle.
         """
-        # from pyShapeDetector.primitives import Line
-        from open3d.geometry import LineSet
 
         lineset = LineSet()
-        lineset.points = Vector3dVector(self.vertices)
-        lineset.lines = Vector2iVector(
-            self.triangles[:, [0, 1, 1, 2, 2, 0]].reshape((len(self.triangles) * 3, 2))
+        lineset.points = self.vertices
+        lineset.lines = self.triangles[:, [0, 1, 1, 2, 2, 0]].reshape(
+            (len(self.triangles) * 3, 2)
         )
+
         return lineset
 
     def get_triangle_boundary_indexes(self):

@@ -285,7 +285,7 @@ class Primitive(ABC):
                 seed = int(str(abs(hash(self.name)))[:9])
                 self._color = np.random.seed(seed)
 
-        return self._color
+        return self._color.astype(np.float32)
 
     @color.setter
     def color(self, new_color):
@@ -294,7 +294,7 @@ class Primitive(ABC):
             raise ValueError("Invalid input shape.")
         if not np.issubdtype(new_color.dtype, np.number):
             raise ValueError("Input must be numeric array.")
-        self._color = new_color
+        self._color = new_color.astype(np.float32)
 
         if self._mesh is not None:
             self._mesh.paint_uniform_color(new_color)

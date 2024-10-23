@@ -92,7 +92,7 @@ def write_obj(
             elif hasattr(element, "vertex_colors"):
                 color = element.vertex_colors.mean(axis=0)
             else:
-                color = (0, 0, 0)
+                color = (0.0, 0.0, 0.0)
             f.write(_color_to_mat_description(color))
 
         # Generate GUID and create metadata for the material

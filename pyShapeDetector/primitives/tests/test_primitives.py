@@ -463,7 +463,7 @@ def test_planebounded_contains_projections():
         plane = Plane.random()
         square_small = plane.get_polygon_plane(n, length)
         square_big = plane.get_polygon_plane(n, length * 2)
-        square_small.color = (0, 0, 0)
+        square_small.color = (0.0, 0.0, 0.0)
         points_small = square_small.sample_points_uniformly(10000)
         points_big = square_big.sample_points_uniformly(10000)
 
@@ -964,7 +964,9 @@ def test_fuse():
             shape.color = color
 
         shape_fused = primitive.fuse(shapes)
-        assert_allclose(shape_fused.color, np.mean(colors, axis=0))
+        assert_allclose(
+            shape_fused.color, np.mean(colors, axis=0), rtol=1e-6, atol=1e-6
+        )
         # assert_allclose(shape_fused.model, np.mean(models, axis=0))
 
 

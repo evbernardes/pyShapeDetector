@@ -310,7 +310,8 @@ class Cone(Primitive):
 
         norm = np.linalg.norm(delta, axis=1)
         cossines_half_angle = delta.dot(axis) / norm
-        half_angle = np.arccos(cossines_half_angle.mean())
+        cos = cossines_half_angle.mean()
+        half_angle = np.arccos(np.clip(cos, -1, 1))
         # S = (norm ** 2) * np.sin(2 * cossines_half_angle)
         # C = (norm ** 2) * np.cos(2 * cossines_half_angle)
         # half_angle = np.arctan2(sum(S), sum(C)) / 2
@@ -616,6 +617,7 @@ class Cone(Primitive):
         safe = delta_norm > 1e-8
         projection = delta.dot(self.axis)
         alpha = np.empty(len(points))
-        alpha[safe] = np.arccos(projection[safe] / delta_norm[safe])
+        cos = projection[safe] / delta_norm[safe]
+        alpha[safe] = np.arccos(np.clip(cos, -1, 1))
         alpha[~safe] = 0
         return alpha

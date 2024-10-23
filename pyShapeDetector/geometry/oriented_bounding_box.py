@@ -89,7 +89,7 @@ class OrientedBoundingBox(Open3D_Geometry):
         aabb = AxisAlignedBoundingBox(
             self.center - self.extent / 2, self.center + self.extent / 2
         )
-        aabb.color = (0, 0, 1)
+        aabb.color = (0.0, 0.0, 1.0)
 
         bboxes = []
         for bbox in aabb.split(num_boxes, dim=dim):

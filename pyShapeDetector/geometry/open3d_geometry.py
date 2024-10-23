@@ -63,13 +63,13 @@ class Open3D_Geometry:
     @property
     def aabb(self):
         axis_aligned_bbox = self.get_axis_aligned_bounding_box()
-        axis_aligned_bbox.color = (0, 1, 0)
+        axis_aligned_bbox.color = (0.0, 1.0, 0.0)
         return axis_aligned_bbox
 
     @property
     def obb(self):
         oriented_bbox = self.get_oriented_bounding_box()
-        oriented_bbox.color = (1, 0, 0)
+        oriented_bbox.color = (1.0, 0.0, 0.0)
         return oriented_bbox
 
     def __copy__(self, *args):

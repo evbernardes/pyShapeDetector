@@ -117,7 +117,7 @@ class Cylinder(Primitive):
     _name = "cylinder"
     _translatable = [0, 1, 2]
     _rotatable = [3, 4, 5]
-    _color = np.array([1, 0, 0])
+    _color = np.array([1.0, 0.0, 0.0])
 
     @property
     def equation(self):
