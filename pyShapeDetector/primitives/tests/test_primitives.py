@@ -9,7 +9,11 @@ Created on Tue Oct 24 14:51:40 2023
 import pytest
 import copy
 import numpy as np
-from numpy.testing import assert_allclose
+from numpy.testing import (
+    assert_allclose,
+    assert_approx_equal,
+    assert_array_almost_equal,
+)
 import warnings
 import tempfile
 from itertools import combinations, pairwise
@@ -102,14 +106,64 @@ def test_methods_with_one_or_multiple_elements():
             points = np.random.random((N, 3))
             normals = shape.get_normals(points)
             assert normals.shape == (N, 3)
-            assert shape.get_signed_distances(points).shape == (N,)
-            assert shape.get_distances(points).shape == (N,)
-            assert shape.get_angles(points, normals).shape == (N,)
-            assert shape.get_angles_cos(points, normals).shape == (N,)
-            distance, angle = shape.get_residuals(points, normals)
-            assert distance.shape == (N,)
-            assert angle.shape == (N,)
-            assert shape.flatten_points(points).shape == (N, 3)
+
+            signed_distances = shape.get_signed_distances(points)
+            assert signed_distances.shape == (N,)
+            assert_approx_equal(
+                signed_distances[0], shape.get_signed_distances(points[0])
+            )
+
+            distances = shape.get_distances(points)
+            assert distances.shape == (N,)
+            assert_approx_equal(distances[0], shape.get_distances(points[0]))
+
+            angles = shape.get_angles(points, normals)
+            assert angles.shape == (N,)
+            assert_approx_equal(angles[0], shape.get_angles(points[0], normals[0]))
+
+            angles_cos = shape.get_angles_cos(points, normals)
+            assert angles_cos.shape == (N,)
+            assert_approx_equal(
+                angles_cos[0], shape.get_angles_cos(points[0], normals[0])
+            )
+
+            distances, angles = shape.get_residuals(points, normals)
+            assert distances.shape == (N,)
+            assert angles.shape == (N,)
+            distance, angle = shape.get_residuals(points[0], normals[0])
+            assert_approx_equal(distances[0], distance)
+            assert_approx_equal(angles[0], angle)
+
+            points_flattened = shape.flatten_points(points)
+            assert points_flattened.shape == (N, 3)
+
+            with pytest.raises(ValueError, match="dimensions should all be equal"):
+                shape.get_angles(points, normals[0])
+            with pytest.raises(ValueError, match="dimensions should all be equal"):
+                shape.get_angles_cos(points, normals[0])
+            with pytest.raises(ValueError, match="dimensions should all be equal"):
+                shape.get_residuals(points, normals[0])
+
+            normals_incompatible = np.random.random((N + 1, 3))
+            with pytest.raises(ValueError, match="elements should all be equal"):
+                shape.get_angles(points, normals_incompatible)
+            with pytest.raises(ValueError, match="elements should all be equal"):
+                shape.get_angles_cos(points, normals_incompatible)
+            with pytest.raises(ValueError, match="elements should all be equal"):
+                shape.get_residuals(points, normals_incompatible)
+
+            if isinstance(shape, Plane):
+                projections = shape.get_projections(points)
+                assert projections.shape == (N, 2)
+                assert_array_almost_equal(
+                    projections[0], shape.get_projections(points[0])
+                )
+
+                points_new = shape.get_points_from_projections(projections)
+                assert points_new.shape == (N, 3)
+                assert_array_almost_equal(
+                    points_new[0], shape.get_points_from_projections(projections[0])
+                )
 
 
 def test_plane_creation_methods():

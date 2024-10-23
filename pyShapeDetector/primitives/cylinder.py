@@ -310,7 +310,7 @@ class Cylinder(Primitive):
         # return Cylinder(center+vector+[radius])
         return Cylinder.from_base_vector_radius(base, vector, radius)
 
-    @accept_one_or_multiple_elements(dimensions=3)
+    @accept_one_or_multiple_elements(3)
     def get_signed_distances(self, points):
         """Gives the minimum distance between each point to the cylinder.
 
@@ -329,7 +329,7 @@ class Cylinder(Primitive):
 
         return distances - self.radius
 
-    @accept_one_or_multiple_elements(dimensions=3)
+    @accept_one_or_multiple_elements(3)
     def get_normals(self, points):
         """Gives, for each input point, the normal vector of the point closest
         to the cylinder.

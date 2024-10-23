@@ -531,7 +531,7 @@ class Primitive(ABC):
         """
         pass
 
-    @accept_one_or_multiple_elements(dimensions=3)
+    @accept_one_or_multiple_elements(3)
     def get_distances(self, points):
         """Gives the absolute value of the minimum distance between each point
         to the model.
@@ -567,7 +567,7 @@ class Primitive(ABC):
         """
         pass
 
-    @accept_one_or_multiple_elements(dimensions=(3, 3))
+    @accept_one_or_multiple_elements(3, 3)
     def get_angles_cos(self, points, normals):
         """Gives the absolute value of cosines of the angles between the input
         normal vectors and the calculated normal vectors from the input points.
@@ -592,7 +592,10 @@ class Primitive(ABC):
 
         """
         if len(normals) != len(points):
-            raise ValueError("Number of points and normals should be equal.")
+            raise ValueError(
+                "Number of elements should all be equal, got "
+                f"{len(points)} points and {len(normals)} normals."
+            )
 
         if normals is None:
             return None
@@ -601,7 +604,7 @@ class Primitive(ABC):
         angles_cos = np.clip(np.sum(normals * normals_from_points, axis=1), -1, 1)
         return np.abs(angles_cos)
 
-    @accept_one_or_multiple_elements(dimensions=(3, 3))
+    @accept_one_or_multiple_elements(3, 3)
     def get_angles(self, points, normals):
         """Gives the angles between the input normal vectors and the
         calculated normal vectors from the input points.
@@ -629,7 +632,6 @@ class Primitive(ABC):
 
         return np.arccos(self.get_angles_cos(points, normals))
 
-    @accept_one_or_multiple_elements(dimensions=(3, 3), num_outputs=2)
     def get_residuals(self, points, normals):
         """Convenience function returning both distances and angles.
 
@@ -653,7 +655,7 @@ class Primitive(ABC):
         """
         return self.get_distances(points), self.get_angles(points, normals)
 
-    @accept_one_or_multiple_elements(dimensions=3)
+    @accept_one_or_multiple_elements(3)
     def flatten_points(self, points):
         """Stick each point in input to the closest point in shape's surface.
 

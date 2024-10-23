@@ -353,7 +353,7 @@ class Cone(Primitive):
         model = np.append(model, half_angle)
         return cls(model, decimals=decimals)
 
-    @accept_one_or_multiple_elements(dimensions=3)
+    @accept_one_or_multiple_elements(3)
     def get_signed_distances(self, points):
         """Gives the minimum distance between each point to the cylinder.
 
@@ -380,7 +380,7 @@ class Cone(Primitive):
         distances[~safe] = delta_norm[~safe] / (2 * np.cos(self.half_angle))
         return distances
 
-    @accept_one_or_multiple_elements(dimensions=3)
+    @accept_one_or_multiple_elements(3)
     def get_normals(self, points):
         """Gives, for each input point, the normal vector of the point closest
         to the cylinder.

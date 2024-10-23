@@ -71,18 +71,10 @@ def _set_and_check_3d_array(input_array, name="array", num_points=None):
     return array
 
 
-def accept_one_or_multiple_elements(dimensions, num_outputs=1):
-    if not isinstance(dimensions, (tuple, list)):
-        dimensions = [dimensions]
-
+def accept_one_or_multiple_elements(*dimensions):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
-            if not isinstance(num_outputs, int) or num_outputs < 1:
-                raise ValueError(
-                    f"num_outputs should be a positive integer, got {num_outputs}."
-                )
-
             if len(args) != len(dimensions):
                 raise ValueError(
                     f"Expected {len(dimensions)} arguments, got {len(args)}."
@@ -134,10 +126,12 @@ def accept_one_or_multiple_elements(dimensions, num_outputs=1):
             results = func(self, *args, **kwargs)
 
             if ndim == 1:
-                if num_outputs == 1:
-                    results = results[0]
+                if isinstance(results, tuple):
+                    # in case there are many returns, like Plane.get_projections
+                    # which can return the rotation
+                    results = tuple([results[0][0]] + list(results[1:]))
                 else:
-                    results = tuple([result[0] for result in results])
+                    results = results[0]
 
             return results
 

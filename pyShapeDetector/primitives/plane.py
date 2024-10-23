@@ -344,7 +344,7 @@ class Plane(Primitive):
 
         return Plane.from_normal_point(abc / norm, centroid)
 
-    @accept_one_or_multiple_elements(dimensions=3)
+    @accept_one_or_multiple_elements(3)
     def get_signed_distances(self, points):
         """Gives the minimum distance between each point to the model.
 
@@ -363,7 +363,7 @@ class Plane(Primitive):
         points = np.asarray(points)
         return points.dot(self.normal) + self.dist
 
-    @accept_one_or_multiple_elements(dimensions=3)
+    @accept_one_or_multiple_elements(3)
     def get_normals(self, points):
         """Gives, for each input point, the normal vector of the point closest
         to the primitive.
@@ -1177,6 +1177,7 @@ class Plane(Primitive):
         del grid
         return plane
 
+    @accept_one_or_multiple_elements(3)
     def get_projections(self, points, return_rotation=False):
         """Get 2D projections of points in plane.
 
@@ -1207,6 +1208,7 @@ class Plane(Primitive):
             return projections, rot
         return projections
 
+    @accept_one_or_multiple_elements(2)
     def get_points_from_projections(self, projections, return_rotation=False):
         """Get 3D points from 2D projections in plane.
 

@@ -197,7 +197,7 @@ class Sphere(Primitive):
 
         return Sphere([center[0], center[1], center[2], radius])
 
-    @accept_one_or_multiple_elements(dimensions=3)
+    @accept_one_or_multiple_elements(3)
     def get_signed_distances(self, points):
         """Gives the minimum distance between each point to the sphere.
 
@@ -215,7 +215,7 @@ class Sphere(Primitive):
         model = self.model
         return np.linalg.norm(points - model[:3], axis=1) - model[3]
 
-    @accept_one_or_multiple_elements(dimensions=3)
+    @accept_one_or_multiple_elements(3)
     def get_normals(self, points):
         """Gives, for each input point, the normal vector of the point closest
         to the sphere.
