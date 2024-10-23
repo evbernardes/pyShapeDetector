@@ -72,6 +72,25 @@ def _set_and_check_3d_array(input_array, name="array", num_points=None):
 
 
 def accept_one_or_multiple_elements(*dimensions):
+    """This decorator simplifies some functions so that they can be used
+    with either a single point, or a multidimensional array.
+
+    For example, since it is applied to the get_distances methods of the
+    Primitive classes:
+
+        accept_one_or_multiple_elements(3)
+        def get_distances(self, points, *args):
+            ...
+
+    For a single point `point`, with shape (3, ), I can simplify this:
+
+        shape.get_distances([point])[0]
+
+    To this:
+
+        shape.get_distances(point)
+    """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
