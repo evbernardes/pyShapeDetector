@@ -149,7 +149,7 @@ class ElementSelector:
     @selected.setter
     def selected(self, pre_selected_values):
         if isinstance(pre_selected_values, bool):
-            pre_selected_values = [pre_selected_values] * len(self.selected)
+            pre_selected_values = [pre_selected_values] * len(self._elements)
         elif len(pre_selected_values) != len(self.elements):
             raise ValueError(
                 "Length of input expected to be the same as the "
@@ -374,7 +374,7 @@ class ElementSelector:
     def update_all(self, vis):
         idx = min(self.i, len(self._elements) - 1)
         # value = not np.sum(self.selected) == (L := len(self.selected))
-        for i in range(len(self.selected)):
+        for i in range(len(self._elements)):
             # self.selected[i] = value
             self.update(vis, i)
         self.update(vis, idx)
@@ -384,12 +384,12 @@ class ElementSelector:
             self.i_old = self.i
             self.i = idx
 
-            if idx >= len(self._elements):
-                warnings.warn(
-                    f"Index error, tried accessing {idx} out of "
-                    f"{len(self._elements)} elements. Getting last one."
-                )
-                idx = len(self._elements) - 1
+        if self.i >= len(self._elements):
+            warnings.warn(
+                f"Index error, tried accessing {self.i} out of "
+                f"{len(self._elements)} elements. Getting last one."
+            )
+            idx = len(self._elements) - 1
 
         # revert current element color to normal color...
         element = self._elements_painted[self.i_old]
@@ -434,7 +434,7 @@ class ElementSelector:
         if action == 1:
             return
 
-        value = not np.sum(self.selected) == (L := len(self.selected))
+        value = not np.sum(self.selected) == len(self._elements)
         self.selected = value
         # for i in range(L):
         # self.selected[i] = value
@@ -504,9 +504,20 @@ class ElementSelector:
         self._bboxes += self._get_bboxes(output_elements, (1, 0, 0))
 
         if self.i in indices:
+            print("[INFO] Current idx in modified indices, getting last element")
             self.i = len(self._elements) - 1
         else:
-            self.i -= len([i for i in indices if i < self.i])
+            print("[INFO] Current idx not modified indices")
+            self.i -= len([i for i in indices if i <= self.i])
+
+        print(f"Current index is {self.i}, {len(self._elements)} elements.")
+
+        if self.i >= len(self._elements):
+            warnings.warn(
+                f"Index error, tried accessing {self.i} out of "
+                f"{len(self._elements)} elements. Getting last one."
+            )
+            self.i = len(self._elements) - 1
 
         self._past_states.append(current_state)
 
@@ -579,6 +590,13 @@ class ElementSelector:
         self._plane_boundaries = self._get_plane_boundaries()
         self._get_drawable_and_painted_elements()
         self.elements_distance = self._compute_element_distances()
+
+        print(
+            f"{len(self._elements)} _elements, "
+            f"{len(self._elements_painted)} _elements_painted, "
+            f"{len(self._elements_drawable)} _elements_drawable, "
+            f"{len(self._bboxes)} _bboxes, "
+        )
 
         elements = (
             self._fixed_elements
