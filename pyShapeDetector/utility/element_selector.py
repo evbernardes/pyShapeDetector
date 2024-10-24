@@ -87,6 +87,7 @@ class ElementSelector:
         **camera_options,
     ):
         self._past_states = []
+        self._future_states = []
         self._elements = []
         self._fixed_elements = []
         self._elements_painted = []
@@ -333,6 +334,7 @@ class ElementSelector:
         vis.register_key_action_callback(GLFW_LSHIFT, self.switch_mouse_toggle)
         vis.register_key_action_callback(GLFW_ENTER, self.apply_function)
         vis.register_key_action_callback(ord("Z"), self.undo)
+        vis.register_key_action_callback(ord("Y"), self.redo)
 
         # vis.register_key_action_callback(
         #     GLFW_KEY_LEFT_SHIFT, self.switch_mouse_selection
@@ -490,13 +492,11 @@ class ElementSelector:
         self._bboxes += self._get_bboxes(output_elements, (1, 0, 0))
 
         if self.i in indices:
-            print("[INFO] Current idx in modified indices, getting last element")
-            self.i = len(self._elements) - 1
+            # print("[INFO] Current idx in modified indices, getting last element")
+            self.i = max(indices[0] - 1, 0)
         else:
-            print("[INFO] Current idx not modified indices")
+            # print("[INFO] Current idx not modified indices")
             self.i -= len([i for i in indices if i <= self.i])
-
-        print(f"Current index is {self.i}, {len(self._elements)} elements.")
 
         if self.i >= len(self._elements):
             warnings.warn(
@@ -505,6 +505,36 @@ class ElementSelector:
             )
             self.i = len(self._elements) - 1
 
+        self._past_states.append(current_state)
+        self._future_states = []
+
+        self.reset_visualiser_elements(vis)
+
+    def redo(self, vis, action, mods):
+        if not self.mouse_select or action == 1 or len(self._future_states) == 0:
+            return
+
+        self.remove_all_visualiser_elements(vis)
+
+        future_state = self._future_states.pop()
+
+        modified_elements = future_state["modified_elements"]
+        indices = future_state["indices"]
+        self.i = future_state["current_index"]
+
+        input_elements = [self._elements[i] for i in indices]
+        current_state = {
+            "indices": copy.deepcopy(indices),
+            "elements": copy.deepcopy(input_elements),
+            "num_outputs": len(modified_elements),
+        }
+
+        for n, i in enumerate(indices):
+            self._elements.pop(i - n)
+            self._bboxes.pop(i - n)
+
+        self._elements += modified_elements
+        self._bboxes += self._get_bboxes(modified_elements, (1, 0, 0))
         self._past_states.append(current_state)
 
         self.reset_visualiser_elements(vis)
@@ -521,16 +551,30 @@ class ElementSelector:
         num_outputs = last_state["num_outputs"]
 
         if self.i >= len(self._elements) - num_outputs:
+            # print("[INFO] Current idx in modified indices, getting last element")
             self.i = indices[-1]
         else:
+            # print("[INFO] Current idx not modified indices")
             self.i += len([i for i in indices if i < self.i])
 
-        self._elements = self._elements[:-num_outputs]
-        self._bboxes = self._bboxes[:-num_outputs]
+        if num_outputs > 0:
+            modified_elements = self._elements[-num_outputs:]
+            self._elements = self._elements[:-num_outputs]
+            self._bboxes = self._bboxes[:-num_outputs]
+        else:
+            modified_elements = []
 
         for i, element in zip(indices, elements):
             self._elements.insert(i, element)
             self._bboxes.insert(i, self._get_bboxes([element], (1, 0, 0))[0])
+
+        self._future_states.append(
+            {
+                "modified_elements": modified_elements,
+                "indices": indices,
+                "current_index": self.i,
+            }
+        )
 
         self.reset_visualiser_elements(vis)
 
