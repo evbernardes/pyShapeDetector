@@ -241,7 +241,6 @@ def apply_function_manually(
     fixed_elements=[],
     pre_selected=None,
     return_indices=False,
-    combine_indices=False,
     **args,
 ):
     if pre_selected is None:
@@ -257,17 +256,6 @@ def apply_function_manually(
 
     if return_indices:
         indices = [state["indices"] for state in element_selector._past_states]
-
-        if combine_indices:
-            combined = indices[0]
-            for idx_group in indices[1:]:
-                for n, idx in enumerate(idx_group):
-                    offset = len([i for i in combined if i < idx])
-                    print(offset)
-                    idx_group[n] += offset
-                combined += idx_group
-            indices = sorted(combined)
-
         return element_selector.elements, indices
 
     return element_selector.elements

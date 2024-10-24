@@ -37,6 +37,7 @@ from .helpers_internal import (
     parallelize,
     _set_and_check_3d_array,
     accept_one_or_multiple_elements,
+    combine_indices_to_remove,
 )
 
 from .helpers_math import (

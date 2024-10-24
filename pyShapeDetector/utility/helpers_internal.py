@@ -6,6 +6,7 @@ Created on Fri May  3 10:50:14 2024
 @author: ebernardes
 """
 import functools
+import copy
 import numpy as np
 from multiprocessing import Manager, Process
 
@@ -157,3 +158,57 @@ def accept_one_or_multiple_elements(*dimensions):
         return wrapper
 
     return decorator
+
+
+def combine_indices_to_remove(idx_groups):
+    """
+    Combine multiple lists of indices to be removed.
+
+    For example, suppose you have:
+        input = ['a', 'b', 'c', 'd', 'e', 'f']
+
+    And you want to remove the elements at indices [0, 3]. You end up with:
+        step1 = [_, 'b', 'c', _, 'e', 'f']
+
+    Let's say you later also remove the elements [1, 3] from this new list:
+        step2 = ['b', _, 'e']
+
+    If you want to remove the same elements at a single step, you must remove
+    the elements at indices [0, 2, 3, 5].
+
+    This function calculates this modified and combined indices list.
+
+    Parameters
+    ----------
+    idx_groups: list
+        List containing sublists of integers.
+
+    Returns
+    -------
+    list of integers
+
+    """
+    if not isinstance(idx_groups, list):
+        raise ValueError(f"Expected list of lists, got {type(idx_groups)}.")
+
+    for indices in idx_groups:
+        if not isinstance(indices, list):
+            raise ValueError(f"Expected list of lists, got {type(indices)}.")
+
+        for idx in indices:
+            if not isinstance(idx, int):
+                raise ValueError(f"Expected integers, got {idx}.")
+
+    indices = []
+    if len(idx_groups) > 0:
+        N = sum([len(idx_group) for idx_group in idx_groups])
+        lim = max([i for idx_group in idx_groups for i in idx_group])
+        dummy_values_1 = list(range(N + lim))
+        dummy_values_2 = copy.deepcopy(dummy_values_1)
+
+        for idx_group in idx_groups:
+            for i in idx_group[::-1]:
+                elem = dummy_values_1.pop(i)
+                indices.append(dummy_values_2.index(elem))
+
+    return sorted(indices)
