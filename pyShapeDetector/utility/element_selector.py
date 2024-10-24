@@ -480,18 +480,25 @@ class ElementSelector:
 
         indices = np.where(self._selected)[0].tolist()
         input_elements = [self._elements[i] for i in indices]
+        output_elements = self.function(input_elements)
 
         current_state = {
             "indices": copy.deepcopy(indices),
             "elements": copy.deepcopy(input_elements),
+            "num_outputs": len(output_elements),
         }
 
-        output_elements = self.function(input_elements)
-
         self.remove_all_visualiser_elements(vis)
-        for i, output_element in zip(indices, output_elements):
-            self._elements[i] = output_element
-            self._bboxes[i] = self._get_bboxes([output_element], (1, 0, 0))[0]
+        for n, i in enumerate(indices):
+            self._elements.pop(i - n)
+            self._bboxes.pop(i - n)
+
+        self._elements += output_elements
+        self._bboxes += self._get_bboxes(output_elements, (1, 0, 0))
+
+        # for i, output_element in zip(indices, output_elements):
+        #     self._elements[i] = output_element
+        #     self._bboxes[i] = self._get_bboxes([output_element], (1, 0, 0))[0]
 
         self._past_states.append(current_state)
 
@@ -506,9 +513,14 @@ class ElementSelector:
         last_state = self._past_states.pop()
         indices = last_state["indices"]
         elements = last_state["elements"]
+        num_outputs = last_state["num_outputs"]
+
+        self._elements = self._elements[:-num_outputs]
+        self._bboxes = self._bboxes[:-num_outputs]
+
         for i, element in zip(indices, elements):
-            self._elements[i] = element
-            self._bboxes[i] = self._get_bboxes([element], (1, 0, 0))[0]
+            self._elements.insert(i, element)
+            self._bboxes.insert(i, self._get_bboxes([element], (1, 0, 0))[0])
 
         self.reset_visualiser_elements(vis)
 
