@@ -71,9 +71,14 @@ def unproject_screen_to_world(vis, x, y):
     # Convert camera space to world space
     camera_space_point = np.array([x, y, z, 1.0]).reshape(4, 1)
     world_space_point = np.dot(np.linalg.inv(extrinsic), camera_space_point)
-
     point = world_space_point[:3].flatten()
-    return point
+
+    # Extract the camera forward direction (view normal vector)
+    camera_forward = np.array([0, 0, -1, 1.0])  # The forward direction in camera space
+    world_forward_vector = np.dot(np.linalg.inv(extrinsic), camera_forward)[:3]
+    normal_view_vector = world_forward_vector / np.linalg.norm(world_forward_vector)
+
+    return point, normal_view_vector
 
 
 class ElementSelector:
@@ -164,8 +169,11 @@ class ElementSelector:
 
         self._selected = copy.deepcopy(pre_selected_values)
 
-    def distances_to_point(self, point):
+    def distances_to_point(self, point, vector):
         from pyShapeDetector.geometry import PointCloud
+        from pyShapeDetector.primitives import Plane
+
+        plane_screen = Plane.from_normal_point(vector, point)
 
         distances = []
         for elem in self.elements_distance:
@@ -176,7 +184,13 @@ class ElementSelector:
                     PointCloud([point]).compute_point_cloud_distance(elem)[0]
                 )
             else:  # it is a Primitive
-                distances.append(elem.get_distances(point))
+                plane_test = plane_screen.get_bounded_plane(
+                    elem.mesh.vertices, convex=True
+                )
+                if plane_test.contains_projections([point])[0]:
+                    distances.append(elem.get_distances(point))
+                else:
+                    distances.append(np.inf)
 
         return distances
 
@@ -586,9 +600,13 @@ class ElementSelector:
         if action == 1:
             return
 
-        point = unproject_screen_to_world(vis, *self.mouse_position)
+        point, vector = unproject_screen_to_world(vis, *self.mouse_position)
 
-        distances = self.distances_to_point(point)
+        distances = self.distances_to_point(point, vector)
+
+        i_min_distance = np.argmin(distances)
+        if distances[i_min_distance] is np.inf:
+            return
 
         self.i_old = self.i
         self.i = np.argmin(distances)
