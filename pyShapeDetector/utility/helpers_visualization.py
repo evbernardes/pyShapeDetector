@@ -223,8 +223,8 @@ def select_manually(
 
     element_selector = ElementSelector(**args)
     element_selector.add_elements(elements)
-    element_selector.pre_selected = pre_selected
     element_selector.add_elements(fixed_elements, fixed=True)
+    element_selector.selected = pre_selected
     element_selector.run()
 
     if "function" in args:
@@ -249,8 +249,8 @@ def apply_function_manually(
     element_selector = ElementSelector(**args)
     element_selector.add_elements(elements)
     element_selector.function = function
-    element_selector.pre_selected = pre_selected
     element_selector.add_elements(fixed_elements, fixed=True)
+    element_selector.selected = pre_selected
 
     element_selector.run()
 

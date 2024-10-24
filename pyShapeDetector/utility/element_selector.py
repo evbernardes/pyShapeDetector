@@ -248,9 +248,20 @@ class ElementSelector:
         painted = self._get_painted(self._elements_drawable, self.color_unselected)
 
         if self.paint_selected:
-            painted[self.i] = self._get_painted(
-                painted[self.i], self.color_unselected_current
-            )
+            for i in range(len(painted)):
+                if i == self.i:
+                    if self.selected[self.i]:
+                        color = self.color_selected_current
+                    else:
+                        color = self.color_unselected_current
+
+                elif self.selected[i]:
+                    color = self.color_selected
+                else:
+                    continue
+
+                painted[i] = self._get_painted(painted[i], color)
+
         else:
             painted[self.i] = self._elements_drawable[self.i]
 
@@ -423,6 +434,8 @@ class ElementSelector:
         self._elements_painted[self.i] = element
         vis.add_geometry(element, reset_bounding_box=False)
         vis.add_geometry(self._bboxes[self.i], reset_bounding_box=False)
+
+        print(f"{sum(self.selected)} elements out of {len(self.selected)} selected.")
 
     def toggle(self, vis, action, mods):
         """Toggle the current highlighted element between selected/unselected."""
@@ -635,6 +648,9 @@ class ElementSelector:
         # Prepare elements for visualization
         if startup:
             self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
+        else:
+            self.selected = False
+
         self._plane_boundaries = self._get_plane_boundaries()
         self._get_drawable_and_painted_elements()
         self.elements_distance = self._compute_element_distances()
@@ -661,7 +677,6 @@ class ElementSelector:
                 vis.add_geometry(elem, reset_bounding_box=startup)
 
         if not startup:
-            self.selected = False
             self.update_all(vis)
 
     def run(self):
