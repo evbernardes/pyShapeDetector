@@ -495,9 +495,10 @@ class ElementSelector:
         self._elements += output_elements
         self._bboxes += self._get_bboxes(output_elements, (1, 0, 0))
 
-        # for i, output_element in zip(indices, output_elements):
-        #     self._elements[i] = output_element
-        #     self._bboxes[i] = self._get_bboxes([output_element], (1, 0, 0))[0]
+        if self.i in indices:
+            self.i = len(self._elements) - 1
+        else:
+            self.i -= len([i for i in indices if i < self.i])
 
         self._past_states.append(current_state)
 
@@ -513,6 +514,11 @@ class ElementSelector:
         indices = last_state["indices"]
         elements = last_state["elements"]
         num_outputs = last_state["num_outputs"]
+
+        if self.i >= len(self._elements) - num_outputs:
+            self.i = indices[-1]
+        else:
+            self.i += len([i for i in indices if i < self.i])
 
         self._elements = self._elements[:-num_outputs]
         self._bboxes = self._bboxes[:-num_outputs]
