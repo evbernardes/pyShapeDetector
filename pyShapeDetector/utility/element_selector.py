@@ -165,7 +165,7 @@ class ElementSelector:
 
         for value in pre_selected_values:
             if not isinstance(value, bool):
-                raise ValueError("Expected boolean, got {type(value)}")
+                raise ValueError(f"Expected boolean, got {type(value)}")
 
         self._selected = copy.deepcopy(pre_selected_values)
 
