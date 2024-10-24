@@ -17,7 +17,7 @@ from open3d import visualization
 # from pyShapeDetector.primitives import Primitive
 
 
-ELEMENTS_NUMBER_WARNING = 60
+ELEMENTS_NUMBER_WARNING = 350
 NUM_POINTS_FOR_DISTANCE_CALC = 30
 
 COLOR_BBOX_SELECTED = (0, 0.8, 0)
