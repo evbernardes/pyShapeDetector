@@ -532,6 +532,7 @@ class ElementSelector:
 
         self._past_states.append(current_state)
         self._future_states = []
+        self.selected = False
 
         self.reset_visualiser_elements(vis)
 
@@ -561,6 +562,7 @@ class ElementSelector:
         self._elements += modified_elements
         self._bboxes += self._get_bboxes(modified_elements, (1, 0, 0))
         self._past_states.append(current_state)
+        self.selected = False
 
         self.reset_visualiser_elements(vis)
 
@@ -592,6 +594,10 @@ class ElementSelector:
         for i, element in zip(indices, elements):
             self._elements.insert(i, element)
             self._bboxes.insert(i, self._get_bboxes([element], (1, 0, 0))[0])
+
+        self.selected = False
+        for i in indices:
+            self._selected[i] = True
 
         self._future_states.append(
             {
@@ -646,8 +652,8 @@ class ElementSelector:
         # Prepare elements for visualization
         if startup:
             self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
-        else:
-            self.selected = False
+        # else:
+        #     self.selected = False
 
         self._plane_boundaries = self._get_plane_boundaries()
         self._get_drawable_and_painted_elements()
