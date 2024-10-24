@@ -724,6 +724,9 @@ class PlaneBounded(Plane):
         if PointCloud.is_instance_or_open3d(points):
             points = np.asarray(points.points)
 
+        points = np.asarray(points)
+        ndim = points.ndim
+
         points = np.atleast_2d(points)
         if points.shape[1] == 3:
             if input_is_2D:
@@ -753,7 +756,10 @@ class PlaneBounded(Plane):
 
             inside.append(np.sum(test) % 2 == 1)
 
-        return np.array(inside)
+        if ndim == 1:
+            return inside[0]
+        else:
+            return np.array(inside)
 
     def bound_lines_meshes(self, radius=0.001, color=(0, 0, 0)):
         lines = self.vertices_lines

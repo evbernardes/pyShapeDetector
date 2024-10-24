@@ -187,7 +187,7 @@ class ElementSelector:
                 plane_test = plane_screen.get_bounded_plane(
                     elem.mesh.vertices, convex=True
                 )
-                if plane_test.contains_projections([point])[0]:
+                if plane_test.contains_projections(point):
                     distances.append(elem.get_distances(point))
                 else:
                     distances.append(np.inf)
