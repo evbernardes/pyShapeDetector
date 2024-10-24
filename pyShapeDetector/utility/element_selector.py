@@ -218,29 +218,15 @@ class ElementSelector:
                 "cause segmentation fault errors."
             )
 
-        # if not isinstance(self._elements, list):
-        #     raise ValueError("Input elements must be a list.")
-
         if len(self.selected) != len(self.elements):
             raise ValueError("Pre-select and input elements must have same length.")
-
-        # if not np.array(self.pre_selected).dtype == bool:
-        #     raise ValueError("Pre-select must be a list of booleans.")
 
         if "mesh_show_back_face" not in self.camera_options:
             self.camera_options["mesh_show_back_face"] = True
 
-        # if self.draw_boundary_lines:
-        #     self._plane_boundaries = self._get_plane_boundaries()
-        # else:
-        #     self._plane_boundaries = []
-
         # IMPORTANT: respect order, only get Open3D elements at the very end
         self._fixed_bboxes = self._get_bboxes(self._fixed_elements, (0, 0, 0))
         self._fixed_elements = [self._get_open3d(elem) for elem in self._fixed_elements]
-
-        # self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
-        # self._elements = [self._get_open3d(elem) for elem in self._elements]
 
     def _get_drawable_and_painted_elements(self):
         self._elements_drawable = [self._get_open3d(elem) for elem in self._elements]
@@ -591,12 +577,12 @@ class ElementSelector:
         self._get_drawable_and_painted_elements()
         self.elements_distance = self._compute_element_distances()
 
-        print(
-            f"{len(self._elements)} _elements, "
-            f"{len(self._elements_painted)} _elements_painted, "
-            f"{len(self._elements_drawable)} _elements_drawable, "
-            f"{len(self._bboxes)} _bboxes, "
-        )
+        # print(
+        #     f"{len(self._elements)} _elements, "
+        #     f"{len(self._elements_painted)} _elements_painted, "
+        #     f"{len(self._elements_drawable)} _elements_drawable, "
+        #     f"{len(self._bboxes)} _bboxes, "
+        # )
 
         elements = (
             self._fixed_elements
