@@ -137,13 +137,13 @@ def get_open3d_geometries(elements, **camera_options):
         if draw_boundary_lines and isinstance(element, PlaneBounded):
             boundary_LineSet = element.vertices_LineSet
             boundary_LineSet.paint_uniform_color((1, 0, 0))
-            boundary_lines.append(boundary_LineSet)
+            boundary_lines.append(boundary_LineSet.as_open3d)
 
         if draw_boundary_lines and isinstance(element, Plane):
             for hole in element.holes:
-                hole_boundary_LineSet = hole.bound_LineSet
+                hole_boundary_LineSet = hole.vertices_LineSet
                 hole_boundary_LineSet.paint_uniform_color((0, 0, 1))
-                hole_boundary_lines.append(hole_boundary_LineSet)
+                hole_boundary_lines.append(hole_boundary_LineSet.as_open3d)
 
     if len(lines) > 0:
         geometries.append(Line.get_LineSet_from_list(lines))

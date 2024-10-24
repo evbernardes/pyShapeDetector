@@ -83,7 +83,7 @@ class ElementSelector:
         window_name="",
         paint_selected=True,
         return_finish_flag=False,
-        show_plane_boundaries=False,
+        draw_boundary_lines=False,
         **camera_options,
     ):
         self._past_states = []
@@ -96,7 +96,7 @@ class ElementSelector:
         self.paint_selected = paint_selected
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
-        self.show_plane_boundaries = show_plane_boundaries
+        self.draw_boundary_lines = draw_boundary_lines
         self._ELEMENTS_NUMBER_WARNING = ELEMENTS_NUMBER_WARNING
         self._NUM_POINTS_FOR_DISTANCE_CALC = NUM_POINTS_FOR_DISTANCE_CALC
         self.camera_options = camera_options
@@ -230,7 +230,7 @@ class ElementSelector:
         if "mesh_show_back_face" not in self.camera_options:
             self.camera_options["mesh_show_back_face"] = True
 
-        # if self.show_plane_boundaries:
+        # if self.draw_boundary_lines:
         #     self._plane_boundaries = self._get_plane_boundaries()
         # else:
         #     self._plane_boundaries = []
@@ -255,17 +255,16 @@ class ElementSelector:
         self._elements_painted = painted
 
     def _get_plane_boundaries(self):
+        if not self.draw_boundary_lines:
+            return []
+
         plane_boundaries = []
-
-        if not self.show_plane_boundaries:
-            return plane_boundaries
-
         for element in self._elements:
             try:
-                lineset = element.vertices_LineSet
+                lineset = element.vertices_LineSet.as_open3d
                 if hasattr(element, "holes"):
                     for hole in element.holes:
-                        lineset += hole.vertices_LineSet
+                        lineset += hole.vertices_LineSet.as_open3d
             except AttributeError:
                 continue
             lineset.paint_uniform_color((0, 0, 0))
