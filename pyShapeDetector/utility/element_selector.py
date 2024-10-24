@@ -242,7 +242,8 @@ class ElementSelector:
         # self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
         # self._elements = [self._get_open3d(elem) for elem in self._elements]
 
-    def _paint_elements(self):
+    def _get_drawable_and_painted_elements(self):
+        self._elements_drawable = [self._get_open3d(elem) for elem in self._elements]
         painted = self._get_painted(self._elements_drawable, self.color_unselected)
 
         if self.paint_selected:
@@ -371,7 +372,7 @@ class ElementSelector:
         sys.exit(0)
 
     def update_all(self, vis):
-        idx = self.i
+        idx = min(self.i, len(self._elements) - 1)
         # value = not np.sum(self.selected) == (L := len(self.selected))
         for i in range(len(self.selected)):
             # self.selected[i] = value
@@ -382,6 +383,13 @@ class ElementSelector:
         if idx is not None:
             self.i_old = self.i
             self.i = idx
+
+            if idx >= len(self._elements):
+                warnings.warn(
+                    f"Index error, tried accessing {idx} out of "
+                    f"{len(self._elements)} elements. Getting last one."
+                )
+                idx = len(self._elements) - 1
 
         # revert current element color to normal color...
         element = self._elements_painted[self.i_old]
@@ -569,8 +577,7 @@ class ElementSelector:
         if startup:
             self._bboxes = self._get_bboxes(self._elements, (1, 0, 0))
         self._plane_boundaries = self._get_plane_boundaries()
-        self._elements_drawable = [self._get_open3d(elem) for elem in self._elements]
-        self._paint_elements()
+        self._get_drawable_and_painted_elements()
         self.elements_distance = self._compute_element_distances()
 
         elements = (
@@ -601,7 +608,3 @@ class ElementSelector:
         # Set up the visualizer
         vis = self._get_visualizer()
         self.reset_visualiser_elements(vis, startup=True)
-
-        vis.run()
-        vis.close()
-        vis.destroy_window()
