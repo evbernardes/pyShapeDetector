@@ -435,8 +435,6 @@ class ElementSelector:
         vis.add_geometry(element, reset_bounding_box=False)
         vis.add_geometry(self._bboxes[self.i], reset_bounding_box=False)
 
-        print(f"{sum(self.selected)} elements out of {len(self.selected)} selected.")
-
     def toggle(self, vis, action, mods):
         """Toggle the current highlighted element between selected/unselected."""
         if action == 1:
