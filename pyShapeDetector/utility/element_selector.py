@@ -608,3 +608,11 @@ class ElementSelector:
         # Set up the visualizer
         vis = self._get_visualizer()
         self.reset_visualiser_elements(vis, startup=True)
+
+        try:
+            vis.run()
+        except Exception as e:
+            raise e
+        finally:
+            vis.close()
+            vis.destroy_window()
