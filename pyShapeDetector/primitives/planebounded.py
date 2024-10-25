@@ -1171,8 +1171,8 @@ class PlaneBounded(Plane):
 
             if np.any([line is None for line in lines]):
                 warnings.warn(
-                    "segment_intersection mode was chosen, "
-                    "but lines do not intersect. Doing nothing."
+                    f"{fit_mode} mode was chosen, but lines do not "
+                    "intersect or are not colinear. Doing nothing."
                 )
                 continue
 

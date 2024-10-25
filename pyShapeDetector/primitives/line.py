@@ -949,7 +949,8 @@ class Line(Primitive):
         """
 
         if not self.check_colinear(colinear_line, distance_eps, angle_eps):
-            raise ValueError("Lines are not colinear.")
+            warnings.warn("Lines are not colinear.")
+            return None
 
         points = np.vstack([self.points, colinear_line.points])
         interval = self.projections_limits_from_points(points)
