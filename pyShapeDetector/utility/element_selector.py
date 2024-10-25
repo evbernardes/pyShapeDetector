@@ -97,7 +97,9 @@ class ElementSelector:
         self._fixed_elements = []
         self._elements_painted = []
         self._selected = []
+        self._selectable = []
         self._function = None
+        self._select_filter = None
         self.bbox_expand = bbox_expand
         self.paint_selected = paint_selected
         self.window_name = window_name
@@ -141,6 +143,20 @@ class ElementSelector:
         self._function = new_function
 
     @property
+    def select_filter(self):
+        return self._select_filter
+
+    @select_filter.setter
+    def select_filter(self, new_function):
+        if new_function is None:
+            pass
+        elif (N := len(inspect.signature(new_function).parameters)) != 1:
+            raise ValueError(
+                f"Expected filter function with 1 parameter (element), got {N}."
+            )
+        self._select_filter = new_function
+
+    @property
     def elements(self):
         return self._elements
 
@@ -153,21 +169,27 @@ class ElementSelector:
         return self._selected
 
     @selected.setter
-    def selected(self, pre_selected_values):
-        if isinstance(pre_selected_values, bool):
-            pre_selected_values = [pre_selected_values] * len(self._elements)
-        elif len(pre_selected_values) != len(self.elements):
+    def selected(self, selected_values):
+        if isinstance(selected_values, bool):
+            selected_values = [selected_values] * len(self._elements)
+        elif len(selected_values) != len(self.elements):
             raise ValueError(
                 "Length of input expected to be the same as the "
                 f"current number of elements ({len(self.elements)}), "
-                f"got {len(pre_selected_values)}."
+                f"got {len(selected_values)}."
             )
 
-        for value in pre_selected_values:
+        for value in selected_values:
             if not isinstance(value, (bool, np.bool_)):
                 raise ValueError(f"Expected boolean, got {type(value)}")
 
-        self._selected = copy.deepcopy(pre_selected_values)
+        if self._selectable is not None and len(self._selectable) == len(
+            selected_values
+        ):
+            for i in np.where(~self._selectable)[0]:
+                selected_values[i] = False
+
+        self._selected = copy.deepcopy(selected_values)
 
     def distances_to_point(self, point, vector):
         from pyShapeDetector.geometry import PointCloud
@@ -437,8 +459,9 @@ class ElementSelector:
 
     def toggle(self, vis, action, mods):
         """Toggle the current highlighted element between selected/unselected."""
-        if action == 1:
+        if action == 1 or not self._selectable[self.i]:
             return
+
         self.selected[self.i] = not self.selected[self.i]
         self.update(vis)
 
@@ -447,7 +470,9 @@ class ElementSelector:
         if action == 1:
             return
 
-        value = not np.sum(self.selected) == len(self._elements)
+        selected = np.logical_or(self.selected, ~self._selectable)
+
+        value = not np.sum(selected) == len(self._elements)
         self.selected = value
         # for i in range(L):
         # self.selected[i] = value
@@ -658,6 +683,11 @@ class ElementSelector:
         self._plane_boundaries = self._get_plane_boundaries()
         self._get_drawable_and_painted_elements()
         self.elements_distance = self._compute_element_distances()
+        if self.select_filter is None:
+            self._selectable = [True] * len(self.elements)
+        else:
+            self._selectable = [self.select_filter(elem) for elem in self.elements]
+        self._selectable = np.asarray(self._selectable)
 
         # print(
         #     f"{len(self._elements)} _elements, "

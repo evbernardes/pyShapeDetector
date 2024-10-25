@@ -238,6 +238,7 @@ def select_manually(
 def apply_function_manually(
     elements,
     function,
+    select_filter=None,
     fixed_elements=[],
     pre_selected=None,
     return_indices=False,
@@ -249,6 +250,7 @@ def apply_function_manually(
     element_selector = ElementSelector(**args)
     element_selector.add_elements(elements)
     element_selector.function = function
+    element_selector.select_filter = select_filter
     element_selector.add_elements(fixed_elements, fixed=True)
     element_selector.selected = pre_selected
 
