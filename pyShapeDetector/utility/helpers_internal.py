@@ -168,10 +168,10 @@ def combine_indices_to_remove(idx_groups):
         input = ['a', 'b', 'c', 'd', 'e', 'f']
 
     And you want to remove the elements at indices [0, 3]. You end up with:
-        step1 = [_, 'b', 'c', _, 'e', 'f']
+        step1 = [_, 'b', 'c', _, 'e', 'f']  # removed input[0] and input[3]
 
     Let's say you later also remove the elements [1, 3] from this new list:
-        step2 = ['b', _, 'e']
+        step2 = ['b', _, 'e', _]  # removed step1[1] and step1[3]
 
     If you want to remove the same elements at a single step, you must remove
     the elements at indices [0, 2, 3, 5].
