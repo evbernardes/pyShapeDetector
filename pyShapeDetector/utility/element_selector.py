@@ -31,9 +31,10 @@ KEYS_NORMAL = {
     "Toggle": ["Space", 32],  # GLFW_KEY_SPACE = 32
     "Previous": ["<-", 263],  # GLFW_KEY_LEFT = 263
     "Next": ["->", 262],  # GLFW_KEY_RIGHT = 262
-    "Extra": ["LCtrl", 341],  # GLFW_KEY_LCTRL = 341
     "Finish": ["F", ord("F")],
 }
+
+EXTRA_KEY = ["LCtrl", 341]  # GLFW_KEY_LCTRL = 341
 
 KEYS_EXTRA = {
     "Apply": ["Enter", 257],  # GLFW_KEY_ENTER = 257
@@ -44,15 +45,17 @@ KEYS_EXTRA = {
 }
 
 INSTRUCTIONS = (
-    "Green: selected. White: unselected. Blue: current.\n\n"
+    "**************************************************"
+    + "\nStarting manual selector. Instructions:"
+    + "\nGreen: selected. White: unselected. Blue: current."
+    + "\n******************** KEYS: ***********************\n"
     + "\n".join([f"({key}) {desc}" for desc, (key, _) in KEYS_NORMAL.items()])
+    + f"({EXTRA_KEY[0]}) Enables mouse selection"
     + "\n"
     + "\n".join(
-        [
-            f"({KEYS_NORMAL['Extra'][0]}) + ({key}) {desc}"
-            for desc, (key, _) in KEYS_EXTRA.items()
-        ]
+        [f"({EXTRA_KEY[0]}) + ({key}) {desc}" for desc, (key, _) in KEYS_EXTRA.items()],
     )
+    + "\n**************************************************"
 )
 
 
@@ -386,7 +389,7 @@ class ElementSelector:
         vis.register_key_action_callback(KEYS_NORMAL["Next"][1], self.next)
         vis.register_key_action_callback(KEYS_NORMAL["Previous"][1], self.previous)
         vis.register_key_action_callback(KEYS_NORMAL["Finish"][1], self.finish_process)
-        vis.register_key_action_callback(KEYS_NORMAL["Extra"][1], self.switch_extra)
+        vis.register_key_action_callback(EXTRA_KEY[1], self.switch_extra)
         vis.register_key_action_callback(
             KEYS_EXTRA["Toggle click"][1], self.switch_mouse_toggle
         )
@@ -728,10 +731,10 @@ class ElementSelector:
         vis = self._get_visualizer()
         self.reset_visualiser_elements(vis, startup=True)
 
-        print("**************************************************")
-        print("Starting manual selector. Instructions:\n")
+        # print("**************************************************")
+        # print("Starting manual selector. Instructions:\n")
         print(INSTRUCTIONS)
-        print("**************************************************")
+        # print("**************************************************")
 
         try:
             vis.run()
