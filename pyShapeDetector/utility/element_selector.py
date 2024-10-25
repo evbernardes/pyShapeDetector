@@ -44,10 +44,14 @@ KEYS_EXTRA = {
 }
 
 INSTRUCTIONS = (
-    " Green: selected. White: unselected. Blue: current. "
-    + " | ".join([f"({key}) {desc}" for desc, (key, _) in KEYS_NORMAL.items()])
-    + f" | ({KEYS_NORMAL['Extra'][0]}) + ".join(
-        [f"({key}) {desc}" for desc, (key, _) in KEYS_EXTRA.items()]
+    "Green: selected. White: unselected. Blue: current.\n\n"
+    + "\n".join([f"({key}) {desc}" for desc, (key, _) in KEYS_NORMAL.items()])
+    + "\n"
+    + "\n".join(
+        [
+            f"({KEYS_NORMAL['Extra'][0]}) + ({key}) {desc}"
+            for desc, (key, _) in KEYS_EXTRA.items()
+        ]
     )
 )
 
@@ -397,7 +401,7 @@ class ElementSelector:
         if window_name != "":
             window_name += " - "
 
-        window_name += f"{len(self.elements)} elements. " + INSTRUCTIONS
+        window_name += f"{len(self.elements)} elements. "
 
         vis.create_window(window_name)
 
@@ -724,10 +728,10 @@ class ElementSelector:
         vis = self._get_visualizer()
         self.reset_visualiser_elements(vis, startup=True)
 
-        print("***************")
-        print(" Starting manual selector. Instructions:")
+        print("**************************************************")
+        print("Starting manual selector. Instructions:\n")
         print(INSTRUCTIONS)
-        print("***************")
+        print("**************************************************")
 
         try:
             vis.run()
