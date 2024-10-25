@@ -27,23 +27,28 @@ COLOR_SELECTED_CURRENT = COLOR_BBOX_SELECTED
 COLOR_UNSELECTED = (0.9, 0.9, 0.9)
 COLOR_UNSELECTED_CURRENT = (0.0, 0.0, 0.6)
 
-KEYS_DESCRIPTOR = {
-    "TOGGLE": ord("S"),
-    "TOGGLE ALL": ord("T"),
-    "NEXT": ord("D"),
-    "PREVIOUS": ord("A"),
-    "FINISH": ord("F"),
+KEYS_NORMAL = {
+    "Toggle": ["Space", 32],  # GLFW_KEY_SPACE = 32
+    "Previous": ["<-", 263],  # GLFW_KEY_LEFT = 263
+    "Next": ["->", 262],  # GLFW_KEY_RIGHT = 262
+    "Extra": ["LCtrl", 341],  # GLFW_KEY_LCTRL = 341
+    "Finish": ["F", ord("F")],
 }
 
-GLFW_LSHIFT = 340
-GLFW_LCTRL = 341
-GLFW_ENTER = 257
+KEYS_EXTRA = {
+    "Apply": ["Enter", 257],  # GLFW_KEY_ENTER = 257
+    "Undo": ["Z", ord("Z")],
+    "Redo": ["Y", ord("Y")],
+    "Toggle all": ["A", ord("A")],
+    "Toggle click": ["LShift", 340],  # GLFW_KEY_LSHIFT = 340
+}
 
 INSTRUCTIONS = (
     " Green: selected. White: unselected. Blue: current. "
-    + " | ".join([f"({chr(k)}) {desc.lower()}" for desc, k in KEYS_DESCRIPTOR.items()])
-    + " | (LCtrl) Mouse select + (LShift) Toggle"
-    + " | (LCtrl) + (Enter) Apply function"
+    + " | ".join([f"({key}) {desc}" for desc, (key, _) in KEYS_NORMAL.items()])
+    + f" | ({KEYS_NORMAL['Extra'][0]}) + ".join(
+        [f"({key}) {desc}" for desc, (key, _) in KEYS_EXTRA.items()]
+    )
 )
 
 
@@ -114,7 +119,7 @@ class ElementSelector:
         self.i_old = 0
         self.i = 0
         self.finish = False
-        self.mouse_select = False
+        self.extra_functions = False
         self.mouse_toggle = False
         self.mouse_position = (0, 0)
 
@@ -372,24 +377,21 @@ class ElementSelector:
         # Register signal handler to gracefully stop the program
         signal.signal(signal.SIGINT, self._signal_handler)
 
-        vis.register_key_action_callback(KEYS_DESCRIPTOR["TOGGLE"], self.toggle)
-        vis.register_key_action_callback(KEYS_DESCRIPTOR["TOGGLE ALL"], self.toggle_all)
-        vis.register_key_action_callback(KEYS_DESCRIPTOR["NEXT"], self.next)
-        vis.register_key_action_callback(KEYS_DESCRIPTOR["PREVIOUS"], self.previous)
-        vis.register_key_action_callback(KEYS_DESCRIPTOR["FINISH"], self.finish_process)
-        vis.register_key_action_callback(GLFW_LCTRL, self.switch_mode)
-        vis.register_key_action_callback(GLFW_LSHIFT, self.switch_mouse_toggle)
-        vis.register_key_action_callback(GLFW_ENTER, self.apply_function)
-        vis.register_key_action_callback(ord("Z"), self.undo)
-        vis.register_key_action_callback(ord("Y"), self.redo)
+        # Normal keys
+        vis.register_key_action_callback(KEYS_NORMAL["Toggle"][1], self.toggle)
+        vis.register_key_action_callback(KEYS_NORMAL["Next"][1], self.next)
+        vis.register_key_action_callback(KEYS_NORMAL["Previous"][1], self.previous)
+        vis.register_key_action_callback(KEYS_NORMAL["Finish"][1], self.finish_process)
+        vis.register_key_action_callback(KEYS_NORMAL["Extra"][1], self.switch_extra)
+        vis.register_key_action_callback(
+            KEYS_EXTRA["Toggle click"][1], self.switch_mouse_toggle
+        )
 
-        # vis.register_key_action_callback(
-        #     GLFW_KEY_LEFT_SHIFT, self.switch_mouse_selection
-        # )
-        # vis.register_key_action_callback(
-        #     GLFW_KEY_LEFT_CONTROL, self.switch_mouse_toggle
-        # )
-        # vis.register_key_action_callback(GLFW_KEY_ENTER, self.apply_function)
+        # Extra (LCtrl) keys
+        vis.register_key_action_callback(KEYS_EXTRA["Toggle all"][1], self.toggle_all)
+        vis.register_key_action_callback(KEYS_EXTRA["Undo"][1], self.undo)
+        vis.register_key_action_callback(KEYS_EXTRA["Redo"][1], self.redo)
+        vis.register_key_action_callback(KEYS_EXTRA["Apply"][1], self.apply_function)
 
         window_name = self.window_name
         if window_name != "":
@@ -465,20 +467,6 @@ class ElementSelector:
         self.selected[self.i] = not self.selected[self.i]
         self.update(vis)
 
-    def toggle_all(self, vis, action, mods):
-        """Toggle the all elements between all selected/all unselected."""
-        if action == 1:
-            return
-
-        selected = np.logical_or(self.selected, ~self._selectable)
-
-        value = not np.sum(selected) == len(self._elements)
-        self.selected = value
-        # for i in range(L):
-        # self.selected[i] = value
-
-        self.update_all(vis)
-
     def next(self, vis, action, mods):
         """Highlight next element in list."""
         if action == 1:
@@ -498,19 +486,17 @@ class ElementSelector:
         self.finish = True
         vis.close()
 
-    def switch_mode(self, vis, action, mods):
-        """Switch to mouse selection + extra LCtrl mode."""
-        if self.mouse_select == bool(action):
+    def switch_extra(self, vis, action, mods):
+        """Switch to mouse selection + extra LCtrl functions."""
+        if self.extra_functions == bool(action):
             return
 
-        self.mouse_select = bool(action)
+        self.extra_functions = bool(action)
 
-        if self.mouse_select:
-            # print("[Info] Mouse mode: selection")
+        if self.extra_functions:
             vis.register_mouse_button_callback(self.on_mouse_button)
             vis.register_mouse_move_callback(self.on_mouse_move)
         else:
-            # print("[Info] Mouse mode: camera control")
             vis.register_mouse_button_callback(None)
             vis.register_mouse_move_callback(None)
 
@@ -520,7 +506,7 @@ class ElementSelector:
 
     def apply_function(self, vis, action, mods):
         """Apply function to selected elements."""
-        if not self.mouse_select or action == 1 or self.function is None:
+        if not self.extra_functions or action == 1 or self.function is None:
             return
 
         indices = np.where(self._selected)[0].tolist()
@@ -561,8 +547,22 @@ class ElementSelector:
 
         self.reset_visualiser_elements(vis)
 
+    def toggle_all(self, vis, action, mods):
+        """Toggle the all elements between all selected/all unselected."""
+        if not self.extra_functions or action == 1:
+            return
+
+        selected = np.logical_or(self.selected, ~self._selectable)
+
+        value = not np.sum(selected) == len(self._elements)
+        self.selected = value
+        # for i in range(L):
+        # self.selected[i] = value
+
+        self.update_all(vis)
+
     def redo(self, vis, action, mods):
-        if not self.mouse_select or action == 1 or len(self._future_states) == 0:
+        if not self.extra_functions or action == 1 or len(self._future_states) == 0:
             return
 
         self.remove_all_visualiser_elements(vis)
@@ -592,7 +592,7 @@ class ElementSelector:
         self.reset_visualiser_elements(vis)
 
     def undo(self, vis, action, mods):
-        if not self.mouse_select or action == 1 or len(self._past_states) == 0:
+        if not self.extra_functions or action == 1 or len(self._past_states) == 0:
             return
 
         self.remove_all_visualiser_elements(vis)
@@ -723,6 +723,11 @@ class ElementSelector:
         # Set up the visualizer
         vis = self._get_visualizer()
         self.reset_visualiser_elements(vis, startup=True)
+
+        print("***************")
+        print(" Starting manual selector. Instructions:")
+        print(INSTRUCTIONS)
+        print("***************")
 
         try:
             vis.run()
