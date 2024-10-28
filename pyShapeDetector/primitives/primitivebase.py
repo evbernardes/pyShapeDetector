@@ -146,6 +146,8 @@ class Primitive(ABC):
 
     Attributes
     ----------
+    dimensions
+    is_bounded
     fit_n_min
     model_args_n
     name
@@ -221,7 +223,28 @@ class Primitive(ABC):
     _color = None
     _mesh = None
     _decimals = None
-    # _inliers = None
+    _dimensions = None
+    _is_bounded = None
+
+    @property
+    def dimensions(self):
+        """Number of dimensions of geometrical object."""
+        if self._dimensions is None:
+            print(
+                f"'dimensions' not implemented for primitives of type {type(self)}, "
+                "returning None."
+            )
+        return self._dimensions
+
+    @property
+    def is_bounded(self):
+        """If False, geometric object is unbounded and cannot be visualized entirely."""
+        if self._is_bounded is None:
+            print(
+                f"'is_bounded' not implemented for primitives of type {type(self)}, "
+                "returning None."
+            )
+        return self._is_bounded
 
     @property
     def fit_n_min(self):

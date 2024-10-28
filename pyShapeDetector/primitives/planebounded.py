@@ -38,6 +38,8 @@ class PlaneBounded(Plane):
 
     Attributes
     ----------
+    dimensions
+    is_bounded
     fit_n_min
     model_args_n
     name
@@ -171,6 +173,7 @@ class PlaneBounded(Plane):
     _vertices_projections = np.array([])
     _convex = True
     _is_clockwise = None
+    _is_bounded = True
 
     @property
     def surface_area(self):

@@ -71,6 +71,8 @@ class Plane(Primitive):
 
     Attributes
     ----------
+    dimensions
+    is_bounded
     fit_n_min
     model_args_n
     name
@@ -188,6 +190,8 @@ class Plane(Primitive):
     _color = np.array([0, 0, 255]) / 255.0
     _is_hole = False
     _convex = None
+    _dimensions = 2
+    _is_bounded = False
 
     @property
     def equation(self):

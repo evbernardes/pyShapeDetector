@@ -26,6 +26,8 @@ class Cone(Primitive):
 
     Attributes
     ----------
+    dimensions
+    is_bounded
     fit_n_min
     model_args_n
     name
@@ -121,6 +123,8 @@ class Cone(Primitive):
     _translatable = [0, 1, 2]
     _rotatable = [3, 4, 5]
     _color = np.array([0, 180, 180]) / 255.0
+    _dimensions = 2
+    _is_bounded = True
 
     @property
     def equation(self):

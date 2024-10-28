@@ -30,6 +30,8 @@ class PlaneTriangulated(Plane):
 
     Attributes
     ----------
+    dimensions
+    is_bounded
     fit_n_min
     model_args_n
     name
@@ -148,6 +150,7 @@ class PlaneTriangulated(Plane):
     _triangles = np.array([])
     # TODO: maybe set _convex to None as it cannot be known
     _convex = False
+    _is_bounded = True
 
     @property
     def surface_area(self):

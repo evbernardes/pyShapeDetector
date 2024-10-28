@@ -24,6 +24,8 @@ class Template(Primitive):
 
     Attributes
     ----------
+    dimensions
+    is_bounded
     fit_n_min
     model_args_n
     name
@@ -98,6 +100,8 @@ class Template(Primitive):
     _model_args_n = 0
     _name = "template"
     _color = np.array([0.1, 0.2, 0.3])
+    _dimensions = None  # usually 2 for surfaces
+    _is_bounded = None
 
     @property
     def surface_area(self):

@@ -19,6 +19,8 @@ class Sphere(Primitive):
 
     Attributes
     ----------
+    dimensions
+    is_bounded
     fit_n_min
     model_args_n
     name
@@ -98,6 +100,8 @@ class Sphere(Primitive):
     _translatable = [0, 1, 2]
     _rotatable = []
     _color = np.array([0.0, 1.0, 0.0])
+    _dimensions = 2
+    _is_bounded = True
 
     @property
     def equation(self):

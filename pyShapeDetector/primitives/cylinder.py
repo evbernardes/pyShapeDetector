@@ -25,6 +25,8 @@ class Cylinder(Primitive):
 
     Attributes
     ----------
+    dimensions
+    is_bounded
     fit_n_min
     model_args_n
     name
@@ -118,6 +120,8 @@ class Cylinder(Primitive):
     _translatable = [0, 1, 2]
     _rotatable = [3, 4, 5]
     _color = np.array([1.0, 0.0, 0.0])
+    _dimensions = 2
+    _is_bounded = True
 
     @property
     def equation(self):
