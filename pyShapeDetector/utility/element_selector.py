@@ -728,8 +728,8 @@ class ElementSelector:
         self._check_and_initialize_inputs()
 
         # Set up the visualizer
-        vis = self._get_visualizer()
-        self.reset_visualiser_elements(vis, startup=True)
+        self._vis = self._get_visualizer()
+        self.reset_visualiser_elements(self._vis, startup=True)
 
         # print("**************************************************")
         # print("Starting manual selector. Instructions:\n")
@@ -737,9 +737,9 @@ class ElementSelector:
         # print("**************************************************")
 
         try:
-            vis.run()
+            self._vis.run()
         except Exception as e:
             raise e
         finally:
-            vis.close()
-            vis.destroy_window()
+            self._vis.close()
+            self._vis.destroy_window()
