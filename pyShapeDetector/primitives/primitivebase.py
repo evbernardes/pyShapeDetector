@@ -674,9 +674,11 @@ class Primitive(ABC):
         -------
         tuple
             Tuple containing distances and angles.
-
         """
-        return self.get_distances(points), self.get_angles(points, normals)
+        if normals is None:
+            return self.get_distances(points), None
+        else:
+            return self.get_distances(points), self.get_angles(points, normals)
 
     @accept_one_or_multiple_elements(3)
     def flatten_points(self, points):
