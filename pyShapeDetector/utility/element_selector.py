@@ -50,7 +50,7 @@ INSTRUCTIONS = (
     + "\nGreen: selected. White: unselected. Blue: current."
     + "\n******************** KEYS: ***********************\n"
     + "\n".join([f"({key}) {desc}" for desc, (key, _) in KEYS_NORMAL.items()])
-    + f"({EXTRA_KEY[0]}) Enables mouse selection"
+    + f"\n({EXTRA_KEY[0]}) Enables mouse selection"
     + "\n"
     + "\n".join(
         [f"({EXTRA_KEY[0]}) + ({key}) {desc}" for desc, (key, _) in KEYS_EXTRA.items()],

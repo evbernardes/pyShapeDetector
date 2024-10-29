@@ -1,6 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Helper functions that help with visualization or manual selection.
+
+Methods
+-------
+get_painted
+get_open3d_geometries
+draw_geometries
+draw_two_columns
+select_manually
+apply_function_manually
+
 Created on Wed Feb 28 10:59:02 2024
 
 @author: ebernardes
@@ -75,6 +86,41 @@ def get_painted(elements, color="random"):
 
 
 def get_open3d_geometries(elements, **camera_options):
+    """Get Open3D compatible/drawable forms of input elements:
+
+    Open3D-compatible geometries:
+        Transformed into the Open3D legacy geometry internal element.
+        Currently valid for:
+            PointCloud
+            TriangleMesh
+            LineSet
+            AxisAlignedBoundingBox
+            OrientedBoundingBox
+
+    Primitives:
+        Transformed into TriangleMeshes
+
+    Nx3 arrays:
+        Transformed into PointClouds
+
+    Parameters
+    ----------
+    elements : list
+        Elements to be drawn.
+    draw_inliers : boolean, optional
+        If True, returns inliers of every Primitive instance. Default: False.
+    draw_boundary_lines : boolean, optional
+        If True, returns LineSet instances for every plane, showing their
+         boundaries. Default: False.
+    draw_planes : boolean, optional
+        If False, ignores planes. Default: True.
+
+    Returns
+    -------
+    list
+        Elements to be drawn.
+    """
+
     from pyShapeDetector.primitives import Primitive, Line, Plane, PlaneBounded
     from pyShapeDetector.geometry import PointCloud
 
@@ -158,11 +204,66 @@ def get_open3d_geometries(elements, **camera_options):
 
 
 def draw_geometries(elements, **camera_options):
+    """Get Open3D compatible/drawable forms of input elements and then
+    draw them with Open3D.
+
+    See also:
+        get_open3d_geometries, open3d.visualization.draw_geometries
+
+    Parameters
+    ----------
+    elements : list
+        Elements to be drawn.
+    draw_inliers : boolean, optional
+        If True, returns inliers of every Primitive instance. Default: False.
+    draw_boundary_lines : boolean, optional
+        If True, returns LineSet instances for every plane, showing their
+         boundaries. Default: False.
+    draw_planes : boolean, optional
+        If False, ignores planes. Default: True.
+    other camera options : optional
+        See camera options on open3d.visualization.draw_geometries
+
+    Returns
+    -------
+    list
+        Elements to be drawn.
+    """
     geometries, camera_options = get_open3d_geometries(elements, **camera_options)
     visualization.draw_geometries(geometries, **camera_options)
 
 
 def draw_two_columns(objs_left, objs_right, **camera_options):
+    """Get Open3D compatible/drawable forms of two lists of input elements and
+    then draw them side-by-side with Open3D.
+
+    See also:
+        get_open3d_geometries, draw_geometries, open3d.visualization.draw_geometries
+
+    Parameters
+    ----------
+    objs_left : list
+        Elements to be drawn to the left.
+    objs_right : list
+        Elements to be drawn to the right.
+    dist : float, optional
+        Distance between left and right elements. Default: 5.
+    draw_inliers : boolean, optional
+        If True, returns inliers of every Primitive instance. Default: False.
+    draw_boundary_lines : boolean, optional
+        If True, returns LineSet instances for every plane, showing their
+         boundaries. Default: False.
+    draw_planes : boolean, optional
+        If False, ignores planes. Default: True.
+    other camera options : optional
+        See camera options on open3d.visualization.draw_geometries
+
+    Returns
+    -------
+    list
+        Elements to be drawn.
+    """
+
     # _treat_up_normal(camera_options)
     lookat = camera_options.pop("lookat", None)
     up = camera_options.pop("up", None)
@@ -218,6 +319,42 @@ def select_manually(
     return_finish_flag=False,
     **args,
 ):
+    """Plots elements on an interactive visualizer so that separate elements
+    can be manually selected with the mouse and/or keyboard.
+
+    Keys:
+        (Space) Toggle
+        (<-) Previous
+        (->) Next
+        (F) Finish
+        (LCtrl) Enables mouse selection
+        (LCtrl) + (Z) Undo
+        (LCtrl) + (Y) Redo
+        (LCtrl) + (A) Toggle all
+        (LCtrl) + (LShift) Toggle click
+
+    See also:
+        open3d.visualization.VisualizerWithKeyCallback
+        utility.ElementSelector
+        apply_function_manually
+
+    Parameters
+    ----------
+    elements : list
+        Elements to be drawn.
+    fixed_elements : list, optional
+        Unselectable elements to be drawn. Default: empty.
+    pre_selected : list, optional
+        List of boolean values for elements to be pre-selected when starting
+        vizualization. Has to be the same length as the number of elements.
+    other options : optional
+        For other options, see: utility.ElementSelector
+
+    Returns
+    -------
+    list
+        List of booleans showing which of the elements where selected.
+    """
     if pre_selected is None:
         pre_selected = [False] * len(elements)
 
@@ -244,6 +381,59 @@ def apply_function_manually(
     return_indices=False,
     **args,
 ):
+    """Plots elements on an interactive visualizer so that separate elements
+    can be manually selected with the mouse and/or keyboard, and then apply
+    input function fo them.
+
+    At each step, the selected elements are removed from the list, the input
+    function is applied to the list of selected elements, and the list of
+    output elements is appended at the end of the list.
+
+    Keys:
+        (Space) Toggle
+        (<-) Previous
+        (->) Next
+        (F) Finish
+        (LCtrl) Enables mouse selection
+        (LCtrl) + (Enter) Apply function
+        (LCtrl) + (Z) Undo
+        (LCtrl) + (Y) Redo
+        (LCtrl) + (A) Toggle all
+        (LCtrl) + (LShift) Toggle click
+
+    See also:
+        open3d.visualization.VisualizerWithKeyCallback
+        utility.ElementSelector
+        select_manually
+
+    Parameters
+    ----------
+    elements : list
+        Elements to be drawn.
+    function : function
+        Function to be applied on elements.
+    select_filter : function, optional
+        Function that returns boolean. If given, only selects elements when
+        if the return value for them is True. Default: None
+    fixed_elements : list, optional
+        Unselectable elements to be drawn. Default: empty.
+    pre_selected : list, optional
+        List of boolean values for elements to be pre-selected when starting
+        vizualization. Has to be the same length as the number of elements.
+    return_indices : boolean, optional
+        If True, also return indices to which the functions are applied at each
+        step. Default: False.
+    other options : optional
+        For other options, see: utility.ElementSelector
+
+    Returns
+    -------
+    list
+        Modified elements
+
+    list
+        List containing sublists of indices
+    """
     if pre_selected is None:
         pre_selected = [False] * len(elements)
 
