@@ -353,7 +353,6 @@ class ElementSelector:
 
         # IMPORTANT: respect order, only get Open3D elements at the very end
         self._colors = self._get_colors(self._elements)
-        self._fixed_bboxes = self._get_bboxes(self._fixed_elements, (0, 0, 0))
         self._fixed_elements = [self._get_open3d(elem) for elem in self._fixed_elements]
 
     def _get_drawable_and_painted_elements(self):
@@ -425,33 +424,6 @@ class ElementSelector:
                 warnings.warn("Element with no color found.")
                 colors.append(np.random.random(3))
         return colors
-
-    def _get_bboxes(self, elements, color):
-        from open3d.geometry import LineSet
-        from pyShapeDetector.geometry import OrientedBoundingBox, AxisAlignedBoundingBox
-
-        bboxes = []
-        for element in elements:
-            if isinstance(element, LineSet):
-                continue
-
-            if element is None:
-                bbox = None
-            else:
-                try:
-                    bbox_original = element.get_oriented_bounding_box()
-                    bbox = OrientedBoundingBox(bbox_original).expanded(self.bbox_expand)
-                except Exception:
-                    bbox_original = element.get_axis_aligned_bounding_box()
-                    bbox = AxisAlignedBoundingBox(bbox_original).expanded(
-                        self.bbox_expand
-                    )
-                bbox.color = color
-                bbox = bbox.as_open3d
-
-            bboxes.append(bbox)
-
-        return bboxes
 
     def _get_painted(self, elements, color):
         from .helpers_visualization import get_painted
@@ -542,7 +514,7 @@ class ElementSelector:
         element = self._elements_painted[self.i_old]
         vis.remove_geometry(element, reset_bounding_box=False)
         vis.remove_geometry(self._bbox, reset_bounding_box=False)
-        # vis.remove_geometry(self._bboxes[self.i_old], reset_bounding_box=False)
+
         if not self.selected[self.i_old]:
             element = self._get_painted(element, self.color_unselected)
         else:
@@ -769,7 +741,6 @@ class ElementSelector:
     def remove_all_visualiser_elements(self, vis):
         elements = (
             self._fixed_elements
-            + self._fixed_bboxes
             + self._plane_boundaries
             + self._elements_painted
             + [self._bbox]
@@ -796,23 +767,12 @@ class ElementSelector:
             self._selectable = [self.select_filter(elem) for elem in self.elements]
         self._selectable = np.asarray(self._selectable)
 
-        # print(
-        #     f"{len(self._elements)} _elements, "
-        #     f"{len(self._elements_painted)} _elements_painted, "
-        #     f"{len(self._elements_drawable)} _elements_drawable, "
-        #     f"{len(self._bboxes)} _bboxes, "
-        # )
-
         elements = (
             self._fixed_elements
-            # + self._fixed_bboxes
             + self._plane_boundaries
             + self._elements_painted
             + [self._bbox]
         )
-
-        # if startup:
-        #     elements += [self._bboxes[self.i]]
 
         for elem in elements:
             if elem is not None:
