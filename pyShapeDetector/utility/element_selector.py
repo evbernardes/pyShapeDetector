@@ -44,22 +44,8 @@ KEYS_EXTRA = {
     "Toggle click": ["LShift", 340],  # GLFW_KEY_LSHIFT = 340
 }
 
-INSTRUCTIONS = (
-    "**************************************************"
-    + "\nStarting manual selector. Instructions:"
-    + "\nGreen: selected. White: unselected. Blue: current."
-    + "\n******************** KEYS: ***********************\n"
-    + "\n".join([f"({key}) {desc}" for desc, (key, _) in KEYS_NORMAL.items()])
-    + f"\n({EXTRA_KEY[0]}) Enables mouse selection"
-    + "\n"
-    + "\n".join(
-        [f"({EXTRA_KEY[0]}) + ({key}) {desc}" for desc, (key, _) in KEYS_EXTRA.items()],
-    )
-    + "\n**************************************************"
-)
 
-
-def unproject_screen_to_world(vis, x, y):
+def _unproject_screen_to_world(vis, x, y):
     """
     Convert screen coordinates (x, y, depth) to 3D coordinates.
     """
@@ -94,13 +80,47 @@ def unproject_screen_to_world(vis, x, y):
 
 
 class ElementSelector:
+    """
+    Visualizer class used to manually select elements and apply functions to
+    them.
+
+    Elements can be selected either with a keyboard or a mouse.
+
+    This has only been tested for:
+        PointCloud
+        TriangleMesh
+        2D Primitives
+
+    1D primitives (like Line instances) cannot be used with this.
+
+    To better understand how to use it, see also:
+        pyShapeDetector.utility.select_manually
+        pyShapeDetector.utility.apply_function_manually
+
+    Parameters
+    ----------
+    bbox_expand : float, optional
+        Expands bounding boxes in all directions with this value. Default: 0.0.
+    window_name : str, optional
+        Name of window. If empty, just gives the number of elements. Default: "".
+    paint_selected : boolean, optional
+        If True, paint selected elements, and not only their bounding boxes.
+        Default: True
+    draw_boundary_lines : boolean, optional
+        If True, draws the boundaries of planes as LineSets. Default: False.
+    return_finish_flag : boolean, optional
+        Should be deprecated.
+    mesh_show_back_face : optional, boolean
+        If True, shows back faces of surfaces and meshes. Default: True.
+    """
+
     def __init__(
         self,
         bbox_expand=0.0,
         window_name="",
         paint_selected=True,
-        return_finish_flag=False,
         draw_boundary_lines=False,
+        return_finish_flag=False,
         **camera_options,
     ):
         self._past_states = []
@@ -671,7 +691,7 @@ class ElementSelector:
         if action == 1:
             return
 
-        point, vector = unproject_screen_to_world(vis, *self.mouse_position)
+        point, vector = _unproject_screen_to_world(vis, *self.mouse_position)
 
         distances = self.distances_to_point(point, vector)
 
@@ -742,7 +762,7 @@ class ElementSelector:
         if not startup:
             self.update_all(vis)
 
-    def run(self):
+    def run(self, print_instructions=True):
         if len(self.elements) == 0:
             raise RuntimeError("No elements added!")
 
@@ -753,10 +773,26 @@ class ElementSelector:
         self._vis = self._get_visualizer()
         self.reset_visualiser_elements(self._vis, startup=True)
 
-        # print("**************************************************")
-        # print("Starting manual selector. Instructions:\n")
-        print(INSTRUCTIONS)
-        # print("**************************************************")
+        if print_instructions:
+            instructions = (
+                "**************************************************"
+                + "\nStarting manual selector. Instructions:"
+                + "\nGreen: selected. White: unselected. Blue: current."
+                + "\n******************** KEYS: ***********************\n"
+                + "\n".join(
+                    [f"({key}) {desc}" for desc, (key, _) in KEYS_NORMAL.items()]
+                )
+                + f"\n({EXTRA_KEY[0]}) Enables mouse selection"
+                + "\n"
+                + "\n".join(
+                    [
+                        f"({EXTRA_KEY[0]}) + ({key}) {desc}"
+                        for desc, (key, _) in KEYS_EXTRA.items()
+                    ],
+                )
+                + "\n**************************************************"
+            )
+            print(instructions)
 
         try:
             self._vis.run()
