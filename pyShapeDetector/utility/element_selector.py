@@ -232,11 +232,17 @@ class ElementSelector:
         def _is_point_in_convex_region(elem, point=screen_point, plane=screen_plane):
             """Check if mouse-click was done inside of the element actual region."""
 
-            if isinstance(elem, PointCloud):
-                boundary_points = np.asarray(elem.points)
-            elif isinstance(elem, Primitive):
-                boundary_points = np.asarray(elem.mesh.vertices)
+            if hasattr(elem, "points"):
+                boundary_points = elem.points
+            elif hasattr(elem, "vertices"):
+                boundary_points = elem.vertices
+            elif hasattr(elem, "mesh"):
+                boundary_points = elem.mesh.vertices
             else:
+                return False
+
+            boundary_points = np.asarray(boundary_points)
+            if len(boundary_points) < 3:
                 return False
 
             plane_bounded = plane.get_bounded_plane(boundary_points, convex=True)
@@ -248,11 +254,9 @@ class ElementSelector:
             if not _is_point_in_convex_region(elem, point, plane):
                 return np.inf
 
-            if isinstance(elem, PointCloud):
-                return PointCloud([point]).compute_point_cloud_distance(elem)[0]
-            elif isinstance(elem, Primitive):
+            try:
                 return elem.get_distances(point)
-            else:
+            except AttributeError:
                 warnings.warn(
                     f"Element of type {type(elem)} "
                     "found in distance elements, should not happen."
@@ -369,7 +373,7 @@ class ElementSelector:
 
     def _get_bboxes(self, elements, color):
         from open3d.geometry import LineSet
-        from pyShapeDetector.geometry import OrientedBoundingBox
+        from pyShapeDetector.geometry import OrientedBoundingBox, AxisAlignedBoundingBox
 
         bboxes = []
         for element in elements:
@@ -379,11 +383,19 @@ class ElementSelector:
             if element is None:
                 bbox = None
             else:
-                bbox_original = element.get_oriented_bounding_box()
-                bbox = OrientedBoundingBox(bbox_original).expanded(self.bbox_expand)
+                try:
+                    bbox_original = element.get_oriented_bounding_box()
+                    bbox = OrientedBoundingBox(bbox_original).expanded(self.bbox_expand)
+                except Exception:
+                    bbox_original = element.get_axis_aligned_bounding_box()
+                    bbox = AxisAlignedBoundingBox(bbox_original).expanded(
+                        self.bbox_expand
+                    )
                 bbox.color = color
                 bbox = bbox.as_open3d
-                bboxes.append(bbox)
+
+            bboxes.append(bbox)
+
         return bboxes
 
     def _get_painted(self, elements, color):
