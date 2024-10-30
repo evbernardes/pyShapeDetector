@@ -36,7 +36,7 @@ This module also include multiple helper functions.
 - save_elements
 - save_ask
 - ask_and_save
-- 
+
 ### Internal helpers
 - _set_and_check_3d_array
 - combine_indices_to_remove
