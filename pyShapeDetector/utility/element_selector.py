@@ -205,43 +205,47 @@ class ElementSelector:
 
     def distances_to_point(self, screen_point, screen_vector):
         from pyShapeDetector.geometry import PointCloud
-        from pyShapeDetector.primitives import Plane
+        from pyShapeDetector.primitives import Primitive, Plane
 
         screen_plane = Plane.from_normal_point(screen_vector, screen_point)
 
-        def test_contained(
-            points, screen_point=screen_point, screen_plane=screen_plane
-        ):
-            plane_test = screen_plane.get_bounded_plane(points, convex=True)
-            if plane_test.contains_projections(screen_point):
-                return True
+        def _is_point_in_convex_region(elem, point=screen_point, plane=screen_plane):
+            """Check if mouse-click was done inside of the element actual region."""
+
+            if isinstance(elem, PointCloud):
+                boundary_points = np.asarray(elem.points)
+            elif isinstance(elem, Primitive):
+                boundary_points = np.asarray(elem.mesh.vertices)
             else:
                 return False
 
-        distances = []
-        for elem in self.elements_distance:
-            if elem is None:
-                distances.append(np.inf)
-            elif PointCloud.is_instance_or_open3d(elem):
-                if test_contained(np.asarray(elem.points)):
-                    distances.append(
-                        PointCloud([screen_point]).compute_point_cloud_distance(elem)[0]
-                    )
-                else:
-                    distances.append(np.inf)
-            else:  # it is a Primitive
-                if test_contained(elem.mesh.vertices):
-                    distances.append(elem.get_distances(screen_point))
-                else:
-                    distances.append(np.inf)
+            plane_bounded = plane.get_bounded_plane(boundary_points, convex=True)
+            return plane_bounded.contains_projections(point)
 
-        return distances
+        def _distance_to_point(elem, point=screen_point, plane=screen_plane):
+            """Check if mouse-click was done inside of the element actual region."""
 
-    def add_elements(self, element, fixed=False):
-        if isinstance(element, (list, tuple)):
-            new_elements = copy.deepcopy(list(element))
+            if not _is_point_in_convex_region(elem, point, plane):
+                return np.inf
+
+            if isinstance(elem, PointCloud):
+                return PointCloud([point]).compute_point_cloud_distance(elem)[0]
+            elif isinstance(elem, Primitive):
+                return elem.get_distances(point)
+            else:
+                warnings.warn(
+                    f"Element of type {type(elem)} "
+                    "found in distance elements, should not happen."
+                )
+                return np.inf
+
+        return [_distance_to_point(elem) for elem in self.elements_distance]
+
+    def add_elements(self, elem, fixed=False):
+        if isinstance(elem, (list, tuple)):
+            new_elements = copy.deepcopy(list(elem))
         else:
-            new_elements = [copy.deepcopy(element)]
+            new_elements = [copy.deepcopy(elem)]
 
         if fixed:
             self._fixed_elements += new_elements
@@ -375,16 +379,19 @@ class ElementSelector:
         for elem in self._elements:
             if isinstance(elem, Primitive):
                 elements_distance.append(elem)
+
+            # assert our PointCloud class instead of Open3D PointCloud class
             elif TriangleMesh.is_instance_or_open3d(elem):
-                elements_distance.append(
-                    elem.sample_points_uniformly(self._NUM_POINTS_FOR_DISTANCE_CALC)
-                )
+                pcd = elem.sample_points_uniformly(self._NUM_POINTS_FOR_DISTANCE_CALC)
+                elements_distance.append(PointCloud(pcd))
+
             elif PointCloud.is_instance_or_open3d(elem):
-                elements_distance.append(
-                    elem.uniform_down_sample(self._NUM_POINTS_FOR_DISTANCE_CALC)
-                )
+                pcd = elem.uniform_down_sample(self._NUM_POINTS_FOR_DISTANCE_CALC)
+                elements_distance.append(PointCloud(pcd))
+
             else:
                 elements_distance.append(None)
+
         return elements_distance
 
     def _get_visualizer(self):
