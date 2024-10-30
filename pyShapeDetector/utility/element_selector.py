@@ -203,26 +203,35 @@ class ElementSelector:
 
         self._selected = copy.deepcopy(selected_values)
 
-    def distances_to_point(self, point, vector):
+    def distances_to_point(self, screen_point, screen_vector):
         from pyShapeDetector.geometry import PointCloud
         from pyShapeDetector.primitives import Plane
 
-        plane_screen = Plane.from_normal_point(vector, point)
+        screen_plane = Plane.from_normal_point(screen_vector, screen_point)
+
+        def test_contained(
+            points, screen_point=screen_point, screen_plane=screen_plane
+        ):
+            plane_test = screen_plane.get_bounded_plane(points, convex=True)
+            if plane_test.contains_projections(screen_point):
+                return True
+            else:
+                return False
 
         distances = []
         for elem in self.elements_distance:
             if elem is None:
                 distances.append(np.inf)
             elif PointCloud.is_instance_or_open3d(elem):
-                distances.append(
-                    PointCloud([point]).compute_point_cloud_distance(elem)[0]
-                )
+                if test_contained(np.asarray(elem.points)):
+                    distances.append(
+                        PointCloud([screen_point]).compute_point_cloud_distance(elem)[0]
+                    )
+                else:
+                    distances.append(np.inf)
             else:  # it is a Primitive
-                plane_test = plane_screen.get_bounded_plane(
-                    elem.mesh.vertices, convex=True
-                )
-                if plane_test.contains_projections(point):
-                    distances.append(elem.get_distances(point))
+                if test_contained(elem.mesh.vertices):
+                    distances.append(elem.get_distances(screen_point))
                 else:
                     distances.append(np.inf)
 
@@ -519,6 +528,12 @@ class ElementSelector:
         indices = np.where(self._selected)[0].tolist()
         input_elements = [self._elements[i] for i in indices]
         output_elements = self.function(input_elements)
+
+        # assures it's a list
+        if isinstance(output_elements, tuple):
+            output_elements = list(output_elements)
+        elif not isinstance(output_elements, list):
+            output_elements = [output_elements]
 
         current_state = {
             "indices": copy.deepcopy(indices),
