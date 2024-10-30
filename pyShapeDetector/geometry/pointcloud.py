@@ -68,6 +68,7 @@ class PointCloud(Open3D_Geometry):
     separate_by_curvature
     segment_kmeans_colors
     segment_dbscan
+    segment_with_curvature_threshold
     segment_with_region_growing
     find_closest_points_indices
     find_closest_points
@@ -610,9 +611,6 @@ class PointCloud(Open3D_Geometry):
         std_ratio : float, optional
             Defines the cutoff threshold. Default: 0.1.
 
-        print_progress : bool, optional
-            If true the progress is visualized in the console. Default=False
-
         distance_threshold : float, optional
             If bigger than 0, also assumes points close to high curvature
             points as high curvature. Default: 0.
@@ -717,6 +715,46 @@ class PointCloud(Open3D_Geometry):
         )
 
         return self.separate_with_labels(labels)
+
+    def segment_with_curvature_threshold(
+        self, std_ratio, distance_threshold, min_points=5
+    ):
+        """Remove borders by separating points with high and low curvature, and
+        then segment the remaining points with DBSCAN,
+
+
+        Parameters
+        ----------
+        std_ratio : float, optional
+            Defines the cutoff threshold. Default: 0.1.
+
+        distance_threshold : float, optional
+            If bigger than 0, also assumes points close to high curvature
+            points as high curvature. Default: 0.
+
+        min_points : int, optional
+            Minimum number of points accepted in pointclouds. Default: 5.
+
+        Returns
+        -------
+        list
+            Segmented pointcloud clusters.
+        """
+        pcd_low, pcd_high = self.separate_by_curvature(std_ratio, distance_threshold)
+
+        all_segmented = pcd_low.segment_dbscan(distance_threshold)
+
+        rest = []
+        pcds = []
+        for pcd in all_segmented:
+            if len(pcd.points) < min_points:
+                rest.append(pcd)
+            else:
+                pcds.append(pcd)
+
+        # redistribute high-curvature points and small pcds to closest pcds
+        PointCloud.fuse_pointclouds(rest + [pcd_high]).distribute_to_closest(pcds)
+        return pcds
 
     def segment_with_region_growing(
         self,
