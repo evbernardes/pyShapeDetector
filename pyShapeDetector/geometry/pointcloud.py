@@ -58,9 +58,9 @@ class PointCloud(Open3D_Geometry):
     split_until_small
     separate_with_labels
     segment_by_position
+    separate_by_curvature
     segment_kmeans_colors
     segment_dbscan
-    segment_curvature_threshold
     segment_with_region_growing
     find_closest_points_indices
     find_closest_points
@@ -571,6 +571,62 @@ class PointCloud(Open3D_Geometry):
                 pcds.append(pcd_sub)
         return pcds
 
+    def separate_by_curvature(self, std_ratio=0.1, distance_threshold=0):
+        """Remove borders by separating points with high and low curvature.
+
+        The cutoff threshold used to separate points of high and low curvature
+        is defined as:
+            threshold = mean + std * str_ratio
+
+        Where the mean and str are calculated from the pointcloud's curvature
+        values.
+
+        Parameters
+        ----------
+        std_ratio : float, optional
+            Defines the cutoff threshold. Default: 0.1.
+
+        print_progress : bool, optional
+            If true the progress is visualized in the console. Default=False
+
+        distance_threshold : float, optional
+            If bigger than 0, also assumes points close to high curvature
+            points as high curvature. Default: 0.
+
+        Returns
+        -------
+        list
+            Segmented pointclouds.
+        """
+
+        if distance_threshold < 0:
+            raise ValueError(
+                "distance_threshold must be a non-negative number, got {distance_threshold}"
+            )
+
+        if not self.has_curvature:
+            warnings.warn("PointCloud does not have curvature, calculating...")
+            self.estimate_curvature()
+
+        mean = np.mean(self.curvature)
+        std = np.std(self.curvature)
+
+        threshold = mean + std * std_ratio
+
+        indices = np.where(self.curvature < threshold)[0]
+        pcd_low = self.select_by_index(indices)
+        pcd_high = self.select_by_index(indices, invert=True)
+
+        if distance_threshold > 0:
+            is_close = (
+                pcd_low.compute_point_cloud_distance(pcd_high) <= distance_threshold
+            )
+            new_indices = np.where(is_close)[0]
+            pcd_high += pcd_low.select_by_index(new_indices)
+            pcd_low = pcd_low.select_by_index(new_indices, invert=True)
+
+        return pcd_low, pcd_high
+
     def segment_kmeans_colors(self, n_clusters=2, n_init="auto", **options):
         """Segment pointcloud according to the colors by using KMeans.
 
@@ -636,62 +692,6 @@ class PointCloud(Open3D_Geometry):
         )
 
         return self.separate_with_labels(labels)
-
-    def segment_curvature_threshold(self, std_ratio=0.1, distance_threshold=0):
-        """Remove borders by separating points with high and low curvature.
-
-        The cutoff threshold used to separate points of high and low curvature
-        is defined as:
-            threshold = mean + std * str_ratio
-
-        Where the mean and str are calculated from the pointcloud's curvature
-        values.
-
-        Parameters
-        ----------
-        std_ratio : float, optional
-            Defines the cutoff threshold. Default: 0.1.
-
-        print_progress : bool, optional
-            If true the progress is visualized in the console. Default=False
-
-        distance_threshold : float, optional
-            If bigger than 0, also assumes points close to high curvature
-            points as high curvature. Default: 0.
-
-        Returns
-        -------
-        list
-            Segmented pointclouds.
-        """
-
-        if distance_threshold < 0:
-            raise ValueError(
-                "distance_threshold must be a non-negative number, got {distance_threshold}"
-            )
-
-        if not self.has_curvature:
-            warnings.warn("PointCloud does not have curvature, calculating...")
-            self.estimate_curvature()
-
-        mean = np.mean(self.curvature)
-        std = np.std(self.curvature)
-
-        threshold = mean + std * std_ratio
-
-        indices = np.where(self.curvature < threshold)[0]
-        pcd_low = self.select_by_index(indices)
-        pcd_high = self.select_by_index(indices, invert=True)
-
-        if distance_threshold > 0:
-            is_close = (
-                pcd_low.compute_point_cloud_distance(pcd_high) <= distance_threshold
-            )
-            new_indices = np.where(is_close)[0]
-            pcd_high += pcd_low.select_by_index(new_indices)
-            pcd_low = pcd_low.select_by_index(new_indices, invert=True)
-
-        return pcd_low, pcd_high
 
     def segment_with_region_growing(
         self,
