@@ -26,7 +26,13 @@ from sklearn.neighbors import KDTree
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
-from pyShapeDetector.utility import rgb_to_cielab, cielab_to_rgb, parallelize, midrange
+from pyShapeDetector.utility import (
+    rgb_to_cielab,
+    cielab_to_rgb,
+    parallelize,
+    midrange,
+    accept_one_or_multiple_elements,
+)
 from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
 
 
@@ -47,6 +53,7 @@ class PointCloud(Open3D_Geometry):
     Extra Methods
     -------------
     from_points_normals_colors
+    get_distances
     distribute_to_closest
     estimate_curvature
     fuse_pointclouds
@@ -137,6 +144,23 @@ class PointCloud(Open3D_Geometry):
         pcd.normals = normals
         pcd.colors = colors
         return pcd
+
+    @accept_one_or_multiple_elements(3)
+    def get_distances(self, points):
+        """Gives the distance between each input point to the original pointcloud.
+
+        Parameters
+        ----------
+        points : N x 3 array
+            N input points
+
+        Returns
+        -------
+        distances
+            Nx1 array distances.
+        """
+        pcd = PointCloud(points)
+        return pcd.compute_point_cloud_distance(self)
 
     def get_oriented_bounding_box(self):
         try:
