@@ -628,7 +628,7 @@ class PointCloud(Open3D_Geometry):
                 "distance_threshold must be a non-negative number, got {distance_threshold}"
             )
 
-        if not self.has_curvature:
+        if not self.has_curvature():
             warnings.warn("PointCloud does not have curvature, calculating...")
             self.estimate_curvature()
 
@@ -638,6 +638,7 @@ class PointCloud(Open3D_Geometry):
         threshold = mean + std * std_ratio
 
         indices = np.where(self.curvature < threshold)[0]
+
         pcd_low = self.select_by_index(indices)
         pcd_high = self.select_by_index(indices, invert=True)
 
