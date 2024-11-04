@@ -163,6 +163,14 @@ class ElementSelector:
         self.color_unselected = COLOR_UNSELECTED
         self.color_unselected_current = COLOR_UNSELECTED_CURRENT
 
+        # (selected, current) -> color
+        self._colors_selected_current = {
+            (False, False): self.color_unselected,
+            (False, True): self.color_unselected_current,
+            (True, False): self.color_selected,
+            (True, True): self.color_selected_current,
+        }
+
     @property
     def function(self):
         return self._function
@@ -560,6 +568,25 @@ class ElementSelector:
         if self._bbox is not None:
             vis.add_geometry(self._bbox, reset_bounding_box=False)
 
+    def _update_element(self, idx):
+        vis = self._vis
+        element = self._elements_painted[idx]
+        vis.remove_geometry(element, reset_bounding_box=False)
+
+        is_selected = self._selected[idx] and self._selectable[idx]
+        is_current = idx == self.i
+
+        if self.paint_selected:
+            color = self._colors_selected_current[is_selected, is_current]
+        else:
+            color = None
+
+        if color is not None:
+            element = self._get_painted(element, color)
+
+        self._elements_painted[idx] = element
+        vis.add_geometry(element, reset_bounding_box=False)
+
     def update(self, vis, idx=None):
         if idx is not None:
             self.i_old = self.i
@@ -572,33 +599,8 @@ class ElementSelector:
             )
             idx = len(self._elements) - 1
 
-        # revert current element color to normal color...
-        element = self._elements_painted[self.i_old]
-        vis.remove_geometry(element, reset_bounding_box=False)
-
-        if not self.selected[self.i_old]:
-            element = self._get_painted(element, self.color_unselected)
-        else:
-            if self.paint_selected:
-                element = self._get_painted(element, self.color_selected)
-            else:
-                element = self._elements_drawable[self.i_old]
-
-        self._elements_painted[self.i_old] = element
-        vis.add_geometry(element, reset_bounding_box=False)
-
-        # change new current element color to highlighted color...
-        element = self._elements_painted[self.i]
-        vis.remove_geometry(element, reset_bounding_box=False)
-        if not self.paint_selected:
-            element = self._elements_drawable[self.i]
-        elif self.is_current_selected:
-            element = self._get_painted(element, self.color_selected_current)
-        else:
-            element = self._get_painted(element, self.color_unselected_current)
-        self._elements_painted[self.i] = element
-        vis.add_geometry(element, reset_bounding_box=False)
-
+        self._update_element(self.i)
+        self._update_element(self.i_old)
         self._update_bounding_box()
 
     def toggle(self, vis, action, mods):
