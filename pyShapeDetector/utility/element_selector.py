@@ -443,19 +443,6 @@ class ElementSelector:
             if hasattr(element, "vertex_colors"):
                 element.vertex_colors = Vector3dVector(input_color)
 
-    # def _get_colors(self, elements):
-    #     colors = []
-    #     for elem in elements:
-    #         if hasattr(elem, "color"):
-    #             colors.append(elem.color)
-    #         elif hasattr(elem, "colors"):
-    #             colors_mean = np.asarray(elem.colors).mean(axis=0)
-    #             colors.append(colors_mean)
-    #         else:
-    #             warnings.warn("Element with no color found.")
-    #             colors.append(np.random.random(3))
-    #     return colors
-
     def _get_painted(self, elements, color):
         from .helpers_visualization import get_painted
 
