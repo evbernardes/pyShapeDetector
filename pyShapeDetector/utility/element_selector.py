@@ -578,8 +578,7 @@ class ElementSelector:
 
         if self.paint_selected:
             color = self._colors_selected_current[is_selected, is_current]
-        else:
-            color = None
+            element = self._get_painted(element, color)
 
         if color is not None:
             element = self._get_painted(element, color)
