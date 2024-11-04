@@ -126,11 +126,13 @@ class ElementSelector:
         self._past_states = []
         self._future_states = []
         self._elements = []
+        self._elements_drawable = []
         self._colors = []
         self._fixed_elements = []
         self._elements_painted = []
         self._selected = []
         self._selectable = []
+        self._bbox = None
         self._function = None
         self._select_filter = None
         self.bbox_expand = bbox_expand
@@ -160,20 +162,6 @@ class ElementSelector:
         self.color_selected_current = COLOR_SELECTED_CURRENT
         self.color_unselected = COLOR_UNSELECTED
         self.color_unselected_current = COLOR_UNSELECTED_CURRENT
-
-    @property
-    def current_element(self):
-        return self.elements[self.i]
-
-    @property
-    def current_selected(self):
-        return self.selected[self.i]
-
-    @current_selected.setter
-    def current_selected(self, boolean_value):
-        if not isinstance(boolean_value, bool):
-            raise RuntimeError()
-        self.selected[self.i] = boolean_value
 
     @property
     def function(self):
@@ -207,6 +195,18 @@ class ElementSelector:
     def elements(self):
         return self._elements
 
+    def pop_element(self, idx):
+        self._elements_drawable.pop(idx)
+        return self._elements.pop(idx)
+
+    def insert_element(self, idx, elem):
+        self._elements.insert(idx, elem)
+        self._elements_drawable.insert(idx, self._get_open3d(elem))
+
+    def append_elements(self, elems):
+        self._elements += elems
+        self._elements_drawable += [self._get_open3d(elem) for elem in elems]
+
     @property
     def fixed_elements(self):
         return self._fixed_elements
@@ -238,6 +238,20 @@ class ElementSelector:
 
         self._selected = copy.deepcopy(selected_values)
 
+    @property
+    def current_element(self):
+        return self.elements[self.i]
+
+    @property
+    def is_current_selected(self):
+        return self.selected[self.i]
+
+    @is_current_selected.setter
+    def is_current_selected(self, boolean_value):
+        if not isinstance(boolean_value, bool):
+            raise RuntimeError()
+        self.selected[self.i] = boolean_value
+
     def _get_current_bbox(self):
         from pyShapeDetector.geometry import (
             LineSet,
@@ -257,7 +271,7 @@ class ElementSelector:
             bbox_original = element.get_axis_aligned_bounding_box()
             bbox = AxisAlignedBoundingBox(bbox_original).expanded(self.bbox_expand)
 
-        if self.current_selected:
+        if self.is_current_selected:
             bbox.color = self.color_bbox_selected
         else:
             bbox.color = self.color_bbox_unselected
@@ -323,11 +337,17 @@ class ElementSelector:
         del self._selected[idx]
 
     def _check_and_initialize_inputs(self):
+        from pyShapeDetector.geometry import PointCloud
+
         # check correct input of elements and fixed elements
         if isinstance(self._elements, tuple):
             self._elements = list(self._elements)
         elif not isinstance(self._elements, list):
             self._elements = [self._elements]
+
+        for elem in self._elements:
+            if PointCloud.is_instance_or_open3d(elem) and not elem.has_normals():
+                elem.estimate_normals()
 
         if self._fixed_elements is None:
             self._fixed_elements = []
@@ -354,15 +374,16 @@ class ElementSelector:
         # IMPORTANT: respect order, only get Open3D elements at the very end
         self._colors = self._get_colors(self._elements)
         self._fixed_elements = [self._get_open3d(elem) for elem in self._fixed_elements]
+        self._elements_drawable = [self._get_open3d(elem) for elem in self._elements]
 
     def _get_drawable_and_painted_elements(self):
-        self._elements_drawable = [self._get_open3d(elem) for elem in self._elements]
+        # self._elements_drawable = [self._get_open3d(elem) for elem in self._elements]
         painted = self._get_painted(self._elements_drawable, self.color_unselected)
 
         if self.paint_selected:
             for i in range(len(painted)):
                 if i == self.i:
-                    if self.current_selected:
+                    if self.is_current_selected:
                         color = self.color_selected_current
                     else:
                         color = self.color_unselected_current
@@ -498,6 +519,42 @@ class ElementSelector:
             self.update(vis, i)
         self.update(vis, idx)
 
+    def _update_bounding_box(self):
+        from pyShapeDetector.geometry import (
+            LineSet,
+            OrientedBoundingBox,
+            AxisAlignedBoundingBox,
+        )
+
+        vis = self._vis
+        if vis is None:
+            return
+
+        if self._bbox is not None:
+            vis.remove_geometry(self._bbox, reset_bounding_box=False)
+
+        element = self.current_element
+
+        if element is None or isinstance(element, LineSet):
+            return
+
+        try:
+            bbox_original = element.get_oriented_bounding_box()
+            bbox = OrientedBoundingBox(bbox_original).expanded(self.bbox_expand)
+        except Exception:
+            bbox_original = element.get_axis_aligned_bounding_box()
+            bbox = AxisAlignedBoundingBox(bbox_original).expanded(self.bbox_expand)
+
+        if self.is_current_selected:
+            bbox.color = self.color_bbox_selected
+        else:
+            bbox.color = self.color_bbox_unselected
+
+        self._bbox = bbox.as_open3d
+
+        if self._bbox is not None:
+            vis.add_geometry(self._bbox, reset_bounding_box=False)
+
     def update(self, vis, idx=None):
         if idx is not None:
             self.i_old = self.i
@@ -531,22 +588,21 @@ class ElementSelector:
         vis.remove_geometry(element, reset_bounding_box=False)
         if not self.paint_selected:
             element = self._elements_drawable[self.i]
-        elif self.current_selected:
+        elif self.is_current_selected:
             element = self._get_painted(element, self.color_selected_current)
         else:
             element = self._get_painted(element, self.color_unselected_current)
         self._elements_painted[self.i] = element
         vis.add_geometry(element, reset_bounding_box=False)
 
-        self._bbox = self._get_current_bbox()
-        vis.add_geometry(self._bbox, reset_bounding_box=False)
+        self._update_bounding_box()
 
     def toggle(self, vis, action, mods):
         """Toggle the current highlighted element between selected/unselected."""
         if action == 1 or not self._selectable[self.i]:
             return
 
-        self.current_selected = not self.current_selected
+        self.is_current_selected = not self.is_current_selected
         self.update(vis)
 
     def next(self, vis, action, mods):
@@ -610,8 +666,10 @@ class ElementSelector:
         self.remove_all_visualiser_elements(vis)
         for n, i in enumerate(indices):
             self._elements.pop(i - n)
+            self._elements_drawable.pop(i - n)
 
         self._elements += output_elements
+        self._elements_drawable += [self._get_open3d(elem) for elem in output_elements]
 
         if self.i in indices:
             # print("[INFO] Current idx in modified indices, getting last element")
@@ -667,9 +725,9 @@ class ElementSelector:
         }
 
         for n, i in enumerate(indices):
-            self._elements.pop(i - n)
+            self.pop_element(i - n)
 
-        self._elements += modified_elements
+        self.append_elements(modified_elements)
         self._past_states.append(current_state)
         self.selected = False
 
@@ -696,11 +754,12 @@ class ElementSelector:
         if num_outputs > 0:
             modified_elements = self._elements[-num_outputs:]
             self._elements = self._elements[:-num_outputs]
+            self._elements_drawable = self._elements_drawable[:-num_outputs]
         else:
             modified_elements = []
 
-        for i, element in zip(indices, elements):
-            self._elements.insert(i, element)
+        for i, elem in zip(indices, elements):
+            self.insert_element(i, elem)
 
         self.selected = False
         for i in indices:
@@ -755,8 +814,6 @@ class ElementSelector:
 
     def reset_visualiser_elements(self, vis, startup=False):
         # Prepare elements for visualization
-        if startup:
-            self._bbox = self._get_current_bbox()
 
         self._plane_boundaries = self._get_plane_boundaries()
         self._get_drawable_and_painted_elements()
@@ -777,6 +834,8 @@ class ElementSelector:
         for elem in elements:
             if elem is not None:
                 vis.add_geometry(elem, reset_bounding_box=startup)
+
+        self._update_bounding_box()
 
         if not startup:
             self.update_all(vis)
