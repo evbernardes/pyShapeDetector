@@ -23,10 +23,19 @@ NUM_POINTS_FOR_DISTANCE_CALC = 30
 
 COLOR_BBOX_SELECTED = (0, 0.8, 0)
 COLOR_BBOX_UNSELECTED = (1, 0, 0)
-COLOR_SELECTED = (0, 0.4, 0)
-COLOR_SELECTED_CURRENT = COLOR_BBOX_SELECTED
-COLOR_UNSELECTED = (0.9, 0.9, 0.9)
-COLOR_UNSELECTED_CURRENT = (0.0, 0.0, 0.6)
+
+# COLOR_SELECTED = (0, 0.4, 0)
+# COLOR_SELECTED_CURRENT = COLOR_BBOX_SELECTED
+
+# COLOR_UNSELECTED = (0.9, 0.9, 0.9)
+# COLOR_UNSELECTED_CURRENT = (0.0, 0.0, 0.6)
+
+COLOR_SELECTED = (0.9, 0.9, 0.9)
+COLOR_SELECTED_CURRENT = (1, 1, 1)
+
+COLOR_UNSELECTED = (0.3, 0.3, 0.3)
+COLOR_UNSELECTED_CURRENT = (0.6, 0.6, 0.6)
+
 COLOR_HIGHLIGHT = 0.3
 
 KEYS_NORMAL = {
@@ -121,7 +130,7 @@ class ElementSelector:
         bbox_expand=0.0,
         window_name="",
         paint_selected=True,
-        paint_elements_random=False,
+        paint_random=False,
         draw_boundary_lines=False,
         return_finish_flag=False,
         **camera_options,
@@ -140,7 +149,7 @@ class ElementSelector:
         self._select_filter = None
         self.bbox_expand = bbox_expand
         self.paint_selected = paint_selected
-        self.paint_elements_random = paint_elements_random
+        self.paint_random = paint_random
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
         self.draw_boundary_lines = draw_boundary_lines
@@ -420,7 +429,7 @@ class ElementSelector:
         except Exception:
             elem_new = elem
 
-        if self.paint_elements_random:
+        if self.paint_random:
             elem_new = self._get_painted(elem_new, color="random")
 
         return elem_new
@@ -446,7 +455,13 @@ class ElementSelector:
     def _get_painted(self, elements, color):
         from .helpers_visualization import get_painted
 
-        return get_painted(elements, color)
+        # lower luminance of random colors to not interfere with highlights
+        if isinstance(color, str) and color == "random":
+            multiplier = 2 / 3
+        else:
+            multiplier = 1
+
+        return get_painted(elements, color, multiplier=multiplier)
 
     def _get_element_distances(self):
         from pyShapeDetector.primitives import Primitive
@@ -807,7 +822,7 @@ class ElementSelector:
                 self._get_open3d(elem) for elem in self._elements
             ]
 
-            if self.paint_elements_random:
+            if self.paint_random:
                 self._elements_as_open3d = self._get_painted(
                     self._elements_as_open3d, color="random"
                 )
