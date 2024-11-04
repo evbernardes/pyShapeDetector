@@ -126,7 +126,7 @@ class ElementSelector:
         self._past_states = []
         self._future_states = []
         self._elements = []
-        self._elements_drawable = []
+        self._elements_as_open3d = []
         self._colors = []
         self._fixed_elements = []
         self._elements_painted = []
@@ -204,16 +204,16 @@ class ElementSelector:
         return self._elements
 
     def pop_element(self, idx):
-        self._elements_drawable.pop(idx)
+        self._elements_as_open3d.pop(idx)
         return self._elements.pop(idx)
 
     def insert_element(self, idx, elem):
+        self._elements_as_open3d.insert(idx, self._get_open3d(elem))
         self._elements.insert(idx, elem)
-        self._elements_drawable.insert(idx, self._get_open3d(elem))
 
     def append_elements(self, elems):
+        self._elements_as_open3d += [self._get_open3d(elem) for elem in elems]
         self._elements += elems
-        self._elements_drawable += [self._get_open3d(elem) for elem in elems]
 
     @property
     def fixed_elements(self):
@@ -386,11 +386,11 @@ class ElementSelector:
         # IMPORTANT: respect order, only get Open3D elements at the very end
         self._colors = self._get_colors(self._elements)
         self._fixed_elements = [self._get_open3d(elem) for elem in self._fixed_elements]
-        self._elements_drawable = [self._get_open3d(elem) for elem in self._elements]
+        self._elements_as_open3d = [self._get_open3d(elem) for elem in self._elements]
 
     def _get_drawable_and_painted_elements(self):
         # self._elements_drawable = [self._get_open3d(elem) for elem in self._elements]
-        painted = self._get_painted(self._elements_drawable, self.color_unselected)
+        painted = self._get_painted(self._elements_as_open3d, self.color_unselected)
 
         if self.paint_selected:
             for i in range(len(painted)):
@@ -408,7 +408,7 @@ class ElementSelector:
                 painted[i] = self._get_painted(painted[i], color)
 
         else:
-            painted[self.i] = self._elements_drawable[self.i]
+            painted[self.i] = self._elements_as_open3d[self.i]
 
         self._elements_painted = painted
 
@@ -668,10 +668,10 @@ class ElementSelector:
         self._remove_all_visualiser_elements(vis)
         for n, i in enumerate(indices):
             self._elements.pop(i - n)
-            self._elements_drawable.pop(i - n)
+            self._elements_as_open3d.pop(i - n)
 
         self._elements += output_elements
-        self._elements_drawable += [self._get_open3d(elem) for elem in output_elements]
+        self._elements_as_open3d += [self._get_open3d(elem) for elem in output_elements]
 
         if self.i in indices:
             # print("[INFO] Current idx in modified indices, getting last element")
@@ -756,7 +756,7 @@ class ElementSelector:
         if num_outputs > 0:
             modified_elements = self._elements[-num_outputs:]
             self._elements = self._elements[:-num_outputs]
-            self._elements_drawable = self._elements_drawable[:-num_outputs]
+            self._elements_as_open3d = self._elements_as_open3d[:-num_outputs]
         else:
             modified_elements = []
 
