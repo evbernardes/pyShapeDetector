@@ -580,9 +580,6 @@ class ElementSelector:
             color = self._colors_selected_current[is_selected, is_current]
             element = self._get_painted(element, color)
 
-        if color is not None:
-            element = self._get_painted(element, color)
-
         self._elements_painted[idx] = element
         vis.add_geometry(element, reset_bounding_box=False)
 
