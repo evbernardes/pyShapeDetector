@@ -263,6 +263,7 @@ class ElementSelector:
     @property
     def all_drawable_elements(self):
         return self._fixed_elements + self._plane_boundaries + self._elements_painted
+        # return self._fixed_elements + self._elements_as_open3d + self._plane_boundaries
 
     def _get_current_bbox(self):
         from pyShapeDetector.geometry import (
@@ -390,27 +391,45 @@ class ElementSelector:
 
     def _get_drawable_and_painted_elements(self):
         # self._elements_drawable = [self._get_open3d(elem) for elem in self._elements]
-        painted = self._get_painted(self._elements_as_open3d, self.color_unselected)
+        # painted = self._get_painted(self._elements_as_open3d, self.color_unselected)
 
         if self.paint_selected:
-            for i in range(len(painted)):
-                if i == self.i:
-                    if self.is_current_selected:
-                        color = self.color_selected_current
-                    else:
-                        color = self.color_unselected_current
+            mask = np.asarray(self.selected)[np.newaxis].T
+            colors = self.color_selected * mask + self.color_unselected * ~mask
 
-                elif self.selected[i]:
-                    color = self.color_selected
-                else:
-                    continue
+            if self.is_current_selected:
+                colors[self.i] = self.color_selected_current
+            else:
+                colors[self.i] = self.color_unselected_current
 
-                painted[i] = self._get_painted(painted[i], color)
-
+            self._elements_painted = [
+                self._get_painted(elem, color)
+                for (elem, color) in zip(self._elements_as_open3d, colors)
+            ]
         else:
-            painted[self.i] = self._elements_as_open3d[self.i]
+            self._elements_painted = copy.copy(self._elements_as_open3d)
 
-        self._elements_painted = painted
+        # if self
+
+        # if self.paint_selected:
+        #     for i in range(len(painted)):
+        #         if i == self.i:
+        #             if self.is_current_selected:
+        #                 color = self.color_selected_current
+        #             else:
+        #                 color = self.color_unselected_current
+
+        #         elif self.selected[i]:
+        #             color = self.color_selected
+        #         else:
+        #             continue
+
+        #         painted[i] = self._get_painted(painted[i], color)
+
+        # else:
+        #     painted[self.i] = self._elements_as_open3d[self.i]
+
+        # self._elements_painted = painted
 
     def _get_plane_boundaries(self):
         if not self.draw_boundary_lines:
