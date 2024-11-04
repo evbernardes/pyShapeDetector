@@ -265,32 +265,6 @@ class ElementSelector:
         return self._fixed_elements + self._plane_boundaries + self._elements_painted
         # return self._fixed_elements + self._elements_as_open3d + self._plane_boundaries
 
-    def _get_current_bbox(self):
-        from pyShapeDetector.geometry import (
-            LineSet,
-            OrientedBoundingBox,
-            AxisAlignedBoundingBox,
-        )
-
-        element = self.current_element
-
-        if element is None or isinstance(element, LineSet):
-            return None
-
-        try:
-            bbox_original = element.get_oriented_bounding_box()
-            bbox = OrientedBoundingBox(bbox_original).expanded(self.bbox_expand)
-        except Exception:
-            bbox_original = element.get_axis_aligned_bounding_box()
-            bbox = AxisAlignedBoundingBox(bbox_original).expanded(self.bbox_expand)
-
-        if self.is_current_selected:
-            bbox.color = self.color_bbox_selected
-        else:
-            bbox.color = self.color_bbox_unselected
-
-        return bbox.as_open3d
-
     def distances_to_point(self, screen_point, screen_vector):
         from pyShapeDetector.geometry import PointCloud
         from pyShapeDetector.primitives import Primitive, Plane
@@ -394,7 +368,7 @@ class ElementSelector:
         # painted = self._get_painted(self._elements_as_open3d, self.color_unselected)
 
         if self.paint_selected:
-            mask = np.asarray(self.selected)[np.newaxis].T
+            mask = np.array(self.selected)[np.newaxis].T
             colors = self.color_selected * mask + self.color_unselected * ~mask
 
             if self.is_current_selected:
