@@ -121,6 +121,7 @@ class ElementSelector:
         bbox_expand=0.0,
         window_name="",
         paint_elements=True,
+        paint_elements_random=False,
         draw_boundary_lines=False,
         return_finish_flag=False,
         **camera_options,
@@ -139,6 +140,7 @@ class ElementSelector:
         self._select_filter = None
         self.bbox_expand = bbox_expand
         self.paint_elements = paint_elements
+        self.paint_elements_random = paint_elements_random
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
         self.draw_boundary_lines = draw_boundary_lines
@@ -362,8 +364,8 @@ class ElementSelector:
             self.camera_options["mesh_show_back_face"] = True
 
         # IMPORTANT: respect order, only get Open3D elements at the very end
-        self._fixed_elements = [self._get_open3d(elem) for elem in self._fixed_elements]
-        self._elements_as_open3d = [self._get_open3d(elem) for elem in self._elements]
+        # self._fixed_elements = [self._get_open3d(elem) for elem in self._fixed_elements]
+        # self._elements_as_open3d = [self._get_open3d(elem) for elem in self._elements]
 
     def _get_drawable_elements(self):
         self._original_colors = [
@@ -417,6 +419,9 @@ class ElementSelector:
 
         except Exception:
             elem_new = elem
+
+        if self.paint_elements_random:
+            elem_new = self._get_painted(elem_new, color="random")
 
         return elem_new
 
@@ -807,6 +812,19 @@ class ElementSelector:
 
     def _reset_visualiser_elements(self, vis, startup=False):
         # Prepare elements for visualization
+
+        if startup:
+            self._fixed_elements = [
+                self._get_open3d(elem) for elem in self._fixed_elements
+            ]
+            self._elements_as_open3d = [
+                self._get_open3d(elem) for elem in self._elements
+            ]
+
+            if self.paint_elements_random:
+                self._elements_as_open3d = self._get_painted(
+                    self._elements_as_open3d, color="random"
+                )
 
         self._get_plane_boundaries()
         self._get_drawable_elements()
