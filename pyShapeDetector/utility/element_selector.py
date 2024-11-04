@@ -12,6 +12,7 @@ import warnings
 import inspect
 import numpy as np
 from open3d import visualization
+from open3d.utility import Vector3dVector
 # from .helpers_visualization import get_painted
 # from pyShapeDetector.geometry import OrientedBoundingBox, TriangleMesh, PointCloud
 # from pyShapeDetector.primitives import Primitive
@@ -26,6 +27,7 @@ COLOR_SELECTED = (0, 0.4, 0)
 COLOR_SELECTED_CURRENT = COLOR_BBOX_SELECTED
 COLOR_UNSELECTED = (0.9, 0.9, 0.9)
 COLOR_UNSELECTED_CURRENT = (0.0, 0.0, 0.6)
+COLOR_HIGHLIGHT = 0.3
 
 KEYS_NORMAL = {
     "Toggle": ["Space", 32],  # GLFW_KEY_SPACE = 32
@@ -103,7 +105,7 @@ class ElementSelector:
         Expands bounding boxes in all directions with this value. Default: 0.0.
     window_name : str, optional
         Name of window. If empty, just gives the number of elements. Default: "".
-    paint_selected : boolean, optional
+    paint_elements : boolean, optional
         If True, paint selected elements, and not only their bounding boxes.
         Default: True
     draw_boundary_lines : boolean, optional
@@ -118,7 +120,7 @@ class ElementSelector:
         self,
         bbox_expand=0.0,
         window_name="",
-        paint_selected=True,
+        paint_elements=True,
         draw_boundary_lines=False,
         return_finish_flag=False,
         **camera_options,
@@ -127,16 +129,16 @@ class ElementSelector:
         self._future_states = []
         self._elements = []
         self._elements_as_open3d = []
-        self._colors = []
+        self._original_colors = []
         self._fixed_elements = []
-        self._elements_painted = []
+        self._elements_drawable = []
         self._selected = []
         self._selectable = []
         self._bbox = None
         self._function = None
         self._select_filter = None
         self.bbox_expand = bbox_expand
-        self.paint_selected = paint_selected
+        self.paint_elements = paint_elements
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
         self.draw_boundary_lines = draw_boundary_lines
@@ -162,6 +164,7 @@ class ElementSelector:
         self.color_selected_current = COLOR_SELECTED_CURRENT
         self.color_unselected = COLOR_UNSELECTED
         self.color_unselected_current = COLOR_UNSELECTED_CURRENT
+        self.color_highlight = COLOR_HIGHLIGHT
 
         # (selected, current) -> color
         self._colors_selected_current = {
@@ -262,7 +265,7 @@ class ElementSelector:
 
     @property
     def all_drawable_elements(self):
-        return self._fixed_elements + self._plane_boundaries + self._elements_painted
+        return self._fixed_elements + self._plane_boundaries + self._elements_drawable
         # return self._fixed_elements + self._elements_as_open3d + self._plane_boundaries
 
     def distances_to_point(self, screen_point, screen_vector):
@@ -359,15 +362,16 @@ class ElementSelector:
             self.camera_options["mesh_show_back_face"] = True
 
         # IMPORTANT: respect order, only get Open3D elements at the very end
-        self._colors = self._get_colors(self._elements)
         self._fixed_elements = [self._get_open3d(elem) for elem in self._fixed_elements]
         self._elements_as_open3d = [self._get_open3d(elem) for elem in self._elements]
 
-    def _get_drawable_and_painted_elements(self):
-        # self._elements_drawable = [self._get_open3d(elem) for elem in self._elements]
-        # painted = self._get_painted(self._elements_as_open3d, self.color_unselected)
+    def _get_drawable_elements(self):
+        self._original_colors = [
+            self._extract_element_colors(elem) for elem in self._elements_as_open3d
+        ]
 
-        if self.paint_selected:
+        # either get painted elements or keep original colors
+        if self.paint_elements:
             mask = np.array(self.selected)[np.newaxis].T
             colors = self.color_selected * mask + self.color_unselected * ~mask
 
@@ -376,34 +380,12 @@ class ElementSelector:
             else:
                 colors[self.i] = self.color_unselected_current
 
-            self._elements_painted = [
+            self._elements_drawable = [
                 self._get_painted(elem, color)
                 for (elem, color) in zip(self._elements_as_open3d, colors)
             ]
         else:
-            self._elements_painted = copy.copy(self._elements_as_open3d)
-
-        # if self
-
-        # if self.paint_selected:
-        #     for i in range(len(painted)):
-        #         if i == self.i:
-        #             if self.is_current_selected:
-        #                 color = self.color_selected_current
-        #             else:
-        #                 color = self.color_unselected_current
-
-        #         elif self.selected[i]:
-        #             color = self.color_selected
-        #         else:
-        #             continue
-
-        #         painted[i] = self._get_painted(painted[i], color)
-
-        # else:
-        #     painted[self.i] = self._elements_as_open3d[self.i]
-
-        # self._elements_painted = painted
+            self._elements_drawable = copy.copy(self._elements_as_open3d)
 
     def _get_plane_boundaries(self):
         if not self.draw_boundary_lines:
@@ -438,18 +420,36 @@ class ElementSelector:
 
         return elem_new
 
-    def _get_colors(self, elements):
-        colors = []
-        for elem in elements:
-            if hasattr(elem, "color"):
-                colors.append(elem.color)
-            elif hasattr(elem, "colors"):
-                colors_mean = np.asarray(elem.colors).mean(axis=0)
-                colors.append(colors_mean)
-            else:
-                warnings.warn("Element with no color found.")
-                colors.append(np.random.random(3))
-        return colors
+    def _extract_element_colors(self, element):
+        if hasattr(element, "color"):
+            return np.asarray(element.color).copy()
+        if hasattr(element, "colors"):
+            return np.asarray(element.colors).copy()
+        if hasattr(element, "vertex_colors"):
+            return np.asarray(element.vertex_colors).copy()
+        return None
+
+    def _set_element_colors(self, element, input_color):
+        if input_color is not None:
+            if hasattr(element, "color"):
+                element.color = Vector3dVector(input_color)
+            if hasattr(element, "colors"):
+                element.colors = Vector3dVector(input_color)
+            if hasattr(element, "vertex_colors"):
+                element.vertex_colors = Vector3dVector(input_color)
+
+    # def _get_colors(self, elements):
+    #     colors = []
+    #     for elem in elements:
+    #         if hasattr(elem, "color"):
+    #             colors.append(elem.color)
+    #         elif hasattr(elem, "colors"):
+    #             colors_mean = np.asarray(elem.colors).mean(axis=0)
+    #             colors.append(colors_mean)
+    #         else:
+    #             warnings.warn("Element with no color found.")
+    #             colors.append(np.random.random(3))
+    #     return colors
 
     def _get_painted(self, elements, color):
         from .helpers_visualization import get_painted
@@ -563,17 +563,22 @@ class ElementSelector:
 
     def _update_element(self, idx):
         vis = self._vis
-        element = self._elements_painted[idx]
+        element = self._elements_drawable[idx]
         vis.remove_geometry(element, reset_bounding_box=False)
 
         is_selected = self._selected[idx] and self._selectable[idx]
         is_current = idx == self.i
 
-        if self.paint_selected:
+        if self.paint_elements and (is_current or is_selected):
             color = self._colors_selected_current[is_selected, is_current]
             element = self._get_painted(element, color)
+        else:
+            input_color = self._original_colors[idx]
+            highlight = self.color_highlight * (int(is_selected) + int(is_current))
+            print(highlight)
+            self._set_element_colors(element, input_color * (1 + highlight))
 
-        self._elements_painted[idx] = element
+        self._elements_drawable[idx] = element
         vis.add_geometry(element, reset_bounding_box=False)
 
     def update(self, vis, idx=None):
@@ -804,7 +809,7 @@ class ElementSelector:
         # Prepare elements for visualization
 
         self._get_plane_boundaries()
-        self._get_drawable_and_painted_elements()
+        self._get_drawable_elements()
         self._get_element_distances()
 
         if self.select_filter is None:
@@ -819,8 +824,8 @@ class ElementSelector:
 
         self._update_bounding_box()
 
-        if not startup:
-            self.update_all(vis)
+        # if not startup:
+        self.update_all(vis)
 
     def run(self, print_instructions=True):
         if len(self.elements) == 0:
