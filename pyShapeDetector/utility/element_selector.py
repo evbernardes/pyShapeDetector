@@ -145,7 +145,7 @@ class ElementSelector:
         self.camera_options = camera_options
 
         # self.selected = self.pre_selected.copy()
-        self.elements_distance = []
+        self._elements_distance = []
         self.i_old = 0
         self.i = 0
         self.finish = False
@@ -318,7 +318,7 @@ class ElementSelector:
                 )
                 return np.inf
 
-        return [_distance_to_point(elem) for elem in self.elements_distance]
+        return [_distance_to_point(elem) for elem in self._elements_distance]
 
     def add_elements(self, elem, fixed=False):
         if isinstance(elem, (list, tuple)):
@@ -451,7 +451,7 @@ class ElementSelector:
 
         return get_painted(elements, color)
 
-    def _compute_element_distances(self):
+    def _get_element_distances(self):
         from pyShapeDetector.primitives import Primitive
         from pyShapeDetector.geometry import TriangleMesh, PointCloud
 
@@ -472,7 +472,7 @@ class ElementSelector:
             else:
                 elements_distance.append(None)
 
-        return elements_distance
+        self._elements_distance = elements_distance
 
     def _get_visualizer(self):
         vis = visualization.VisualizerWithKeyCallback()
@@ -817,7 +817,8 @@ class ElementSelector:
 
         self._get_plane_boundaries()
         self._get_drawable_and_painted_elements()
-        self.elements_distance = self._compute_element_distances()
+        self._get_element_distances()
+
         if self.select_filter is None:
             self._selectable = [True] * len(self.elements)
         else:
