@@ -252,6 +252,10 @@ class ElementSelector:
             raise RuntimeError()
         self.selected[self.i] = boolean_value
 
+    @property
+    def all_drawable_elements(self):
+        return self._fixed_elements + self._plane_boundaries + self._elements_painted
+
     def _get_current_bbox(self):
         from pyShapeDetector.geometry import (
             LineSet,
@@ -663,7 +667,7 @@ class ElementSelector:
             "num_outputs": len(output_elements),
         }
 
-        self.remove_all_visualiser_elements(vis)
+        self._remove_all_visualiser_elements(vis)
         for n, i in enumerate(indices):
             self._elements.pop(i - n)
             self._elements_drawable.pop(i - n)
@@ -689,7 +693,7 @@ class ElementSelector:
         self._future_states = []
         self.selected = False
 
-        self.reset_visualiser_elements(vis)
+        self._reset_visualiser_elements(vis)
 
     def toggle_all(self, vis, action, mods):
         """Toggle the all elements between all selected/all unselected."""
@@ -709,7 +713,7 @@ class ElementSelector:
         if not self.extra_functions or action == 1 or len(self._future_states) == 0:
             return
 
-        self.remove_all_visualiser_elements(vis)
+        self._remove_all_visualiser_elements(vis)
 
         future_state = self._future_states.pop()
 
@@ -731,13 +735,13 @@ class ElementSelector:
         self._past_states.append(current_state)
         self.selected = False
 
-        self.reset_visualiser_elements(vis)
+        self._reset_visualiser_elements(vis)
 
     def undo(self, vis, action, mods):
         if not self.extra_functions or action == 1 or len(self._past_states) == 0:
             return
 
-        self.remove_all_visualiser_elements(vis)
+        self._remove_all_visualiser_elements(vis)
 
         last_state = self._past_states.pop()
         indices = last_state["indices"]
@@ -773,7 +777,7 @@ class ElementSelector:
             }
         )
 
-        self.reset_visualiser_elements(vis)
+        self._reset_visualiser_elements(vis)
 
     def on_mouse_move(self, vis, x, y):
         """Get mouse position."""
@@ -797,22 +801,15 @@ class ElementSelector:
             self.toggle(vis, 0, None)
         self.update(vis)
 
-    def remove_all_visualiser_elements(self, vis):
-        elements = (
-            self._fixed_elements
-            + self._plane_boundaries
-            + self._elements_painted
-            + [self._bbox]
-        )
-
-        for elem in elements:
+    def _remove_all_visualiser_elements(self, vis):
+        for elem in self.all_drawable_elements:
             if elem is not None:
                 try:
                     vis.remove_geometry(elem, reset_bounding_box=False)
                 except Exception:
                     pass
 
-    def reset_visualiser_elements(self, vis, startup=False):
+    def _reset_visualiser_elements(self, vis, startup=False):
         # Prepare elements for visualization
 
         self._get_plane_boundaries()
@@ -825,14 +822,7 @@ class ElementSelector:
             self._selectable = [self.select_filter(elem) for elem in self.elements]
         self._selectable = np.asarray(self._selectable)
 
-        elements = (
-            self._fixed_elements
-            + self._plane_boundaries
-            + self._elements_painted
-            + [self._bbox]
-        )
-
-        for elem in elements:
+        for elem in self.all_drawable_elements:
             if elem is not None:
                 vis.add_geometry(elem, reset_bounding_box=startup)
 
@@ -850,7 +840,7 @@ class ElementSelector:
 
         # Set up the visualizer
         self._get_visualizer()
-        self.reset_visualiser_elements(self._vis, startup=True)
+        self._reset_visualiser_elements(self._vis, startup=True)
 
         if print_instructions:
             instructions = (
