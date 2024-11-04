@@ -504,7 +504,7 @@ class ElementSelector:
 
         vis.create_window(window_name)
 
-        return vis
+        self._vis = vis
 
     def _signal_handler(self, sig, frame):
         self._vis.destroy_window()
@@ -520,6 +520,7 @@ class ElementSelector:
         self.update(vis, idx)
 
     def _update_bounding_box(self):
+        """Remove bounding box and get new one for current element."""
         from pyShapeDetector.geometry import (
             LineSet,
             OrientedBoundingBox,
@@ -570,7 +571,6 @@ class ElementSelector:
         # revert current element color to normal color...
         element = self._elements_painted[self.i_old]
         vis.remove_geometry(element, reset_bounding_box=False)
-        vis.remove_geometry(self._bbox, reset_bounding_box=False)
 
         if not self.selected[self.i_old]:
             element = self._get_painted(element, self.color_unselected)
@@ -849,7 +849,7 @@ class ElementSelector:
         self._check_and_initialize_inputs()
 
         # Set up the visualizer
-        self._vis = self._get_visualizer()
+        self._get_visualizer()
         self.reset_visualiser_elements(self._vis, startup=True)
 
         if print_instructions:
