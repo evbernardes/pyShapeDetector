@@ -105,7 +105,7 @@ class ElementSelector:
         Expands bounding boxes in all directions with this value. Default: 0.0.
     window_name : str, optional
         Name of window. If empty, just gives the number of elements. Default: "".
-    paint_elements : boolean, optional
+    paint_selected : boolean, optional
         If True, paint selected elements, and not only their bounding boxes.
         Default: True
     draw_boundary_lines : boolean, optional
@@ -120,7 +120,7 @@ class ElementSelector:
         self,
         bbox_expand=0.0,
         window_name="",
-        paint_elements=True,
+        paint_selected=True,
         paint_elements_random=False,
         draw_boundary_lines=False,
         return_finish_flag=False,
@@ -139,7 +139,7 @@ class ElementSelector:
         self._function = None
         self._select_filter = None
         self.bbox_expand = bbox_expand
-        self.paint_elements = paint_elements
+        self.paint_selected = paint_selected
         self.paint_elements_random = paint_elements_random
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
@@ -373,7 +373,7 @@ class ElementSelector:
         ]
 
         # either get painted elements or keep original colors
-        if self.paint_elements:
+        if self.paint_selected:
             mask = np.array(self.selected)[np.newaxis].T
             colors = self.color_selected * mask + self.color_unselected * ~mask
 
@@ -561,13 +561,12 @@ class ElementSelector:
         is_selected = self._selected[idx] and self._selectable[idx]
         is_current = idx == self.i
 
-        if self.paint_elements and (is_current or is_selected):
+        if self.paint_selected and is_selected:
             color = self._colors_selected_current[is_selected, is_current]
             element = self._get_painted(element, color)
         else:
             input_color = self._original_colors[idx]
             highlight = self.color_highlight * (int(is_selected) + int(is_current))
-            print(highlight)
             self._set_element_colors(element, input_color * (1 + highlight))
 
         self._elements_drawable[idx] = element

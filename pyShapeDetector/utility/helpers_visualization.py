@@ -521,7 +521,7 @@ def select_combinations_manually(
     elements,
     return_grouped=False,
     bbox_expand=0.0,
-    paint_elements=True,
+    paint_selected=True,
     window_name="",
     **camera_options,
 ):
@@ -569,7 +569,7 @@ def select_combinations_manually(
             fixed_elements=elements_fused[i],
             window_name=f"{window_name}Element {i}",
             bbox_expand=bbox_expand,
-            paint_elements=paint_elements,
+            paint_selected=paint_selected,
             return_finish_flag=True,
             **camera_options,
         )
