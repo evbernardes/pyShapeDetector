@@ -402,7 +402,7 @@ class ElementSelector:
 
     def _get_plane_boundaries(self):
         if not self.draw_boundary_lines:
-            return []
+            self._plane_boundaries = []
 
         plane_boundaries = []
         for element in self._elements:
@@ -415,7 +415,7 @@ class ElementSelector:
                 continue
             lineset.paint_uniform_color((0, 0, 0))
             plane_boundaries.append(lineset)
-        return plane_boundaries
+        self._plane_boundaries = plane_boundaries
 
     def _get_open3d(self, elem):
         from pyShapeDetector.geometry import TriangleMesh
@@ -815,7 +815,7 @@ class ElementSelector:
     def reset_visualiser_elements(self, vis, startup=False):
         # Prepare elements for visualization
 
-        self._plane_boundaries = self._get_plane_boundaries()
+        self._get_plane_boundaries()
         self._get_drawable_and_painted_elements()
         self.elements_distance = self._compute_element_distances()
         if self.select_filter is None:
