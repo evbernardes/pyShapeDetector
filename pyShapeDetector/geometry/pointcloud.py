@@ -453,7 +453,7 @@ class PointCloud(Open3D_Geometry):
 
     #     return [self.select_by_index(list(subset)) for subset in subsets]
 
-    def split_in_half(self, resolution=30):
+    def split_in_half(self, resolution=5, dim=None):
         """Divide pointcloud in two sub clouds, each one occupying roughly the
         same volume.
 
@@ -461,6 +461,9 @@ class PointCloud(Open3D_Geometry):
         ----------
         resolution : int, optional
             Number of subdivisions done before joining them. Default: 5.
+        dim : int, optional
+            Dimension that should be divided. If not given, will be chosen as the
+            largest dimension. Default: None.
 
         Returns
         -------
@@ -470,7 +473,7 @@ class PointCloud(Open3D_Geometry):
         if resolution < 2:
             raise ValueError(f"Resolution must be at least 2, got {resolution}.")
 
-        pcds = self.split(resolution)
+        pcds = self.split(resolution, dim=dim)
         test = np.cumsum([len(pcd.points) for pcd in pcds]) - len(self.points) / 2
 
         left = PointCloud()
