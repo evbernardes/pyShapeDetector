@@ -5,6 +5,7 @@ Created on Tur Oct 17 13:17:55 2024
 
 @author: ebernardes
 """
+import time
 import copy
 import signal
 import sys
@@ -922,6 +923,7 @@ class ElementSelector:
                 + "\n**************************************************"
             )
             print(instructions)
+            time.sleep(1)
 
         try:
             self._vis.run()
