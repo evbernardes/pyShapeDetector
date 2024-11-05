@@ -145,7 +145,7 @@ class ElementSelector:
         self._selected = []
         self._selectable = []
         self._bbox = None
-        self._function = None
+        self._functions = None
         self._select_filter = None
         self.bbox_expand = bbox_expand
         self.paint_selected = paint_selected
@@ -186,18 +186,47 @@ class ElementSelector:
         }
 
     @property
-    def function(self):
-        return self._function
+    def function_key_mappings(self):
+        if self.functions is None:
+            return dict()
+        else:
+            return {ord(str(i + 1)): f for i, f in enumerate(self.functions)}
 
-    @function.setter
-    def function(self, new_function):
-        if new_function is None:
-            pass
-        elif (N := len(inspect.signature(new_function).parameters)) != 1:
+    @property
+    def functions(self):
+        return self._functions
+
+    @functions.setter
+    def functions(self, new_functions):
+        if new_functions is None:
+            self._functions = None
+            return
+
+        if isinstance(new_functions, tuple):
+            new_functions = list(new_functions)
+        elif callable(new_functions):
+            new_functions = [new_functions]
+
+        if (N := len(new_functions)) > 9:
+            raise ValueError("Max number of functions: 9, got {N}.")
+
+        if not isinstance(new_functions, list):
             raise ValueError(
-                f"Expected function with 1 parameter (list of elements), got {N}."
+                f"Expected function or list of functions, got {type(new_functions)}."
             )
-        self._function = new_function
+
+        for function in new_functions:
+            if not callable(function):
+                raise ValueError(
+                    f"Expected function or list of functions, got {type(function)}."
+                )
+
+            elif (N := len(inspect.signature(function).parameters)) < 1:
+                raise ValueError(
+                    f"Expected function with at least 1 parameter (list of elements), got {N}."
+                )
+
+        self._functions = new_functions
 
     @property
     def select_filter(self):
@@ -506,7 +535,15 @@ class ElementSelector:
         vis.register_key_action_callback(KEYS_EXTRA["Toggle all"][1], self.toggle_all)
         vis.register_key_action_callback(KEYS_EXTRA["Undo"][1], self.undo)
         vis.register_key_action_callback(KEYS_EXTRA["Redo"][1], self.redo)
-        vis.register_key_action_callback(KEYS_EXTRA["Apply"][1], self.apply_function)
+
+        # Extra keys for functions
+        for key, f in self.function_key_mappings.items():
+            vis.register_key_action_callback(
+                key,
+                lambda vis, action, mods, func=f: self.apply_function(
+                    func, vis, action, mods
+                ),
+            )
 
         window_name = self.window_name
         if window_name != "":
@@ -648,14 +685,14 @@ class ElementSelector:
         """Switch to mouse selection + extra LCtrl mode."""
         self.mouse_toggle = bool(action)
 
-    def apply_function(self, vis, action, mods):
+    def apply_function(self, func, vis, action, mods):
         """Apply function to selected elements."""
-        if not self.extra_functions or action == 1 or self.function is None:
+        if not self.extra_functions or action == 1 or self.functions is None:
             return
 
         indices = np.where(self._selected)[0].tolist()
         input_elements = [self._elements[i] for i in indices]
-        output_elements = self.function(input_elements)
+        output_elements = func(input_elements)
 
         # assures it's a list
         if isinstance(output_elements, tuple):
@@ -872,6 +909,14 @@ class ElementSelector:
                     [
                         f"({EXTRA_KEY[0]}) + ({key}) {desc}"
                         for desc, (key, _) in KEYS_EXTRA.items()
+                    ],
+                )
+                # adding one line for each function
+                + "\n"
+                + "\n".join(
+                    [
+                        f"({EXTRA_KEY[0]}) + ({chr(key)}) {func.__name__}"
+                        for key, func in self.function_key_mappings.items()
                     ],
                 )
                 + "\n**************************************************"

@@ -444,7 +444,7 @@ def apply_function_manually(
 
     element_selector = ElementSelector(**args)
     element_selector.add_elements(elements)
-    element_selector.function = function
+    element_selector.functions = function
     element_selector.select_filter = select_filter
     element_selector.add_elements(fixed_elements, fixed=True)
     element_selector.selected = pre_selected
