@@ -49,7 +49,9 @@ KEYS_NORMAL = {
 EXTRA_KEY = ["LCtrl", 341]  # GLFW_KEY_LCTRL = 341
 
 KEYS_EXTRA = {
-    "Apply": ["Enter", 257],  # GLFW_KEY_ENTER = 257
+    "Print Help": ["H", ord("H")],
+    "Print Info": ["I", ord("I")],
+    # "Apply": ["Enter", 257],  # GLFW_KEY_ENTER = 257
     "Undo": ["Z", ord("Z")],
     "Redo": ["Y", ord("Y")],
     "Toggle all": ["A", ord("A")],
@@ -148,6 +150,7 @@ class ElementSelector:
         self._bbox = None
         self._functions = None
         self._select_filter = None
+        self._instructions = ""
         self.bbox_expand = bbox_expand
         self.paint_selected = paint_selected
         self.paint_random = paint_random
@@ -533,6 +536,8 @@ class ElementSelector:
         )
 
         # Extra (LCtrl) keys
+        vis.register_key_action_callback(KEYS_EXTRA["Print Help"][1], self.print_help)
+        vis.register_key_action_callback(KEYS_EXTRA["Print Info"][1], self.print_info)
         vis.register_key_action_callback(KEYS_EXTRA["Toggle all"][1], self.toggle_all)
         vis.register_key_action_callback(KEYS_EXTRA["Undo"][1], self.undo)
         vis.register_key_action_callback(KEYS_EXTRA["Redo"][1], self.redo)
@@ -547,10 +552,8 @@ class ElementSelector:
             )
 
         window_name = self.window_name
-        if window_name != "":
-            window_name += " - "
-
-        window_name += f"{len(self.elements)} elements. "
+        if window_name == "":
+            window_name = "Element selector."
 
         vis.create_window(window_name)
 
@@ -735,6 +738,23 @@ class ElementSelector:
 
         self._reset_visualiser_elements(vis)
 
+    def print_help(self, vis, action, mods):
+        if not self.extra_functions or action == 1:
+            return
+
+        print(self._instructions)
+        time.sleep(0.1)
+
+    def print_info(self, vis, action, mods):
+        if not self.extra_functions or action == 1:
+            return
+
+        print(f"{len(self._elements)} current elements")
+        print(f"{len(self._fixed_elements)} fixed elements")
+        print(f"{len(self._past_states)} past states (for undoing)")
+        print(f"{len(self._future_states)} future states (for redoing)")
+        time.sleep(0.1)
+
     def toggle_all(self, vis, action, mods):
         """Toggle the all elements between all selected/all unselected."""
         if not self.extra_functions or action == 1:
@@ -895,35 +915,35 @@ class ElementSelector:
         self._get_visualizer()
         self._reset_visualiser_elements(self._vis, startup=True)
 
-        if print_instructions:
-            instructions = (
-                "**************************************************"
-                + "\nStarting manual selector. Instructions:"
-                + "\nGreen: selected. White: unselected. Blue: current."
-                + "\n******************** KEYS: ***********************\n"
-                + "\n".join(
-                    [f"({key}) {desc}" for desc, (key, _) in KEYS_NORMAL.items()]
-                )
-                + f"\n({EXTRA_KEY[0]}) Enables mouse selection"
-                + "\n"
-                + "\n".join(
-                    [
-                        f"({EXTRA_KEY[0]}) + ({key}) {desc}"
-                        for desc, (key, _) in KEYS_EXTRA.items()
-                    ],
-                )
-                # adding one line for each function
-                + "\n"
-                + "\n".join(
-                    [
-                        f"({EXTRA_KEY[0]}) + ({chr(key)}) {func.__name__}"
-                        for key, func in self.function_key_mappings.items()
-                    ],
-                )
-                + "\n**************************************************"
+        self._instructions = (
+            # "**************************************************"
+            # + "\nStarting manual selector. Instructions:"
+            # + "\nGreen: selected. White: unselected. Blue: current."
+            # + "\n******************** KEYS: ***********************\n"
+            "******************** KEYS: ***********************\n"
+            + "\n".join([f"({key}) {desc}" for desc, (key, _) in KEYS_NORMAL.items()])
+            + f"\n({EXTRA_KEY[0]}) Enables mouse selection"
+            + "\n"
+            + "\n".join(
+                [
+                    f"({EXTRA_KEY[0]}) + ({key}) {desc}"
+                    for desc, (key, _) in KEYS_EXTRA.items()
+                ],
             )
-            print(instructions)
-            time.sleep(1)
+            # adding one line for each function
+            + "\n"
+            + "\n".join(
+                [
+                    f"({EXTRA_KEY[0]}) + ({chr(key)}) {func.__name__}"
+                    for key, func in self.function_key_mappings.items()
+                ],
+            )
+            + "\n**************************************************"
+        )
+
+        if print_instructions:
+            print(self._instructions)
+            time.sleep(0.5)
 
         try:
             self._vis.run()
