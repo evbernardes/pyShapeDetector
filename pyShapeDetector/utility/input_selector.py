@@ -80,7 +80,7 @@ class InputSelector:
 
         return [val for val in self._results.values()]
 
-    def _on_submit(self):
+    def _on_accept(self):
         for var_name, (expected_type, default_value) in self._specs.items():
             user_input = self._input_vars[var_name].get()
 
@@ -129,12 +129,12 @@ class InputSelector:
         self._results = {}
 
         self._root = tk.Tk()
-        self._root.title("Input Form")
+        self._root.title("Enter values")
         self._get_input_vars()
 
         # Submit button
-        submit_button = ttk.Button(self._root, text="Submit", command=self._on_submit)
-        submit_button.grid(row=len(self._specs), column=0, columnspan=2, pady=10)
+        accept_button = ttk.Button(self._root, text="Accept", command=self._on_accept)
+        accept_button.grid(row=len(self._specs), column=0, columnspan=2, pady=10)
 
         # Run the application
         self._root.mainloop()

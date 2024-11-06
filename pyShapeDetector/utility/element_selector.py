@@ -943,7 +943,7 @@ class ElementSelector:
 
         if print_instructions:
             print(self._instructions)
-            time.sleep(0.5)
+            time.sleep(1)
 
         try:
             self._vis.run()
