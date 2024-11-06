@@ -80,7 +80,7 @@ class InputSelector:
 
         return [val for val in self._results.values()]
 
-    def _on_accept(self):
+    def _on_accept(self, event=None):
         for var_name, (expected_type, default_value) in self._specs.items():
             user_input = self._input_vars[var_name].get()
 
@@ -133,6 +133,7 @@ class InputSelector:
         self._get_input_vars()
 
         # Submit button
+        self._root.bind("<Return>", self._on_accept)
         accept_button = ttk.Button(self._root, text="Accept", command=self._on_accept)
         accept_button.grid(row=len(self._specs), column=0, columnspan=2, pady=10)
 
