@@ -124,6 +124,8 @@ class InputSelector:
         self._root = tk.Tk()
         self._root.title("Enter values.")
 
+        self._get_input_vars()
+
         # Submit button
         submit_button = ttk.Button(self._root, text="Submit", command=self._on_submit)
         submit_button.grid(row=len(self._specs), column=0, columnspan=2, pady=10)
