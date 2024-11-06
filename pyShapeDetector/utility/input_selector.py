@@ -112,15 +112,17 @@ class InputSelector:
 
             # Set the default value in the entry field
             entry.insert(0, str(default_value))
+
         self._input_vars = input_vars
 
     def run(self):
+        if len(self._specs) == 0:
+            raise RuntimeError("No input specified.")
+
         # Set up the main window
         self._results = {}
         self._root = tk.Tk()
-        self._root.title("Input Form")
-
-        input_vars = self._get_input_vars()
+        self._root.title("Enter values.")
 
         # Submit button
         submit_button = ttk.Button(self._root, text="Submit", command=self._on_submit)
