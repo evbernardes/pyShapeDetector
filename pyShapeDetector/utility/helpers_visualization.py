@@ -22,6 +22,7 @@ import signal
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
+from multiprocessing import Manager, Process
 from open3d import visualization
 from .element_selector import ElementSelector
 from .input_selector import InputSelector
@@ -34,6 +35,8 @@ GLFW_KEY_LEFT_CONTROL = 341
 def get_inputs(specs):
     """Get values from user with a graphical interface, using a dictionary that
     defines values to get.
+
+    Runs in a separate process for comatibility with Open3D.Visualizer.
 
     For example, defining the specs dictionary for two different variables:
         specs = {
@@ -59,8 +62,17 @@ def get_inputs(specs):
     list
 
     """
-    input_selector = InputSelector(specs)
-    return input_selector.get_results()
+    manager = Manager()
+    results = manager.list()
+
+    def _get_inputs_worker(specs, results):
+        for result in InputSelector(specs).get_results():
+            results.append(result)
+
+    process = Process(target=_get_inputs_worker, args=(specs, results))
+    process.start()
+    process.join()
+    return list(results)
 
 
 def get_painted(elements, color="random", multiplier=1):
