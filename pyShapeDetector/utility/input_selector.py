@@ -81,6 +81,9 @@ class InputSelector:
         return [val for val in self._results.values()]
 
     def _on_submit(self):
+        if hasattr(self, "_window_closed") and self._window_closed:
+            return
+
         for var_name, (expected_type, default_value) in self._specs.items():
             user_input = self._input_vars[var_name].get()
 
@@ -95,6 +98,7 @@ class InputSelector:
                     # Use default if conversion fails
                     self._results[var_name] = default_value
 
+        self._window_closed = True
         self._root.destroy()  # Close the window after submission
 
     def _get_input_vars(self):
@@ -126,16 +130,19 @@ class InputSelector:
         if len(self._specs) == 0:
             raise RuntimeError("No input specified.")
 
-        # Set up the main window
         self._results = {}
-        self._root = tk.Tk()
-        self._root.title("Input Form")
 
-        self._get_input_vars()
+        if not hasattr(self, "_root") or not self._root.winfo_exists():
+            # Set up the main window
+            self._root = tk.Tk()
+            self._root.title("Input Form")
+            self._get_input_vars()
 
-        # Submit button
-        submit_button = ttk.Button(self._root, text="Submit", command=self._on_submit)
-        submit_button.grid(row=len(self._specs), column=0, columnspan=2, pady=10)
+            # Submit button
+            submit_button = ttk.Button(
+                self._root, text="Submit", command=self._on_submit
+            )
+            submit_button.grid(row=len(self._specs), column=0, columnspan=2, pady=10)
 
         # Run the application
         self._root.mainloop()
