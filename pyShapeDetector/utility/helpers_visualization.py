@@ -31,8 +31,35 @@ GLFW_KEY_LEFT_SHIFT = 340
 GLFW_KEY_LEFT_CONTROL = 341
 
 
-def get_inputs(args):
-    input_selector = InputSelector(args)
+def get_inputs(specs):
+    """Get values from user with a graphical interface, using a dictionary that
+    defines values to get.
+
+    For example, defining the specs dictionary for two different variables:
+        specs = {
+           'name': (str, 'default string'),
+           'number': (int, 1)}
+
+    And then entering the dict as input:
+        get_inputs(specs)
+
+    Opens a window asking for both "name" and "number", with "default string"
+    and "1" pre-entered.
+
+
+    Parameters
+    ----------
+    specs : dict
+        A dictionary where each key is the variable name, and each value is a
+        tuple (expected_type, default_value), specifying the type and default
+        value for the input variable.
+
+    Returns
+    -------
+    list
+
+    """
+    input_selector = InputSelector(specs)
     return input_selector.get_results()
 
 
