@@ -200,6 +200,8 @@ class PointCloud(Open3D_Geometry):
         pcds : list of pointclouds
             List of pointclouds to distribute.
         """
+        if len(pcds) == 0:
+            return
 
         distances = np.vstack([self.compute_point_cloud_distance(pcd) for pcd in pcds])
         labels = np.argmin(distances, axis=0)
