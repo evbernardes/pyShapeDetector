@@ -136,6 +136,7 @@ class ElementSelector:
         paint_random=False,
         draw_boundary_lines=False,
         return_finish_flag=False,
+        debug=False,
         **camera_options,
     ):
         self._past_states = []
@@ -148,6 +149,7 @@ class ElementSelector:
         self._selected = []
         self._selectable = []
         self._bbox = None
+        self._debug = debug
         self._functions = None
         self._select_filter = None
         self._instructions = ""
@@ -188,6 +190,11 @@ class ElementSelector:
             (True, False): self.color_selected,
             (True, True): self.color_selected_current,
         }
+
+    def print_debug(self, text):
+        text = str(text)
+        if self._debug:
+            print("[DEBUG] " + text)
 
     @property
     def function_key_mappings(self):
@@ -695,6 +702,10 @@ class ElementSelector:
             return
 
         indices = np.where(self._selected)[0].tolist()
+        self.print_debug(
+            f"Applying {func.__name__} function to {len(indices)} elements, indices: "
+        )
+        self.print_debug(indices)
         input_elements = [self._elements[i] for i in indices]
         output_elements = func(input_elements)
 
@@ -905,6 +916,8 @@ class ElementSelector:
         self.update_all(vis)
 
     def run(self, print_instructions=True):
+        self.print_debug("Starting ElementSelector instance.")
+
         if len(self.elements) == 0:
             raise RuntimeError("No elements added!")
 
