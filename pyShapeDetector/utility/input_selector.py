@@ -129,7 +129,7 @@ class InputSelector:
         # Set up the main window
         self._results = {}
         self._root = tk.Tk()
-        self._root.title("Enter values")
+        self._root.title("Input Form")
 
         self._get_input_vars()
 
