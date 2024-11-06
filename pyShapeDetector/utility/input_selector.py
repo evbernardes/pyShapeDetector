@@ -69,7 +69,7 @@ class InputSelector:
 
     def get_results(self):
         if not hasattr(self, "_results") or len(self._results) == 0:
-            self.run()
+            self._run()
 
         return [val for val in self._results.values()]
 
@@ -115,7 +115,7 @@ class InputSelector:
 
         self._input_vars = input_vars
 
-    def run(self):
+    def _run(self):
         if len(self._specs) == 0:
             raise RuntimeError("No input specified.")
 
