@@ -194,7 +194,7 @@ class ElementSelector:
         if self.functions is None:
             return dict()
         else:
-            return {ord(str(i + 1)): f for i, f in enumerate(self.functions)}
+            return {ord(str((i + 1) % 10)): f for i, f in enumerate(self.functions)}
 
     @property
     def functions(self):
@@ -211,8 +211,8 @@ class ElementSelector:
         elif callable(new_functions):
             new_functions = [new_functions]
 
-        if (N := len(new_functions)) > 9:
-            raise ValueError("Max number of functions: 9, got {N}.")
+        if (N := len(new_functions)) > 10:
+            raise ValueError(f"Max number of functions: 10, got {N}.")
 
         if not isinstance(new_functions, list):
             raise ValueError(
@@ -753,7 +753,7 @@ class ElementSelector:
         print(f"{len(self._fixed_elements)} fixed elements")
         print(f"{len(self._past_states)} past states (for undoing)")
         print(f"{len(self._future_states)} future states (for redoing)")
-        time.sleep(0.1)
+        time.sleep(0.5)
 
     def toggle_all(self, vis, action, mods):
         """Toggle the all elements between all selected/all unselected."""
