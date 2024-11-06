@@ -5,6 +5,7 @@ Created on Wed Nov  6 09:40:10 2024
 
 @author: ebernardes
 """
+import warnings
 import tkinter as tk
 from tkinter import ttk
 
@@ -52,9 +53,15 @@ class InputSelector:
             )
 
         if not isinstance(default_value, expected_type):
-            raise ValueError(
-                f"type of default value should be 'expected_type', got {type(default_value)}."
-            )
+            if isinstance(default_value, float) and expected_type == int:
+                warnings.warn("Expected int and got float, rounding...")
+                default_value = int(default_value)
+            elif isinstance(default_value, int) and expected_type == float:
+                default_value = float(default_value)
+            else:
+                raise ValueError(
+                    f"type of default value should be 'expected_type', got {type(default_value)}."
+                )
 
         if not isinstance(var_name, str):
             raise ValueError(f"name expected to be a string, got {type(var_name)}.")
@@ -122,7 +129,7 @@ class InputSelector:
         # Set up the main window
         self._results = {}
         self._root = tk.Tk()
-        self._root.title("Enter values.")
+        self._root.title("Enter values")
 
         self._get_input_vars()
 
