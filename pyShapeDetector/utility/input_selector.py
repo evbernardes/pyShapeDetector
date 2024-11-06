@@ -16,7 +16,7 @@ class InputSelector:
 
     Attributes:
     ----------
-    _spec : dict
+    _specs : dict
         A dictionary where each key is the variable name, and each value is a
         tuple (expected_type, default_value), specifying the type and default
         value for the input variable.
@@ -37,12 +37,12 @@ class InputSelector:
         Opens the GUI window to collect inputs for the specified variables.
     """
 
-    def __init__(self, input_spec={}):
-        if not isinstance(input_spec, dict):
-            raise ValueError(f"input_spec should be a dict, got {type(input_spec)}.")
+    def __init__(self, input_specs={}):
+        if not isinstance(input_specs, dict):
+            raise ValueError(f"input_spec should be a dict, got {type(input_specs)}.")
 
-        self._spec = {}
-        for var_name, (expected_type, default_value) in input_spec.items():
+        self._specs = {}
+        for var_name, (expected_type, default_value) in input_specs.items():
             self.add_argument(var_name, expected_type, default_value)
 
     def add_argument(self, var_name, expected_type, default_value):
@@ -59,13 +59,13 @@ class InputSelector:
         if not isinstance(var_name, str):
             raise ValueError(f"name expected to be a string, got {type(var_name)}.")
 
-        if var_name in self._spec:
+        if var_name in self._specs:
             raise RuntimeError(f"'{var_name}' already exists.")
 
-        self._spec[var_name] = (expected_type, default_value)
+        self._specs[var_name] = (expected_type, default_value)
 
     def remove_argument(self, name):
-        self._spec.pop(name)
+        self._specs.pop(name)
 
     def get_results(self):
         if not hasattr(self, "_results") or len(self._results) == 0:
@@ -74,7 +74,7 @@ class InputSelector:
         return [val for val in self._results.values()]
 
     def _on_submit(self):
-        for var_name, (expected_type, default_value) in self._spec.items():
+        for var_name, (expected_type, default_value) in self._specs.items():
             user_input = self._input_vars[var_name].get()
 
             # Validate and convert input based on expected type
@@ -95,7 +95,7 @@ class InputSelector:
 
         # Create labels and entry fields based on input_spec
         for row, (var_name, (expected_type, default_value)) in enumerate(
-            self._spec.items()
+            self._specs.items()
         ):
             # Initialize a StringVar to hold user input for each field
             input_vars[var_name] = tk.StringVar()
@@ -126,7 +126,7 @@ class InputSelector:
 
         # Submit button
         submit_button = ttk.Button(self._root, text="Submit", command=self._on_submit)
-        submit_button.grid(row=len(self._spec), column=0, columnspan=2, pady=10)
+        submit_button.grid(row=len(self._specs), column=0, columnspan=2, pady=10)
 
         # Run the application
         self._root.mainloop()
