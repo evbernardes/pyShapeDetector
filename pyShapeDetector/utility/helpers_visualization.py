@@ -24,10 +24,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from open3d import visualization
 from .element_selector import ElementSelector
+from .input_selector import InputSelector
 
 
 GLFW_KEY_LEFT_SHIFT = 340
 GLFW_KEY_LEFT_CONTROL = 341
+
+
+def get_inputs(args):
+    input_selector = InputSelector(args)
+    return input_selector.get_results()
 
 
 def get_painted(elements, color="random", multiplier=1):

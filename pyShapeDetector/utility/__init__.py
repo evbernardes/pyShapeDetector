@@ -32,6 +32,7 @@ from .multidetector import MultiDetector
 from .primitivelimits import PrimitiveLimits
 from .detector_options import DetectorOptions
 from .element_selector import ElementSelector
+from .input_selector import InputSelector
 
 from .helpers_internal import (
     parallelize,
@@ -50,6 +51,7 @@ from .helpers_math import (
 )
 
 from .helpers_visualization import (
+    get_inputs,
     get_painted,
     get_open3d_geometries,
     draw_geometries,
