@@ -55,6 +55,7 @@ KEYS_EXTRA = {
     "Undo": ["Z", ord("Z")],
     "Redo": ["Y", ord("Y")],
     "Toggle all": ["A", ord("A")],
+    "Toggle last": ["L", ord("L")],
     "Toggle click": ["LShift", 340],  # GLFW_KEY_LSHIFT = 340
 }
 
@@ -546,6 +547,8 @@ class ElementSelector:
         vis.register_key_action_callback(KEYS_EXTRA["Print Help"][1], self.print_help)
         vis.register_key_action_callback(KEYS_EXTRA["Print Info"][1], self.print_info)
         vis.register_key_action_callback(KEYS_EXTRA["Toggle all"][1], self.toggle_all)
+        vis.register_key_action_callback(KEYS_EXTRA["Toggle last"][1], self.toggle_last)
+
         vis.register_key_action_callback(KEYS_EXTRA["Undo"][1], self.undo)
         vis.register_key_action_callback(KEYS_EXTRA["Redo"][1], self.redo)
 
@@ -777,6 +780,25 @@ class ElementSelector:
         self.selected = value
         # for i in range(L):
         # self.selected[i] = value
+
+        self.update_all(vis)
+
+    def toggle_last(self, vis, action, mods):
+        """Toggle the elements from last output and unselect everything else."""
+        if not self.extra_functions or action == 1:
+            return
+
+        if len(self._past_states) == 0:
+            return
+
+        num_outputs = self._past_states[-1]["num_outputs"]
+
+        selected = np.logical_or(self.selected, ~self._selectable)
+
+        value = not np.sum(selected[-num_outputs:]) == num_outputs
+
+        self.selected[:-num_outputs] = [False] * (len(self._elements) - num_outputs)
+        self.selected[-num_outputs:] = [value] * num_outputs
 
         self.update_all(vis)
 
