@@ -97,14 +97,28 @@ class InputSelector:
             user_input = self._input_vars[var_name].get()
 
             # Validate and convert input based on expected type
-            if expected_type == str:
+            if isinstance(expected_type, (list, tuple)):
+                self._results[var_name] = user_input
+            elif expected_type == str:
                 self._results[var_name] = user_input or default_value
             else:
                 try:
-                    # Try to convert to the specified type (int or float)
-                    self._results[var_name] = expected_type(user_input)
-                except (TypeError, ValueError):
+                    if expected_type is int:
+                        number = float(user_input)
+                        if number % 1 != 0:
+                            warnings.warn(
+                                f"Converting float input {user_input} to int {int(number)}."
+                            )
+                        self._results[var_name] = int(number)
+
+                    else:
+                        self._results[var_name] = expected_type(user_input)
+                except ValueError:
                     # Use default if conversion fails
+                    warnings.warn(
+                        f"Conversion from {type(user_input)} to {expected_type} "
+                        "failed, returning default value."
+                    )
                     self._results[var_name] = default_value
 
         self._root.destroy()  # Close the window after submission
