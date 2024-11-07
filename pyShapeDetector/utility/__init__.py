@@ -52,6 +52,7 @@ from .helpers_math import (
 
 from .helpers_visualization import (
     get_inputs,
+    select_function_gui,
     get_painted,
     get_open3d_geometries,
     draw_geometries,

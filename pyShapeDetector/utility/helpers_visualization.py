@@ -86,6 +86,36 @@ def get_inputs(specs, window_name="Enter values", as_dict=False):
     return results
 
 
+def select_function_gui(functions):
+    """Make user select from a list of functions with a gui window.
+
+    See also: get_inputs
+
+    Parameters
+    ----------
+    functions : list
+        List of functions.
+
+    Returns
+    -------
+    function
+
+    """
+    for func in functions:
+        if not callable(func):
+            raise ValueError(f"Expected functions, got {type(func)}.")
+
+    options = [f.__name__ for f in functions]
+
+    idx = options.index(
+        get_inputs({"function": (options, options[0])}, window_name="Choose function")[
+            0
+        ]
+    )
+
+    return functions[idx]
+
+
 def get_painted(elements, color="random", multiplier=1):
     """Get painted copy of each pointcloud/mesh/shape.
 
