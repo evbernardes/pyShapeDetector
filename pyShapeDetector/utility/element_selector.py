@@ -363,7 +363,8 @@ class ElementSelector:
         distances = []
         for i, elem in enumerate(self._elements_distance):
             if i == self.i:
-                # for selecting smaller objects closer to bigger ones
+                # for selecting smaller objects closer to bigger ones,
+                # ignores currently selected one
                 distances.append(np.inf)
             else:
                 distances.append(_distance_to_point(elem))
