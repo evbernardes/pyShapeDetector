@@ -32,7 +32,7 @@ GLFW_KEY_LEFT_SHIFT = 340
 GLFW_KEY_LEFT_CONTROL = 341
 
 
-def get_inputs(specs, window_name="Enter values"):
+def get_inputs(specs, window_name="Enter values", as_dict=False):
     """Get values from user with a graphical interface, using a dictionary that
     defines values to get.
 
@@ -60,6 +60,9 @@ def get_inputs(specs, window_name="Enter values"):
     window_name : string, optional
         Name of window. Default: "Enter values".
 
+    as_dict : boolean, optional
+        If True, get results as dictionary. Else, get them as list. Default: False.
+
     Returns
     -------
     list
@@ -75,7 +78,12 @@ def get_inputs(specs, window_name="Enter values"):
     process = Process(target=_get_inputs_worker, args=(specs, results))
     process.start()
     process.join()
-    return list(results)
+    results = list(results)
+
+    if as_dict:
+        results = {name: value for name, value in zip(specs.keys(), results)}
+
+    return results
 
 
 def get_painted(elements, color="random", multiplier=1):
