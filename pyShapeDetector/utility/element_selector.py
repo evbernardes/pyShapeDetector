@@ -802,7 +802,7 @@ class ElementSelector:
         self.update_all(vis)
 
     def toggle_last(self, vis, action, mods):
-        """Toggle the elements from last output and unselect everything else."""
+        """Toggle the elements from last output."""
         if not self.extra_functions or action == 1:
             return
 
@@ -814,8 +814,6 @@ class ElementSelector:
         selected = np.logical_or(self.selected, ~self._selectable)
 
         value = not np.sum(selected[-num_outputs:]) == num_outputs
-
-        self.selected[:-num_outputs] = [False] * (len(self._elements) - num_outputs)
         self.selected[-num_outputs:] = [value] * num_outputs
 
         self.update_all(vis)
