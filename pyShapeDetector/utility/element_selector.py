@@ -360,7 +360,14 @@ class ElementSelector:
                 )
                 return np.inf
 
-        return [_distance_to_point(elem) for elem in self._elements_distance]
+        distances = []
+        for i, elem in enumerate(self._elements_distance):
+            if i == self.i:
+                # for selecting smaller objects closer to bigger ones
+                distances.append(np.inf)
+            else:
+                distances.append(_distance_to_point(elem))
+        return distances
 
     def add_elements(self, elem, fixed=False):
         if isinstance(elem, (list, tuple)):
