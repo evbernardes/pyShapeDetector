@@ -724,7 +724,7 @@ class ElementSelector:
         except Exception as e:
             warnings.warn(
                 f"Failed to apply {func.__name__} function to "
-                f"elements in indices [indices], got following error:"
+                f"elements in indices {indices}, got following error: "
             )
             print(e)
             time.sleep(0.5)
