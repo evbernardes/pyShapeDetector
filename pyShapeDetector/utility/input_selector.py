@@ -157,3 +157,6 @@ class InputSelector:
 
         # Run the application
         self._root.mainloop()
+
+        if len(self._results) == 0:
+            raise KeyboardInterrupt("Action cancelled, no input.")
