@@ -38,7 +38,11 @@ class InputSelector:
         Opens the GUI window to collect inputs for the specified variables.
     """
 
-    def __init__(self, input_specs={}):
+    def __init__(self, input_specs={}, window_name="Enter values"):
+        if not isinstance(window_name, str):
+            window_name = str(window_name)
+        self._window_name = window_name
+
         if not isinstance(input_specs, dict):
             raise ValueError(f"input_spec should be a dict, got {type(input_specs)}.")
 
@@ -104,21 +108,35 @@ class InputSelector:
         for row, (var_name, (expected_type, default_value)) in enumerate(
             self._specs.items()
         ):
-            # Initialize a StringVar to hold user input for each field
-            input_vars[var_name] = tk.StringVar()
+            if expected_type == bool:
+                # Boolean variables will use IntVar (0 for False, 1 for True)
+                input_vars[var_name] = tk.IntVar(value=int(default_value))
 
-            # Label for each entry field
-            text = f"Enter {var_name} ({expected_type.__name__}):"
-            ttk.Label(self._root, text=text).grid(
-                row=row, column=0, padx=5, pady=5, sticky="e"
-            )
+                # Label for the checkbox
+                text = f"Check {var_name} (bool):"
+                ttk.Label(self._root, text=text).grid(
+                    row=row, column=0, padx=5, pady=5, sticky="e"
+                )
 
-            # Entry widget for user input
-            entry = ttk.Entry(self._root, textvariable=input_vars[var_name])
-            entry.grid(row=row, column=1, padx=5, pady=5)
+                # Checkbox for boolean input
+                checkbox = ttk.Checkbutton(self._root, variable=input_vars[var_name])
+                checkbox.grid(row=row, column=1, padx=5, pady=5)
+            else:
+                # Initialize a StringVar to hold user input for each field
+                input_vars[var_name] = tk.StringVar()
 
-            # Set the default value in the entry field
-            entry.insert(0, str(default_value))
+                # Label for each entry field
+                text = f"Enter {var_name} ({expected_type.__name__}):"
+                ttk.Label(self._root, text=text).grid(
+                    row=row, column=0, padx=5, pady=5, sticky="e"
+                )
+
+                # Entry widget for user input
+                entry = ttk.Entry(self._root, textvariable=input_vars[var_name])
+                entry.grid(row=row, column=1, padx=5, pady=5)
+
+                # Set the default value in the entry field
+                entry.insert(0, str(default_value))
 
         self._input_vars = input_vars
 
@@ -129,7 +147,7 @@ class InputSelector:
         self._results = {}
 
         self._root = tk.Tk()
-        self._root.title("Enter values")
+        self._root.title(self._window_name)
         self._get_input_vars()
 
         # Submit button
