@@ -86,7 +86,7 @@ def get_inputs(specs, window_name="Enter values", as_dict=False):
     return results
 
 
-def select_function_gui(functions):
+def select_function_with_gui(functions):
     """Make user select from a list of functions with a gui window.
 
     See also: get_inputs
