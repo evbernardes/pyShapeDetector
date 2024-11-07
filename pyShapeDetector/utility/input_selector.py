@@ -51,21 +51,29 @@ class InputSelector:
             self.add_argument(var_name, expected_type, default_value)
 
     def add_argument(self, var_name, expected_type, default_value):
-        if not isinstance(expected_type, type):
-            raise ValueError(
-                f"expected_type should be a type, got {type(expected_type)}."
-            )
-
-        if not isinstance(default_value, expected_type):
-            if isinstance(default_value, float) and expected_type == int:
-                warnings.warn("Expected int and got float, rounding...")
-                default_value = int(default_value)
-            elif isinstance(default_value, int) and expected_type == float:
-                default_value = float(default_value)
-            else:
+        if isinstance(expected_type, (list, tuple)):
+            choices = expected_type  # expected_type is now a list/tuple of options
+            if default_value not in choices:
                 raise ValueError(
-                    f"type of default value should be 'expected_type', got {type(default_value)}."
+                    f"For list of options, default value '{default_value}' "
+                    f"must be one of the choices: {choices}"
                 )
+
+        elif isinstance(expected_type, type):
+            if not isinstance(default_value, expected_type):
+                if isinstance(default_value, float) and expected_type == int:
+                    warnings.warn("Expected int and got float, rounding...")
+                    default_value = int(default_value)
+                elif isinstance(default_value, int) and expected_type == float:
+                    default_value = float(default_value)
+                else:
+                    raise ValueError(
+                        f"type of default value should be 'expected_type', got {type(default_value)}."
+                    )
+        else:
+            raise ValueError(
+                f"expected_type should be a type, list or tuple, got {type(expected_type)}."
+            )
 
         if not isinstance(var_name, str):
             raise ValueError(f"name expected to be a string, got {type(var_name)}.")
@@ -95,7 +103,7 @@ class InputSelector:
                 try:
                     # Try to convert to the specified type (int or float)
                     self._results[var_name] = expected_type(user_input)
-                except ValueError:
+                except (TypeError, ValueError):
                     # Use default if conversion fails
                     self._results[var_name] = default_value
 
@@ -108,7 +116,28 @@ class InputSelector:
         for row, (var_name, (expected_type, default_value)) in enumerate(
             self._specs.items()
         ):
-            if expected_type == bool:
+            if isinstance(expected_type, (list, tuple)):
+                # Multiple-choice handling using a Combobox
+                choices = expected_type  # expected_type is now a list/tuple of options
+
+                # Use StringVar to hold the selected value
+                input_vars[var_name] = tk.StringVar(value=default_value)
+
+                # Label for the dropdown
+                text = f"Select {var_name}:"
+                ttk.Label(self._root, text=text).grid(
+                    row=row, column=0, padx=5, pady=5, sticky="e"
+                )
+
+                # Dropdown menu (Combobox)
+                combobox = ttk.Combobox(
+                    self._root,
+                    textvariable=input_vars[var_name],
+                    values=choices,
+                    state="readonly",
+                )
+                combobox.grid(row=row, column=1, padx=5, pady=5)
+            elif expected_type == bool:
                 # Boolean variables will use IntVar (0 for False, 1 for True)
                 input_vars[var_name] = tk.IntVar(value=int(default_value))
 
