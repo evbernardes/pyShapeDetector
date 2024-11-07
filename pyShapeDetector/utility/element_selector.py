@@ -718,7 +718,17 @@ class ElementSelector:
         )
         self.print_debug(indices)
         input_elements = [self._elements[i] for i in indices]
-        output_elements = func(input_elements)
+
+        try:
+            output_elements = func(input_elements)
+        except Exception as e:
+            warnings.warn(
+                f"Failed to apply {func.__name__} function to "
+                f"elements in indices [indices], got following error:"
+            )
+            print(e)
+            time.sleep(0.5)
+            return
 
         # assures it's a list
         if isinstance(output_elements, tuple):
@@ -765,7 +775,7 @@ class ElementSelector:
             return
 
         print(self._instructions)
-        time.sleep(0.1)
+        time.sleep(0.5)
 
     def print_info(self, vis, action, mods):
         if not self.extra_functions or action == 1:
