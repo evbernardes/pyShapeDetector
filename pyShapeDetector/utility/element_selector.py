@@ -45,6 +45,8 @@ KEYS_NORMAL = {
     "Previous": ["<-", 263],  # GLFW_KEY_LEFT = 263
     "Next": ["->", 262],  # GLFW_KEY_RIGHT = 262
     "Finish": ["F", ord("F")],
+    "Preferences": ["P", ord("P")],
+    "Color mode": ["M", ord("M")],
 }
 
 EXTRA_KEY = ["LCtrl", 341]  # GLFW_KEY_LCTRL = 341
@@ -153,16 +155,16 @@ class ElementSelector:
         self._selected = []
         self._selectable = []
         self._bbox = None
-        self._debug = debug
         self._functions = None
         self._select_filter = None
         self._instructions = ""
         self.bbox_expand = bbox_expand
-        self.paint_selected = paint_selected
-        self.paint_random = paint_random
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
+        self.paint_selected = paint_selected
+        self.paint_random = paint_random
         self.draw_boundary_lines = draw_boundary_lines
+        self.debug = debug
         self._ELEMENTS_NUMBER_WARNING = ELEMENTS_NUMBER_WARNING
         self._NUM_POINTS_FOR_DISTANCE_CALC = NUM_POINTS_FOR_DISTANCE_CALC
         self.camera_options = camera_options
@@ -197,7 +199,7 @@ class ElementSelector:
 
     def print_debug(self, text):
         text = str(text)
-        if self._debug:
+        if self.debug:
             print("[DEBUG] " + text)
 
     @property
@@ -550,6 +552,12 @@ class ElementSelector:
         vis.register_key_action_callback(KEYS_NORMAL["Next"][1], self.next)
         vis.register_key_action_callback(KEYS_NORMAL["Previous"][1], self.previous)
         vis.register_key_action_callback(KEYS_NORMAL["Finish"][1], self.finish_process)
+        vis.register_key_action_callback(
+            KEYS_NORMAL["Preferences"][1], self.preferences
+        )
+        vis.register_key_action_callback(
+            KEYS_NORMAL["Color mode"][1], self.set_color_mode
+        )
         vis.register_key_action_callback(EXTRA_KEY[1], self.switch_extra)
         vis.register_key_action_callback(
             KEYS_EXTRA["Toggle click"][1], self.switch_mouse_toggle
@@ -754,6 +762,7 @@ class ElementSelector:
         }
 
         self._remove_all_visualiser_elements(vis)
+
         for n, i in enumerate(indices):
             self._elements.pop(i - n)
             self._elements_as_open3d.pop(i - n)
@@ -841,10 +850,11 @@ class ElementSelector:
         self._toggle_indices(slice(-num_outputs, None))
 
     def toggle_type(self, vis, action, mods):
-        from .helpers_visualization import get_inputs
-
         if not self.extra_functions or action == 1:
             return
+
+        from .helpers_visualization import get_inputs
+
         elements = self._elements
 
         types = set([t for elem in elements for t in elem.__class__.mro()])
@@ -863,6 +873,39 @@ class ElementSelector:
         selected_type = types[types_names.index(selected_type_name)]
         idx = np.where([isinstance(elem, selected_type) for elem in elements])[0]
         self._toggle_indices(idx)
+
+    def set_color_mode(self, vis, action, mods):
+        if action == 1:
+            return
+
+        self.paint_random = not self.paint_random
+        self._remove_all_visualiser_elements(self._vis)
+        self._reset_visualiser_elements(self._vis, reset_elements=True)
+
+    def preferences(self, vis, action, mods):
+        if action == 1:
+            return
+
+        from .helpers_visualization import get_inputs
+
+        all_preferences = [
+            "draw_boundary_lines",
+            "paint_selected",
+            "paint_random",
+            "debug",
+        ]
+        current_values = {name: getattr(self, name) for name in all_preferences}
+        new_values = get_inputs(
+            {name: (bool, value) for name, value in current_values.items()},
+            window_name="Set preferences",
+            as_dict=True,
+        )
+
+        if current_values != new_values:
+            for name, value in new_values.items():
+                setattr(self, name, value)
+            self._remove_all_visualiser_elements(self._vis)
+            self._reset_visualiser_elements(self._vis, reset_elements=True)
 
     def redo(self, vis, action, mods):
         if not self.extra_functions or action == 1 or len(self._future_states) == 0:
@@ -964,13 +1007,17 @@ class ElementSelector:
                 except Exception:
                     pass
 
-    def _reset_visualiser_elements(self, vis, startup=False):
+    def _reset_visualiser_elements(
+        self, vis, startup=False, reset_elements=False, reset_fixed=False
+    ):
         # Prepare elements for visualization
 
-        if startup:
+        if startup or reset_fixed:
             self._fixed_elements = [
                 self._get_open3d(elem) for elem in self._fixed_elements
             ]
+
+        if startup or reset_elements:
             self._elements_as_open3d = [
                 self._get_open3d(elem) for elem in self._elements
             ]
