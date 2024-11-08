@@ -425,9 +425,14 @@ def select_manually(
         (->) Next
         (F) Finish
         (LCtrl) Enables mouse selection
+        (LCtrl) + (H) Print Help
+        (LCtrl) + (I) Print Info
+        (LCtrl) + (C) Center current
         (LCtrl) + (Z) Undo
         (LCtrl) + (Y) Redo
         (LCtrl) + (A) Toggle all
+        (LCtrl) + (L) Toggle last
+        (LCtrl) + (T) Toggle type
         (LCtrl) + (LShift) Toggle click
 
     See also:
@@ -492,11 +497,16 @@ def apply_function_manually(
         (->) Next
         (F) Finish
         (LCtrl) Enables mouse selection
-        (LCtrl) + (Enter) Apply function
+        (LCtrl) + (H) Print Help
+        (LCtrl) + (I) Print Info
+        (LCtrl) + (C) Center current
         (LCtrl) + (Z) Undo
         (LCtrl) + (Y) Redo
         (LCtrl) + (A) Toggle all
+        (LCtrl) + (L) Toggle last
+        (LCtrl) + (T) Toggle type
         (LCtrl) + (LShift) Toggle click
+        (LCtrl) + (1...0) Apply one of the selected functions
 
     See also:
         open3d.visualization.VisualizerWithKeyCallback
