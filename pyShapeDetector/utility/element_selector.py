@@ -13,7 +13,6 @@ import warnings
 import inspect
 from abc import ABC
 import numpy as np
-from .helpers_visualization import get_inputs
 from open3d import visualization
 from open3d.utility import Vector3dVector
 # from .helpers_visualization import get_painted
@@ -840,6 +839,8 @@ class ElementSelector:
         self._toggle_indices(slice(-num_outputs, None))
 
     def toggle_type(self, vis, action, mods):
+        from .helpers_visualization import get_inputs
+
         if not self.extra_functions or action == 1:
             return
         elements = self._elements
