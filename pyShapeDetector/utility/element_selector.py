@@ -618,12 +618,14 @@ class ElementSelector:
         if element is None or isinstance(element, LineSet):
             return
 
-        try:
-            bbox_original = element.get_oriented_bounding_box()
-            bbox = OrientedBoundingBox(bbox_original).expanded(self.bbox_expand)
-        except Exception:
-            bbox_original = element.get_axis_aligned_bounding_box()
-            bbox = AxisAlignedBoundingBox(bbox_original).expanded(self.bbox_expand)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            try:
+                bbox_original = element.get_oriented_bounding_box()
+                bbox = OrientedBoundingBox(bbox_original).expanded(self.bbox_expand)
+            except Exception:
+                bbox_original = element.get_axis_aligned_bounding_box()
+                bbox = AxisAlignedBoundingBox(bbox_original).expanded(self.bbox_expand)
 
         if self.is_current_selected:
             bbox.color = self.color_bbox_selected
