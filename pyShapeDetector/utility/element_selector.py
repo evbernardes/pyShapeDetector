@@ -53,6 +53,7 @@ EXTRA_KEY = ["LCtrl", 341]  # GLFW_KEY_LCTRL = 341
 KEYS_EXTRA = {
     "Print Help": ["H", ord("H")],
     "Print Info": ["I", ord("I")],
+    "Center current": ["C", ord("C")],
     # "Apply": ["Enter", 257],  # GLFW_KEY_ENTER = 257
     "Undo": ["Z", ord("Z")],
     "Redo": ["Y", ord("Y")],
@@ -557,6 +558,9 @@ class ElementSelector:
         # Extra (LCtrl) keys
         vis.register_key_action_callback(KEYS_EXTRA["Print Help"][1], self.print_help)
         vis.register_key_action_callback(KEYS_EXTRA["Print Info"][1], self.print_info)
+        vis.register_key_action_callback(
+            KEYS_EXTRA["Center current"][1], self.center_current
+        )
         vis.register_key_action_callback(KEYS_EXTRA["Toggle all"][1], self.toggle_all)
         vis.register_key_action_callback(KEYS_EXTRA["Toggle last"][1], self.toggle_last)
         vis.register_key_action_callback(KEYS_EXTRA["Toggle type"][1], self.toggle_type)
@@ -798,6 +802,16 @@ class ElementSelector:
         print(f"{len(self._past_states)} past states (for undoing)")
         print(f"{len(self._future_states)} future states (for redoing)")
         time.sleep(0.5)
+
+    def center_current(self, vis, action, mods):
+        if not self.extra_functions or action == 1:
+            return
+
+        ctr = self._vis.get_view_control()
+        ctr.set_lookat(self._bbox.get_center())
+        ctr.set_front([0, 0, -1])  # Define the camera front direction
+        ctr.set_up([0, 1, 0])  # Define the camera "up" direction
+        ctr.set_zoom(0.1)  # Adjust zoom level if necessary
 
     def _toggle_indices(self, idx_or_slice):
         selected = np.logical_or(self.selected, ~self._selectable)
