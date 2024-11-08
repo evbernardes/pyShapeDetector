@@ -72,13 +72,19 @@ def get_inputs(specs, window_name="Enter values", as_dict=False):
     results = manager.list()
 
     def _get_inputs_worker(specs, results):
-        for result in InputSelector(specs, window_name=window_name).get_results():
-            results.append(result)
+        try:
+            for result in InputSelector(specs, window_name=window_name).get_results():
+                results.append(result)
+        except KeyboardInterrupt:
+            results.append(None)
 
     process = Process(target=_get_inputs_worker, args=(specs, results))
     process.start()
     process.join()
     results = list(results)
+
+    if results == [None]:
+        raise KeyboardInterrupt
 
     if as_dict:
         results = {name: value for name, value in zip(specs.keys(), results)}
