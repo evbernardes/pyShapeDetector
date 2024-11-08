@@ -478,7 +478,8 @@ class ElementSelector:
                 mesh.add_reverse_triangles()
                 elem_new = mesh.as_open3d
 
-        except Exception:
+        except Exception as e:
+            warnings.warn(f"Could not convert element: {elem}, got: {str(e)}")
             elem_new = elem
 
         if self.paint_random:
