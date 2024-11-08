@@ -1282,11 +1282,24 @@ class PlaneBounded(Plane):
 
         if len(idx) > 2:
             if not self.is_hole:
+            #     warnings.warn(
+            #         f"{len(idx)} intersections found instead of 2, "
+            #         "using first and last intersection."
+            #     )
+
+            # right[i + 1 : j - 1] = right[i + 1]
+
                 warnings.warn(
                     f"{len(idx)} intersections found instead of 2, "
-                    "using first and last intersection."
+                    "using biggest intersection."
                 )
-            right[i + 1 : j - 1] = right[i + 1]
+
+            lines_intersections = Line.from_vertices(vertices[idx])
+            lengths_intersections = [l.length for l in lines_intersections]
+            is_even = [k % 2 == 1 for k in range(len(idx))]
+            k = np.argmax(np.array(lengths_intersections) * is_even)
+
+            right[idx[k] + 1 : idx[k+1] - 1] = right[idx[k] + 1]
 
         p1 = intersections[i]
         p2 = intersections[j]
