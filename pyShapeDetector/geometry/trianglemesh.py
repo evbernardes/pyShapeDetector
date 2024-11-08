@@ -129,6 +129,10 @@ class TriangleMesh(Open3D_Geometry):
 
         """
         triangles = self.triangles
+        if len(triangles) == 0:
+            warnings.warn("TrianglMesh has no triangles, nothing to reverse.")
+            return
+
         triangles_sorted = np.sort(triangles, axis=1)
 
         triangles_set = set(tuple(t) for t in triangles_sorted)
