@@ -725,6 +725,8 @@ class ElementSelector:
 
         try:
             output_elements = func(input_elements)
+        except KeyboardInterrupt:
+            return
         except Exception as e:
             warnings.warn(
                 f"Failed to apply {func.__name__} function to "
