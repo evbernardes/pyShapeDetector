@@ -785,6 +785,12 @@ class ElementSelector:
         if not self.extra_functions or action == 1:
             return
 
+        print()
+        print(
+            f"Current element ({self.i}/{len(self._elements)}): {self.current_element}"
+        )
+        print(f"Current selected: {self.is_current_selected}")
+        print(f"Current bbox: {self._bbox}")
         print(f"{len(self._elements)} current elements")
         print(f"{len(self._fixed_elements)} fixed elements")
         print(f"{len(self._past_states)} past states (for undoing)")
