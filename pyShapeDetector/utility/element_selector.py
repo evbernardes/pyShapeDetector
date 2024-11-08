@@ -11,7 +11,9 @@ import signal
 import sys
 import warnings
 import inspect
+from abc import ABC
 import numpy as np
+from .helpers_visualization import get_inputs
 from open3d import visualization
 from open3d.utility import Vector3dVector
 # from .helpers_visualization import get_painted
@@ -56,6 +58,7 @@ KEYS_EXTRA = {
     "Redo": ["Y", ord("Y")],
     "Toggle all": ["A", ord("A")],
     "Toggle last": ["L", ord("L")],
+    "Toggle type": ["T", ord("T")],
     "Toggle click": ["LShift", 340],  # GLFW_KEY_LSHIFT = 340
 }
 
@@ -556,6 +559,7 @@ class ElementSelector:
         vis.register_key_action_callback(KEYS_EXTRA["Print Info"][1], self.print_info)
         vis.register_key_action_callback(KEYS_EXTRA["Toggle all"][1], self.toggle_all)
         vis.register_key_action_callback(KEYS_EXTRA["Toggle last"][1], self.toggle_last)
+        vis.register_key_action_callback(KEYS_EXTRA["Toggle type"][1], self.toggle_type)
 
         vis.register_key_action_callback(KEYS_EXTRA["Undo"][1], self.undo)
         vis.register_key_action_callback(KEYS_EXTRA["Redo"][1], self.redo)
@@ -787,19 +791,20 @@ class ElementSelector:
         print(f"{len(self._future_states)} future states (for redoing)")
         time.sleep(0.5)
 
+    def _toggle_indices(self, idx_or_slice):
+        selected = np.logical_or(self.selected, ~self._selectable)
+        selected[idx_or_slice] = not np.sum(selected[idx_or_slice]) == len(
+            selected[idx_or_slice]
+        )
+        self._selected = selected.tolist()
+        self.update_all(self._vis)
+
     def toggle_all(self, vis, action, mods):
         """Toggle the all elements between all selected/all unselected."""
         if not self.extra_functions or action == 1:
             return
 
-        selected = np.logical_or(self.selected, ~self._selectable)
-
-        value = not np.sum(selected) == len(self._elements)
-        self.selected = value
-        # for i in range(L):
-        # self.selected[i] = value
-
-        self.update_all(vis)
+        self._toggle_indices(slice(None))
 
     def toggle_last(self, vis, action, mods):
         """Toggle the elements from last output."""
@@ -810,13 +815,29 @@ class ElementSelector:
             return
 
         num_outputs = self._past_states[-1]["num_outputs"]
+        self._toggle_indices(slice(-num_outputs, None))
 
-        selected = np.logical_or(self.selected, ~self._selectable)
+    def toggle_type(self, vis, action, mods):
+        if not self.extra_functions or action == 1:
+            return
+        elements = self._elements
 
-        value = not np.sum(selected[-num_outputs:]) == num_outputs
-        self.selected[-num_outputs:] = [value] * num_outputs
+        types = set([t for elem in elements for t in elem.__class__.mro()])
+        types.discard(ABC)
+        types.discard(object)
+        types = list(types)
+        types_names = [type_.__name__ for type_ in types]
 
-        self.update_all(vis)
+        try:
+            (selected_type_name,) = get_inputs(
+                {"type": [types_names, types_names[0]]}, window_name="Select type"
+            )
+        except KeyboardInterrupt:
+            return
+
+        selected_type = types[types_names.index(selected_type_name)]
+        idx = np.where([isinstance(elem, selected_type) for elem in elements])[0]
+        self._toggle_indices(idx)
 
     def redo(self, vis, action, mods):
         if not self.extra_functions or action == 1 or len(self._future_states) == 0:
