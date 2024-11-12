@@ -268,18 +268,21 @@ class InteractiveWindow:
     def elements(self):
         return self._elements
 
-    def pop_element(self, idx):
-        self._selected.pop(idx)
-        self._elements_as_open3d.pop(idx)
-        return self._elements.pop(idx)
+    def remove_elements(self, indices):
+        for n, i in enumerate(indices):
+            del self._elements[i - n]
+            del self._elements_as_open3d[i - n]
+            del self._selected[i - n]
 
     def insert_element(self, idx, elem):
-        self._elements_as_open3d.insert(idx, self._get_open3d(elem))
         self._elements.insert(idx, elem)
+        self._elements_as_open3d.insert(idx, self._get_open3d(elem))
+        self._selected.insert(idx, False)
 
-    def append_elements(self, elems):
-        self._elements_as_open3d += [self._get_open3d(elem) for elem in elems]
+    def append_elements(self, elems, selected=False):
         self._elements += elems
+        self._elements_as_open3d += [self._get_open3d(elem) for elem in elems]
+        self._selected += [selected] * len(elems)
 
     @property
     def fixed_elements(self):
@@ -408,10 +411,6 @@ class InteractiveWindow:
         else:
             self._elements += new_elements
             self._selected += [False] * len(new_elements)
-
-    def remove_element(self, idx):
-        del self._elements[idx]
-        del self._selected[idx]
 
     def _save_state(self, indices, input_elements, num_outputs):
         """Save state for undoing."""
@@ -797,9 +796,7 @@ class InteractiveWindow:
 
         self._remove_all_visualiser_elements()
 
-        for n, i in enumerate(indices):
-            self._elements.pop(i - n)
-            self._elements_as_open3d.pop(i - n)
+        self.remove_elements(indices)
 
         self._elements += output_elements
         self._elements_as_open3d += [self._get_open3d(elem) for elem in output_elements]
@@ -877,24 +874,15 @@ class InteractiveWindow:
         self._remove_all_visualiser_elements()
 
         if num_elements == 0:
-            self._elements += self._hidden_elements
-            self._elements_as_open3d += [
-                self._get_open3d(elem) for elem in self._hidden_elements
-            ]
-
-            self._selected += [True] * len(self._hidden_elements)
+            self.append_elements(self._hidden_elements, selected=True)
             self._hidden_elements = []
 
         else:
             self._hidden_elements += [self._elements[i] for i in indices]
-
-            for n, i in enumerate(indices):
-                self.pop_element(i - n)
-
+            self.remove_elements(indices)
             self.selected = False
 
         self._future_states = []
-
         self._reset_visualiser_elements()
 
     def toggle_all(self, vis, action, mods):
@@ -992,8 +980,7 @@ class InteractiveWindow:
             "num_outputs": len(modified_elements),
         }
 
-        for n, i in enumerate(indices):
-            self.pop_element(i - n)
+        self.remove_elements(indices)
 
         self.append_elements(modified_elements)
         self._past_states.append(current_state)
