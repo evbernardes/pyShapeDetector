@@ -795,7 +795,7 @@ class InteractiveWindow:
         elif not isinstance(output_elements, list):
             output_elements = [output_elements]
 
-        self._remove_all_visualiser_elements(vis)
+        self._remove_all_visualiser_elements()
 
         for n, i in enumerate(indices):
             self._elements.pop(i - n)
@@ -822,7 +822,7 @@ class InteractiveWindow:
         self._future_states = []
         self.selected = False
 
-        self._reset_visualiser_elements(vis)
+        self._reset_visualiser_elements()
 
     def print_help(self, vis, action, mods):
         if not self.extra_functions or action == 1:
@@ -874,7 +874,7 @@ class InteractiveWindow:
         indices = self.selected_indices
         num_elements = len(indices)
 
-        self._remove_all_visualiser_elements(self._vis)
+        self._remove_all_visualiser_elements()
 
         if num_elements == 0:
             self._elements += self._hidden_elements
@@ -895,7 +895,7 @@ class InteractiveWindow:
 
         self._future_states = []
 
-        self._reset_visualiser_elements(self._vis)
+        self._reset_visualiser_elements()
 
     def toggle_all(self, vis, action, mods):
         """Toggle the all elements between all selected/all unselected."""
@@ -945,8 +945,8 @@ class InteractiveWindow:
             return
 
         self.paint_random = not self.paint_random
-        self._remove_all_visualiser_elements(self._vis)
-        self._reset_visualiser_elements(self._vis, reset_elements=True)
+        self._remove_all_visualiser_elements()
+        self._reset_visualiser_elements(reset_elements=True)
 
     def preferences(self, vis, action, mods):
         if action == 1:
@@ -970,14 +970,14 @@ class InteractiveWindow:
         if current_values != new_values:
             for name, value in new_values.items():
                 setattr(self, name, value)
-            self._remove_all_visualiser_elements(self._vis)
-            self._reset_visualiser_elements(self._vis, reset_elements=True)
+            self._remove_all_visualiser_elements()
+            self._reset_visualiser_elements(reset_elements=True)
 
     def redo(self, vis, action, mods):
         if not self.extra_functions or action == 1 or len(self._future_states) == 0:
             return
 
-        self._remove_all_visualiser_elements(vis)
+        self._remove_all_visualiser_elements()
 
         future_state = self._future_states.pop()
 
@@ -998,13 +998,13 @@ class InteractiveWindow:
         self.append_elements(modified_elements)
         self._past_states.append(current_state)
 
-        self._reset_visualiser_elements(vis)
+        self._reset_visualiser_elements()
 
     def undo(self, vis, action, mods):
         if not self.extra_functions or action == 1 or len(self._past_states) == 0:
             return
 
-        self._remove_all_visualiser_elements(vis)
+        self._remove_all_visualiser_elements()
 
         last_state = self._past_states.pop()
         indices = last_state["indices"]
@@ -1037,7 +1037,7 @@ class InteractiveWindow:
             }
         )
 
-        self._reset_visualiser_elements(vis)
+        self._reset_visualiser_elements()
 
     def on_mouse_move(self, vis, x, y):
         """Get mouse position."""
@@ -1061,7 +1061,8 @@ class InteractiveWindow:
             self.toggle(vis, 0, None)
         self.update(vis)
 
-    def _remove_all_visualiser_elements(self, vis):
+    def _remove_all_visualiser_elements(self):
+        vis = self._vis
         for elem in self.all_drawable_elements:
             if elem is not None:
                 try:
@@ -1070,10 +1071,11 @@ class InteractiveWindow:
                     pass
 
     def _reset_visualiser_elements(
-        self, vis, startup=False, reset_elements=False, reset_fixed=False
+        self, startup=False, reset_elements=False, reset_fixed=False
     ):
         """Prepare elements for visualization"""
 
+        vis = self._vis
         if not startup:
             self.i = min(self.i, len(self.elements) - 1)
 
@@ -1122,7 +1124,7 @@ class InteractiveWindow:
 
         # Set up the visualizer
         self._get_visualizer()
-        self._reset_visualiser_elements(self._vis, startup=True)
+        self._reset_visualiser_elements(startup=True)
 
         self._instructions = (
             # "**************************************************"
