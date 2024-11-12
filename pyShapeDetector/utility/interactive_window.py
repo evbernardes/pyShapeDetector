@@ -270,6 +270,7 @@ class InteractiveWindow:
         return self._elements
 
     def pop_element(self, idx):
+        self._selected.pop(idx)
         self._elements_as_open3d.pop(idx)
         return self._elements.pop(idx)
 
@@ -865,6 +866,7 @@ class InteractiveWindow:
             self._elements_as_open3d += [
                 self._get_open3d(elem) for elem in self._hidden_elements
             ]
+
             self._selected += [True] * len(self._hidden_elements)
             self._hidden_elements = []
 
@@ -872,10 +874,13 @@ class InteractiveWindow:
             self._hidden_elements += [self._elements[i] for i in indices]
 
             for n, i in enumerate(indices):
-                self._elements.pop(i - n)
-                self._elements_as_open3d.pop(i - n)
+                self.pop_element(i - n)
+
             self.selected = False
 
+        self._future_states = []
+
+        self.i = min(self.i, len(self._elements) - 1)
         self._reset_visualiser_elements(self._vis)
 
     def toggle_all(self, vis, action, mods):
@@ -978,7 +983,6 @@ class InteractiveWindow:
 
         self.append_elements(modified_elements)
         self._past_states.append(current_state)
-        self.selected = False
 
         self._reset_visualiser_elements(vis)
 
