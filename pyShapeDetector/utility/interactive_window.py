@@ -175,7 +175,6 @@ class InteractiveWindow:
         self._NUM_POINTS_FOR_DISTANCE_CALC = NUM_POINTS_FOR_DISTANCE_CALC
         self.camera_options = camera_options
 
-        # self.selected = self.pre_selected.copy()
         self._elements_distance = []
         self.i_old = 0
         self.i = 0
@@ -335,6 +334,18 @@ class InteractiveWindow:
     def all_drawable_elements(self):
         return self._fixed_elements + self._plane_boundaries + self._elements_drawable
         # return self._fixed_elements + self._elements_as_open3d + self._plane_boundaries
+
+    def _reset_selected(self, indices_true=[]):
+        """Reset boolean array of selected values to False, then revert some to True is asked."""
+        selected = [False] * len(self.elements)
+        for idx in indices_true:
+            try:
+                selected[idx] = True
+            except IndexError:
+                warnings.warn(
+                    "IndexError while setting indices, should be investigated..."
+                )
+        self._selected = selected
 
     def distances_to_point(self, screen_point, screen_vector):
         from pyShapeDetector.geometry import PointCloud
@@ -1018,10 +1029,7 @@ class InteractiveWindow:
         for i, elem in zip(indices, elements):
             self.insert_element(i, elem)
 
-        self.selected = False
-        for i in indices:
-            self._selected[i] = True
-
+        self._reset_selected(indices_true=indices)
         self._future_states.append(
             {
                 "modified_elements": modified_elements,
