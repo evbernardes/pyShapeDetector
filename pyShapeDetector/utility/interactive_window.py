@@ -58,12 +58,16 @@ KEYS_EXTRA = {
     # "Apply": ["Enter", 257],  # GLFW_KEY_ENTER = 257
     "Undo": ["Z", ord("Z")],
     "Redo": ["Y", ord("Y")],
-    # "Hide": ["H", ord("G")],
+    "Hide/Unhide": ["U", ord("U")],
     "Toggle all": ["A", ord("A")],
     "Toggle last": ["L", ord("L")],
     "Toggle type": ["T", ord("T")],
     "Toggle click": ["LShift", 340],  # GLFW_KEY_LSHIFT = 340
 }
+
+all_keys = [key[1] for key in KEYS_NORMAL.values()]
+all_keys += [key[1] for key in KEYS_EXTRA.values()]
+assert len(all_keys) == len(set(all_keys))
 
 
 def _unproject_screen_to_world(vis, x, y):
@@ -588,7 +592,7 @@ class InteractiveWindow:
         vis.register_key_action_callback(
             KEYS_EXTRA["Center current"][1], self.center_current
         )
-        vis.register_key_action_callback(KEYS_EXTRA["Hide"][1], self.hide)
+        vis.register_key_action_callback(KEYS_EXTRA["Hide/Unhide"][1], self.hide_unhide)
         vis.register_key_action_callback(KEYS_EXTRA["Toggle all"][1], self.toggle_all)
         vis.register_key_action_callback(KEYS_EXTRA["Toggle last"][1], self.toggle_last)
         vis.register_key_action_callback(KEYS_EXTRA["Toggle type"][1], self.toggle_type)
@@ -823,6 +827,7 @@ class InteractiveWindow:
         print(f"Current bbox: {self._bbox}")
         print(f"{len(self._elements)} current elements")
         print(f"{len(self._fixed_elements)} fixed elements")
+        print(f"{len(self._hidden_elements)} hidden elements")
         print(f"{len(self._past_states)} past states (for undoing)")
         print(f"{len(self._future_states)} future states (for redoing)")
         time.sleep(0.5)
@@ -845,14 +850,33 @@ class InteractiveWindow:
         self._selected = selected.tolist()
         self.update_all(self._vis)
 
-    def hide(self, vis, action, mods):
+    def hide_unhide(self, vis, action, mods):
         """Hide selected elements or unhide all hidden elements."""
         if not self.extra_functions or action == 1:
             return
 
         indices = self.selected_indices
-        if len(indices) == 0:
-            pass
+        num_elements = len(indices)
+
+        self._remove_all_visualiser_elements(self._vis)
+
+        if num_elements == 0:
+            self._elements += self._hidden_elements
+            self._elements_as_open3d += [
+                self._get_open3d(elem) for elem in self._hidden_elements
+            ]
+            self._selected += [True] * len(self._hidden_elements)
+            self._hidden_elements = []
+
+        else:
+            self._hidden_elements += [self._elements[i] for i in indices]
+
+            for n, i in enumerate(indices):
+                self._elements.pop(i - n)
+                self._elements_as_open3d.pop(i - n)
+            self.selected = False
+
+        self._reset_visualiser_elements(self._vis)
 
     def toggle_all(self, vis, action, mods):
         """Toggle the all elements between all selected/all unselected."""
@@ -1114,6 +1138,8 @@ class InteractiveWindow:
 
         try:
             self._vis.run()
+            # add hidden elements back to elements list
+            self._elements += self._hidden_elements
         except Exception as e:
             raise e
         finally:
