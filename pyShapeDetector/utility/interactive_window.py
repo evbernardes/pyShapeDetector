@@ -895,7 +895,6 @@ class InteractiveWindow:
 
         self._future_states = []
 
-        self.i = min(self.i, len(self._elements) - 1)
         self._reset_visualiser_elements(self._vis)
 
     def toggle_all(self, vis, action, mods):
@@ -1073,7 +1072,10 @@ class InteractiveWindow:
     def _reset_visualiser_elements(
         self, vis, startup=False, reset_elements=False, reset_fixed=False
     ):
-        # Prepare elements for visualization
+        """Prepare elements for visualization"""
+
+        if not startup:
+            self.i = min(self.i, len(self.elements) - 1)
 
         if startup or reset_fixed:
             self._fixed_elements = [
