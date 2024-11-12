@@ -471,6 +471,10 @@ class ElementSelector:
 
     def _get_open3d(self, elem):
         from pyShapeDetector.geometry import TriangleMesh
+        from open3d import geometry as open3d_geometry
+
+        if isinstance(elem, open3d_geometry):
+            return elem
 
         try:
             elem_new = elem.as_open3d
