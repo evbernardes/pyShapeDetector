@@ -471,9 +471,9 @@ class InteractiveWindow:
 
     def _get_open3d(self, elem):
         from pyShapeDetector.geometry import TriangleMesh
-        from open3d import geometry as open3d_geometry
+        from open3d.geometry import Geometry as Open3D_Geometry
 
-        if isinstance(elem, open3d_geometry):
+        if isinstance(elem, Open3D_Geometry):
             return elem
 
         try:
