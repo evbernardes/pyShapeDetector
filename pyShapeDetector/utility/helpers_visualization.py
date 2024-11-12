@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from multiprocessing import Manager, Process
 from open3d import visualization
-from .element_selector import ElementSelector
+from .interactive_window import InteractiveWindow
 from .input_selector import InputSelector
 
 
@@ -460,7 +460,7 @@ def select_manually(
     if pre_selected is None:
         pre_selected = [False] * len(elements)
 
-    element_selector = ElementSelector(**args)
+    element_selector = InteractiveWindow(**args)
     element_selector.add_elements(elements)
     element_selector.add_elements(fixed_elements, fixed=True)
     element_selector.selected = pre_selected
@@ -544,7 +544,7 @@ def apply_function_manually(
     if pre_selected is None:
         pre_selected = [False] * len(elements)
 
-    element_selector = ElementSelector(**args)
+    element_selector = InteractiveWindow(**args)
     element_selector.add_elements(elements)
     element_selector.functions = function
     element_selector.select_filter = select_filter

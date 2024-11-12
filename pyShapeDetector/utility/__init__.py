@@ -31,7 +31,7 @@ ask_and_save
 from .multidetector import MultiDetector
 from .primitivelimits import PrimitiveLimits
 from .detector_options import DetectorOptions
-from .element_selector import ElementSelector
+from .interactive_window import InteractiveWindow
 from .input_selector import InputSelector
 
 from .helpers_internal import (

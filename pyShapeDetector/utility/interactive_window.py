@@ -99,7 +99,7 @@ def _unproject_screen_to_world(vis, x, y):
     return point, normal_view_vector
 
 
-class ElementSelector:
+class InteractiveWindow:
     """
     Visualizer class used to manually select elements and apply functions to
     them.
