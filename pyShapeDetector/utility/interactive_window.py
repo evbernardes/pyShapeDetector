@@ -557,7 +557,11 @@ class InteractiveWindow:
                 elements_distance.append(PointCloud(pcd))
 
             elif PointCloud.is_instance_or_open3d(elem):
-                pcd = elem.uniform_down_sample(self._NUM_POINTS_FOR_DISTANCE_CALC)
+                if len(elem.points) > NUM_POINTS_FOR_DISTANCE_CALC:
+                    ratio = int(len(elem.points) / self._NUM_POINTS_FOR_DISTANCE_CALC)
+                    pcd = elem.uniform_down_sample(ratio)
+                else:
+                    pcd = elem
                 elements_distance.append(PointCloud(pcd))
 
             else:
