@@ -58,6 +58,7 @@ KEYS_EXTRA = {
     # "Apply": ["Enter", 257],  # GLFW_KEY_ENTER = 257
     "Undo": ["Z", ord("Z")],
     "Redo": ["Y", ord("Y")],
+    # "Hide": ["H", ord("G")],
     "Toggle all": ["A", ord("A")],
     "Toggle last": ["L", ord("L")],
     "Toggle type": ["T", ord("T")],
@@ -149,6 +150,7 @@ class InteractiveWindow:
         self._future_states = []
         self._elements = []
         self._elements_as_open3d = []
+        self._hidden_elements = []
         self._original_colors = []
         self._fixed_elements = []
         self._elements_drawable = []
@@ -280,6 +282,10 @@ class InteractiveWindow:
         return self._fixed_elements
 
     @property
+    def selected_indices(self):
+        return np.where(self.selected)[0].tolist()
+
+    @property
     def selected(self):
         return self._selected
 
@@ -390,6 +396,15 @@ class InteractiveWindow:
     def remove_element(self, idx):
         del self._elements[idx]
         del self._selected[idx]
+
+    def _save_state(self, indices, input_elements, num_outputs):
+        """Save state for undoing."""
+        current_state = {
+            "indices": copy.deepcopy(indices),
+            "elements": copy.deepcopy(input_elements),
+            "num_outputs": num_outputs,
+        }
+        self._past_states.append(current_state)
 
     def _check_and_initialize_inputs(self):
         from pyShapeDetector.geometry import PointCloud
@@ -573,6 +588,7 @@ class InteractiveWindow:
         vis.register_key_action_callback(
             KEYS_EXTRA["Center current"][1], self.center_current
         )
+        vis.register_key_action_callback(KEYS_EXTRA["Hide"][1], self.hide)
         vis.register_key_action_callback(KEYS_EXTRA["Toggle all"][1], self.toggle_all)
         vis.register_key_action_callback(KEYS_EXTRA["Toggle last"][1], self.toggle_last)
         vis.register_key_action_callback(KEYS_EXTRA["Toggle type"][1], self.toggle_type)
@@ -734,7 +750,7 @@ class InteractiveWindow:
         if not self.extra_functions or action == 1 or self.functions is None:
             return
 
-        indices = np.where(self._selected)[0].tolist()
+        indices = self.selected_indices
         self.print_debug(
             f"Applying {func.__name__} function to {len(indices)} elements, indices: "
         )
@@ -759,12 +775,6 @@ class InteractiveWindow:
         elif not isinstance(output_elements, list):
             output_elements = [output_elements]
 
-        current_state = {
-            "indices": copy.deepcopy(indices),
-            "elements": copy.deepcopy(input_elements),
-            "num_outputs": len(output_elements),
-        }
-
         self._remove_all_visualiser_elements(vis)
 
         for n, i in enumerate(indices):
@@ -788,7 +798,7 @@ class InteractiveWindow:
             )
             self.i = len(self._elements) - 1
 
-        self._past_states.append(current_state)
+        self._save_state(indices, input_elements, len(output_elements))
         self._future_states = []
         self.selected = False
 
@@ -834,6 +844,15 @@ class InteractiveWindow:
         )
         self._selected = selected.tolist()
         self.update_all(self._vis)
+
+    def hide(self, vis, action, mods):
+        """Hide selected elements or unhide all hidden elements."""
+        if not self.extra_functions or action == 1:
+            return
+
+        indices = self.selected_indices
+        if len(indices) == 0:
+            pass
 
     def toggle_all(self, vis, action, mods):
         """Toggle the all elements between all selected/all unselected."""
