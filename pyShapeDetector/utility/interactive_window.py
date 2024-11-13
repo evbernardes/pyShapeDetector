@@ -338,7 +338,7 @@ class InteractiveWindow:
             self._elements_as_open3d.insert(idx, elem_open3d)
 
             if to_vis:
-                self.add_geometry_to_vis(elem_open3d)
+                self.add_geometry_to_vis(elem_open3d, reset_bounding_box=False)
 
     @property
     def fixed_elements(self):
@@ -474,6 +474,7 @@ class InteractiveWindow:
             "indices": copy.deepcopy(indices),
             "elements": copy.deepcopy(input_elements),
             "num_outputs": num_outputs,
+            "current_index": self.i,
         }
         self._past_states.append(current_state)
 
@@ -857,6 +858,7 @@ class InteractiveWindow:
         i_old = self.i
         self.pop_elements(indices, from_vis=True)
         self.insert_elements(output_elements, to_vis=True)
+        self._save_state(indices, input_elements, len(output_elements))
 
         # self._elements += output_elements
         # self._elements_as_open3d += [self._get_open3d(elem) for elem in output_elements]
@@ -875,7 +877,7 @@ class InteractiveWindow:
             )
             self.i = len(self._elements) - 1
 
-        self._save_state(indices, input_elements, len(output_elements))
+        # self._save_state(indices, input_elements, len(output_elements))
         self._future_states = []
         # self.selected = False
 
@@ -899,8 +901,8 @@ class InteractiveWindow:
         print(f"Current selected: {self.is_current_selected}")
         print(f"Current bbox: {self._bbox}")
         print(f"{len(self._elements)} current elements")
-        print(f"{len(self._elements_as_open3d)} current elements open3d")
-        print(f"{len(self._elements_distance)} current elements distance")
+        self.print_debug(f"{len(self._elements_as_open3d)} current elements open3d")
+        self.print_debug(f"{len(self._elements_distance)} current elements distance")
         print(f"{len(self._fixed_elements)} fixed elements")
         print(f"{len(self._hidden_elements)} hidden elements")
         print(f"{len(self._past_states)} past states (for undoing)")
@@ -1033,15 +1035,16 @@ class InteractiveWindow:
 
         modified_elements = future_state["modified_elements"]
         indices = future_state["indices"]
-        self.i = future_state["current_index"]
 
         input_elements = [self._elements[i] for i in indices]
         current_state = {
             "indices": copy.deepcopy(indices),
             "elements": copy.deepcopy(input_elements),
             "num_outputs": len(modified_elements),
+            "current_index": self.i,
         }
 
+        self.i = future_state["current_index"]
         self.pop_elements(indices, from_vis=True)
         self.insert_elements(modified_elements, to_vis=True)
 
@@ -1060,38 +1063,12 @@ class InteractiveWindow:
         elements = last_state["elements"]
         num_outputs = last_state["num_outputs"]
 
-        # if self.i >= len(self._elements) - num_outputs:
-        #     # print("[INFO] Current idx in modified indices, getting last element")
-        #     self.i = indices[-1]
-        # else:
-        #     # print("[INFO] Current idx not modified indices")
-        #     self.i += len([i for i in indices if i < self.i])
-
-        i_old = self.i
-
         num_elems = len(self.elements)
         indices_to_pop = range(num_elems - num_outputs, num_elems)
         modified_elements = self.pop_elements(indices_to_pop, from_vis=False)
         self.insert_elements(elements, indices, selected=True, to_vis=False)
 
-        # if num_outputs > 0:
-        #     modified_elements = self._elements[-num_outputs:]
-        #     self._elements = self._elements[:-num_outputs]
-        #     self._elements_as_open3d = self._elements_as_open3d[:-num_outputs]
-        # else:
-        #     modified_elements = []
-
-        # for i, elem in zip(indices, elements):
-        #     self.insert_element(i, elem)
-
-        if i_old >= len(self._elements) - num_outputs:
-            # print("[INFO] Current idx in modified indices, getting last element")
-            self.i = indices[-1]
-        else:
-            # print("[INFO] Current idx not modified indices")
-            self.i += len([i for i in indices if i < i_old])
-
-        self._reset_selected(indices_true=indices)
+        # self._reset_selected(indices_true=indices)
         self._future_states.append(
             {
                 "modified_elements": modified_elements,
@@ -1099,7 +1076,7 @@ class InteractiveWindow:
                 "current_index": self.i,
             }
         )
-
+        self.i = last_state["current_index"]
         self._reset_visualiser_elements()
 
     def on_mouse_move(self, vis, x, y):
