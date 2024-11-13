@@ -268,21 +268,58 @@ class InteractiveWindow:
     def elements(self):
         return self._elements
 
-    def remove_elements(self, indices):
+    def add_geometry_to_vis(self, elem, reset_bounding_box=False):
+        self._vis.add_geometry(elem, reset_bounding_box=reset_bounding_box)
+
+    def remove_geometry_from_vis(self, elem, reset_bounding_box=False):
+        self._vis.remove_geometry(elem, reset_bounding_box=reset_bounding_box)
+
+    def remove_elements(self, indices, from_vis=False):
+        i_new = self.i
         for n, i in enumerate(indices):
+            if i_new > i:
+                i_new -= 1
             del self._elements[i - n]
-            del self._elements_as_open3d[i - n]
             del self._selected[i - n]
+            del self._elements_distance[i - n]
+            elem_open3d = self._elements_as_open3d.pop(i - n)
+            if from_vis:
+                self.remove_geometry_from_vis(elem_open3d)
+            del self._original_colors[i - n]
+
+        i_new = max(min(i_new, len(self._elements) - 1), 0)
+        self.update(i_new, update_old=self.i not in indices)
 
     def insert_element(self, idx, elem):
         self._elements.insert(idx, elem)
         self._elements_as_open3d.insert(idx, self._get_open3d(elem))
         self._selected.insert(idx, False)
 
-    def append_elements(self, elems, selected=False):
+    def append_elements(self, elems, selected=False, to_vis=False):
         self._elements += elems
-        self._elements_as_open3d += [self._get_open3d(elem) for elem in elems]
         self._selected += [selected] * len(elems)
+        self._elements_distance += self._get_element_distances(elems)
+        elements_as_open3d = [self._get_open3d(elem) for elem in elems]
+
+        self._original_colors += [
+            self._extract_element_colors(elem) for elem in elements_as_open3d
+        ]
+
+        if self.paint_selected:
+            if selected:
+                color = self.color_selected_current
+            else:
+                color = self.color_unselected_current
+
+            elements_as_open3d = [
+                self._get_painted(elem, color) for elem in elements_as_open3d
+            ]
+
+        self._elements_as_open3d += elements_as_open3d
+
+        if to_vis:
+            for elem_open3d in elements_as_open3d:
+                self.add_geometry_to_vis(elem_open3d)
 
     @property
     def fixed_elements(self):
@@ -335,8 +372,8 @@ class InteractiveWindow:
 
     @property
     def all_drawable_elements(self):
-        return self._fixed_elements + self._plane_boundaries + self._elements_drawable
-        # return self._fixed_elements + self._elements_as_open3d + self._plane_boundaries
+        # return self._fixed_elements + self._plane_boundaries + self._elements_drawable
+        return self._fixed_elements + self._plane_boundaries + self._elements_as_open3d
 
     def _reset_selected(self, indices_true=[]):
         """Reset boolean array of selected values to False, then revert some to True is asked."""
@@ -552,12 +589,12 @@ class InteractiveWindow:
 
         return get_painted(elements, color, multiplier=multiplier)
 
-    def _get_element_distances(self):
+    def _get_element_distances(self, elems):
         from pyShapeDetector.primitives import Primitive
         from pyShapeDetector.geometry import TriangleMesh, PointCloud
 
         elements_distance = []
-        for elem in self._elements:
+        for elem in elems:
             if isinstance(elem, Primitive):
                 elements_distance.append(elem)
 
@@ -577,7 +614,7 @@ class InteractiveWindow:
             else:
                 elements_distance.append(None)
 
-        self._elements_distance = elements_distance
+        return elements_distance
 
     def _get_visualizer(self):
         vis = visualization.VisualizerWithKeyCallback()
@@ -637,13 +674,13 @@ class InteractiveWindow:
         self._vis.close()
         sys.exit(0)
 
-    def update_all(self, vis):
+    def update_all(self):
         idx = min(self.i, len(self._elements) - 1)
         # value = not np.sum(self.selected) == (L := len(self.selected))
         for i in range(len(self._elements)):
             # self.selected[i] = value
-            self.update(vis, i)
-        self.update(vis, idx)
+            self.update(i)
+        self.update(idx)
 
     def _update_bounding_box(self):
         """Remove bounding box and get new one for current element."""
@@ -686,7 +723,8 @@ class InteractiveWindow:
 
     def _update_element(self, idx):
         vis = self._vis
-        element = self._elements_drawable[idx]
+        # element = self._elements_drawable[idx]
+        element = self._elements_as_open3d[idx]
         vis.remove_geometry(element, reset_bounding_box=False)
 
         is_selected = self._selected[idx] and self._selectable[idx]
@@ -700,10 +738,11 @@ class InteractiveWindow:
             highlight = self.color_highlight * (int(is_selected) + int(is_current))
             self._set_element_colors(element, input_color * (1 + highlight))
 
-        self._elements_drawable[idx] = element
+        # self._elements_drawable[idx] = element
+        self._elements_as_open3d[idx] = element
         vis.add_geometry(element, reset_bounding_box=False)
 
-    def update(self, vis, idx=None):
+    def update(self, idx=None, update_old=True):
         if idx is not None:
             self.i_old = self.i
             self.i = idx
@@ -716,7 +755,8 @@ class InteractiveWindow:
             idx = len(self._elements) - 1
 
         self._update_element(self.i)
-        self._update_element(self.i_old)
+        if update_old:
+            self._update_element(self.i_old)
         self._update_bounding_box()
 
     def toggle(self, vis, action, mods):
@@ -725,19 +765,19 @@ class InteractiveWindow:
             return
 
         self.is_current_selected = not self.is_current_selected
-        self.update(vis)
+        self.update()
 
     def next(self, vis, action, mods):
         """Highlight next element in list."""
         if action == 1:
             return
-        self.update(vis, min(self.i + 1, len(self._elements) - 1))
+        self.update(min(self.i + 1, len(self._elements) - 1))
 
     def previous(self, vis, action, mods):
         """Highlight previous element in list."""
         if action == 1:
             return
-        self.update(vis, max(self.i - 1, 0))
+        self.update(max(self.i - 1, 0))
 
     def finish_process(self, vis, action, mods):
         """Signal ending."""
@@ -839,6 +879,8 @@ class InteractiveWindow:
         print(f"Current selected: {self.is_current_selected}")
         print(f"Current bbox: {self._bbox}")
         print(f"{len(self._elements)} current elements")
+        print(f"{len(self._elements_as_open3d)} current elements open3d")
+        print(f"{len(self._elements_distance)} current elements distance")
         print(f"{len(self._fixed_elements)} fixed elements")
         print(f"{len(self._hidden_elements)} hidden elements")
         print(f"{len(self._past_states)} past states (for undoing)")
@@ -861,7 +903,7 @@ class InteractiveWindow:
             selected[idx_or_slice]
         )
         self._selected = selected.tolist()
-        self.update_all(self._vis)
+        self.update_all()
 
     def hide_unhide(self, vis, action, mods):
         """Hide selected elements or unhide all hidden elements."""
@@ -871,19 +913,19 @@ class InteractiveWindow:
         indices = self.selected_indices
         num_elements = len(indices)
 
-        self._remove_all_visualiser_elements()
+        # self._remove_all_visualiser_elements()
 
         if num_elements == 0:
-            self.append_elements(self._hidden_elements, selected=True)
+            self.append_elements(self._hidden_elements, selected=True, to_vis=True)
             self._hidden_elements = []
 
         else:
             self._hidden_elements += [self._elements[i] for i in indices]
-            self.remove_elements(indices)
+            self.remove_elements(indices, from_vis=True)
             self.selected = False
 
         self._future_states = []
-        self._reset_visualiser_elements()
+        # self._reset_visualiser_elements()
 
     def toggle_all(self, vis, action, mods):
         """Toggle the all elements between all selected/all unselected."""
@@ -1046,14 +1088,13 @@ class InteractiveWindow:
         self.i = np.argmin(distances)
         if self.mouse_toggle:
             self.toggle(vis, 0, None)
-        self.update(vis)
+        self.update()
 
     def _remove_all_visualiser_elements(self):
-        vis = self._vis
         for elem in self.all_drawable_elements:
             if elem is not None:
                 try:
-                    vis.remove_geometry(elem, reset_bounding_box=False)
+                    self.remove_geometry_from_vis(elem, reset_bounding_box=False)
                 except Exception:
                     pass
 
@@ -1083,7 +1124,7 @@ class InteractiveWindow:
 
         self._get_plane_boundaries()
         self._get_drawable_elements()
-        self._get_element_distances()
+        self._elements_distance = self._get_element_distances(self.elements)
 
         if self.select_filter is None:
             self._selectable = [True] * len(self.elements)
@@ -1093,12 +1134,12 @@ class InteractiveWindow:
 
         for elem in self.all_drawable_elements:
             if elem is not None:
-                vis.add_geometry(elem, reset_bounding_box=startup)
+                self.add_geometry_to_vis(elem, reset_bounding_box=startup)
 
         self._update_bounding_box()
 
         # if not startup:
-        self.update_all(vis)
+        self.update_all()
 
     def run(self, print_instructions=True):
         self.print_debug("Starting ElementSelector instance.")
