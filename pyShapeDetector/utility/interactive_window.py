@@ -274,13 +274,16 @@ class InteractiveWindow:
     def remove_geometry_from_vis(self, elem, reset_bounding_box=False):
         self._vis.remove_geometry(elem, reset_bounding_box=reset_bounding_box)
 
-    def remove_elements(self, indices, from_vis=False):
+    def pop_elements(self, indices, from_vis=False):
+        update_old = self.i in indices
         i_new = self.i
+        elements_popped = []
         for n, i in enumerate(indices):
             if i_new > i:
                 i_new -= 1
-            del self._elements[i - n]
+            elements_popped.append(self._elements.pop(i - n))
             del self._selected[i - n]
+            del self._selectable[i - n]
             del self._elements_distance[i - n]
             elem_open3d = self._elements_as_open3d.pop(i - n)
             if from_vis:
@@ -288,37 +291,53 @@ class InteractiveWindow:
             del self._original_colors[i - n]
 
         i_new = max(min(i_new, len(self._elements) - 1), 0)
-        self.update(i_new, update_old=self.i not in indices)
+        self.update(i_new, update_old=update_old)
+        return elements_popped
 
-    def insert_element(self, idx, elem):
-        self._elements.insert(idx, elem)
-        self._elements_as_open3d.insert(idx, self._get_open3d(elem))
-        self._selected.insert(idx, False)
+    # def insert_element(self, idx, elem):
+    #     self._elements.insert(idx, elem)
+    #     self._elements_as_open3d.insert(idx, self._get_open3d(elem))
+    #     self._selected.insert(idx, False)
 
-    def append_elements(self, elems, selected=False, to_vis=False):
-        self._elements += elems
-        self._selected += [selected] * len(elems)
-        self._elements_distance += self._get_element_distances(elems)
+    def insert_elements(self, elems, indices=None, selected=False, to_vis=False):
+        if indices is None:
+            indices = range(len(self.elements), len(self.elements) + len(elems))
+
         elements_as_open3d = [self._get_open3d(elem) for elem in elems]
 
         self._original_colors += [
             self._extract_element_colors(elem) for elem in elements_as_open3d
         ]
 
-        if self.paint_selected:
-            if selected:
-                color = self.color_selected_current
+        # if self.paint_selected:
+        #     color = self._colors_selected_current[selected, False]
+        #     for i, elem in enumerate(elements_as_open3d):
+        #         elements_as_open3d[i] = self._get_painted(elem, color)
+
+        # self._elements += elems
+        # self._selected += [selected] * len(elems)
+        # self._elements_distance += self._get_element_distances(elems)
+        # self._elements_as_open3d += elements_as_open3d
+
+        for i, idx in enumerate(indices):
+            self._elements.insert(idx, elems[i])
+            self._selected.insert(idx, selected)
+            if self.select_filter is None:
+                self._selectable.insert(idx, True)
             else:
-                color = self.color_unselected_current
+                self._selectable.insert(idx, self.select_filter(elems[i]))
+            self._elements_distance.insert(
+                idx, self._get_element_distances([elems[i]])[0]
+            )
 
-            elements_as_open3d = [
-                self._get_painted(elem, color) for elem in elements_as_open3d
-            ]
+            elem_open3d = elements_as_open3d[i]
+            if self.paint_selected:
+                color = self._colors_selected_current[selected, self.i == idx]
+                elements_as_open3d[i] = self._get_painted(elem_open3d, color)
 
-        self._elements_as_open3d += elements_as_open3d
+            self._elements_as_open3d.insert(idx, elem_open3d)
 
-        if to_vis:
-            for elem_open3d in elements_as_open3d:
+            if to_vis:
                 self.add_geometry_to_vis(elem_open3d)
 
     @property
@@ -351,7 +370,7 @@ class InteractiveWindow:
         if self._selectable is not None and len(self._selectable) == len(
             selected_values
         ):
-            for i in np.where(~self._selectable)[0]:
+            for i in np.where(~np.asarray(self._selectable))[0]:
                 selected_values[i] = False
 
         self._selected = copy.deepcopy(selected_values)
@@ -835,23 +854,23 @@ class InteractiveWindow:
             output_elements = [output_elements]
 
         # self._remove_all_visualiser_elements()
-
-        self.remove_elements(indices, from_vis=True)
-        self.append_elements(output_elements, to_vis=True)
+        i_old = self.i
+        self.pop_elements(indices, from_vis=True)
+        self.insert_elements(output_elements, to_vis=True)
 
         # self._elements += output_elements
         # self._elements_as_open3d += [self._get_open3d(elem) for elem in output_elements]
 
-        if self.i in indices:
+        if i_old in indices:
             # print("[INFO] Current idx in modified indices, getting last element")
             self.i = max(indices[0] - 1, 0)
         else:
             # print("[INFO] Current idx not modified indices")
-            self.i -= len([i for i in indices if i <= self.i])
+            self.i -= len([i for i in indices if i <= i_old])
 
-        if self.i >= len(self._elements):
+        if i_old >= len(self._elements):
             warnings.warn(
-                f"Index error, tried accessing {self.i} out of "
+                f"Index error, tried accessing {i_old} out of "
                 f"{len(self._elements)} elements. Getting last one."
             )
             self.i = len(self._elements) - 1
@@ -899,7 +918,7 @@ class InteractiveWindow:
         ctr.set_zoom(0.1)  # Adjust zoom level if necessary
 
     def _toggle_indices(self, idx_or_slice):
-        selected = np.logical_or(self.selected, ~self._selectable)
+        selected = np.logical_or(self.selected, ~np.asarray(self._selectable))
         selected[idx_or_slice] = not np.sum(selected[idx_or_slice]) == len(
             selected[idx_or_slice]
         )
@@ -917,12 +936,12 @@ class InteractiveWindow:
         # self._remove_all_visualiser_elements()
 
         if num_elements == 0:
-            self.append_elements(self._hidden_elements, selected=True, to_vis=True)
+            self.insert_elements(self._hidden_elements, selected=True, to_vis=True)
             self._hidden_elements = []
 
         else:
             self._hidden_elements += [self._elements[i] for i in indices]
-            self.remove_elements(indices, from_vis=True)
+            self.pop_elements(indices, from_vis=True)
             self.selected = False
 
         self._future_states = []
@@ -1008,7 +1027,7 @@ class InteractiveWindow:
         if not self.extra_functions or action == 1 or len(self._future_states) == 0:
             return
 
-        self._remove_all_visualiser_elements()
+        # self._remove_all_visualiser_elements()
 
         future_state = self._future_states.pop()
 
@@ -1023,12 +1042,12 @@ class InteractiveWindow:
             "num_outputs": len(modified_elements),
         }
 
-        self.remove_elements(indices)
+        self.pop_elements(indices, from_vis=True)
+        self.insert_elements(modified_elements, to_vis=True)
 
-        self.append_elements(modified_elements)
         self._past_states.append(current_state)
 
-        self._reset_visualiser_elements()
+        # self._reset_visualiser_elements()
 
     def undo(self, vis, action, mods):
         if not self.extra_functions or action == 1 or len(self._past_states) == 0:
@@ -1041,22 +1060,36 @@ class InteractiveWindow:
         elements = last_state["elements"]
         num_outputs = last_state["num_outputs"]
 
-        if self.i >= len(self._elements) - num_outputs:
+        # if self.i >= len(self._elements) - num_outputs:
+        #     # print("[INFO] Current idx in modified indices, getting last element")
+        #     self.i = indices[-1]
+        # else:
+        #     # print("[INFO] Current idx not modified indices")
+        #     self.i += len([i for i in indices if i < self.i])
+
+        i_old = self.i
+
+        num_elems = len(self.elements)
+        indices_to_pop = range(num_elems - num_outputs, num_elems)
+        modified_elements = self.pop_elements(indices_to_pop, from_vis=False)
+        self.insert_elements(elements, indices, selected=True, to_vis=False)
+
+        # if num_outputs > 0:
+        #     modified_elements = self._elements[-num_outputs:]
+        #     self._elements = self._elements[:-num_outputs]
+        #     self._elements_as_open3d = self._elements_as_open3d[:-num_outputs]
+        # else:
+        #     modified_elements = []
+
+        # for i, elem in zip(indices, elements):
+        #     self.insert_element(i, elem)
+
+        if i_old >= len(self._elements) - num_outputs:
             # print("[INFO] Current idx in modified indices, getting last element")
             self.i = indices[-1]
         else:
             # print("[INFO] Current idx not modified indices")
-            self.i += len([i for i in indices if i < self.i])
-
-        if num_outputs > 0:
-            modified_elements = self._elements[-num_outputs:]
-            self._elements = self._elements[:-num_outputs]
-            self._elements_as_open3d = self._elements_as_open3d[:-num_outputs]
-        else:
-            modified_elements = []
-
-        for i, elem in zip(indices, elements):
-            self.insert_element(i, elem)
+            self.i += len([i for i in indices if i < i_old])
 
         self._reset_selected(indices_true=indices)
         self._future_states.append(
@@ -1131,7 +1164,7 @@ class InteractiveWindow:
             self._selectable = [True] * len(self.elements)
         else:
             self._selectable = [self.select_filter(elem) for elem in self.elements]
-        self._selectable = np.asarray(self._selectable)
+        # self._selectable = np.asarray(self._selectable)
 
         for elem in self.all_drawable_elements:
             if elem is not None:
