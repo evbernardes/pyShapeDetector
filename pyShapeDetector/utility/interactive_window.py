@@ -834,12 +834,13 @@ class InteractiveWindow:
         elif not isinstance(output_elements, list):
             output_elements = [output_elements]
 
-        self._remove_all_visualiser_elements()
+        # self._remove_all_visualiser_elements()
 
-        self.remove_elements(indices)
+        self.remove_elements(indices, from_vis=True)
+        self.append_elements(output_elements, to_vis=True)
 
-        self._elements += output_elements
-        self._elements_as_open3d += [self._get_open3d(elem) for elem in output_elements]
+        # self._elements += output_elements
+        # self._elements_as_open3d += [self._get_open3d(elem) for elem in output_elements]
 
         if self.i in indices:
             # print("[INFO] Current idx in modified indices, getting last element")
@@ -857,9 +858,9 @@ class InteractiveWindow:
 
         self._save_state(indices, input_elements, len(output_elements))
         self._future_states = []
-        self.selected = False
+        # self.selected = False
 
-        self._reset_visualiser_elements()
+        # self._reset_visualiser_elements()
 
     def print_help(self, vis, action, mods):
         if not self.extra_functions or action == 1:
