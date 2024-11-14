@@ -161,7 +161,6 @@ class InteractiveWindow:
         self._fixed_elements = []
         self._elements_drawable = []
         self._selected = []
-        self._selectable = []
         self._bbox = None
         self._functions = None
         self._select_filter = lambda x: True
@@ -270,11 +269,24 @@ class InteractiveWindow:
     def elements(self):
         return self._elements_original
 
+    @property
+    def current_element(self):
+        return self.elements[self.i]
+
+    @property
+    def is_current_selected(self):
+        return self.selected[self.i]
+
+    @is_current_selected.setter
+    def is_current_selected(self, boolean_value):
+        if not isinstance(boolean_value, bool):
+            raise RuntimeError(f"Expected boolean, got {type(boolean_value)}.")
+        self.selected[self.i] = boolean_value
+
     # def _get_element_dict(self, elem_original, selected=False, idx=None):
     #     elem = {
     #         "original": elem_original,
     #         "selected": selected,
-    #         "selectable": self.select_filter(elem_original),
     #         "drawable": self._get_open3d(elem_original),
     #         "color": self._extract_element_colors(elem_original),
     #         "distance_checker": self._get_element_distances([elem_original])[0],
@@ -304,7 +316,6 @@ class InteractiveWindow:
             #     idx_new -= 1
             elements_popped.append(self._elements_original.pop(i - n))
             del self._selected[i - n]
-            del self._selectable[i - n]
             del self._elements_distance[i - n]
             elem_open3d = self._elements_as_open3d.pop(i - n)
             if from_vis:
@@ -337,7 +348,6 @@ class InteractiveWindow:
             self._elements_original.insert(idx, elems[i])
             self._original_colors.insert(idx, _original_colors[i])
             self._selected.insert(idx, selected)
-            self._selectable.insert(idx, self.select_filter(elems[i]))
             self._elements_distance.insert(
                 idx, self._get_element_distances([elems[i]])[0]
             )
@@ -368,41 +378,26 @@ class InteractiveWindow:
         return self._selected
 
     @selected.setter
-    def selected(self, selected_values):
-        if isinstance(selected_values, bool):
-            selected_values = [selected_values] * len(self._elements_original)
-        elif len(selected_values) != len(self.elements):
+    def selected(self, values):
+        if isinstance(values, bool):
+            values = [values] * len(self.elements)
+
+        elif len(values) != len(self.elements):
             raise ValueError(
                 "Length of input expected to be the same as the "
                 f"current number of elements ({len(self.elements)}), "
-                f"got {len(selected_values)}."
+                f"got {len(values)}."
             )
 
-        for value in selected_values:
+        values = copy.deepcopy(values)
+
+        for i, value in enumerate(values):
             if not isinstance(value, (bool, np.bool_)):
                 raise ValueError(f"Expected boolean, got {type(value)}")
 
-        if self._selectable is not None and len(self._selectable) == len(
-            selected_values
-        ):
-            for i in np.where(~np.asarray(self._selectable))[0]:
-                selected_values[i] = False
+            values[i] = value and self._select_filter(self.elements[i])
 
-        self._selected = copy.deepcopy(selected_values)
-
-    @property
-    def current_element(self):
-        return self.elements[self.i]
-
-    @property
-    def is_current_selected(self):
-        return self.selected[self.i]
-
-    @is_current_selected.setter
-    def is_current_selected(self, boolean_value):
-        if not isinstance(boolean_value, bool):
-            raise RuntimeError()
-        self.selected[self.i] = boolean_value
+        self._selected = values
 
     @property
     def all_drawable_elements(self):
@@ -771,8 +766,10 @@ class InteractiveWindow:
         if update_vis:
             self._remove_geometry_from_vis(self._elements_as_open3d[idx])
 
+        elem = self.elements[idx]
         element_open3d = self._elements_as_open3d[idx]
-        is_selected = self._selected[idx] and self._selectable[idx]
+
+        is_selected = self._selected[idx] and self._select_filter(elem)
         is_current = idx == self.i
         if self.paint_selected and is_selected:
             color = self._colors_selected_current[is_selected, is_current]
@@ -827,7 +824,9 @@ class InteractiveWindow:
     def _toggle_indices(self, indices_or_slice):
         indices = self._get_range(indices_or_slice)
 
-        selected = np.logical_or(self.selected, ~np.asarray(self._selectable))
+        selectable = [self._select_filter(elem) for elem in self.elements]
+
+        selected = np.logical_or(self.selected, ~np.asarray(selectable))
         selected[indices] = not np.sum(selected[indices]) == len(selected[indices])
         self._selected = selected.tolist()
         self._update_indices(indices)
@@ -837,7 +836,7 @@ class InteractiveWindow:
     ###########################################################################
     def _cb_toggle(self, vis, action, mods):
         """Toggle the current highlighted element between selected/unselected."""
-        if action == 1 or not self._selectable[self.i]:
+        if action == 1 or not self._select_filter(self.current_element):
             return
 
         self.is_current_selected = not self.is_current_selected
@@ -1158,9 +1157,6 @@ class InteractiveWindow:
         # self._get_plane_boundaries()
         self._get_drawable_elements()
         self._elements_distance = self._get_element_distances(self.elements)
-
-        self._selectable = [self.select_filter(elem) for elem in self.elements]
-        # self._selectable = np.asarray(self._selectable)
 
         for elem in self.all_drawable_elements:
             if elem is not None:
