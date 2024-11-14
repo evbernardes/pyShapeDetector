@@ -802,7 +802,7 @@ class InteractiveWindow:
         self._update_bounding_box()
 
     def _update_indices(self, indices=None):
-        if indices is None:
+        if indices is None or indices == slice(None):
             # if indices are not given, update everything
             indices = range(len(self._elements_original))
 
