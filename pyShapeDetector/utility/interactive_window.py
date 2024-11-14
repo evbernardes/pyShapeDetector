@@ -289,10 +289,10 @@ class InteractiveWindow:
 
     #         elem["drawable"] = self._get_painted(elem["drawable"], color)
 
-    def add_geometry_to_vis(self, elem, reset_bounding_box=False):
+    def _add_geometry_to_vis(self, elem, reset_bounding_box=False):
         self._vis.add_geometry(elem, reset_bounding_box=reset_bounding_box)
 
-    def remove_geometry_from_vis(self, elem, reset_bounding_box=False):
+    def _remove_geometry_from_vis(self, elem, reset_bounding_box=False):
         self._vis.remove_geometry(elem, reset_bounding_box=reset_bounding_box)
 
     def pop_elements(self, indices, from_vis=False):
@@ -308,7 +308,7 @@ class InteractiveWindow:
             del self._elements_distance[i - n]
             elem_open3d = self._elements_as_open3d.pop(i - n)
             if from_vis:
-                self.remove_geometry_from_vis(elem_open3d)
+                self._remove_geometry_from_vis(elem_open3d)
             del self._original_colors[i - n]
 
         idx_new = self.i - sum([idx < self.i for idx in indices])
@@ -347,7 +347,7 @@ class InteractiveWindow:
         for idx in indices:
             self._update_element_color(idx)
             if to_vis:
-                self.add_geometry_to_vis(self._elements_as_open3d[idx])
+                self._add_geometry_to_vis(self._elements_as_open3d[idx])
 
         # self.i += sum([idx <= self.i for idx in indices])
         idx_new = max(min(idx_new, len(self._elements_original) - 1), 0)
@@ -552,27 +552,6 @@ class InteractiveWindow:
         else:
             self._elements_drawable = copy.copy(self._elements_as_open3d)
 
-    def _reset_get_plane_boundaries(self):
-        for plane in self._plane_boundaries:
-            self.remove_geometry_from_vis(plane)
-
-        plane_boundaries = []
-        for element in self._elements_original:
-            try:
-                lineset = element.vertices_LineSet.as_open3d
-                if hasattr(element, "holes"):
-                    for hole in element.holes:
-                        lineset += hole.vertices_LineSet.as_open3d
-            except AttributeError:
-                continue
-            lineset.paint_uniform_color((0, 0, 0))
-            plane_boundaries.append(lineset)
-
-        self._plane_boundaries = plane_boundaries
-
-        for plane in self._plane_boundaries:
-            self.add_geometry_to_vis(plane)
-
     def _get_open3d(self, elem):
         from pyShapeDetector.geometry import TriangleMesh
         from open3d.geometry import Geometry as Open3D_Geometry
@@ -711,13 +690,26 @@ class InteractiveWindow:
         self._vis.close()
         sys.exit(0)
 
-    def update_all(self):
-        idx = min(self.i, len(self._elements_original) - 1)
-        # value = not np.sum(self.selected) == (L := len(self.selected))
-        for i in range(len(self._elements_original)):
-            # self.selected[i] = value
-            self.update(i, update_old=False)
-        self.update(idx, update_old=False)
+    def _update_get_plane_boundaries(self):
+        for plane in self._plane_boundaries:
+            self._remove_geometry_from_vis(plane)
+
+        plane_boundaries = []
+        for element in self._elements_original:
+            try:
+                lineset = element.vertices_LineSet.as_open3d
+                if hasattr(element, "holes"):
+                    for hole in element.holes:
+                        lineset += hole.vertices_LineSet.as_open3d
+            except AttributeError:
+                continue
+            lineset.paint_uniform_color((0, 0, 0))
+            plane_boundaries.append(lineset)
+
+        self._plane_boundaries = plane_boundaries
+
+        for plane in self._plane_boundaries:
+            self._add_geometry_to_vis(plane)
 
     def _update_bounding_box(self):
         """Remove bounding box and get new one for current element."""
@@ -732,7 +724,7 @@ class InteractiveWindow:
             return
 
         if self._bbox is not None:
-            vis.remove_geometry(self._bbox, reset_bounding_box=False)
+            self._remove_geometry_from_vis(self._bbox)
 
         element = self.current_element
 
@@ -756,7 +748,7 @@ class InteractiveWindow:
         self._bbox = bbox.as_open3d
 
         if self._bbox is not None:
-            vis.add_geometry(self._bbox, reset_bounding_box=False)
+            self._add_geometry_to_vis(self._bbox)
 
     def _update_element_color(self, idx):
         element_open3d = self._elements_as_open3d[idx]
@@ -772,9 +764,17 @@ class InteractiveWindow:
         self._elements_as_open3d[idx] = element_open3d
 
     def _update_element(self, idx):
-        self.remove_geometry_from_vis(self._elements_as_open3d[idx])
+        self._remove_geometry_from_vis(self._elements_as_open3d[idx])
         self._update_element_color(idx)
-        self.add_geometry_to_vis(self._elements_as_open3d[idx])
+        self._add_geometry_to_vis(self._elements_as_open3d[idx])
+
+    def _update_all(self):
+        idx = min(self.i, len(self._elements_original) - 1)
+        # value = not np.sum(self.selected) == (L := len(self.selected))
+        for i in range(len(self._elements_original)):
+            # self.selected[i] = value
+            self.update(i, update_old=False)
+        self.update(idx, update_old=False)
 
     def update(self, idx=None, update_old=True):
         if idx is not None:
@@ -875,7 +875,7 @@ class InteractiveWindow:
         self.insert_elements(output_elements, to_vis=True)
 
         self._future_states = []
-        self._reset_get_plane_boundaries()
+        self._update_get_plane_boundaries()
 
     def print_help(self, vis, action, mods):
         if not self.extra_functions or action == 1:
@@ -919,7 +919,7 @@ class InteractiveWindow:
             selected[idx_or_slice]
         )
         self._selected = selected.tolist()
-        self.update_all()
+        self._update_all()
 
     def hide_unhide(self, vis, action, mods):
         """Hide selected elements or unhide all hidden elements."""
@@ -1039,7 +1039,7 @@ class InteractiveWindow:
 
         self._past_states.append(current_state)
         self.update(len(self._elements) - 1)
-        self._reset_get_plane_boundaries()
+        self._update_get_plane_boundaries()
 
     def undo(self, vis, action, mods):
         if not self.extra_functions or action == 1 or len(self._past_states) == 0:
@@ -1064,7 +1064,7 @@ class InteractiveWindow:
         )
 
         self.update(indices[-1])
-        self._reset_get_plane_boundaries()
+        self._update_get_plane_boundaries()
 
     def on_mouse_move(self, vis, x, y):
         """Get mouse position."""
@@ -1092,7 +1092,7 @@ class InteractiveWindow:
         for elem in self.all_drawable_elements:
             if elem is not None:
                 try:
-                    self.remove_geometry_from_vis(elem, reset_bounding_box=False)
+                    self._remove_geometry_from_vis(elem, reset_bounding_box=False)
                 except Exception:
                     pass
 
@@ -1129,13 +1129,13 @@ class InteractiveWindow:
 
         for elem in self.all_drawable_elements:
             if elem is not None:
-                self.add_geometry_to_vis(elem, reset_bounding_box=startup)
-        self._reset_get_plane_boundaries()
+                self._add_geometry_to_vis(elem, reset_bounding_box=startup)
+        self._update_get_plane_boundaries()
 
         self._update_bounding_box()
 
         # if not startup:
-        self.update_all()
+        self._update_all()
 
     def run(self, print_instructions=True):
         self.print_debug("Starting ElementSelector instance.")
