@@ -315,7 +315,7 @@ class InteractiveWindow:
         self.print_debug(f"popped: {indices}")
         self.print_debug(f"old index: {self.i}, new index: {idx_new}")
         idx_new = max(min(idx_new, len(self._elements_original) - 1), 0)
-        self.update(idx_new, update_old=False)
+        self._update_current_pointer(idx_new, update_old=False)
         return elements_popped
 
     def insert_elements(self, elems, indices=None, selected=False, to_vis=False):
@@ -341,17 +341,17 @@ class InteractiveWindow:
                 idx, self._get_element_distances([elems[i]])[0]
             )
 
-            # elem_open3d = self._update_element_color(elements_as_open3d[i], i)
             self._elements_as_open3d.insert(idx, elements_as_open3d[i])
 
         for idx in indices:
-            self._update_element_color(idx)
+            # Updating vis explicitly in order not to remove it
+            self._update_element(idx, update_vis=False)
             if to_vis:
                 self._add_geometry_to_vis(self._elements_as_open3d[idx])
 
         # self.i += sum([idx <= self.i for idx in indices])
         idx_new = max(min(idx_new, len(self._elements_original) - 1), 0)
-        self.update(idx_new, update_old=True)
+        self._update_current_pointer(idx_new, update_old=True)
 
     @property
     def fixed_elements(self):
@@ -639,40 +639,55 @@ class InteractiveWindow:
         signal.signal(signal.SIGINT, self._signal_handler)
 
         # Normal keys
-        vis.register_key_action_callback(KEYS_NORMAL["Toggle"][1], self.toggle)
-        vis.register_key_action_callback(KEYS_NORMAL["Next"][1], self.next)
-        vis.register_key_action_callback(KEYS_NORMAL["Previous"][1], self.previous)
-        vis.register_key_action_callback(KEYS_NORMAL["Finish"][1], self.finish_process)
+        vis.register_key_action_callback(KEYS_NORMAL["Toggle"][1], self._cb_toggle)
+        vis.register_key_action_callback(KEYS_NORMAL["Next"][1], self._cb_next)
+        vis.register_key_action_callback(KEYS_NORMAL["Previous"][1], self._cb_previous)
         vis.register_key_action_callback(
-            KEYS_NORMAL["Preferences"][1], self.preferences
+            KEYS_NORMAL["Finish"][1], self._cb_finish_process
         )
         vis.register_key_action_callback(
-            KEYS_NORMAL["Color mode"][1], self.set_color_mode
+            KEYS_NORMAL["Preferences"][1], self._cb_set_preferences
         )
-        vis.register_key_action_callback(EXTRA_KEY[1], self.switch_extra)
         vis.register_key_action_callback(
-            KEYS_EXTRA["Toggle click"][1], self.switch_mouse_toggle
+            KEYS_NORMAL["Color mode"][1], self._cb_set_color_mode
+        )
+        vis.register_key_action_callback(EXTRA_KEY[1], self._cb_switch_extra)
+
+        vis.register_key_action_callback(
+            KEYS_EXTRA["Toggle click"][1], self._cb_switch_mouse_toggle
         )
 
         # Extra (LCtrl) keys
-        vis.register_key_action_callback(KEYS_EXTRA["Print Help"][1], self.print_help)
-        vis.register_key_action_callback(KEYS_EXTRA["Print Info"][1], self.print_info)
         vis.register_key_action_callback(
-            KEYS_EXTRA["Center current"][1], self.center_current
+            KEYS_EXTRA["Print Help"][1], self._cb_print_help
         )
-        vis.register_key_action_callback(KEYS_EXTRA["Hide/Unhide"][1], self.hide_unhide)
-        vis.register_key_action_callback(KEYS_EXTRA["Toggle all"][1], self.toggle_all)
-        vis.register_key_action_callback(KEYS_EXTRA["Toggle last"][1], self.toggle_last)
-        vis.register_key_action_callback(KEYS_EXTRA["Toggle type"][1], self.toggle_type)
+        vis.register_key_action_callback(
+            KEYS_EXTRA["Print Info"][1], self._cb_print_info
+        )
+        vis.register_key_action_callback(
+            KEYS_EXTRA["Center current"][1], self._cb_center_current
+        )
+        vis.register_key_action_callback(
+            KEYS_EXTRA["Hide/Unhide"][1], self._cb_hide_unhide
+        )
+        vis.register_key_action_callback(
+            KEYS_EXTRA["Toggle all"][1], self._cb_toggle_all
+        )
+        vis.register_key_action_callback(
+            KEYS_EXTRA["Toggle last"][1], self._cb_toggle_last
+        )
+        vis.register_key_action_callback(
+            KEYS_EXTRA["Toggle type"][1], self._cb_toggle_type
+        )
 
-        vis.register_key_action_callback(KEYS_EXTRA["Undo"][1], self.undo)
-        vis.register_key_action_callback(KEYS_EXTRA["Redo"][1], self.redo)
+        vis.register_key_action_callback(KEYS_EXTRA["Undo"][1], self._cb_undo)
+        vis.register_key_action_callback(KEYS_EXTRA["Redo"][1], self._cb_redo)
 
         # Extra keys for functions
         for key, f in self.function_key_mappings.items():
             vis.register_key_action_callback(
                 key,
-                lambda vis, action, mods, func=f: self.apply_function(
+                lambda vis, action, mods, func=f: self._cb_apply_function(
                     func, vis, action, mods
                 ),
             )
@@ -750,7 +765,10 @@ class InteractiveWindow:
         if self._bbox is not None:
             self._add_geometry_to_vis(self._bbox)
 
-    def _update_element_color(self, idx):
+    def _update_element(self, idx, update_vis=True):
+        if update_vis:
+            self._remove_geometry_from_vis(self._elements_as_open3d[idx])
+
         element_open3d = self._elements_as_open3d[idx]
         is_selected = self._selected[idx] and self._selectable[idx]
         is_current = idx == self.i
@@ -763,20 +781,10 @@ class InteractiveWindow:
             self._set_element_colors(element_open3d, input_color * (1 + highlight))
         self._elements_as_open3d[idx] = element_open3d
 
-    def _update_element(self, idx):
-        self._remove_geometry_from_vis(self._elements_as_open3d[idx])
-        self._update_element_color(idx)
-        self._add_geometry_to_vis(self._elements_as_open3d[idx])
+        if update_vis:
+            self._add_geometry_to_vis(self._elements_as_open3d[idx])
 
-    def _update_all(self):
-        idx = min(self.i, len(self._elements_original) - 1)
-        # value = not np.sum(self.selected) == (L := len(self.selected))
-        for i in range(len(self._elements_original)):
-            # self.selected[i] = value
-            self.update(i, update_old=False)
-        self.update(idx, update_old=False)
-
-    def update(self, idx=None, update_old=True):
+    def _update_current_pointer(self, idx=None, update_old=True):
         if idx is not None:
             self.i_old = self.i
             self.i = idx
@@ -793,34 +801,54 @@ class InteractiveWindow:
             self._update_element(self.i_old)
         self._update_bounding_box()
 
-    def toggle(self, vis, action, mods):
+    def _update_indices(self, indices=None):
+        if indices is None:
+            # if indices are not given, update everything
+            indices = range(len(self._elements_original))
+
+        for i in indices:
+            self._update_current_pointer(i, update_old=False)
+        self._update_current_pointer(self.i, update_old=False)
+
+    def _toggle_indices(self, idx_or_slice):
+        selected = np.logical_or(self.selected, ~np.asarray(self._selectable))
+        selected[idx_or_slice] = not np.sum(selected[idx_or_slice]) == len(
+            selected[idx_or_slice]
+        )
+        self._selected = selected.tolist()
+        self._update_indices(idx_or_slice)
+
+    ###########################################################################
+    ################### Callback functions for Visualizer #####################
+    ###########################################################################
+    def _cb_toggle(self, vis, action, mods):
         """Toggle the current highlighted element between selected/unselected."""
         if action == 1 or not self._selectable[self.i]:
             return
 
         self.is_current_selected = not self.is_current_selected
-        self.update()
+        self._update_current_pointer()
 
-    def next(self, vis, action, mods):
+    def _cb_next(self, vis, action, mods):
         """Highlight next element in list."""
         if action == 1:
             return
-        self.update(min(self.i + 1, len(self._elements_original) - 1))
+        self._update_current_pointer(min(self.i + 1, len(self._elements_original) - 1))
 
-    def previous(self, vis, action, mods):
+    def _cb_previous(self, vis, action, mods):
         """Highlight previous element in list."""
         if action == 1:
             return
-        self.update(max(self.i - 1, 0))
+        self._update_current_pointer(max(self.i - 1, 0))
 
-    def finish_process(self, vis, action, mods):
+    def _cb_finish_process(self, vis, action, mods):
         """Signal ending."""
         if action == 1:
             return
         self.finish = True
         vis.close()
 
-    def switch_extra(self, vis, action, mods):
+    def _cb_switch_extra(self, vis, action, mods):
         """Switch to mouse selection + extra LCtrl functions."""
         if self.extra_functions == bool(action):
             return
@@ -834,11 +862,11 @@ class InteractiveWindow:
             vis.register_mouse_button_callback(None)
             vis.register_mouse_move_callback(None)
 
-    def switch_mouse_toggle(self, vis, action, mods):
+    def _cb_switch_mouse_toggle(self, vis, action, mods):
         """Switch to mouse selection + extra LCtrl mode."""
         self.mouse_toggle = bool(action)
 
-    def apply_function(self, func, vis, action, mods):
+    def _cb_apply_function(self, func, vis, action, mods):
         """Apply function to selected elements."""
         if not self.extra_functions or action == 1 or self.functions is None:
             return
@@ -877,14 +905,14 @@ class InteractiveWindow:
         self._future_states = []
         self._update_get_plane_boundaries()
 
-    def print_help(self, vis, action, mods):
+    def _cb_print_help(self, vis, action, mods):
         if not self.extra_functions or action == 1:
             return
 
         print(self._instructions)
         time.sleep(0.5)
 
-    def print_info(self, vis, action, mods):
+    def _cb_print_info(self, vis, action, mods):
         if not self.extra_functions or action == 1:
             return
 
@@ -903,7 +931,7 @@ class InteractiveWindow:
         print(f"{len(self._future_states)} future states (for redoing)")
         time.sleep(0.5)
 
-    def center_current(self, vis, action, mods):
+    def _cb_center_current(self, vis, action, mods):
         if not self.extra_functions or action == 1:
             return
 
@@ -913,15 +941,7 @@ class InteractiveWindow:
         ctr.set_up([0, 1, 0])  # Define the camera "up" direction
         ctr.set_zoom(0.1)  # Adjust zoom level if necessary
 
-    def _toggle_indices(self, idx_or_slice):
-        selected = np.logical_or(self.selected, ~np.asarray(self._selectable))
-        selected[idx_or_slice] = not np.sum(selected[idx_or_slice]) == len(
-            selected[idx_or_slice]
-        )
-        self._selected = selected.tolist()
-        self._update_all()
-
-    def hide_unhide(self, vis, action, mods):
+    def _cb_hide_unhide(self, vis, action, mods):
         """Hide selected elements or unhide all hidden elements."""
         if not self.extra_functions or action == 1:
             return
@@ -940,14 +960,14 @@ class InteractiveWindow:
 
         self._future_states = []
 
-    def toggle_all(self, vis, action, mods):
+    def _cb_toggle_all(self, vis, action, mods):
         """Toggle the all elements between all selected/all unselected."""
         if not self.extra_functions or action == 1:
             return
 
         self._toggle_indices(slice(None))
 
-    def toggle_last(self, vis, action, mods):
+    def _cb_toggle_last(self, vis, action, mods):
         """Toggle the elements from last output."""
         if not self.extra_functions or action == 1:
             return
@@ -958,7 +978,7 @@ class InteractiveWindow:
         num_outputs = self._past_states[-1]["num_outputs"]
         self._toggle_indices(slice(-num_outputs, None))
 
-    def toggle_type(self, vis, action, mods):
+    def _cb_toggle_type(self, vis, action, mods):
         if not self.extra_functions or action == 1:
             return
 
@@ -983,7 +1003,7 @@ class InteractiveWindow:
         idx = np.where([isinstance(elem, selected_type) for elem in elements])[0]
         self._toggle_indices(idx)
 
-    def set_color_mode(self, vis, action, mods):
+    def _cb_set_color_mode(self, vis, action, mods):
         if action == 1:
             return
 
@@ -991,7 +1011,7 @@ class InteractiveWindow:
         self._remove_all_visualiser_elements()
         self._reset_visualiser_elements(reset_elements=True)
 
-    def preferences(self, vis, action, mods):
+    def _cb_set_preferences(self, vis, action, mods):
         if action == 1:
             return
 
@@ -1016,7 +1036,7 @@ class InteractiveWindow:
             self._remove_all_visualiser_elements()
             self._reset_visualiser_elements(reset_elements=True)
 
-    def redo(self, vis, action, mods):
+    def _cb_redo(self, vis, action, mods):
         if not self.extra_functions or action == 1 or len(self._future_states) == 0:
             return
 
@@ -1038,10 +1058,10 @@ class InteractiveWindow:
         self.insert_elements(modified_elements, to_vis=True)
 
         self._past_states.append(current_state)
-        self.update(len(self._elements) - 1)
+        self._update_current_pointer(len(self._elements) - 1)
         self._update_get_plane_boundaries()
 
-    def undo(self, vis, action, mods):
+    def _cb_undo(self, vis, action, mods):
         if not self.extra_functions or action == 1 or len(self._past_states) == 0:
             return
 
@@ -1063,7 +1083,7 @@ class InteractiveWindow:
             }
         )
 
-        self.update(indices[-1])
+        self._update_current_pointer(indices[-1])
         self._update_get_plane_boundaries()
 
     def on_mouse_move(self, vis, x, y):
@@ -1085,8 +1105,8 @@ class InteractiveWindow:
         self.i_old = self.i
         self.i = np.argmin(distances)
         if self.mouse_toggle:
-            self.toggle(vis, 0, None)
-        self.update()
+            self._cb_toggle(vis, 0, None)
+        self._update_current_pointer()
 
     def _remove_all_visualiser_elements(self):
         for elem in self.all_drawable_elements:
@@ -1135,7 +1155,7 @@ class InteractiveWindow:
         self._update_bounding_box()
 
         # if not startup:
-        self._update_all()
+        self._update_indices()
 
     def run(self, print_instructions=True):
         self.print_debug("Starting ElementSelector instance.")
