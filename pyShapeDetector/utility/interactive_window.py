@@ -155,6 +155,7 @@ class InteractiveWindow:
         self._elements = []
         self._elements_original = []
         self._elements_as_open3d = []
+        self._plane_boundaries = []
         self._hidden_elements = []
         self._original_colors = []
         self._fixed_elements = []
@@ -541,9 +542,9 @@ class InteractiveWindow:
         else:
             self._elements_drawable = copy.copy(self._elements_as_open3d)
 
-    def _get_plane_boundaries(self):
-        if not self.draw_boundary_lines:
-            self._plane_boundaries = []
+    def _reset_get_plane_boundaries(self):
+        for plane in self._plane_boundaries:
+            self.remove_geometry_from_vis(plane)
 
         plane_boundaries = []
         for element in self._elements_original:
@@ -556,7 +557,11 @@ class InteractiveWindow:
                 continue
             lineset.paint_uniform_color((0, 0, 0))
             plane_boundaries.append(lineset)
+
         self._plane_boundaries = plane_boundaries
+
+        for plane in self._plane_boundaries:
+            self.add_geometry_to_vis(plane)
 
     def _get_open3d(self, elem):
         from pyShapeDetector.geometry import TriangleMesh
@@ -881,6 +886,7 @@ class InteractiveWindow:
 
         # self._save_state(indices, input_elements, len(output_elements))
         self._future_states = []
+        self._reset_get_plane_boundaries()
         # self.selected = False
 
         # self._reset_visualiser_elements()
@@ -1051,6 +1057,7 @@ class InteractiveWindow:
         self.insert_elements(modified_elements, to_vis=True)
 
         self._past_states.append(current_state)
+        self._reset_get_plane_boundaries()
 
         # self._reset_visualiser_elements()
 
@@ -1080,6 +1087,7 @@ class InteractiveWindow:
         )
         self.i = last_state["current_index"]
         self._reset_visualiser_elements()
+        self._reset_get_plane_boundaries()
 
     def on_mouse_move(self, vis, x, y):
         """Get mouse position."""
@@ -1135,19 +1143,17 @@ class InteractiveWindow:
                     self._elements_as_open3d, color="random"
                 )
 
-        self._get_plane_boundaries()
+        # self._get_plane_boundaries()
         self._get_drawable_elements()
         self._elements_distance = self._get_element_distances(self.elements)
 
-        if self.select_filter is None:
-            self._selectable = [True] * len(self.elements)
-        else:
-            self._selectable = [self.select_filter(elem) for elem in self.elements]
+        self._selectable = [self.select_filter(elem) for elem in self.elements]
         # self._selectable = np.asarray(self._selectable)
 
         for elem in self.all_drawable_elements:
             if elem is not None:
                 self.add_geometry_to_vis(elem, reset_bounding_box=startup)
+        self._reset_get_plane_boundaries()
 
         self._update_bounding_box()
 
