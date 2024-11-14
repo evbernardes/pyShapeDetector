@@ -316,6 +316,7 @@ class InteractiveWindow:
         self.print_debug(f"old index: {self.i}, new index: {idx_new}")
         idx_new = max(min(idx_new, len(self._elements_original) - 1), 0)
         self._update_current_pointer(idx_new, update_old=False)
+        self.i_old = self.i
         return elements_popped
 
     def insert_elements(self, elems, indices=None, selected=False, to_vis=False):
@@ -352,6 +353,7 @@ class InteractiveWindow:
         # self.i += sum([idx <= self.i for idx in indices])
         idx_new = max(min(idx_new, len(self._elements_original) - 1), 0)
         self._update_current_pointer(idx_new, update_old=True)
+        self.i_old = self.i
 
     @property
     def fixed_elements(self):
@@ -826,9 +828,7 @@ class InteractiveWindow:
         indices = self._get_range(indices_or_slice)
 
         selected = np.logical_or(self.selected, ~np.asarray(self._selectable))
-        selected[indices] = not np.sum(selected[indices]) == len(
-            selected[indices]
-        )
+        selected[indices] = not np.sum(selected[indices]) == len(selected[indices])
         self._selected = selected.tolist()
         self._update_indices(indices)
 
@@ -934,6 +934,7 @@ class InteractiveWindow:
         print(
             f"Current element: ({self.i + 1}/{len(self._elements_original)}): {self.current_element}"
         )
+        self.print_debug(f"Current index: {self.i}, old index: {self.i_old}")
         print(f"Current selected: {self.is_current_selected}")
         print(f"Current bbox: {self._bbox}")
         print(f"{len(self._elements_original)} current elements")
