@@ -929,8 +929,6 @@ class InteractiveWindow:
         indices = self.selected_indices
         num_elements = len(indices)
 
-        # self._remove_all_visualiser_elements()
-
         if num_elements == 0:
             self.insert_elements(self._hidden_elements, selected=True, to_vis=True)
             self._hidden_elements = []
@@ -941,7 +939,6 @@ class InteractiveWindow:
             self.selected = False
 
         self._future_states = []
-        # self._reset_visualiser_elements()
 
     def toggle_all(self, vis, action, mods):
         """Toggle the all elements between all selected/all unselected."""
