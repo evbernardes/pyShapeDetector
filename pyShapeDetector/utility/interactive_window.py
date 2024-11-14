@@ -153,6 +153,7 @@ class InteractiveWindow:
         self._past_states = []
         self._future_states = []
         self._elements = []
+        self._elements_original = []
         self._elements_as_open3d = []
         self._hidden_elements = []
         self._original_colors = []
@@ -162,7 +163,7 @@ class InteractiveWindow:
         self._selectable = []
         self._bbox = None
         self._functions = None
-        self._select_filter = None
+        self._select_filter = lambda x: True
         self._instructions = ""
         self.bbox_expand = bbox_expand
         self.window_name = window_name
@@ -257,7 +258,7 @@ class InteractiveWindow:
     @select_filter.setter
     def select_filter(self, new_function):
         if new_function is None:
-            pass
+            new_function = lambda x: True
         elif (N := len(inspect.signature(new_function).parameters)) != 1:
             raise ValueError(
                 f"Expected filter function with 1 parameter (element), got {N}."
@@ -266,7 +267,26 @@ class InteractiveWindow:
 
     @property
     def elements(self):
-        return self._elements
+        return self._elements_original
+
+    # def _get_element_dict(self, elem_original, selected=False, idx=None):
+    #     elem = {
+    #         "original": elem_original,
+    #         "selected": selected,
+    #         "selectable": self.select_filter(elem_original),
+    #         "drawable": self._get_open3d(elem_original),
+    #         "color": self._extract_element_colors(elem_original),
+    #         "distance_checker": self._get_element_distances([elem_original])[0],
+    #     }
+
+    #     if self.paint_selected:
+    #         if idx is None:
+    #             is_current = False
+    #         else:
+    #             is_current = self.i == idx
+    #         color = self._colors_selected_current[selected, is_current]
+
+    #         elem["drawable"] = self._get_painted(elem["drawable"], color)
 
     def add_geometry_to_vis(self, elem, reset_bounding_box=False):
         self._vis.add_geometry(elem, reset_bounding_box=reset_bounding_box)
@@ -281,7 +301,7 @@ class InteractiveWindow:
         for n, i in enumerate(indices):
             if i_new > i:
                 i_new -= 1
-            elements_popped.append(self._elements.pop(i - n))
+            elements_popped.append(self._elements_original.pop(i - n))
             del self._selected[i - n]
             del self._selectable[i - n]
             del self._elements_distance[i - n]
@@ -290,14 +310,9 @@ class InteractiveWindow:
                 self.remove_geometry_from_vis(elem_open3d)
             del self._original_colors[i - n]
 
-        i_new = max(min(i_new, len(self._elements) - 1), 0)
+        i_new = max(min(i_new, len(self._elements_original) - 1), 0)
         self.update(i_new, update_old=update_old)
         return elements_popped
-
-    # def insert_element(self, idx, elem):
-    #     self._elements.insert(idx, elem)
-    #     self._elements_as_open3d.insert(idx, self._get_open3d(elem))
-    #     self._selected.insert(idx, False)
 
     def insert_elements(self, elems, indices=None, selected=False, to_vis=False):
         if indices is None:
@@ -309,23 +324,10 @@ class InteractiveWindow:
             self._extract_element_colors(elem) for elem in elements_as_open3d
         ]
 
-        # if self.paint_selected:
-        #     color = self._colors_selected_current[selected, False]
-        #     for i, elem in enumerate(elements_as_open3d):
-        #         elements_as_open3d[i] = self._get_painted(elem, color)
-
-        # self._elements += elems
-        # self._selected += [selected] * len(elems)
-        # self._elements_distance += self._get_element_distances(elems)
-        # self._elements_as_open3d += elements_as_open3d
-
         for i, idx in enumerate(indices):
-            self._elements.insert(idx, elems[i])
+            self._elements_original.insert(idx, elems[i])
             self._selected.insert(idx, selected)
-            if self.select_filter is None:
-                self._selectable.insert(idx, True)
-            else:
-                self._selectable.insert(idx, self.select_filter(elems[i]))
+            self._selectable.insert(idx, self.select_filter(elems[i]))
             self._elements_distance.insert(
                 idx, self._get_element_distances([elems[i]])[0]
             )
@@ -355,7 +357,7 @@ class InteractiveWindow:
     @selected.setter
     def selected(self, selected_values):
         if isinstance(selected_values, bool):
-            selected_values = [selected_values] * len(self._elements)
+            selected_values = [selected_values] * len(self._elements_original)
         elif len(selected_values) != len(self.elements):
             raise ValueError(
                 "Length of input expected to be the same as the "
@@ -465,7 +467,7 @@ class InteractiveWindow:
         if fixed:
             self._fixed_elements += new_elements
         else:
-            self._elements += new_elements
+            self._elements_original += new_elements
             self._selected += [False] * len(new_elements)
 
     def _save_state(self, indices, input_elements, num_outputs):
@@ -482,23 +484,23 @@ class InteractiveWindow:
         from pyShapeDetector.geometry import PointCloud
 
         # check correct input of elements and fixed elements
-        if isinstance(self._elements, tuple):
-            self._elements = list(self._elements)
-        elif not isinstance(self._elements, list):
-            self._elements = [self._elements]
+        if isinstance(self._elements_original, tuple):
+            self._elements_original = list(self._elements_original)
+        elif not isinstance(self._elements_original, list):
+            self._elements_original = [self._elements_original]
 
-        for elem in self._elements:
+        for elem in self._elements_original:
             if PointCloud.is_instance_or_open3d(elem) and not elem.has_normals():
                 elem.estimate_normals()
 
         if self._fixed_elements is None:
             self._fixed_elements = []
         elif isinstance(self._fixed_elements, tuple):
-            self._fixed_elements = list(self._elements)
+            self._fixed_elements = list(self._elements_original)
         elif not isinstance(self._fixed_elements, list):
             self._fixed_elements = [self._fixed_elements]
 
-        if (L := len(self._elements)) == 0:
+        if (L := len(self._elements_original)) == 0:
             raise ValueError("Elements cannot be an empty list.")
 
         if L > self._ELEMENTS_NUMBER_WARNING:
@@ -544,7 +546,7 @@ class InteractiveWindow:
             self._plane_boundaries = []
 
         plane_boundaries = []
-        for element in self._elements:
+        for element in self._elements_original:
             try:
                 lineset = element.vertices_LineSet.as_open3d
                 if hasattr(element, "holes"):
@@ -695,9 +697,9 @@ class InteractiveWindow:
         sys.exit(0)
 
     def update_all(self):
-        idx = min(self.i, len(self._elements) - 1)
+        idx = min(self.i, len(self._elements_original) - 1)
         # value = not np.sum(self.selected) == (L := len(self.selected))
-        for i in range(len(self._elements)):
+        for i in range(len(self._elements_original)):
             # self.selected[i] = value
             self.update(i)
         self.update(idx)
@@ -767,12 +769,12 @@ class InteractiveWindow:
             self.i_old = self.i
             self.i = idx
 
-        if self.i >= len(self._elements):
+        if self.i >= len(self._elements_original):
             warnings.warn(
                 f"Index error, tried accessing {self.i} out of "
-                f"{len(self._elements)} elements. Getting last one."
+                f"{len(self._elements_original)} elements. Getting last one."
             )
-            idx = len(self._elements) - 1
+            idx = len(self._elements_original) - 1
 
         self._update_element(self.i)
         if update_old:
@@ -791,7 +793,7 @@ class InteractiveWindow:
         """Highlight next element in list."""
         if action == 1:
             return
-        self.update(min(self.i + 1, len(self._elements) - 1))
+        self.update(min(self.i + 1, len(self._elements_original) - 1))
 
     def previous(self, vis, action, mods):
         """Highlight previous element in list."""
@@ -834,7 +836,7 @@ class InteractiveWindow:
             f"Applying {func.__name__} function to {len(indices)} elements, indices: "
         )
         self.print_debug(indices)
-        input_elements = [self._elements[i] for i in indices]
+        input_elements = [self._elements_original[i] for i in indices]
 
         try:
             output_elements = func(input_elements)
@@ -870,12 +872,12 @@ class InteractiveWindow:
             # print("[INFO] Current idx not modified indices")
             self.i -= len([i for i in indices if i <= i_old])
 
-        if i_old >= len(self._elements):
+        if i_old >= len(self._elements_original):
             warnings.warn(
                 f"Index error, tried accessing {i_old} out of "
-                f"{len(self._elements)} elements. Getting last one."
+                f"{len(self._elements_original)} elements. Getting last one."
             )
-            self.i = len(self._elements) - 1
+            self.i = len(self._elements_original) - 1
 
         # self._save_state(indices, input_elements, len(output_elements))
         self._future_states = []
@@ -896,11 +898,11 @@ class InteractiveWindow:
 
         print()
         print(
-            f"Current element ({self.i}/{len(self._elements)}): {self.current_element}"
+            f"Current element ({self.i}/{len(self._elements_original)}): {self.current_element}"
         )
         print(f"Current selected: {self.is_current_selected}")
         print(f"Current bbox: {self._bbox}")
-        print(f"{len(self._elements)} current elements")
+        print(f"{len(self._elements_original)} current elements")
         self.print_debug(f"{len(self._elements_as_open3d)} current elements open3d")
         self.print_debug(f"{len(self._elements_distance)} current elements distance")
         print(f"{len(self._fixed_elements)} fixed elements")
@@ -942,7 +944,7 @@ class InteractiveWindow:
             self._hidden_elements = []
 
         else:
-            self._hidden_elements += [self._elements[i] for i in indices]
+            self._hidden_elements += [self._elements_original[i] for i in indices]
             self.pop_elements(indices, from_vis=True)
             self.selected = False
 
@@ -973,7 +975,7 @@ class InteractiveWindow:
 
         from .helpers_visualization import get_inputs
 
-        elements = self._elements
+        elements = self._elements_original
 
         types = set([t for elem in elements for t in elem.__class__.mro()])
         types.discard(ABC)
@@ -1036,7 +1038,7 @@ class InteractiveWindow:
         modified_elements = future_state["modified_elements"]
         indices = future_state["indices"]
 
-        input_elements = [self._elements[i] for i in indices]
+        input_elements = [self._elements_original[i] for i in indices]
         current_state = {
             "indices": copy.deepcopy(indices),
             "elements": copy.deepcopy(input_elements),
@@ -1125,7 +1127,7 @@ class InteractiveWindow:
 
         if startup or reset_elements:
             self._elements_as_open3d = [
-                self._get_open3d(elem) for elem in self._elements
+                self._get_open3d(elem) for elem in self._elements_original
             ]
 
             if self.paint_random:
@@ -1198,7 +1200,7 @@ class InteractiveWindow:
         try:
             self._vis.run()
             # add hidden elements back to elements list
-            self._elements += self._hidden_elements
+            self._elements_original += self._hidden_elements
         except Exception as e:
             raise e
         finally:
