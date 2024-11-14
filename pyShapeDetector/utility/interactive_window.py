@@ -801,22 +801,36 @@ class InteractiveWindow:
             self._update_element(self.i_old)
         self._update_bounding_box()
 
-    def _update_indices(self, indices=None):
-        if indices is None or indices == slice(None):
+    def _get_range(self, indices_or_slice):
+        if isinstance(indices_or_slice, (range, list, np.ndarray)):
+            return indices_or_slice
+
+        if indices_or_slice is None:
             # if indices are not given, update everything
-            indices = range(len(self._elements_original))
+            return range(len(self._elements_original))
+
+        if isinstance(indices_or_slice, slice):
+            start, stop, stride = indices_or_slice.indices(len(self.elements))
+            return range(start, stop, stride)
+
+        raise ValueError("Invalid input, expected index list/array, range or slice.")
+
+    def _update_indices(self, indices_or_slice=None):
+        indices = self._get_range(indices_or_slice)
 
         for i in indices:
             self._update_current_pointer(i, update_old=False)
         self._update_current_pointer(self.i, update_old=False)
 
-    def _toggle_indices(self, idx_or_slice):
+    def _toggle_indices(self, indices_or_slice):
+        indices = self._get_range(indices_or_slice)
+
         selected = np.logical_or(self.selected, ~np.asarray(self._selectable))
-        selected[idx_or_slice] = not np.sum(selected[idx_or_slice]) == len(
-            selected[idx_or_slice]
+        selected[indices] = not np.sum(selected[indices]) == len(
+            selected[indices]
         )
         self._selected = selected.tolist()
-        self._update_indices(idx_or_slice)
+        self._update_indices(indices)
 
     ###########################################################################
     ################### Callback functions for Visualizer #####################
@@ -965,7 +979,7 @@ class InteractiveWindow:
         if not self.extra_functions or action == 1:
             return
 
-        self._toggle_indices(slice(None))
+        self._toggle_indices(None)
 
     def _cb_toggle_last(self, vis, action, mods):
         """Toggle the elements from last output."""
