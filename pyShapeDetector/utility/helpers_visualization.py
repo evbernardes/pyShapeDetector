@@ -457,13 +457,9 @@ def select_manually(
     list
         List of booleans showing which of the elements where selected.
     """
-    if pre_selected is None:
-        pre_selected = [False] * len(elements)
-
     element_selector = InteractiveWindow(**args)
-    element_selector.add_elements(elements)
+    element_selector.add_elements(elements, pre_selected=pre_selected)
     element_selector.add_elements(fixed_elements, fixed=True)
-    element_selector.selected = pre_selected
     element_selector.run()
 
     if "function" in args:
@@ -481,6 +477,7 @@ def apply_function_manually(
     fixed_elements=[],
     pre_selected=None,
     return_indices=False,
+    print_instructions=True,
     **args,
 ):
     """Plots elements on an interactive visualizer so that separate elements
@@ -545,19 +542,18 @@ def apply_function_manually(
         pre_selected = [False] * len(elements)
 
     element_selector = InteractiveWindow(**args)
-    element_selector.add_elements(elements)
+    element_selector.add_elements(elements, pre_selected=pre_selected)
     element_selector.functions = function
     element_selector.select_filter = select_filter
     element_selector.add_elements(fixed_elements, fixed=True)
-    element_selector.selected = pre_selected
 
-    element_selector.run()
+    element_selector.run(print_instructions=print_instructions)
 
     if return_indices:
         indices = [state["indices"] for state in element_selector._past_states]
-        return element_selector.elements, indices
+        return element_selector.element_dicts, indices
 
-    return element_selector.elements
+    return element_selector.get_elements()
 
 
 # def draw_and_ask(elements, return_not_selected=False, **camera_options):
