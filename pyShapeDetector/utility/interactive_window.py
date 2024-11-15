@@ -148,6 +148,7 @@ class InteractiveWindow:
         draw_boundary_lines=False,
         return_finish_flag=False,
         debug=False,
+        verbose=False,
         **camera_options,
     ):
         self._past_states = []
@@ -173,6 +174,7 @@ class InteractiveWindow:
         self.paint_random = paint_random
         self.draw_boundary_lines = draw_boundary_lines
         self.debug = debug
+        self.verbose = verbose
         self._ELEMENTS_NUMBER_WARNING = ELEMENTS_NUMBER_WARNING
         self._NUM_POINTS_FOR_DISTANCE_CALC = NUM_POINTS_FOR_DISTANCE_CALC
         self.camera_options = camera_options
@@ -205,10 +207,12 @@ class InteractiveWindow:
             (True, True): self.color_selected_current,
         }
 
-    def print_debug(self, text):
+    def print_debug(self, text, require_verbose=False):
+        if not self.debug or (require_verbose and not self.verbose):
+            return
+
         text = str(text)
-        if self.debug:
-            print("[DEBUG] " + text)
+        print("[DEBUG] " + text)
 
     @property
     def function_key_mappings(self):
@@ -346,7 +350,9 @@ class InteractiveWindow:
             elements_popped.append(elem["raw"])
 
         idx_new = self.i - sum([idx < self.i for idx in indices])
-        self.print_debug(f"popped: {indices}")
+        self.print_debug(
+            f"popped: {indices}",
+        )
         self.print_debug(f"old index: {self.i}, new index: {idx_new}")
         idx_new = max(min(idx_new, len(self.elements) - 1), 0)
         self._update_current_idx(idx_new, update_old=False)
@@ -399,11 +405,19 @@ class InteractiveWindow:
             elem["color"] = self._extract_element_colors(elem["drawable"])
 
             if self.paint_random:
+                self.print_debug(
+                    f"[_insert_elements] Randomly painting element at index {i}.",
+                    require_verbose=True,
+                )
                 elem["drawable"] = self._get_painted(elem["drawable"], color="random")
 
-            if self.paint_selected:
+            if self.paint_selected and selected[i]:
+                self.print_debug(
+                    f"[_insert_elements] Painting and inserting element at index {i}.",
+                    require_verbose=True,
+                )
                 is_current = self._started and (self.i == idx)
-                color = self._colors_selected_current[selected[i], is_current]
+                color = self._colors_selected_current[True, is_current]
                 elem["drawable"] = self._get_painted(elem["drawable"], color)
 
             self._element_dicts.insert(idx, elem)
@@ -524,6 +538,9 @@ class InteractiveWindow:
             "current_index": self.i,
         }
         self._past_states.append(current_state)
+        self.print_debug(
+            f"Saving state with {len(input_elements)} inputs and {num_outputs} outputs."
+        )
 
     def _check_and_initialize_inputs(self):
         from pyShapeDetector.geometry import PointCloud
@@ -774,6 +791,8 @@ class InteractiveWindow:
             AxisAlignedBoundingBox,
         )
 
+        self.print_debug("Updating bounding box...", require_verbose=True)
+
         vis = self._vis
         if vis is None:
             return
@@ -781,7 +800,10 @@ class InteractiveWindow:
         if self._bbox is not None:
             self._remove_geometry_from_vis(self._bbox)
 
-        element = self.current_element
+        with warnings.catch_warnings():
+            if self._started:
+                warnings.simplefilter("ignore")
+            element = self.current_element
 
         if element is None or isinstance(element, LineSet):
             return
@@ -822,31 +844,43 @@ class InteractiveWindow:
         is_current = self._started and (idx == self.i)
 
         self.print_debug(
+            "[_update_element]"
             f"Updating element at index: {idx}.\n"
-            f"Selected = {is_selected}, current = {is_current}."
+            f"Selected = {is_selected}, current = {is_current}.",
+            require_verbose=True,
         )
 
-        if self.paint_selected:
-            color = self._colors_selected_current[is_selected, is_current]
+        if self.paint_selected and is_selected:
+            color = self._colors_selected_current[True, is_current]
             elem["drawable"] = self._get_painted(elem["drawable"], color)
-            self.print_debug(f"Painting drawable to color: {color}.")
+            self.print_debug(
+                f"[_update_element] Painting drawable to color: {color}.",
+                require_verbose=True,
+            )
         else:
             highlight_ratio = int(is_selected) + int(is_current)
-            color = elem["color"] * self.color_highlight * highlight_ratio
+            color = elem["color"] + self.color_highlight * highlight_ratio
             self._set_element_colors(elem["drawable"], color)
-            self.print_debug("Setting highlight: {highlight_ratio}.")
+            self.print_debug(
+                f"[_update_element] Setting highlight: {highlight_ratio}.",
+                require_verbose=True,
+            )
 
         if update_vis:
-            self.print_debug("Adding to geometry.")
+            self.print_debug(
+                "[_update_element] Adding to geometry.", require_verbose=True
+            )
             self._add_geometry_to_vis(elem["drawable"])
 
     def _update_current_idx(self, idx=None, update_old=True):
         if idx is not None:
             self.i_old = self.i
             self.i = idx
-            self.print_debug(f"Updating index, from {self.i_old} to {self.i}")
+            self.print_debug(
+                f"Updating index, from {self.i_old} to {self.i}", require_verbose=True
+            )
         else:
-            self.print_debug(f"Updating current index: {self.i}")
+            self.print_debug(f"Updating current index: {self.i}", require_verbose=True)
 
         if self.i >= len(self.elements):
             warnings.warn(
@@ -877,9 +911,11 @@ class InteractiveWindow:
     def _update_indices(self, indices_or_slice=None):
         indices = self._get_range(indices_or_slice)
 
+        i_old = self.i
+
         for i in indices:
-            self._update_current_idx(i, update_old=False)
-        # self._update_current_idx(self.i, update_old=False)
+            self._update_current_idx(i, update_old=self._started)
+        self._update_current_idx(i_old, update_old=self._started)
 
     def _toggle_indices(self, indices_or_slice):
         indices = self._get_range(indices_or_slice)
@@ -901,6 +937,49 @@ class InteractiveWindow:
 
         self.is_current_selected = not self.is_current_selected
         self._update_current_idx()
+
+    def _cb_toggle_all(self, vis, action, mods):
+        """Toggle the all elements between all selected/all unselected."""
+        if not self.extra_functions or action == 1:
+            return
+
+        self._toggle_indices(None)
+
+    def _cb_toggle_last(self, vis, action, mods):
+        """Toggle the elements from last output."""
+        if not self.extra_functions or action == 1:
+            return
+
+        if len(self._past_states) == 0:
+            return
+
+        num_outputs = self._past_states[-1]["num_outputs"]
+        self._toggle_indices(slice(-num_outputs, None))
+
+    def _cb_toggle_type(self, vis, action, mods):
+        if not self.extra_functions or action == 1:
+            return
+
+        from .helpers_visualization import get_inputs
+
+        elems_raw = [elem["raw"] for elem in self.elements]
+
+        types = set([t for elem in elems_raw for t in elem.__class__.mro()])
+        types.discard(ABC)
+        types.discard(object)
+        types = list(types)
+        types_names = [type_.__name__ for type_ in types]
+
+        try:
+            (selected_type_name,) = get_inputs(
+                {"type": [types_names, types_names[0]]}, window_name="Select type"
+            )
+        except KeyboardInterrupt:
+            return
+
+        selected_type = types[types_names.index(selected_type_name)]
+        idx = np.where([isinstance(elem, selected_type) for elem in elems_raw])[0]
+        self._toggle_indices(idx)
 
     def _cb_next(self, vis, action, mods):
         """Highlight next element in list."""
@@ -969,8 +1048,6 @@ class InteractiveWindow:
         elif not isinstance(output_elements, list):
             output_elements = [output_elements]
 
-        # self._remove_all_visualiser_elements()
-        # i_old = self.i
         self._save_state(indices, input_elements, len(output_elements))
         self._pop_elements(indices, from_vis=True)
         self._insert_elements(output_elements, to_vis=True)
@@ -998,8 +1075,6 @@ class InteractiveWindow:
         print(f"Current selected: {self.is_current_selected}")
         print(f"Current bbox: {self._bbox}")
         print(f"{len(self.elements)} current elements")
-        # self.print_debug(f"{len(self._elements_as_open3d)} current elements open3d")
-        # self.print_debug(f"{len(self._elements_distance)} current elements distance")
         print(f"{len(self._fixed_elements)} fixed elements")
         print(f"{len(self._hidden_elements)} hidden elements")
         print(f"{len(self._past_states)} past states (for undoing)")
@@ -1033,49 +1108,6 @@ class InteractiveWindow:
             self.selected = False
 
         self._future_states = []
-
-    def _cb_toggle_all(self, vis, action, mods):
-        """Toggle the all elements between all selected/all unselected."""
-        if not self.extra_functions or action == 1:
-            return
-
-        self._toggle_indices(None)
-
-    def _cb_toggle_last(self, vis, action, mods):
-        """Toggle the elements from last output."""
-        if not self.extra_functions or action == 1:
-            return
-
-        if len(self._past_states) == 0:
-            return
-
-        num_outputs = self._past_states[-1]["num_outputs"]
-        self._toggle_indices(slice(-num_outputs, None))
-
-    def _cb_toggle_type(self, vis, action, mods):
-        if not self.extra_functions or action == 1:
-            return
-
-        from .helpers_visualization import get_inputs
-
-        elems_raw = [elem["raw"] for elem in self.elements]
-
-        types = set([t for elem in elems_raw for t in elem.__class__.mro()])
-        types.discard(ABC)
-        types.discard(object)
-        types = list(types)
-        types_names = [type_.__name__ for type_ in types]
-
-        try:
-            (selected_type_name,) = get_inputs(
-                {"type": [types_names, types_names[0]]}, window_name="Select type"
-            )
-        except KeyboardInterrupt:
-            return
-
-        selected_type = types[types_names.index(selected_type_name)]
-        idx = np.where([isinstance(elem, selected_type) for elem in elems_raw])[0]
-        self._toggle_indices(idx)
 
     def _cb_set_color_mode(self, vis, action, mods):
         if action == 1:
@@ -1119,6 +1151,11 @@ class InteractiveWindow:
         modified_elements = future_state["modified_elements"]
         indices = future_state["indices"]
 
+        self.print_debug(
+            f"Redoing last operation, removing {len(indices)} inputs and "
+            f"resetting {len(modified_elements)} inputs."
+        )
+
         input_elements = [self.elements[i]["raw"] for i in indices]
         current_state = {
             "indices": copy.deepcopy(indices),
@@ -1143,8 +1180,13 @@ class InteractiveWindow:
         indices = last_state["indices"]
         elements = last_state["elements"]
         num_outputs = last_state["num_outputs"]
-
         num_elems = len(self.elements)
+
+        self.print_debug(
+            f"Undoing last operation, removing {num_outputs} outputs and "
+            f"resetting {len(elements)} inputs."
+        )
+
         indices_to_pop = range(num_elems - num_outputs, num_elems)
         modified_elements = self._pop_elements(indices_to_pop, from_vis=True)
         self._insert_elements(elements, indices, selected=True, to_vis=True)
@@ -1217,12 +1259,15 @@ class InteractiveWindow:
             assert len(self.elements) == 0
 
         # print(f"\ninserting elements at startup, there are {len(elems_raw)}")
-        self._update_indices()
+        # self._update_indices()
         for elem_raw, selected in zip(elems_raw, pre_selected):
-            self.print_debug(f"\n\nAdding {elem_raw}")
+            self.print_debug(
+                f"\n\n[_reset_visualiser_elements] Adding {elem_raw}",
+                require_verbose=True,
+            )
             self._insert_elements([elem_raw], selected=selected, to_vis=True)
         # self.selected = selected
-        # print(f"Finished inserting! there are {len(self.elements)}")
+        print(f"Finished inserting {len(self.elements)} elements.")
 
         # if self.paint_random:
         #     for elem in self.elements:
@@ -1247,7 +1292,7 @@ class InteractiveWindow:
         self._update_bounding_box()
 
         # if not startup:
-        # self._update_indices()
+        self._update_indices()
         self._started = True
 
     def run(self, print_instructions=True):
