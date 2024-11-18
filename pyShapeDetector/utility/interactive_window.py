@@ -1140,6 +1140,8 @@ class InteractiveWindow:
             self._hidden_elements += self._pop_elements(indices, from_vis=True)
             self.selected = False
 
+        # TODO: find a way to make hiding work with undoing
+        self._past_states = []
         self._future_states = []
 
     def _cb_set_color_mode(self, vis, action, mods):
