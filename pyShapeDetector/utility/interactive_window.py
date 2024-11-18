@@ -918,14 +918,15 @@ class InteractiveWindow:
 
         raise ValueError("Invalid input, expected index list/array, range or slice.")
 
-    def _update_indices(self, indices_or_slice=None):
-        indices = self._get_range(indices_or_slice)
+    # TODO: clean this up
+    # def _update_indices(self, indices_or_slice=None):
+    #     indices = self._get_range(indices_or_slice)
 
-        i_old = self.i
+    #     i_old = self.i
 
-        for i in indices:
-            self._update_current_idx(i, update_old=self._started)
-        self._update_current_idx(i_old, update_old=self._started)
+    #     for i in indices:
+    #         self._update_current_idx(i, update_old=self._started)
+    #     self._update_current_idx(i_old, update_old=self._started)
 
     def _toggle_indices(self, indices_or_slice):
         indices = self._get_range(indices_or_slice)
@@ -935,7 +936,14 @@ class InteractiveWindow:
         selected = np.logical_or(self.selected, ~np.asarray(selectable))
         selected[indices] = not np.sum(selected[indices]) == len(selected[indices])
         self.selected = selected.tolist()
-        self._update_indices(indices)
+
+        # self._update_indices(indices)
+        # TODO: this used to be self._update_indices. Remove?
+        i_old = self.i
+
+        for i in indices:
+            self._update_current_idx(i, update_old=self._started)
+        self._update_current_idx(i_old, update_old=self._started)
 
     ###########################################################################
     ################### Callback functions for Visualizer #####################
@@ -1272,40 +1280,19 @@ class InteractiveWindow:
             f"\ninserting elements at startup, there are {len(elems_raw)}.",
             require_verbose=True,
         )
-        # self._update_indices()
+
         for elem_raw, selected in zip(elems_raw, pre_selected):
             self.print_debug(
                 f"\n\n[_reset_visualiser_elements] Adding {elem_raw}",
                 require_verbose=True,
             )
             self._insert_elements([elem_raw], selected=selected, to_vis=True)
-        # self.selected = selected
+
         print(f"Finished inserting {len(self.elements)} elements.")
-
-        # if self.paint_random:
-        #     for elem in self.elements:
-        #         elem["drawable"] = self._get_painted(elem["drawable"], color="random")
-
-        # self._get_plane_boundaries()
-        # self._get_drawable_elements()
-        # self._elements_distance = self._get_element_distances(self.elements)
-
-        # print(
-        #     f"{len(self.elements)} elements, {len(self._fixed_elements)} fixed elements"
-        # )
-
-        # print("\nAdding elements at reset: ")
-        # for n, elem in enumerate(self.all_drawable_elements):
-        #     print(n)
-        #     if elem is not None:
-        #         self._add_geometry_to_vis(elem, reset_bounding_box=startup)
-        # print("Finished!")
 
         self._update_get_plane_boundaries()
         self._update_bounding_box()
 
-        # if not startup:
-        self._update_indices()
         self._started = True
 
     def run(self, print_instructions=True):
