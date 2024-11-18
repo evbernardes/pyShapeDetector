@@ -138,6 +138,10 @@ class InteractiveWindow:
         If True, paint all elements with a random color. Default: False
     number_points_for_distance : int, optional
         Number of points in element distance calculator. Default: 30.
+    number_undo_states : int, optional
+        Number of states to save for undoing. Default: 10.
+    number_redo_states : int, optional
+        Number of states to save for redoing. Default: 5.
     debug : boolean, optional
         If True, prints debug information. Default: False.
     verbose : boolean, optional
@@ -157,6 +161,8 @@ class InteractiveWindow:
         paint_selected=True,
         paint_random=False,
         number_points_for_distance=30,
+        number_undo_states=10,
+        number_redo_states=5,
         debug=False,
         verbose=False,
         return_finish_flag=False,
@@ -205,6 +211,8 @@ class InteractiveWindow:
             "paint_selected": bool(paint_selected),
             "paint_random": bool(paint_random),
             "number_points_for_distance": int(number_points_for_distance),
+            "number_undo_states": int(number_undo_states),
+            "number_redo_states": int(number_redo_states),
             "debug": bool(debug),
             "verbose": bool(verbose),
         }
@@ -560,10 +568,14 @@ class InteractiveWindow:
             "num_outputs": num_outputs,
             "current_index": self.i,
         }
+
         self._past_states.append(current_state)
         self.print_debug(
             f"Saving state with {len(input_elements)} inputs and {num_outputs} outputs."
         )
+
+        while len(self._past_states) > self._preferences["number_undo_states"]:
+            self._past_states.pop(0)
 
     def _check_and_initialize_inputs(self):
         from pyShapeDetector.geometry import PointCloud
@@ -1183,18 +1195,12 @@ class InteractiveWindow:
         )
 
         input_elements = [self.elements[i]["raw"] for i in indices]
-        current_state = {
-            "indices": copy.deepcopy(indices),
-            "elements": copy.deepcopy(input_elements),
-            "num_outputs": len(modified_elements),
-            "current_index": self.i,
-        }
+        self._save_state(indices, input_elements, len(modified_elements))
 
         self.i = future_state["current_index"]
         self._pop_elements(indices, from_vis=True)
         self._insert_elements(modified_elements, to_vis=True)
 
-        self._past_states.append(current_state)
         self._update_current_idx(len(self.elements) - 1)
         self._update_get_plane_boundaries()
 
@@ -1224,6 +1230,9 @@ class InteractiveWindow:
                 "current_index": self.i,
             }
         )
+
+        while len(self._future_states) > self._preferences["number_redo_states"]:
+            self._future_states.pop(0)
 
         self._update_current_idx(indices[-1])
         self._update_get_plane_boundaries()
