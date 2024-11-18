@@ -1170,11 +1170,17 @@ class InteractiveWindow:
 
         from .helpers_visualization import get_inputs
 
-        new_preferences = get_inputs(
-            {name: (type(value), value) for name, value in self._preferences.items()},
-            window_name="Set preferences",
-            as_dict=True,
-        )
+        try:
+            new_preferences = get_inputs(
+                {
+                    name: (type(value), value)
+                    for name, value in self._preferences.items()
+                },
+                window_name="Set preferences",
+                as_dict=True,
+            )
+        except KeyboardInterrupt:
+            return
 
         if new_preferences != self._preferences:
             self._preferences = new_preferences
