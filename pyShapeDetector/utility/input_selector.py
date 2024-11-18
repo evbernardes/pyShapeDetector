@@ -156,7 +156,7 @@ class InputSelector:
                 input_vars[var_name] = tk.IntVar(value=int(default_value))
 
                 # Label for the checkbox
-                text = f"Check {var_name} (bool):"
+                text = f"{var_name}?"
                 ttk.Label(self._root, text=text).grid(
                     row=row, column=0, padx=5, pady=5, sticky="e"
                 )
