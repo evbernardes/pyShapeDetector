@@ -1154,6 +1154,7 @@ class InteractiveWindow:
         # TODO: find a way to make hiding work with undoing
         self._past_states = []
         self._future_states = []
+        self._update_get_plane_boundaries()
 
     def _cb_set_color_mode(self, vis, action, mods):
         if action == 1:
