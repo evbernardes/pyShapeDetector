@@ -967,7 +967,6 @@ class InteractiveWindow:
         # self._update_indices(indices)
         # TODO: this used to be self._update_indices. Remove?
         i_old = self.i
-
         for i in indices:
             self._update_current_idx(i, update_old=self._started)
         self._update_current_idx(i_old, update_old=self._started)
