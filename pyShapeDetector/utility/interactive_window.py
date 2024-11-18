@@ -19,8 +19,6 @@ from open3d.utility import Vector3dVector
 # from pyShapeDetector.geometry import OrientedBoundingBox, TriangleMesh, PointCloud
 # from pyShapeDetector.primitives import Primitive
 
-
-ELEMENTS_NUMBER_WARNING = 350
 NUM_POINTS_FOR_DISTANCE_CALC = 30
 
 COLOR_BBOX_SELECTED = (0, 0.8, 0)
@@ -124,60 +122,60 @@ class InteractiveWindow:
 
     Parameters
     ----------
-    bbox_expand : float, optional
-        Expands bounding boxes in all directions with this value. Default: 0.0.
     window_name : str, optional
         Name of window. If empty, just gives the number of elements. Default: "".
+
+    draw_boundary_lines : boolean, optional
+        If True, draws the boundaries of planes as LineSets. Default: False.
+    mesh_show_back_face : optional, boolean
+        If True, shows back faces of surfaces and meshes. Default: True.
+    bbox_expand : float, optional
+        Expands bounding boxes in all directions with this value. Default: 0.0.
     paint_selected : boolean, optional
         If True, paint selected elements, and not only their bounding boxes.
         Default: True
-    draw_boundary_lines : boolean, optional
-        If True, draws the boundaries of planes as LineSets. Default: False.
+    paint_random : boolean, optional
+        If True, paint all elements with a random color. Default: False
+    number_points_for_distance : int, optional
+        Number of points in element distance calculator. Default: 30.
+    debug : boolean, optional
+        If True, prints debug information. Default: False.
+    verbose : boolean, optional
+        If both this and 'debug' are True, prints extra debug information.
+        Default: False.
+
     return_finish_flag : boolean, optional
         Should be deprecated.
-    mesh_show_back_face : optional, boolean
-        If True, shows back faces of surfaces and meshes. Default: True.
     """
 
     def __init__(
         self,
-        bbox_expand=0.0,
         window_name="",
+        draw_boundary_lines=True,
+        mesh_show_back_face=True,
+        bbox_expand=0.0,
         paint_selected=True,
         paint_random=False,
-        draw_boundary_lines=False,
-        return_finish_flag=False,
+        number_points_for_distance=30,
         debug=False,
         verbose=False,
-        **camera_options,
+        return_finish_flag=False,
     ):
         self._past_states = []
         self._future_states = []
         self._element_dicts = []
         self._elements_input = []
-        # self._elements_as_open3d = []
         self._plane_boundaries = []
         self._hidden_elements = []
-        # self._original_colors = []
         self._fixed_elements = []
         self._fixed_elements_drawable = []
-        # self._elements_drawable = []
         self._pre_selected = []
         self._bbox = None
         self._functions = None
         self._select_filter = lambda x: True
         self._instructions = ""
-        self.bbox_expand = bbox_expand
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
-        self.paint_selected = paint_selected
-        self.paint_random = paint_random
-        self.draw_boundary_lines = draw_boundary_lines
-        self.debug = debug
-        self.verbose = verbose
-        self._ELEMENTS_NUMBER_WARNING = ELEMENTS_NUMBER_WARNING
-        self._NUM_POINTS_FOR_DISTANCE_CALC = NUM_POINTS_FOR_DISTANCE_CALC
-        self.camera_options = camera_options
 
         # self._elements_distance = []
         self.i_old = 0
@@ -199,6 +197,18 @@ class InteractiveWindow:
         self.color_unselected_current = COLOR_UNSELECTED_CURRENT
         self.color_highlight = COLOR_HIGHLIGHT
 
+        # preferences dict:
+        self._preferences = {
+            "draw_boundary_lines": bool(draw_boundary_lines),
+            "mesh_show_back_face": bool(mesh_show_back_face),
+            "bbox_expand": float(bbox_expand),
+            "paint_selected": bool(paint_selected),
+            "paint_random": bool(paint_random),
+            "number_points_for_distance": int(number_points_for_distance),
+            "debug": bool(debug),
+            "verbose": bool(verbose),
+        }
+
         # (selected, current) -> color
         self._colors_selected_current = {
             (False, False): self.color_unselected,
@@ -208,7 +218,10 @@ class InteractiveWindow:
         }
 
     def print_debug(self, text, require_verbose=False):
-        if not self.debug or (require_verbose and not self.verbose):
+        is_debug_activated = self._preferences["debug"]
+        is_verbose_activated = self._preferences["verbose"]
+
+        if not is_debug_activated or (require_verbose and not is_verbose_activated):
             return
 
         text = str(text)
@@ -370,7 +383,7 @@ class InteractiveWindow:
     #     # save original colors
     #     elem_dict["color"] = self._extract_element_colors(elem_dict["drawable"])
 
-    #     if self.paint_selected:
+    #     if self._preferences["paint_selected"]:
     #         if idx is None:
     #             is_current = False
     #         else:
@@ -409,14 +422,14 @@ class InteractiveWindow:
             # save original colors
             elem["color"] = self._extract_element_colors(elem["drawable"])
 
-            if self.paint_random:
+            if self._preferences["paint_random"]:
                 self.print_debug(
                     f"[_insert_elements] Randomly painting element at index {i}.",
                     require_verbose=True,
                 )
                 elem["drawable"] = self._get_painted(elem["drawable"], color="random")
 
-            if self.paint_selected and selected[i]:
+            if self._preferences["paint_selected"] and selected[i]:
                 self.print_debug(
                     f"[_insert_elements] Painting and inserting element at index {i}.",
                     require_verbose=True,
@@ -581,17 +594,14 @@ class InteractiveWindow:
         if (L := len(self._elements_input)) == 0:
             raise ValueError("Elements cannot be an empty list.")
 
-        if L > self._ELEMENTS_NUMBER_WARNING:
-            warnings.warn(
-                f"There are {L} elements, this is too many and may "
-                "cause segmentation fault errors."
-            )
+        # if L > self._ELEMENTS_NUMBER_WARNING:
+        #     warnings.warn(
+        #         f"There are {L} elements, this is too many and may "
+        #         "cause segmentation fault errors."
+        #     )
 
         if len(self.selected) != len(self.elements):
             raise ValueError("Pre-select and input elements must have same length.")
-
-        if "mesh_show_back_face" not in self.camera_options:
-            self.camera_options["mesh_show_back_face"] = True
 
         # IMPORTANT: respect order, only get Open3D elements at the very end
         # self._fixed_elements = [self._get_open3d(elem) for elem in self._fixed_elements]
@@ -603,7 +613,7 @@ class InteractiveWindow:
     #     ]
 
     #     # either get painted elements or keep original colors
-    #     if self.paint_selected:
+    #     if self._preferences["paint_selected"]:
     #         mask = np.array(self.selected)[np.newaxis].T
     #         colors = self.color_selected * mask + self.color_unselected * ~mask
 
@@ -628,7 +638,7 @@ class InteractiveWindow:
 
         try:
             elem_new = elem.as_open3d
-            mesh_show_back_face = self.camera_options["mesh_show_back_face"]
+            mesh_show_back_face = self._preferences["mesh_show_back_face"]
             if mesh_show_back_face and TriangleMesh.is_instance_or_open3d(elem_new):
                 mesh = TriangleMesh(elem_new)
                 mesh.add_reverse_triangles()
@@ -638,7 +648,7 @@ class InteractiveWindow:
             warnings.warn(f"Could not convert element: {elem}, got: {str(e)}")
             elem_new = elem
 
-        if self.paint_random:
+        if self._preferences["paint_random"]:
             elem_new = self._get_painted(elem_new, color="random")
 
         return elem_new
@@ -676,6 +686,8 @@ class InteractiveWindow:
         from pyShapeDetector.primitives import Primitive
         from pyShapeDetector.geometry import TriangleMesh, PointCloud
 
+        number_points_for_distance = self._preferences["number_points_for_distance"]
+
         elements_distance = []
         for elem in elems:
             if isinstance(elem, Primitive):
@@ -683,12 +695,12 @@ class InteractiveWindow:
 
             # assert our PointCloud class instead of Open3D PointCloud class
             elif TriangleMesh.is_instance_or_open3d(elem):
-                pcd = elem.sample_points_uniformly(self._NUM_POINTS_FOR_DISTANCE_CALC)
+                pcd = elem.sample_points_uniformly(number_points_for_distance)
                 elements_distance.append(PointCloud(pcd))
 
             elif PointCloud.is_instance_or_open3d(elem):
                 if len(elem.points) > NUM_POINTS_FOR_DISTANCE_CALC:
-                    ratio = int(len(elem.points) / self._NUM_POINTS_FOR_DISTANCE_CALC)
+                    ratio = int(len(elem.points) / number_points_for_distance)
                     pcd = elem.uniform_down_sample(ratio)
                 else:
                     pcd = elem
@@ -777,16 +789,18 @@ class InteractiveWindow:
             self._remove_geometry_from_vis(plane)
 
         plane_boundaries = []
-        for elem in self.elements:
-            try:
-                lineset = elem["raw"].vertices_LineSet.as_open3d
-                if hasattr(elem["raw"], "holes"):
-                    for hole in elem["raw"].holes:
-                        lineset += hole.vertices_LineSet.as_open3d
-            except AttributeError:
-                continue
-            lineset.paint_uniform_color((0, 0, 0))
-            plane_boundaries.append(lineset)
+
+        if self._preferences["draw_boundary_lines"]:
+            for elem in self.elements:
+                try:
+                    lineset = elem["raw"].vertices_LineSet.as_open3d
+                    if hasattr(elem["raw"], "holes"):
+                        for hole in elem["raw"].holes:
+                            lineset += hole.vertices_LineSet.as_open3d
+                except AttributeError:
+                    continue
+                lineset.paint_uniform_color((0, 0, 0))
+                plane_boundaries.append(lineset)
 
         self._plane_boundaries = plane_boundaries
 
@@ -801,6 +815,7 @@ class InteractiveWindow:
             AxisAlignedBoundingBox,
         )
 
+        bbox_expand = self._preferences["bbox_expand"]
         self.print_debug("Updating bounding box...", require_verbose=True)
 
         vis = self._vis
@@ -822,10 +837,10 @@ class InteractiveWindow:
             warnings.simplefilter("ignore")
             try:
                 bbox_original = element["raw"].get_oriented_bounding_box()
-                bbox = OrientedBoundingBox(bbox_original).expanded(self.bbox_expand)
+                bbox = OrientedBoundingBox(bbox_original).expanded(bbox_expand)
             except Exception:
                 bbox_original = element["raw"].get_axis_aligned_bounding_box()
-                bbox = AxisAlignedBoundingBox(bbox_original).expanded(self.bbox_expand)
+                bbox = AxisAlignedBoundingBox(bbox_original).expanded(bbox_expand)
 
         if self.is_current_selected:
             bbox.color = self.color_bbox_selected
@@ -860,7 +875,7 @@ class InteractiveWindow:
             require_verbose=True,
         )
 
-        if self.paint_selected and is_selected:
+        if self._preferences["paint_selected"] and is_selected:
             color = self._colors_selected_current[True, is_current]
             elem["drawable"] = self._get_painted(elem["drawable"], color)
             self.print_debug(
@@ -1131,7 +1146,7 @@ class InteractiveWindow:
         if action == 1:
             return
 
-        self.paint_random = not self.paint_random
+        self._preferences["paint_random"] = not self._preferences["paint_random"]
         # self._remove_all_visualiser_elements()
         self._reset_visualiser_elements()
 
@@ -1141,24 +1156,14 @@ class InteractiveWindow:
 
         from .helpers_visualization import get_inputs
 
-        all_preferences = [
-            "draw_boundary_lines",
-            "paint_selected",
-            "paint_random",
-            "debug",
-        ]
-
-        current_values = {name: getattr(self, name) for name in all_preferences}
-        new_values = get_inputs(
-            {name: (bool, value) for name, value in current_values.items()},
+        new_preferences = get_inputs(
+            {name: (type(value), value) for name, value in self._preferences.items()},
             window_name="Set preferences",
             as_dict=True,
         )
 
-        if current_values != new_values:
-            for name, value in new_values.items():
-                setattr(self, name, value)
-            # self._remove_all_visualiser_elements()
+        if new_preferences != self._preferences:
+            self._preferences = new_preferences
             self._reset_visualiser_elements()
 
     def _cb_redo(self, vis, action, mods):
@@ -1269,12 +1274,15 @@ class InteractiveWindow:
                 self._add_geometry_to_vis(elem)
 
         if startup:
+            current_idx = 0
             elems_raw = self._elements_input
             pre_selected = self._pre_selected
 
         else:
+            # pre_selected = [False] * len(elems_raw)
+            current_idx = copy.copy(self.i)
+            pre_selected = self.selected
             elems_raw = self._pop_elements(range(len(self.elements)), from_vis=True)
-            pre_selected = [False] * len(elems_raw)
             assert len(self.elements) == 0
 
         self.print_debug(
@@ -1287,6 +1295,7 @@ class InteractiveWindow:
         self._update_get_plane_boundaries()
         self._update_bounding_box()
 
+        self._update_current_idx(current_idx)
         self._started = True
 
     def run(self, print_instructions=True):
