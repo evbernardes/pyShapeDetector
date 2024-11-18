@@ -1264,13 +1264,13 @@ class InteractiveWindow:
             self._cb_toggle(vis, 0, None)
         self._update_current_idx()
 
-    def _remove_all_visualiser_elements(self):
-        for elem in self.all_drawable_elements:
-            if elem is not None:
-                try:
-                    self._remove_geometry_from_vis(elem, reset_bounding_box=False)
-                except Exception:
-                    pass
+    # def _remove_all_visualiser_elements(self):
+    #     for elem in self.all_drawable_elements:
+    #         if elem is not None:
+    #             try:
+    #                 self._remove_geometry_from_vis(elem, reset_bounding_box=False)
+    #             except Exception:
+    #                 pass
 
     def _reset_visualiser_elements(self, startup=False, reset_fixed=False):
         """Prepare elements for visualization"""
