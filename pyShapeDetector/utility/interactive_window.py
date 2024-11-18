@@ -1147,6 +1147,7 @@ class InteractiveWindow:
             "paint_random",
             "debug",
         ]
+
         current_values = {name: getattr(self, name) for name in all_preferences}
         new_values = get_inputs(
             {name: (bool, value) for name, value in current_values.items()},
@@ -1280,15 +1281,8 @@ class InteractiveWindow:
             f"\ninserting elements at startup, there are {len(elems_raw)}.",
             require_verbose=True,
         )
-
-        for elem_raw, selected in zip(elems_raw, pre_selected):
-            self.print_debug(
-                f"\n\n[_reset_visualiser_elements] Adding {elem_raw}",
-                require_verbose=True,
-            )
-            self._insert_elements([elem_raw], selected=selected, to_vis=True)
-
-        print(f"Finished inserting {len(self.elements)} elements.")
+        self._insert_elements(elems_raw, selected=pre_selected, to_vis=True)
+        self.print_debug(f"Finished inserting {len(self.elements)} elements.")
 
         self._update_get_plane_boundaries()
         self._update_bounding_box()
