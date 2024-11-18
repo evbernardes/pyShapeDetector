@@ -1268,7 +1268,10 @@ class InteractiveWindow:
             pre_selected = [False] * len(elems_raw)
             assert len(self.elements) == 0
 
-        # print(f"\ninserting elements at startup, there are {len(elems_raw)}")
+        self.print_debug(
+            f"\ninserting elements at startup, there are {len(elems_raw)}.",
+            require_verbose=True,
+        )
         # self._update_indices()
         for elem_raw, selected in zip(elems_raw, pre_selected):
             self.print_debug(
