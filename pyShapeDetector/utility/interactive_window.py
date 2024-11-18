@@ -390,6 +390,11 @@ class InteractiveWindow:
 
         idx_new = self.i
 
+        self.print_debug(
+            f"Adding {len(elems_raw)} elements to the existing {len(self.elements)}",
+            require_verbose=True,
+        )
+
         for i, idx in enumerate(indices):
             if idx_new > idx:
                 idx_new += 1
@@ -420,6 +425,9 @@ class InteractiveWindow:
                 color = self._colors_selected_current[True, is_current]
                 elem["drawable"] = self._get_painted(elem["drawable"], color)
 
+            self.print_debug(
+                f"Added {elem['raw']} at index {idx}.", require_verbose=True
+            )
             self._element_dicts.insert(idx, elem)
 
         for idx in indices:
@@ -427,6 +435,8 @@ class InteractiveWindow:
             self._update_element(idx, update_vis=False)
             if to_vis:
                 self._add_geometry_to_vis(self.elements[idx]["drawable"])
+
+        self.print_debug(f"{len(self.elements)} now.", require_verbose=True)
 
         # self.i += sum([idx <= self.i for idx in indices])
         # if self._started:
@@ -1028,7 +1038,7 @@ class InteractiveWindow:
             f"Applying {func.__name__} function to {len(indices)} elements, indices: "
         )
         self.print_debug(indices)
-        input_elements = [self._elements_input[i] for i in indices]
+        input_elements = [self.elements[i]["raw"] for i in indices]
 
         try:
             output_elements = func(input_elements)
@@ -1049,7 +1059,7 @@ class InteractiveWindow:
             output_elements = [output_elements]
 
         self._save_state(indices, input_elements, len(output_elements))
-        self._pop_elements(indices, from_vis=True)
+        assert self._pop_elements(indices, from_vis=True) == input_elements
         self._insert_elements(output_elements, to_vis=True)
 
         self._future_states = []
