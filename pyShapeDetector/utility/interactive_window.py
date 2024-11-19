@@ -375,9 +375,15 @@ class InteractiveWindow:
             f"popped: {indices}",
         )
         self.print_debug(f"old index: {self.i}, new index: {idx_new}")
-        idx_new = max(min(idx_new, len(self.elements) - 1), 0)
-        self._update_current_idx(idx_new, update_old=False)
-        self.i_old = self.i
+
+        if len(self.elements) == 0:
+            warnings.warn("No elements left after popping, not updating.")
+            self.i = 0
+            self.i_old = 0
+        else:
+            idx_new = max(min(idx_new, len(self.elements) - 1), 0)
+            self._update_current_idx(idx_new, update_old=False)
+            self.i_old = self.i
         return elements_popped
 
     # def _get_element_dict(self, elem_raw, selected=False, idx=None):
@@ -1299,7 +1305,9 @@ class InteractiveWindow:
             # pre_selected = [False] * len(elems_raw)
             current_idx = copy.copy(self.i)
             pre_selected = self.selected
-            elems_raw = self._pop_elements(range(len(self.elements)), from_vis=True)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message="No elements left")
+                elems_raw = self._pop_elements(range(len(self.elements)), from_vis=True)
             assert len(self.elements) == 0
 
         self.print_debug(
