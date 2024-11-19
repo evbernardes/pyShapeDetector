@@ -194,6 +194,7 @@ class InputSelector:
         self._get_input_vars()
 
         # Submit button
+        self._root.bind("<Escape>", lambda event: self._root.destroy())
         self._root.bind("<Return>", self._on_accept)
         accept_button = ttk.Button(self._root, text="Accept", command=self._on_accept)
         accept_button.grid(row=len(self._specs), column=0, columnspan=2, pady=10)
