@@ -26,6 +26,7 @@ class OrientedBoundingBox(Open3D_Geometry):
     contains_points
     expanded
     split
+    as_planes
 
     """
 
@@ -101,3 +102,56 @@ class OrientedBoundingBox(Open3D_Geometry):
             bboxes.append(new_bbox)
 
         return bboxes
+
+    def as_planes(self):
+        """
+        Get the bounded planes for the faces of the bounding box.
+
+        Returns:
+            planes: list of tuples (a, b, c, d) representing the plane equations
+            faces: list of lists of vertices for each face
+        """
+        from pyShapeDetector.primitives import PlaneBounded
+
+        center = np.array(self.center)  # Center of the bounding box
+        extent = np.array(self.extent) / 2.0  # Half-extent (from center to face)
+
+        rotation = self.R
+
+        # Local axes directions
+        axes = [rotation[:, i] for i in range(3)]  # x, y, z axes
+
+        # Face vertices (relative to the center and extent)
+        face_offsets = [
+            [+1, +1, +1],
+            [+1, +1, -1],
+            [+1, -1, +1],
+            [+1, -1, -1],
+            [-1, +1, +1],
+            [-1, +1, -1],
+            [-1, -1, +1],
+            [-1, -1, -1],
+        ]
+
+        vertices = [
+            center + sum(offset[i] * extent[i] * axes[i] for i in range(3))
+            for offset in face_offsets
+        ]
+
+        # Define faces (each with 4 vertices)
+        faces_indices = [
+            [0, 1, 3, 2],  # Front face
+            [4, 5, 7, 6],  # Back face
+            [0, 1, 5, 4],  # Top face
+            [2, 3, 7, 6],  # Bottom face
+            [0, 2, 6, 4],  # Left face
+            [1, 3, 7, 5],  # Right face
+        ]
+        faces = [[vertices[i] for i in indices] for indices in faces_indices]
+
+        planes = []
+
+        for face in faces:
+            planes.append(PlaneBounded.fit(face))
+
+        return planes

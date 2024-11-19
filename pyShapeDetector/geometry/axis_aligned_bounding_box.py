@@ -32,6 +32,7 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
     sample_points_density
     sample_PointCloud_uniformly
     sample_PointCloud_density
+    as_planes
     """
 
     def __add__(self, other_aabb):
@@ -266,3 +267,13 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
         from .pointcloud import PointCloud
 
         return PointCloud(self.sample_points_density(density))
+
+    def as_planes(self):
+        """
+        Get the bounded planes for the faces of the bounding box.
+
+        Returns:
+            planes: list of tuples (a, b, c, d) representing the plane equations
+            faces: list of lists of vertices for each face
+        """
+        return self.obb.as_planes()
