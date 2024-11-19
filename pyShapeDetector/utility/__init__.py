@@ -32,7 +32,7 @@ from .multidetector import MultiDetector
 from .primitivelimits import PrimitiveLimits
 from .detector_options import DetectorOptions
 from .interactive_window import InteractiveWindow
-from .input_selector import InputSelector
+from .input_selector import InputSelector, SingleChoiceSelector
 
 from .helpers_internal import (
     parallelize,

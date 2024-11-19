@@ -25,7 +25,7 @@ import numpy as np
 from multiprocessing import Manager, Process
 from open3d import visualization
 from .interactive_window import InteractiveWindow
-from .input_selector import InputSelector
+from .input_selector import InputSelector, SingleChoiceSelector
 
 
 GLFW_KEY_LEFT_SHIFT = 340
@@ -93,9 +93,7 @@ def get_inputs(specs, window_name="Enter values", as_dict=False):
 
 
 def select_function_with_gui(functions):
-    """Make user select from a list of functions with a gui window.
-
-    See also: get_inputs
+    """Make user select from a list of functions with a GUI window.
 
     Parameters
     ----------
@@ -105,19 +103,44 @@ def select_function_with_gui(functions):
     Returns
     -------
     function
-
+        The selected function.
     """
     for func in functions:
         if not callable(func):
             raise ValueError(f"Expected functions, got {type(func)}.")
 
-    options = [f.__name__ for f in functions]
+    # Get function names for display
+    function_names = [f.__name__ for f in functions]
 
-    idx = options.index(
-        get_inputs({"function": (options, options[0])}, window_name="Choose function")[
-            0
-        ]
-    )
+    # Create a multiprocessing Manager for safely sharing data between processes
+    manager = Manager()
+    results = manager.list()
+
+    def _get_choice_selector_worker(results):
+        try:
+            # Initialize the selector with function names
+            selector = SingleChoiceSelector(
+                choices=function_names,
+                default_value=function_names[0],  # Default to the first function
+                window_name="Choose a Function",
+            )
+            # Get the selected result and store it
+            results.append(selector.get_result())
+        except KeyboardInterrupt:
+            results.append(None)  # Append None if the process is interrupted
+
+    # Start a separate process for the GUI
+    process = Process(target=_get_choice_selector_worker, args=(results,))
+    process.start()
+    process.join()
+
+    # Handle the result after the process ends
+    if not results or results[0] is None:
+        raise KeyboardInterrupt("No function selected.")
+
+    # Get the index of the selected function
+    selected_function_name = results[0]
+    idx = function_names.index(selected_function_name)
 
     return functions[idx]
 

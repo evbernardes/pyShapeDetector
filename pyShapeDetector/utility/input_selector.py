@@ -204,3 +204,91 @@ class InputSelector:
 
         if len(self._results) == 0:
             raise KeyboardInterrupt("Action cancelled, no input.")
+
+
+class SingleChoiceSelector:
+    """
+    A GUI-based selector that allows the user to choose one value
+    from multiple options via individual buttons.
+
+    Attributes:
+    ----------
+    choices : list
+        A list of choices the user can select from.
+    default_value : any
+        The default value to select if Enter is pressed.
+
+    Methods:
+    -------
+    get_result()
+        Opens the GUI to collect the user's choice and returns the selected value.
+    """
+
+    def __init__(self, choices, default_value, window_name="Select an Option"):
+        if not isinstance(choices, (list, tuple)) or len(choices) == 0:
+            raise ValueError("Choices must be a non-empty list or tuple.")
+        if default_value not in choices:
+            raise ValueError("Default value must be one of the choices.")
+
+        self.choices = choices
+        self.default_value = default_value
+        self._window_name = str(window_name)
+        self._result = None
+
+    def _on_button_press(self, choice):
+        """Handles button press to select a choice."""
+        self._result = choice
+        self._root.destroy()
+
+    def _on_enter_key(self, event=None):
+        """Handles pressing Enter to select the default value."""
+        self._result = self.default_value
+        self._root.destroy()
+
+    def get_result(self):
+        """Opens the GUI and waits for the user to select a choice."""
+        self._root = tk.Tk()
+        self._root.title(self._window_name)
+
+        ttk.Label(self._root, text="Please select an option:").grid(
+            row=0, column=0, columnspan=2, pady=10
+        )
+
+        # Define a custom style for the default button
+        style = ttk.Style()
+        style.configure(
+            "Default.TButton", background="#d1e7dd", font=("Arial", 10, "bold")
+        )
+
+        for row, choice in enumerate(self.choices, start=1):
+            # Apply default styling if the choice is the default value
+            button_style = (
+                "Default.TButton" if choice == self.default_value else "TButton"
+            )
+
+            # Create the button
+            button = ttk.Button(
+                self._root,
+                text=str(choice),
+                command=lambda c=choice: self._on_button_press(c),
+                style=button_style,
+            )
+            button.grid(row=row, column=0, padx=20, pady=5, sticky="ew")
+
+            # Add "Default" label if this is the default value
+            if choice == self.default_value:
+                ttk.Label(self._root, text="Default", foreground="gray").grid(
+                    row=row, column=1, padx=10, pady=5, sticky="w"
+                )
+
+        # Bind the Enter key to selecting the default value
+        self._root.bind("<Return>", self._on_enter_key)
+        self._root.bind("<Escape>", lambda event: self._root.destroy())
+
+        # Start the GUI loop
+        self._root.mainloop()
+
+        if self._result is None:
+            raise KeyboardInterrupt("Action cancelled, no selection made.")
+
+        return self._result
