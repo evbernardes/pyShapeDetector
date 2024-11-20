@@ -15,28 +15,15 @@ from abc import ABC
 import numpy as np
 from open3d import visualization
 from open3d.utility import Vector3dVector
-# from .helpers_visualization import get_painted
-# from pyShapeDetector.geometry import OrientedBoundingBox, TriangleMesh, PointCloud
-# from pyShapeDetector.primitives import Primitive
-
-NUM_POINTS_FOR_DISTANCE_CALC = 30
 
 COLOR_BBOX_SELECTED = (0, 0.8, 0)
 COLOR_BBOX_UNSELECTED = (1, 0, 0)
 
-# COLOR_SELECTED = (0, 0.4, 0)
-# COLOR_SELECTED_CURRENT = COLOR_BBOX_SELECTED
+COLOR_SELECTED_CURRENT = np.array([255, 234, 0]) / 255  # flashy yellow
+COLOR_SELECTED = 0.7 * COLOR_SELECTED_CURRENT
 
-# COLOR_UNSELECTED = (0.9, 0.9, 0.9)
-# COLOR_UNSELECTED_CURRENT = (0.0, 0.0, 0.6)
-
-COLOR_SELECTED = (0.9, 0.9, 0.9)
-COLOR_SELECTED_CURRENT = (1, 1, 1)
-
-COLOR_UNSELECTED = (0.3, 0.3, 0.3)
 COLOR_UNSELECTED_CURRENT = (0.6, 0.6, 0.6)
-
-COLOR_HIGHLIGHT = 0.3
+COLOR_UNSELECTED = (0.3, 0.3, 0.3)
 
 KEYS_NORMAL = {
     "Toggle": ["Space", 32],  # GLFW_KEY_SPACE = 32
@@ -142,6 +129,11 @@ class InteractiveWindow:
         Number of states to save for undoing. Default: 10.
     number_redo_states : int, optional
         Number of states to save for redoing. Default: 5.
+    random_color_multiplier : float, optional
+        Random colors are multiplied by this value to reduce their brightness,
+        creating bigger contrast with selected objects. Default: 2/3.
+    highlight_color_multiplier : float, optional
+        Multiplier for color to show selected and current elements. Default: 0.3.
     debug : boolean, optional
         If True, prints debug information. Default: False.
     verbose : boolean, optional
@@ -163,6 +155,8 @@ class InteractiveWindow:
         number_points_for_distance=30,
         number_undo_states=10,
         number_redo_states=5,
+        random_color_multiplier=2 / 3,
+        highlight_color_multiplier=0.3,
         debug=False,
         verbose=False,
         return_finish_flag=False,
@@ -201,7 +195,6 @@ class InteractiveWindow:
         self.color_selected_current = COLOR_SELECTED_CURRENT
         self.color_unselected = COLOR_UNSELECTED
         self.color_unselected_current = COLOR_UNSELECTED_CURRENT
-        self.color_highlight = COLOR_HIGHLIGHT
 
         # preferences dict:
         self._preferences = {
@@ -211,6 +204,8 @@ class InteractiveWindow:
             "paint_selected": bool(paint_selected),
             "paint_random": bool(paint_random),
             "number_points_for_distance": int(number_points_for_distance),
+            "random_color_multiplier": np.clip(float(random_color_multiplier), 0, 1),
+            "highlight_color_multiplier": np.max(float(highlight_color_multiplier), 0),
             "number_undo_states": int(number_undo_states),
             "number_redo_states": int(number_redo_states),
             "debug": bool(debug),
@@ -700,7 +695,7 @@ class InteractiveWindow:
 
         # lower luminance of random colors to not interfere with highlights
         if isinstance(color, str) and color == "random":
-            multiplier = 2 / 3
+            multiplier = self._preferences["random_color_multiplier"]
             color = np.random.random(3) * multiplier
 
         color = np.clip(color, 0, 1)
@@ -724,7 +719,7 @@ class InteractiveWindow:
                 elements_distance.append(PointCloud(pcd))
 
             elif PointCloud.is_instance_or_open3d(elem):
-                if len(elem.points) > NUM_POINTS_FOR_DISTANCE_CALC:
+                if len(elem.points) > number_points_for_distance:
                     ratio = int(len(elem.points) / number_points_for_distance)
                     pcd = elem.uniform_down_sample(ratio)
                 else:
@@ -908,13 +903,11 @@ class InteractiveWindow:
                 require_verbose=True,
             )
         else:
-            highlight_ratio = int(is_selected) + int(is_current)
-            color = elem["color"] + self.color_highlight * highlight_ratio
-            self._set_element_colors(elem["drawable"], color)
-            self.print_debug(
-                f"[_update_element] Setting highlight: {highlight_ratio}.",
-                require_verbose=True,
+            highlight_offset = self._preferences["highlight_color_multiplier"] * (
+                int(is_selected) + int(is_current)
             )
+            color = elem["color"] + highlight_offset
+            self._set_element_colors(elem["drawable"], color)
 
         if update_vis:
             self.print_debug(
@@ -1191,6 +1184,11 @@ class InteractiveWindow:
                 window_name="Set preferences",
                 as_dict=True,
             )
+
+            new_preferences["random_color_multiplier"] = np.clip(
+                new_preferences["random_color_multiplier"], 0, 1
+            )
+
         except KeyboardInterrupt:
             return
 
