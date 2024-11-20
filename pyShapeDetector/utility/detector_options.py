@@ -6,8 +6,7 @@ Created on Tue Sep 26 15:59:55 2023
 @author: ebernardes
 """
 import warnings
-
-DEG = 57.29577951308232
+import numpy as np
 
 
 class DetectorOptions:
@@ -102,13 +101,13 @@ class DetectorOptions:
 
     @property
     def threshold_angle_degrees(self):
-        return self.threshold_angle * DEG
+        return np.rad2deg(self.threshold_angle)
 
     @threshold_angle_degrees.setter
     def threshold_angle_degrees(self, value):
         if value < 0:
             raise ValueError("threshold_angle_degrees must be positive")
-        self._threshold_angle = value / DEG
+        self._threshold_angle = np.deg2rad(value)
 
     @property
     def threshold_ratios(self):
@@ -160,8 +159,8 @@ class DetectorOptions:
 
     @probability.setter
     def probability(self, value):
-        if value <= 0 or value > 1:
-            raise ValueError("probability must be > 0 and <= 1.0")
+        if value <= 0 or value >= 1:
+            raise ValueError("probability must be in range [0, 1).")
         self._probability = value
 
     @property
