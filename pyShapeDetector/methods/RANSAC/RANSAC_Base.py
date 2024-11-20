@@ -13,6 +13,8 @@ import random
 import numpy as np
 import copy
 
+from scipy.spatial import cKDTree
+
 from pyShapeDetector.geometry import PointCloud
 from pyShapeDetector.utility import PrimitiveLimits, DetectorOptions
 
@@ -419,7 +421,9 @@ class RANSAC_Base(ABC):
 
         If the method's `max_point_distance` attribute is set, then only
         iteratively take samples only accepting at each time one that is
-        close to the others.
+        close to existing samples, using a cKDTree-based algorithm.
+
+        See also: scipy.spatial.cKDTree
 
         Parameters
         ----------
@@ -433,43 +437,98 @@ class RANSAC_Base(ABC):
         list
             Indices of samples
         """
-        num_points = len(points)
-        if self._opt.max_point_distance is None:
-            samples = random.sample(range(num_points), num_samples)
+        eps = self._opt.max_point_distance
+        if eps is None or eps == 0:
+            return random.sample(range(len(points)), num_samples)
 
-        else:
-            samples = set([random.randrange(num_points)])
+        tries = 10
+        tree = cKDTree(points)
+        sampled_indices = []
+        visited = set()
 
-            while len(samples) < num_samples:
-                # Array of shape (num_samples, num_points, 3), where diff[i, :, :]
-                # is the different between each point to the ith sample
-                diff = points[None] - points[list(samples)][:, None]
+        while len(sampled_indices) < num_samples:
+            if not sampled_indices:
+                # Start with a random point
+                new_idx = np.random.randint(len(points))
+            else:
+                # Pick a point from the already sampled set
+                shuffled_indices = copy.copy(sampled_indices)
+                np.random.shuffle(shuffled_indices)
 
-                # Find all of the distances, then get the minimum for each sample,
-                # giving dist.shape == (n_points, )
-                dist = np.min(np.linalg.norm(diff, axis=2), axis=0)
+                new_idx = None
+                for idx in shuffled_indices:
+                    # Find neighbors within eps
+                    neighbors = [n for n in tree.query_ball_point(points[idx], eps) if n not in visited]
+                    if neighbors:
+                        # new_idx = np.random.choice(neighbors)
+                        new_idx = neighbors[0]
+                        break
 
-                # Find all of the possible points and then remove those already
-                # sampled
-                possible_samples = dist < self._opt.max_point_distance
-                possible_samples[list(samples)] = False
+            if new_idx is None:
+                return None
 
-                # Continue only if enough existing samples
-                N_possible = sum(possible_samples)
-                if N_possible < num_samples - len(samples):
-                    return None
+            sampled_indices.append(new_idx)
+            visited.add(new_idx)
 
-                idx_possible = np.where(possible_samples)[0]
-                idx_sample = random.randrange(N_possible)
-                samples.add(idx_possible[idx_sample])
+        return sampled_indices
 
-        if len(samples) != num_samples:
-            raise RuntimeError(
-                f"Got {len(samples)} but expected "
-                f"{num_samples}, this should not happen"
-            )
+    # TODO: clean this
+    # def get_samples(self, points, num_samples):
+    #     """Sample points and return indices of sampled points.
 
-        return list(samples)
+    #     If the method's `max_point_distance` attribute is set, then only
+    #     iteratively take samples only accepting at each time one that is
+    #     close to the others.
+
+    #     Parameters
+    #     ----------
+    #     points : N x 3 array
+    #         All input points
+    #     num_samples : int
+    #         Number of samples
+
+    #     Returns
+    #     -------
+    #     list
+    #         Indices of samples
+    #     """
+    #     num_points = len(points)
+    #     if self._opt.max_point_distance is None:
+    #         samples = random.sample(range(num_points), num_samples)
+
+    #     else:
+    #         samples = set([random.randrange(num_points)])
+
+    #         while len(samples) < num_samples:
+    #             # Array of shape (num_samples, num_points, 3), where diff[i, :, :]
+    #             # is the different between each point to the ith sample
+    #             diff = points[None] - points[list(samples)][:, None]
+
+    #             # Find all of the distances, then get the minimum for each sample,
+    #             # giving dist.shape == (n_points, )
+    #             dist = np.min(np.linalg.norm(diff, axis=2), axis=0)
+
+    #             # Find all of the possible points and then remove those already
+    #             # sampled
+    #             possible_samples = dist < self._opt.max_point_distance
+    #             possible_samples[list(samples)] = False
+
+    #             # Continue only if enough existing samples
+    #             N_possible = sum(possible_samples)
+    #             if N_possible < num_samples - len(samples):
+    #                 return None
+
+    #             idx_possible = np.where(possible_samples)[0]
+    #             idx_sample = random.randrange(N_possible)
+    #             samples.add(idx_possible[idx_sample])
+
+    #     if len(samples) != num_samples:
+    #         raise RuntimeError(
+    #             f"Got {len(samples)} but expected "
+    #             f"{num_samples}, this should not happen"
+    #         )
+
+    #     return list(samples)
 
     def get_biggest_connected_component(self, shape, points, inliers, min_points=10):
         if self._opt.eps is None:
