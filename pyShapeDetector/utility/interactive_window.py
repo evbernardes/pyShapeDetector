@@ -1159,7 +1159,11 @@ class InteractiveWindow:
 
         from .helpers_visualization import select_function_with_gui
 
-        func = select_function_with_gui(self.functions)
+        try:
+            func = select_function_with_gui(self.functions)
+        except KeyboardInterrupt:
+            return
+
         if func is not None:
             self._apply_function_to_elements(func, action)
 
