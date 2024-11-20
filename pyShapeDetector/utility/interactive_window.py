@@ -40,7 +40,7 @@ KEYS_EXTRA = {
     "Print Help": ["H", ord("H")],
     "Print Info": ["I", ord("I")],
     "Center current": ["C", ord("C")],
-    # "Apply": ["Enter", 257],  # GLFW_KEY_ENTER = 257
+    "Functions menu": ["Enter", 257],  # GLFW_KEY_ENTER = 257
     "Undo": ["Z", ord("Z")],
     "Redo": ["Y", ord("Y")],
     "Hide/Unhide": ["U", ord("U")],
@@ -232,10 +232,12 @@ class InteractiveWindow:
 
     @property
     def function_key_mappings(self):
-        if self.functions is None:
-            return dict()
-        else:
-            return {ord(str((i + 1) % 10)): f for i, f in enumerate(self.functions)}
+        key_mappings = dict()
+        if self.functions is not None:
+            for n, f in enumerate(self.functions):
+                key = ord(str((n + 1) % 10))
+                key_mappings[key] = f
+        return key_mappings
 
     @property
     def functions(self):
@@ -253,7 +255,10 @@ class InteractiveWindow:
             new_functions = [new_functions]
 
         if (N := len(new_functions)) > 10:
-            raise ValueError(f"Max number of functions: 10, got {N}.")
+            warnings.warn(
+                f"Got: {N} functions, only the first 10 will have separete keys. "
+                "Use full menu to access others."
+            )
 
         if not isinstance(new_functions, list):
             raise ValueError(
@@ -781,13 +786,16 @@ class InteractiveWindow:
 
         vis.register_key_action_callback(KEYS_EXTRA["Undo"][1], self._cb_undo)
         vis.register_key_action_callback(KEYS_EXTRA["Redo"][1], self._cb_redo)
+        vis.register_key_action_callback(
+            KEYS_EXTRA["Functions menu"][1], self._cb_functions_menu
+        )
 
         # Extra keys for functions
         for key, f in self.function_key_mappings.items():
             vis.register_key_action_callback(
                 key,
-                lambda vis, action, mods, func=f: self._cb_apply_function(
-                    func, vis, action, mods
+                lambda vis, action, mods, func=f: self._apply_function_to_elements(
+                    func, action
                 ),
             )
 
@@ -977,6 +985,43 @@ class InteractiveWindow:
             self._update_current_idx(i, update_old=self._started)
         self._update_current_idx(i_old, update_old=self._started)
 
+    def _apply_function_to_elements(self, func, action):
+        """Apply function to selected elements."""
+        if not self.extra_functions or action == 1 or self.functions is None:
+            return
+
+        indices = self.selected_indices
+        self.print_debug(
+            f"Applying {func.__name__} function to {len(indices)} elements, indices: "
+        )
+        self.print_debug(indices)
+        input_elements = [self.elements[i]["raw"] for i in indices]
+
+        try:
+            output_elements = func(input_elements)
+        except KeyboardInterrupt:
+            return
+        except Exception as e:
+            warnings.warn(
+                f"Failed to apply {func.__name__} function to "
+                f"elements in indices {indices}, got following error: {str(e)}"
+            )
+            time.sleep(0.5)
+            return
+
+        # assures it's a list
+        if isinstance(output_elements, tuple):
+            output_elements = list(output_elements)
+        elif not isinstance(output_elements, list):
+            output_elements = [output_elements]
+
+        self._save_state(indices, input_elements, len(output_elements))
+        assert self._pop_elements(indices, from_vis=True) == input_elements
+        self._insert_elements(output_elements, to_vis=True)
+
+        self._future_states = []
+        self._update_get_plane_boundaries()
+
     ###########################################################################
     ################### Callback functions for Visualizer #####################
     ###########################################################################
@@ -1068,43 +1113,6 @@ class InteractiveWindow:
         """Switch to mouse selection + extra LCtrl mode."""
         self.mouse_toggle = bool(action)
 
-    def _cb_apply_function(self, func, vis, action, mods):
-        """Apply function to selected elements."""
-        if not self.extra_functions or action == 1 or self.functions is None:
-            return
-
-        indices = self.selected_indices
-        self.print_debug(
-            f"Applying {func.__name__} function to {len(indices)} elements, indices: "
-        )
-        self.print_debug(indices)
-        input_elements = [self.elements[i]["raw"] for i in indices]
-
-        try:
-            output_elements = func(input_elements)
-        except KeyboardInterrupt:
-            return
-        except Exception as e:
-            warnings.warn(
-                f"Failed to apply {func.__name__} function to "
-                f"elements in indices {indices}, got following error: {str(e)}"
-            )
-            time.sleep(0.5)
-            return
-
-        # assures it's a list
-        if isinstance(output_elements, tuple):
-            output_elements = list(output_elements)
-        elif not isinstance(output_elements, list):
-            output_elements = [output_elements]
-
-        self._save_state(indices, input_elements, len(output_elements))
-        assert self._pop_elements(indices, from_vis=True) == input_elements
-        self._insert_elements(output_elements, to_vis=True)
-
-        self._future_states = []
-        self._update_get_plane_boundaries()
-
     def _cb_print_help(self, vis, action, mods):
         if not self.extra_functions or action == 1:
             return
@@ -1140,6 +1148,20 @@ class InteractiveWindow:
         ctr.set_front([0, 0, -1])  # Define the camera front direction
         ctr.set_up([0, 1, 0])  # Define the camera "up" direction
         ctr.set_zoom(0.1)  # Adjust zoom level if necessary
+
+    def _cb_functions_menu(self, vis, action, mods):
+        if not self.extra_functions or action == 1:
+            return
+
+        if self.functions is None or len(self.functions) == 0:
+            warnings.warn("No functions, cannot call menu.")
+            return
+
+        from .helpers_visualization import select_function_with_gui
+
+        func = select_function_with_gui(self.functions)
+        if func is not None:
+            self._apply_function_to_elements(func, action)
 
     def _cb_hide_unhide(self, vis, action, mods):
         """Hide selected elements or unhide all hidden elements."""
