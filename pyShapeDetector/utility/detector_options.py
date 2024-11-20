@@ -27,7 +27,7 @@ class DetectorOptions:
     _max_normal_angle_degrees = 10
     _inliers_min = None
     _fitness_min = None
-    _eps = None
+    _connected_components_eps = None
     _downsample = 1
     _adaptative_threshold_k = 15
 
@@ -54,7 +54,7 @@ class DetectorOptions:
             "max_normal_angle_degrees": self.max_normal_angle_degrees,
             "inliers_min": self.inliers_min,
             "fitness_min": self.fitness_min,
-            "connected_components_density": self.connected_components_density,
+            "connected_components_density": self.connected_components_eps,
             "downsample": self._downsample,
             "adaptative_threshold_k": self.adaptative_threshold_k,
         }
@@ -200,12 +200,12 @@ class DetectorOptions:
         self._fitness_min = value
 
     @property
-    def connected_components_density(self):
-        return self._eps
+    def connected_components_eps(self):
+        return self._connected_components_eps
 
-    @connected_components_density.setter
-    def connected_components_density(self, value):
-        self._eps = value
+    @connected_components_eps.setter
+    def connected_components_eps(self, value):
+        self._connected_components_eps = value
 
     @property
     def downsample(self):
