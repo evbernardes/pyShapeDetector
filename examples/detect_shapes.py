@@ -6,92 +6,86 @@ Created on Wed Sep 20 15:30:28 2023
 @author: ebernardes
 """
 
-import copy
-import time
-import random
 from pathlib import Path
 import numpy as np
-import matplotlib.pyplot as plt
 import open3d as o3d
 
-from open3d.utility import Vector3dVector
-
+from pyShapeDetector.geometry import PointCloud
 from pyShapeDetector.primitives import Sphere, Plane, PlaneBounded, Cylinder
-from pyShapeDetector import utility as util
-from pyShapeDetector.methods import BDSAC#, RANSAC_Classic, MSAC, LDSAC
+from pyShapeDetector.utility import (
+    MultiDetector,
+    PrimitiveLimits,
+    draw_geometries,
+    get_painted,
+)
+from pyShapeDetector import methods
 
-DEG = 0.017453292519943295
+filedir = Path("./data")
 
-#%% Parameters and input
-# method = RANSAC_Classic
-# method = RANSAC_Weighted
-# method = MSAC
-method = BDSAC
-# method = LDSAC
+# Choose RANSAC-based method:
+# method = methods.RANSAC_Classic
+# method = methods.RANSAC_Weighted
+# method = methods.MSAC
+method = methods.BDSAC
+# method = methods.LDSAC
 
-filedir = Path('./data')
+# Choose one of the possible example datasets:
+# filename = "disjoint_planes.pcd"
+# filename = '3planes_3spheres_3cylinders.pcd'
+filename = "cylinders_box_sphere.noise_0.0.pcd"
+# filename = '1planes_1spheres.pcd'
+# filename = '1cylinders.pcd'
+# filename = '1spheres.pcd'
+# filename = 'big.pcd'
 
-# filename = 'disjoint_planes'
-# filename = '3planes_3spheres_3cylinders'
-filename = 'cylinders_box_sphere.noise_0.0'
-# filename = '1planes_1spheres'
-# filename = '1cylinders'
-# filename = '1spheres'
-# filename = 'big'
-
-
-
+# Add noise:
 noise_max = 0
-fullpath = (filedir / filename)
 
-pcd_full = o3d.io.read_point_cloud(str(fullpath) + '.pcd')
+pcd_full = PointCloud.read_point_cloud(filedir / filename)
+
 # draw_geometries([pcd_full])
 noise = noise_max * np.random.random(np.shape(pcd_full.points))
-pcd_full.points = Vector3dVector(np.asarray(pcd_full.points) + noise)
-# draw_geometries([pcd_full])
+pcd_full.points += noise
+pcd_full.estimate_normals()
+draw_geometries(pcd_full, window_name="Input pointcloud with noise")
 
-#%% Separate full pointcloud into clusters
-eps = util.average_nearest_dist(pcd_full.points, k=15)
-pcds_segmented = util.segment_dbscan(pcd_full, 2*eps, min_points=10, colors=True)
-# o3d.visualization.draw_geometries(pcds_segmented)
-# pcds_segmented = [pcd_full]
-#%%
+# Separate full pointcloud into clusters, if possible
+eps = pcd_full.average_nearest_dist(k=15)
+# pcds_segmented = pcd_full.segment_dbscan(2 * eps, min_points=10)
+pcds_segmented = [pcd_full]
+pcds_segmented = get_painted(pcds_segmented, color="random")
+draw_geometries(pcds_segmented, window_name="Segmented pointclouds, one color for each")
 
+# Create RANSAC-based fitter instance and set parameters
 detector = method()
-detector.options.inliers_min = 1000
-# detector.options.threshold_distance = 0.2 + 1 * noise_max
-detector.options.threshold_distance = 10 * eps
-detector.options.threshold_angle=25 * DEG
-detector.options.connected_components_density=None
-detector.options.threshold_refit_ratio = 3
-detector.options.num_iterations = 100
-# detector.options.probability = 0.9999999
-detector.options.probability = 1
+detector.options.inliers_min = 100
+detector.options.threshold_distance = 1 * eps
+detector.options.threshold_angle_degree = 10
+detector.options.threshold_refit_ratio = 1
+detector.options.num_iterations = 20
+detector.options.probability = 0.9999999
 
-detector.add(Sphere, util.PrimitiveLimits(('radius', [None, 3])))
+# When using a big number of samples it can be useful to limit their distance
+detector.options.max_point_distance = 3 * eps
+detector.options.num_samples = 10
+
+# Assures only connected inliers
+detector.options.connected_components_eps = 10 * eps
+
+# Adding possible primitives while limiting the radii
+detector.add(Sphere, PrimitiveLimits(("radius", [None, 3])))
 detector.add(PlaneBounded)
+detector.add(Cylinder, PrimitiveLimits(("radius", [None, 6])))
 
-shape_detector = util.MultiDetector(
-    detector, pcds_segmented, debug=True,
-    # normals_reestimate=True,
-    points_min=100, shapes_per_cluster=20,
-    compare_metric='fitness', metric_min=0.5)
-    # compare_metric='weight', metric_min=5385206)             
+shape_detector = MultiDetector(
+    detector,
+    pcds_segmented,
+    debug=True,
+    points_min=100,
+    shapes_per_cluster=30,
+    compare_metric="fitness",
+    metric_min=0.1,
+)
 
-#%% Plot detected meshes
-shapes = shape_detector.shapes
-# paint_meshes_by_type(meshes, shapes)
-
-pcds_rest = shape_detector.pcds_rest
-
-# lookat=[0, 0, 1]
-# up=[0, 0, 1]
-# front=[1, 0, 0]
-# zoom=1
-# zoom = None
-
-bbox = pcd_full.get_axis_aligned_bounding_box()
-delta = bbox.max_bound - bbox.min_bound
-
-util.draw_two_columns(pcds_segmented+shapes, shapes+[pcds_rest], 1.3*delta[1])
-
+# Plot detected shapes and outlier points
+draw_geometries(shape_detector.shapes + shape_detector.pcds_rest)
