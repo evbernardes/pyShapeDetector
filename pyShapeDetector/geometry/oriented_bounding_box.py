@@ -113,13 +113,7 @@ class OrientedBoundingBox(Open3D_Geometry):
         """
         from pyShapeDetector.primitives import PlaneBounded
 
-        center = np.array(self.center)
-        half_extent = np.array(self.extent) / 2.0
 
-        rotation = self.R
-
-        # Local axes directions
-        axes = [rotation[:, i] for i in range(3)]  # x, y, z axes
 
         # Face vertices (relative to the center and extent)
         face_offsets = [
@@ -133,9 +127,12 @@ class OrientedBoundingBox(Open3D_Geometry):
             [-1, -1, -1],
         ]
 
-        vertices = [
-            center + sum(offset[i] * half_extent[i] * axes[i] for i in range(3))
-            for offset in face_offsets
+        center = self.center
+        half_extent = self.extent / 2.0
+        axes = self.R.T # Local axes directions
+
+        vertices = center + [
+            np.dot(offset * half_extent, axes) for offset in face_offsets
         ]
 
         # Define faces (each with 4 vertices)
@@ -147,11 +144,11 @@ class OrientedBoundingBox(Open3D_Geometry):
             [0, 2, 6, 4],  # Left face
             [1, 3, 7, 5],  # Right face
         ]
-        faces = [[vertices[i] for i in indices] for indices in faces_indices]
 
         planes = []
 
-        for face in faces:
-            planes.append(PlaneBounded.fit(face))
+        for indices in faces_indices:
+            plane_face = PlaneBounded.fit(vertices[indices])
+            planes.append(plane_face)
 
         return planes
