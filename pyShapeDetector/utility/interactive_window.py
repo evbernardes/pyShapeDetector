@@ -441,7 +441,9 @@ class InteractiveWindow:
                     f"[_insert_elements] Randomly painting element at index {i}.",
                     require_verbose=True,
                 )
-                elem["drawable"] = self._get_painted(elem["drawable"], color="random")
+                elem["drawable"] = self._get_painted_element(
+                    elem["drawable"], color="random"
+                )
 
             if self._preferences["paint_selected"] and selected[i]:
                 self.print_debug(
@@ -450,7 +452,7 @@ class InteractiveWindow:
                 )
                 is_current = self._started and (self.i == idx)
                 color = self._colors_selected_current[True, is_current]
-                elem["drawable"] = self._get_painted(elem["drawable"], color)
+                elem["drawable"] = self._get_painted_element(elem["drawable"], color)
 
             self.print_debug(
                 f"Added {elem['raw']} at index {idx}.", require_verbose=True
@@ -667,7 +669,7 @@ class InteractiveWindow:
             elem_new = elem
 
         if self._preferences["paint_random"]:
-            elem_new = self._get_painted(elem_new, color="random")
+            elem_new = self._get_painted_element(elem_new, color="random")
 
         return elem_new
 
@@ -682,6 +684,7 @@ class InteractiveWindow:
 
     def _set_element_colors(self, element, input_color):
         if input_color is not None:
+            input_color = np.clip(input_color, 0, 1)
             if hasattr(element, "color"):
                 element.color = Vector3dVector(input_color)
             if hasattr(element, "colors"):
@@ -689,16 +692,20 @@ class InteractiveWindow:
             if hasattr(element, "vertex_colors"):
                 element.vertex_colors = Vector3dVector(input_color)
 
-    def _get_painted(self, elements, color):
+    def _get_painted_element(self, element, color):
         from .helpers_visualization import get_painted
+
+        if isinstance(element, list):
+            raise RuntimeError("Expected single element, not list.")
 
         # lower luminance of random colors to not interfere with highlights
         if isinstance(color, str) and color == "random":
             multiplier = 2 / 3
-        else:
-            multiplier = 1
+            color = np.random.random(3) * multiplier
 
-        return get_painted(elements, color, multiplier=multiplier)
+        color = np.clip(color, 0, 1)
+
+        return get_painted(element, color)
 
     def _get_element_distances(self, elems):
         from pyShapeDetector.primitives import Primitive
@@ -817,7 +824,7 @@ class InteractiveWindow:
                             lineset += hole.vertices_LineSet.as_open3d
                 except AttributeError:
                     continue
-                lineset.paint_uniform_color((0, 0, 0))
+                lineset.paint_uniform_color((0.0, 0.0, 0.0))
                 plane_boundaries.append(lineset)
 
         self._plane_boundaries = plane_boundaries
@@ -895,7 +902,7 @@ class InteractiveWindow:
 
         if self._preferences["paint_selected"] and is_selected:
             color = self._colors_selected_current[True, is_current]
-            elem["drawable"] = self._get_painted(elem["drawable"], color)
+            elem["drawable"] = self._get_painted_element(elem["drawable"], color)
             self.print_debug(
                 f"[_update_element] Painting drawable to color: {color}.",
                 require_verbose=True,

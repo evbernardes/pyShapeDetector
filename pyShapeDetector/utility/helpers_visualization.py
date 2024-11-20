@@ -145,7 +145,7 @@ def select_function_with_gui(functions):
     return functions[idx]
 
 
-def get_painted(elements, color="random", multiplier=1):
+def get_painted(elements, color="random"):
     """Get painted copy of each pointcloud/mesh/shape.
 
     If color is not input, then
@@ -158,9 +158,6 @@ def get_painted(elements, color="random", multiplier=1):
         If color is an array_like, it will be used to define the color of
         everything. If 'random', colors will be random. If anything else, will
         be assumed to be the name of a color map. See: matplotlib.pyplot.get_cmap
-    multiplier : float, optional
-        If given, multiply this value to each color to raise/lower luminance.
-        Default: 1.
 
     Returns
     -------
@@ -184,18 +181,17 @@ def get_painted(elements, color="random", multiplier=1):
         colors = [color] * len(elements)
 
     for color, element in zip(colors, elements):
-        color = np.asarray(color) * multiplier
+        color = np.asarray(color)
 
-        try:
+        if hasattr(element, "paint_uniform_color"):
             element.paint_uniform_color(color)
+        elif hasattr(element, color):
+            element.color = color
+        else:
+            warnings.warn("Could not paint element {element}.")
 
-        except AttributeError:
-            try:
-                element.color = color
-            except AttributeError:
-                pass
-
-        color = np.random.random(3)
+        # TODO: Why did I put this here again?
+        # color = np.random.random(3)
         if isinstance(element, Primitive):
             element.inliers.paint_uniform_color(color)
 
