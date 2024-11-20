@@ -458,7 +458,8 @@ class RANSAC_Base(ABC):
                 new_idx = None
                 for idx in shuffled_indices:
                     # Find neighbors within eps
-                    neighbors = [n for n in tree.query_ball_point(points[idx], eps) if n not in visited]
+                    neighbors = tree.query_ball_point(points[idx], eps)
+                    neighbors = [n for n in neighbors if n not in visited]
                     if neighbors:
                         # new_idx = np.random.choice(neighbors)
                         new_idx = neighbors[0]
@@ -531,13 +532,14 @@ class RANSAC_Base(ABC):
     #     return list(samples)
 
     def get_biggest_connected_component(self, shape, points, inliers, min_points=10):
-        if self._opt.eps is None:
+        eps = self._opt.connected_components_eps
+        if eps is None or eps == 0:
             return inliers
 
         points_flat = shape.flatten_points(points[inliers])
 
         pcd = PointCloud(points_flat)
-        labels = pcd.cluster_dbscan(eps=self._opt.eps, min_points=min_points)
+        labels = pcd.cluster_dbscan(eps=eps, min_points=min_points)
         labels = np.array(labels)
         if len(labels) < 2:
             return inliers
@@ -597,7 +599,7 @@ class RANSAC_Base(ABC):
             is_inlier *= angles < self._opt.threshold_angle
         inliers = np.where(is_inlier)[0]
 
-        if self._opt.connected_components_density is not None:
+        if self._opt.connected_components_eps is not None:
             inliers = self.get_biggest_connected_component(shape, points, inliers)
 
         return inliers
