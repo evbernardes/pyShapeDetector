@@ -31,7 +31,7 @@ class DetectorOptions:
     _downsample = 1
     _adaptative_threshold_k = 15
 
-    _existing_parameters = [
+    _valid_parameters = [
         "_reduction_rate",
         "reduction_rate",
         "_threshold_distance",
@@ -76,7 +76,7 @@ class DetectorOptions:
 
     @property
     def dict(self):
-        return {name: self.__getattribute__(name) for name in self._existing_parameters}
+        return {name: self.__getattribute__(name) for name in self._valid_parameters}
 
     def __repr__(self):
         lines = "\n".join("{!r}: {!r},".format(k, v) for k, v in self.dict.items())
@@ -246,9 +246,9 @@ class DetectorOptions:
             )
         self._adaptative_threshold_k = value
 
-    # Only allows setting existing arguments
+    # Only allows setting valid arguments
     def __setattr__(self, name, value):
-        if name in self._existing_parameters:
-            super().__setattr__(name, value)  # Use the standard behavior
+        if name in self._valid_parameters:
+            super().__setattr__(name, value)
         else:
             raise AttributeError(f"Cannot set undefined parameter '{name}'.")
