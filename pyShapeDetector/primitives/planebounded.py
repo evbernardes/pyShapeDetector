@@ -165,6 +165,7 @@ class PlaneBounded(Plane):
     add_line
     glue_planes_with_intersections
     get_convex
+    extrude
     """
 
     _name = "bounded plane"
@@ -1352,6 +1353,46 @@ class PlaneBounded(Plane):
                 planes = planes[1]
 
         return planes
+
+    def extrude(self, vector_or_plane, close=False):
+        """Create planes list of planes that form an extrusion along the desired
+        vector.
+
+        Parameters
+        ----------
+        vector_or_plane : Plane or Array with 3 elements
+            Defines vector for extrusion, or Plane instance to attach to.
+        close : bool, optional
+            If True, add copy of original plane to close extrusion. Default: False.
+
+        Returns
+        -------
+        list
+            List containing plane extrusions
+        """
+
+        extrusion_planes = []
+        for line in self.vertices_lines:
+            points_other = line.points
+            if isinstance(vector_or_plane, Plane):
+                points_other = vector_or_plane.flatten_points(line.points)
+            else:
+                points_other = line.points + vector_or_plane
+            new_plane = self.fit(np.vstack([line.points, points_other]))
+            new_plane.color = self.color
+            extrusion_planes.append(new_plane)
+
+        if close:
+            if isinstance(vector_or_plane, Plane):
+                new_plane = PlaneBounded(
+                    vector_or_plane.model, vertices=self.vertices, convex=self.is_convex
+                )
+            else:
+                new_plane = self.copy()
+                new_plane.translate(vector_or_plane)
+            extrusion_planes.append(new_plane)
+
+        return extrusion_planes
 
     # @classmethod
     # def planes_ressample_and_triangulate(cls, planes, density, radius_ratio=None):

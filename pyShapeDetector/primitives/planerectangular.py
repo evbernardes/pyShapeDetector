@@ -143,6 +143,7 @@ class PlaneRectangular(Plane):
     contains_projections
     set_parallel_vectors
     set_center
+    extrude
     """
 
     _name = "rectangular plane"
@@ -617,3 +618,25 @@ class PlaneRectangular(Plane):
             )
 
         self._center = center
+
+    def extrude(self, vector_or_plane, close=False):
+        """Create planes list of planes that form an extrusion along the desired
+        vector.
+
+        Parameters
+        ----------
+        vector_or_plane : Plane or Array with 3 elements
+            Defines vector for extrusion, or Plane instance to attach to.
+        close : bool, optional
+            If True, add copy of original plane to close extrusion. Default: False.
+
+        Returns
+        -------
+        list
+            List containing plane extrusions
+        """
+        from pyShapeDetector.primitives import PlaneBounded
+
+        bounded = PlaneBounded(self)
+        bounded.color = self.color
+        return bounded.extrude(vector_or_plane, close)
