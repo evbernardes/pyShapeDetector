@@ -105,7 +105,7 @@ class DetectorOptions:
     @threshold_distance.setter
     def threshold_distance(self, value):
         if value is not None and value < 0:
-            raise ValueError("threshold_distance must be positive")
+            raise ValueError("threshold_distance must be non-negative.")
         self._threshold_distance = value
 
     @property
@@ -115,7 +115,7 @@ class DetectorOptions:
     @threshold_angle.setter
     def threshold_angle(self, value):
         if value < 0:
-            raise ValueError("threshold_angle must be positive")
+            raise ValueError("threshold_angle must be non-negative.")
         self._threshold_angle = value
 
     @property
@@ -135,14 +135,22 @@ class DetectorOptions:
     @threshold_ratios.setter
     def threshold_ratios(self, values):
         if len(values) != 2:
-            raise ValueError("threshold_ratios must be a tuple/list of two " "values.")
+            raise ValueError(
+                f"threshold_ratios must be a tuple/list of two values, got {values}."
+            )
+
         if not (0 <= values[0] <= 1) or not (0 <= values[1] <= 1):
             raise ValueError(
-                "threshold_ratios must be a tuple of two "
-                "values between 0 and 1, got {values}"
+                "threshold_ratios values must be in range [0, 1], got {values}."
             )
-        values.sort()
-        self._threshold_ratios = values
+
+        if abs(values[1] - values[0]) < 1e-7:
+            warnings.warn(
+                "Input threshold_ratios values are almost the same, "
+                "should be a range to work properly."
+            )
+
+        self._threshold_ratios = (min(values), max(values))
 
     @property
     def threshold_refit_ratio(self):
@@ -160,6 +168,8 @@ class DetectorOptions:
 
     @num_samples.setter
     def num_samples(self, value):
+        if not isinstance(value, int) or value < 1:
+            raise ValueError(f"num_samples must be a positive integer, got {value}.")
         self._num_samples = value
 
     @property
@@ -169,7 +179,7 @@ class DetectorOptions:
     @num_iterations.setter
     def num_iterations(self, value):
         if not isinstance(value, int) or value < 1:
-            raise ValueError("num_interations must be a positive integer")
+            raise ValueError("num_interations must be a positive integer, got {value}.")
         self._num_iterations = value
 
     @property
@@ -178,7 +188,7 @@ class DetectorOptions:
 
     @probability.setter
     def probability(self, value):
-        if value <= 0 or value >= 1:
+        if value < 0 or value >= 1:
             raise ValueError(f"probability must be in range [0, 1), got {value}")
         self._probability = value
 
@@ -204,6 +214,8 @@ class DetectorOptions:
 
     @inliers_min.setter
     def inliers_min(self, value):
+        if not isinstance(value, int) or value < 1:
+            raise ValueError(f"inliers_min must be a positive integer, got {value}.")
         self._inliers_min = value
 
     @property
@@ -222,6 +234,8 @@ class DetectorOptions:
 
     @connected_components_eps.setter
     def connected_components_eps(self, value):
+        if value is not None and value < 0:
+            raise ValueError("connected_components_eps must be non-negative.")
         self._connected_components_eps = value
 
     @property
@@ -231,7 +245,7 @@ class DetectorOptions:
     @downsample.setter
     def downsample(self, value):
         if not isinstance(value, int) or value < 1:
-            raise ValueError("downsample must be a positive int, got {value}.")
+            raise ValueError("downsample must be a positive integer, got {value}.")
         self._downsample = value
 
     @property
@@ -242,7 +256,7 @@ class DetectorOptions:
     def adaptative_threshold_k(self, value):
         if not isinstance(value, int) or value < 1:
             raise ValueError(
-                "adaptative_threshold_k must be a positive int, got {value}."
+                "adaptative_threshold_k must be a positive integer, got {value}."
             )
         self._adaptative_threshold_k = value
 
