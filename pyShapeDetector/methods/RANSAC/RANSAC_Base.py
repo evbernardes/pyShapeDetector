@@ -441,7 +441,6 @@ class RANSAC_Base(ABC):
         if eps is None or eps == 0:
             return random.sample(range(len(points)), num_samples)
 
-        tries = 10
         tree = cKDTree(points)
         sampled_indices = []
         visited = set()
