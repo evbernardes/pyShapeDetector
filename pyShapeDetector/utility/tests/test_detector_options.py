@@ -33,6 +33,15 @@ def test_threshold_distance():
         options.threshold_distance = -1
 
 
+def test_max_sample_distance():
+    options.max_sample_distance = 1
+    options.max_sample_distance = 0
+    options.max_sample_distance = None
+
+    with pytest.raises(ValueError, match="must be None or non-negative"):
+        options.max_sample_distance = -1
+
+
 def test_threshold_angle():
     options.threshold_angle = 1
     options.threshold_angle = 0

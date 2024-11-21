@@ -17,7 +17,7 @@ class DetectorOptions:
 
     _reduction_rate = 1.0
     _threshold_distance = None
-    # _max_point_distance = None
+    _max_sample_distance = None
     _threshold_angle = 3.141592653589793  # ~ 180 degrees
     # _max_normal_angle_degrees = 10
     _threshold_ratios = [0.2, 0.7]  # for LDSAC
@@ -36,8 +36,8 @@ class DetectorOptions:
         "reduction_rate",
         "_threshold_distance",
         "threshold_distance",
-        # "_max_point_distance",
-        # "max_point_distance",
+        "_max_sample_distance",
+        "max_sample_distance",
         "_threshold_angle",
         "threshold_angle",
         # no "_threshold_angle_degrees", it's an internal call to "_threshold_angle"
@@ -112,13 +112,15 @@ class DetectorOptions:
             raise ValueError("threshold_distance must be None or non-negative.")
         self._threshold_distance = value
 
-    # @property
-    # def max_point_distance(self):
-    #     return self._max_point_distance
+    @property
+    def max_sample_distance(self):
+        return self._max_sample_distance
 
-    # @max_point_distance.setter
-    # def max_point_distance(self, value):
-    #     self._max_point_distance = value
+    @max_sample_distance.setter
+    def max_sample_distance(self, value):
+        if value is not None and value < 0:
+            raise ValueError("max_sample_distance must be None or non-negative.")
+        self._max_sample_distance = value
 
     @property
     def threshold_angle(self):

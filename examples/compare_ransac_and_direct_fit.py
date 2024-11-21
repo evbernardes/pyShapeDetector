@@ -46,7 +46,7 @@ if shape_direct is None:
 detector = method()
 detector.options.connected_components_eps = None
 detector.options.inliers_min = 100
-detector.options.max_point_distance = 2 * eps
+detector.options.max_sample_distance = 2 * eps
 detector.add(Cylinder)
 
 shape_ransac = detector.fit(pcd, debug=False)[0]

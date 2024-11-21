@@ -66,7 +66,7 @@ detector.options.num_iterations = 20
 detector.options.probability = 0.9999999
 
 # When using a big number of samples it can be useful to limit their distance
-detector.options.max_point_distance = 3 * eps
+detector.options.max_sample_distance = 3 * eps
 detector.options.num_samples = 10
 
 # Assures only connected inliers

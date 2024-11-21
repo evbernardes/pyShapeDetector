@@ -437,7 +437,7 @@ class RANSAC_Base(ABC):
         list
             Indices of samples
         """
-        eps = self._opt.max_point_distance
+        eps = self._opt.max_sample_distance
         if eps is None or eps == 0:
             return random.sample(range(len(points)), num_samples)
 
