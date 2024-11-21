@@ -54,13 +54,13 @@ eps = pcd_full.average_nearest_dist(k=15)
 # pcds_segmented = pcd_full.segment_dbscan(2 * eps, min_points=10)
 pcds_segmented = [pcd_full]
 pcds_segmented = get_painted(pcds_segmented, color="random")
-draw_geometries(pcds_segmented, window_name="Segmented pointclouds, one color for each")
+# draw_geometries(pcds_segmented, window_name="Segmented pointclouds, one color for each")
 
 # Create RANSAC-based fitter instance and set parameters
 detector = method()
 detector.options.inliers_min = 100
 detector.options.threshold_distance = 1 * eps
-detector.options.threshold_angle_degree = 10
+detector.options.threshold_angle_degrees = 25
 detector.options.threshold_refit_ratio = 1
 detector.options.num_iterations = 20
 detector.options.probability = 0.9999999
