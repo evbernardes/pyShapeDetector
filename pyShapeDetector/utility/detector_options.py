@@ -38,6 +38,7 @@ class DetectorOptions:
         "threshold_distance",
         "_threshold_angle",
         "threshold_angle",
+        # no "_threshold_angle_degrees", it's an internal call to "_threshold_angle"
         "threshold_angle_degrees",
         "_threshold_ratios",
         "threshold_ratios",
