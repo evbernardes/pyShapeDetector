@@ -533,7 +533,7 @@ class RANSAC_Base(ABC):
 
     def get_biggest_connected_component(self, shape, points, inliers, min_points=10):
         eps = self._opt.connected_components_eps
-        if eps is None or eps == 0:
+        if eps is None or eps == 0 or len(inliers) == 0:
             return inliers
 
         points_flat = shape.flatten_points(points[inliers])
@@ -599,8 +599,8 @@ class RANSAC_Base(ABC):
             is_inlier *= angles < self._opt.threshold_angle
         inliers = np.where(is_inlier)[0]
 
-        if self._opt.connected_components_eps is not None:
-            inliers = self.get_biggest_connected_component(shape, points, inliers)
+        # no effect if self._opt.connected_components_eps is not set
+        inliers = self.get_biggest_connected_component(shape, points, inliers)
 
         return inliers
 
