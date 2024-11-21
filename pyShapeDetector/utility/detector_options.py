@@ -31,6 +31,40 @@ class DetectorOptions:
     _downsample = 1
     _adaptative_threshold_k = 15
 
+    _existing_parameters = [
+        "_reduction_rate",
+        "reduction_rate",
+        "_threshold_distance",
+        "threshold_distance",
+        "_threshold_angle",
+        "threshold_angle",
+        "threshold_angle_degrees",
+        "_threshold_ratios",
+        "threshold_ratios",
+        "_threshold_refit_ratio",
+        "threshold_refit_ratio",
+        "_num_samples",
+        "num_samples",
+        "_num_iterations",
+        "num_iterations",
+        "_probability",
+        "probability",
+        "_max_point_distance",
+        "max_point_distance",
+        "_max_normal_angle_degrees",
+        "max_normal_angle_degrees",
+        "_inliers_min",
+        "inliers_min",
+        "_fitness_min",
+        "fitness_min",
+        "_connected_components_eps",
+        "connected_components_eps",
+        "_downsample",
+        "downsample",
+        "_adaptative_threshold_k",
+        "adaptative_threshold_k",
+    ]
+
     # @property
     # def properties(self):
     # # class_items = self.__class__.__dict__.iteritems()  # Python 2
@@ -41,23 +75,7 @@ class DetectorOptions:
 
     @property
     def dict(self):
-        return {
-            "reduction_rate": self.reduction_rate,
-            "threshold_distance": self.threshold_distance,
-            "threshold_angle": self.threshold_angle,
-            "threshold_ratios": self.threshold_ratios,
-            "threshold_refit_ratio": self.threshold_refit_ratio,
-            "num_samples": self.num_samples,
-            "num_iterations": self.num_iterations,
-            "probability": self.probability,
-            "max_point_distance": self.max_point_distance,
-            "max_normal_angle_degrees": self.max_normal_angle_degrees,
-            "inliers_min": self.inliers_min,
-            "fitness_min": self.fitness_min,
-            "connected_components_density": self.connected_components_eps,
-            "downsample": self._downsample,
-            "adaptative_threshold_k": self.adaptative_threshold_k,
-        }
+        return {name: self.__getattribute__(name) for name in self._existing_parameters}
 
     def __repr__(self):
         lines = "\n".join("{!r}: {!r},".format(k, v) for k, v in self.dict.items())
@@ -132,7 +150,7 @@ class DetectorOptions:
     @threshold_refit_ratio.setter
     def threshold_refit_ratio(self, value):
         if value < 1:
-            raise ValueError("threshold_refit_ratio should be higher or equal " "to 1.")
+            raise ValueError("threshold_refit_ratio should be higher or equal to 1.")
         self._threshold_refit_ratio = value
 
     @property
@@ -160,7 +178,7 @@ class DetectorOptions:
     @probability.setter
     def probability(self, value):
         if value <= 0 or value >= 1:
-            raise ValueError("probability must be in range [0, 1).")
+            raise ValueError(f"probability must be in range [0, 1), got {value}")
         self._probability = value
 
     @property
@@ -194,9 +212,7 @@ class DetectorOptions:
     @fitness_min.setter
     def fitness_min(self, value):
         if value and (value < 0 or value > 1):
-            raise ValueError(
-                "fitness_min must be number between 0 and 1, " f"got {value}"
-            )
+            raise ValueError(f"fitness_min must be in range [0, 1], got {value}")
         self._fitness_min = value
 
     @property
@@ -228,3 +244,10 @@ class DetectorOptions:
                 "adaptative_threshold_k must be a positive int, got {value}."
             )
         self._adaptative_threshold_k = value
+
+    # Only allows setting existing arguments
+    def __setattr__(self, name, value):
+        if name in self._existing_parameters:
+            super().__setattr__(name, value)  # Use the standard behavior
+        else:
+            raise AttributeError(f"Cannot set undefined parameter '{name}'.")
