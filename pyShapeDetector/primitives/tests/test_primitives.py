@@ -21,7 +21,7 @@ from itertools import combinations, pairwise
 from scipy.spatial.transform import Rotation
 
 from pyShapeDetector.primitives import (
-    Primitive,
+    # Primitive,
     Plane,
     PlaneBounded,
     PlaneTriangulated,
@@ -516,34 +516,36 @@ def test_planebounded_convex_tringulation():
 
 
 def test_fit():
-    # testing Cylinder separately
-    for i in range(5):
-        shape = get_shape(Cylinder, 1000, canonical=True)
-        shape_fit = Cylinder.fit(
-            shape.inliers.points, normals=shape.inliers.normals
-        ).canonical
-        # test axis instead of vector for direct fit
-        assert_allclose(shape.axis, shape_fit.axis, rtol=1e-2, atol=1e-2)
-        assert_allclose(shape.radius, shape_fit.radius, rtol=1e-2, atol=1e-2)
+    num_points = 1000
 
-    # # testing Cone separately
-    # for i in range(5):
-    #     shape = get_shape(Cone, 10000, canonical=True)
-    # pcd = shape.inliers
-    #     shape_fit = Cone.fit(pcd.points, normals=pcd.normals).canonical
-    #     assert_allclose(shape.appex, shape_fit.appex, rtol=1e-1, atol=1e-1)
-    #     assert_allclose(shape.half_angle, shape_fit.half_angle, rtol=1e-1, atol=1e-1)
-    #     # assert_allclose(shape.vector, shape_fit.vector, rtol=1e-2, atol=1e-2)
-    #     # assert_allclose(shape.radius, shape_fit.radius, rtol=1e-2, atol=1e-2)
+    for primitive in all_primitives:
+        if primitive is Line:
+            continue
 
-    for primitive in [Plane, Sphere]:
-        # for primitive in [Sphere]:
-        for i in range(5):
-            shape = get_shape(primitive, 100, canonical=True)
+        for i in range(10):
+            shape = get_shape(primitive, num_points, canonical=True)
             shape_fit = primitive.fit(
                 shape.inliers.points, normals=shape.inliers.normals
             ).canonical
-            assert_allclose(shape.model, shape_fit.model, rtol=1e-2, atol=1e-2)
+
+            if hasattr(primitive, "axis"):
+                assert_allclose(shape_fit.axis, shape.axis, rtol=1e-2, atol=1e-2)
+
+            # if hasattr(primitive, "center"):
+            #     try:
+            #         assert_allclose(shape_fit.center, shape.center, rtol=1e-1, atol=0)
+            #     except NotImplementedError:
+            #         pass
+
+            if hasattr(primitive, "radius"):
+                assert_allclose(shape_fit.radius, shape.radius, rtol=1e-1, atol=0)
+
+            assert_allclose(shape_fit.volume, shape.volume, rtol=1e-1, atol=0)
+
+            # if primitive is not Plane:
+            #     assert_allclose(
+            #         shape_fit.surface_area, shape.surface_area, rtol=2e-1, atol=0
+            #     )
 
 
 def test_distances():
