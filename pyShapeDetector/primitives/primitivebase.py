@@ -154,6 +154,7 @@ class Primitive(ABC):
     model
     equation
     surface_area
+    center
     volume
     canonical
     color
@@ -279,6 +280,11 @@ class Primitive(ABC):
         raise NotImplementedError(
             "Surface area not implemented for " f"{self.name} primitives."
         )
+
+    @property
+    def center(self):
+        """Center of primitive."""
+        raise NotImplementedError(f"Center not implemented for {self.name} primitives.")
 
     @property
     def volume(self):

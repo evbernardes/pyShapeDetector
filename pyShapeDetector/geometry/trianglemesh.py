@@ -25,6 +25,7 @@ class TriangleMesh(Open3D_Geometry):
     Extra Attributes
     ----------------
     surface_area
+    center
     volume
     curvature
     has_curvature
@@ -55,6 +56,10 @@ class TriangleMesh(Open3D_Geometry):
     @property
     def surface_area(self):
         return self.get_surface_area()
+
+    @property
+    def center(self):
+        return self.get_center()
 
     @classmethod
     def create_arrow_from_points(

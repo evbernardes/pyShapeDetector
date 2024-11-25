@@ -38,6 +38,7 @@ class PlaneTriangulated(Plane):
     model
     equation
     surface_area
+    center
     volume
     canonical
     color

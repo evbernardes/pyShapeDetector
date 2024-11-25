@@ -32,6 +32,7 @@ class Template(Primitive):
     model
     equation
     surface_area
+    center
     volume
     canonical
     color
