@@ -21,7 +21,7 @@ from itertools import combinations, pairwise
 from scipy.spatial.transform import Rotation
 
 from pyShapeDetector.primitives import (
-    # Primitive,
+    Primitive,
     Plane,
     PlaneBounded,
     PlaneTriangulated,
@@ -34,23 +34,16 @@ from pyShapeDetector.primitives import (
 
 from pyShapeDetector.geometry import PointCloud
 
-all_primitives_regular = [Plane, Sphere, Cylinder, Cone]
-all_primitives = all_primitives_regular + [
-    PlaneBounded,
-    PlaneTriangulated,
-    PlaneRectangular,
-    Line,
-]
-
-all_primitives_regular_bounded = [
+all_primitives = [
+    Plane,
     PlaneBounded,
     PlaneTriangulated,
     PlaneRectangular,
     Sphere,
     Cylinder,
     Cone,
+    Line,
 ]
-all_primitives_bounded = all_primitives_regular_bounded + [Line]
 
 
 def get_random_convex_plane(scale=10, N=50):
@@ -360,7 +353,7 @@ def test_issue_3_plane_init():
 
 
 def test_copy_regular():
-    for primitive in all_primitives_regular:
+    for primitive in all_primitives:
         shape = get_shape(primitive, 100)
 
         shape_copy = shape.copy()
@@ -549,7 +542,7 @@ def test_fit():
 
 
 def test_distances():
-    for primitive in all_primitives_regular:
+    for primitive in all_primitives:
         for i in range(5):
             shape = get_shape(primitive, 100, canonical=False)
             distances = shape.get_distances(shape.inliers.points)
@@ -558,7 +551,7 @@ def test_distances():
 
 
 def test_distances_flatten():
-    for primitive in all_primitives_regular:
+    for primitive in all_primitives:
         for i in range(5):
             shape = get_shape(primitive, 100, canonical=False)
             points = np.random.rand(100, 3)
@@ -710,7 +703,9 @@ def test_repeated_vertices():
 
 def test_axis_aligned_bounding_box_no_planes():
     num_samples = 1000
-    for primitive in all_primitives_regular_bounded:
+    for primitive in all_primitives:
+        if primitive is Line or not primitive._is_bounded:
+            continue
         shape = get_shape(Sphere, num_samples)
         pcd = shape.inliers.crop(shape.aabb)
         assert len(pcd.points) == num_samples
