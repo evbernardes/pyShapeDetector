@@ -19,6 +19,7 @@ import tempfile
 from itertools import combinations, pairwise
 
 from scipy.spatial.transform import Rotation
+from pyShapeDetector.geometry import PointCloud
 
 from pyShapeDetector.primitives import (
     Primitive,
@@ -31,8 +32,6 @@ from pyShapeDetector.primitives import (
     Cone,
     Line,
 )
-
-from pyShapeDetector.geometry import PointCloud
 
 all_primitives = [
     Plane,
