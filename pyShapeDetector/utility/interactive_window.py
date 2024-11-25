@@ -29,7 +29,6 @@ KEYS_NORMAL = {
     "Toggle": ["Space", 32],  # GLFW_KEY_SPACE = 32
     "Previous": ["<-", 263],  # GLFW_KEY_LEFT = 263
     "Next": ["->", 262],  # GLFW_KEY_RIGHT = 262
-    "Functions menu": ["Enter", 257],  # GLFW_KEY_ENTER = 257
     "Finish": ["F", ord("F")],
     "Preferences": ["P", ord("P")],
     "Color mode": ["M", ord("M")],
@@ -41,7 +40,7 @@ KEYS_EXTRA = {
     "Print Help": ["H", ord("H")],
     "Print Info": ["I", ord("I")],
     "Center current": ["C", ord("C")],
-    "Apply last used function": ["Enter", 257],  # GLFW_KEY_ENTER = 257
+    "Functions menu": ["Enter", 257],  # GLFW_KEY_ENTER = 257
     "Undo": ["Z", ord("Z")],
     "Redo": ["Y", ord("Y")],
     "Hide/Unhide": ["U", ord("U")],
@@ -53,8 +52,7 @@ KEYS_EXTRA = {
 
 all_keys = [key[1] for key in KEYS_NORMAL.values()]
 all_keys += [key[1] for key in KEYS_EXTRA.values()]
-# Accounting for extra used of Enter
-assert len(all_keys) == len(set(all_keys)) + 1
+assert len(all_keys) == len(set(all_keys))
 
 
 def _unproject_screen_to_world(vis, x, y):
@@ -174,7 +172,6 @@ class InteractiveWindow:
         self._pre_selected = []
         self._bbox = None
         self._functions = None
-        self._last_used_function = None
         self._select_filter = lambda x: True
         self._instructions = ""
         self.window_name = window_name
@@ -790,13 +787,8 @@ class InteractiveWindow:
         vis.register_key_action_callback(KEYS_EXTRA["Undo"][1], self._cb_undo)
         vis.register_key_action_callback(KEYS_EXTRA["Redo"][1], self._cb_redo)
         vis.register_key_action_callback(
-            KEYS_NORMAL["Functions menu"][1], self._cb_functions_menu
+            KEYS_EXTRA["Functions menu"][1], self._cb_functions_menu
         )
-
-        # This is called by "self._cb_functions_menu" now
-        # vis.register_key_action_callback(
-        #     KEYS_EXTRA["Apply last used function"][1], self._cb_apply_last_used_function
-        # )
 
         # Extra keys for functions
         for key, f in self.function_key_mappings.items():
@@ -1027,7 +1019,6 @@ class InteractiveWindow:
         assert self._pop_elements(indices, from_vis=True) == input_elements
         self._insert_elements(output_elements, to_vis=True)
 
-        self._last_used_function = func
         self._future_states = []
         self._update_get_plane_boundaries()
 
@@ -1159,22 +1150,19 @@ class InteractiveWindow:
         ctr.set_zoom(0.1)  # Adjust zoom level if necessary
 
     def _cb_functions_menu(self, vis, action, mods):
-        if action == 1:
+        if not self.extra_functions or action == 1:
             return
 
-        if self.extra_functions:
-            func = self._last_used_function
-        else:
-            if self.functions is None or len(self.functions) == 0:
-                warnings.warn("No functions, cannot call menu.")
-                return
+        if self.functions is None or len(self.functions) == 0:
+            warnings.warn("No functions, cannot call menu.")
+            return
 
-            from .helpers_visualization import select_function_with_gui
+        from .helpers_visualization import select_function_with_gui
 
-            try:
-                func = select_function_with_gui(self.functions)
-            except KeyboardInterrupt:
-                return
+        try:
+            func = select_function_with_gui(self.functions)
+        except KeyboardInterrupt:
+            return
 
         if func is not None:
             self._apply_function_to_elements(func, action)
