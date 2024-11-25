@@ -265,7 +265,8 @@ class PlaneTriangulated(Plane):
         """
 
         plane = Plane.fit(points, normals)
-        return PlaneTriangulated.from_bounded_plane(plane.get_bounded_plane(points))
+        plane.set_inliers(points)
+        return PlaneTriangulated(plane)
 
     def get_oriented_bounding_box(self, slack=0):
         """Returns an oriented bounding box of the primitive.
