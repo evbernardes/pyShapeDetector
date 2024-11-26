@@ -92,13 +92,15 @@ def get_inputs(specs, window_name="Enter values", as_dict=False):
     return results
 
 
-def select_function_with_gui(functions):
+def select_function_with_gui(functions, default_function=None):
     """Make user select from a list of functions with a GUI window.
 
     Parameters
     ----------
     functions : list
         List of functions.
+    default_function : function, optional
+        Default function.
 
     Returns
     -------
@@ -108,6 +110,12 @@ def select_function_with_gui(functions):
     for func in functions:
         if not callable(func):
             raise ValueError(f"Expected functions, got {type(func)}.")
+
+    if default_function is None:
+        default_function = functions[0]
+
+    if default_function not in functions:
+        raise ValueError("Default function not in input functions.")
 
     # Get function names for display
     function_names = [f.__name__ for f in functions]
@@ -121,7 +129,7 @@ def select_function_with_gui(functions):
             # Initialize the selector with function names
             selector = SingleChoiceSelector(
                 choices=function_names,
-                default_value=function_names[0],  # Default to the first function
+                default_value=default_function.__name__,  # Default to the first function
                 window_name="Choose a Function",
             )
             # Get the selected result and store it

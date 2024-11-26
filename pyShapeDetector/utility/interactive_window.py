@@ -1117,7 +1117,9 @@ class InteractiveWindow:
             from .helpers_visualization import select_function_with_gui
 
             try:
-                func = select_function_with_gui(self.functions)
+                func = select_function_with_gui(
+                    self.functions, self._last_used_function
+                )
             except KeyboardInterrupt:
                 return
 
