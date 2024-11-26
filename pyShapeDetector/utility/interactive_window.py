@@ -389,28 +389,6 @@ class InteractiveWindow:
             self.i_old = self.i
         return elements_popped
 
-    # def _get_element_dict(self, elem_raw, selected=False, idx=None):
-    #     elem_dict = {
-    #         "raw": elem_raw,
-    #         "selected": selected,
-    #         "drawable": self._get_open3d(elem_raw),
-    #         "distance_checker": self._get_element_distances([elem_raw])[0],
-    #     }
-
-    #     # save original colors
-    #     elem_dict["color"] = self._extract_element_colors(elem_dict["drawable"])
-
-    #     if self._preferences["paint_selected"]:
-    #         if idx is None:
-    #             is_current = False
-    #         else:
-    #             is_current = self.i == idx
-    #         color = self._colors_selected_current[selected, is_current]
-
-    #         elem_dict["drawable"] = self._get_painted(elem_dict["drawable"], color)
-
-    #     return elem_dict
-
     def _insert_elements(self, elems_raw, indices=None, selected=False, to_vis=False):
         if indices is None:
             indices = range(len(self.elements), len(self.elements) + len(elems_raw))
@@ -614,43 +592,11 @@ class InteractiveWindow:
         elif not isinstance(self._fixed_elements, list):
             self._fixed_elements = [self._fixed_elements]
 
-        if (L := len(self._elements_input)) == 0:
+        if len(self._elements_input) == 0:
             raise ValueError("Elements cannot be an empty list.")
-
-        # if L > self._ELEMENTS_NUMBER_WARNING:
-        #     warnings.warn(
-        #         f"There are {L} elements, this is too many and may "
-        #         "cause segmentation fault errors."
-        #     )
 
         if len(self.selected) != len(self.elements):
             raise ValueError("Pre-select and input elements must have same length.")
-
-        # IMPORTANT: respect order, only get Open3D elements at the very end
-        # self._fixed_elements = [self._get_open3d(elem) for elem in self._fixed_elements]
-        # self._elements_as_open3d = [self._get_open3d(elem) for elem in self._elements]
-
-    # def _get_drawable_elements(self):
-    #     self._original_colors = [
-    #         self._extract_element_colors(elem) for elem in self._elements_as_open3d
-    #     ]
-
-    #     # either get painted elements or keep original colors
-    #     if self._preferences["paint_selected"]:
-    #         mask = np.array(self.selected)[np.newaxis].T
-    #         colors = self.color_selected * mask + self.color_unselected * ~mask
-
-    #         if self.is_current_selected:
-    #             colors[self.i] = self.color_selected_current
-    #         else:
-    #             colors[self.i] = self.color_unselected_current
-
-    #         self._elements_drawable = [
-    #             self._get_painted(elem, color)
-    #             for (elem, color) in zip(self._elements_as_open3d, colors)
-    #         ]
-    #     else:
-    #         self._elements_drawable = copy.copy(self._elements_as_open3d)
 
     def _get_open3d(self, elem):
         from pyShapeDetector.geometry import TriangleMesh
@@ -689,11 +635,20 @@ class InteractiveWindow:
         if input_color is not None:
             input_color = np.clip(input_color, 0, 1)
             if hasattr(element, "color"):
-                element.color = Vector3dVector(input_color)
+                try:
+                    element.paint_uniform_color(input_color)
+                except Exception:
+                    element.color = input_color
             if hasattr(element, "colors"):
-                element.colors = Vector3dVector(input_color)
+                try:
+                    element.paint_uniform_color(input_color)
+                except Exception:
+                    element.colors = Vector3dVector(input_color)
             if hasattr(element, "vertex_colors"):
-                element.vertex_colors = Vector3dVector(input_color)
+                try:
+                    element.paint_uniform_color(input_color)
+                except Exception:
+                    element.vertex_colors = Vector3dVector(input_color)
 
     def _get_painted_element(self, element, color):
         from .helpers_visualization import get_painted
@@ -898,9 +853,6 @@ class InteractiveWindow:
 
         elem = self.elements[idx]
 
-        if update_vis:
-            self._remove_geometry_from_vis(elem["drawable"])
-
         is_selected = elem["selected"] and self.select_filter(elem)
         is_current = self._started and (idx == self.i)
 
@@ -913,23 +865,24 @@ class InteractiveWindow:
 
         if self._preferences["paint_selected"] and is_selected:
             color = self._colors_selected_current[True, is_current]
-            elem["drawable"] = self._get_painted_element(elem["drawable"], color)
             self.print_debug(
                 f"[_update_element] Painting drawable to color: {color}.",
                 require_verbose=True,
             )
+
         else:
             highlight_offset = self._preferences["highlight_color_multiplier"] * (
                 int(is_selected) + int(is_current)
             )
             color = elem["color"] + highlight_offset
-            self._set_element_colors(elem["drawable"], color)
+
+        self._set_element_colors(elem["drawable"], color)
 
         if update_vis:
             self.print_debug(
                 "[_update_element] Adding to geometry.", require_verbose=True
             )
-            self._add_geometry_to_vis(elem["drawable"])
+            self._vis.update_geometry(elem["drawable"])
 
     def _update_current_idx(self, idx=None, update_old=True):
         if idx is not None:
@@ -967,16 +920,6 @@ class InteractiveWindow:
 
         raise ValueError("Invalid input, expected index list/array, range or slice.")
 
-    # TODO: clean this up
-    # def _update_indices(self, indices_or_slice=None):
-    #     indices = self._get_range(indices_or_slice)
-
-    #     i_old = self.i
-
-    #     for i in indices:
-    #         self._update_current_idx(i, update_old=self._started)
-    #     self._update_current_idx(i_old, update_old=self._started)
-
     def _toggle_indices(self, indices_or_slice):
         indices = self._get_range(indices_or_slice)
 
@@ -986,8 +929,6 @@ class InteractiveWindow:
         selected[indices] = not np.sum(selected[indices]) == len(selected[indices])
         self.selected = selected.tolist()
 
-        # self._update_indices(indices)
-        # TODO: this used to be self._update_indices. Remove?
         i_old = self.i
         for i in indices:
             self._update_current_idx(i, update_old=self._started)
