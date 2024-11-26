@@ -442,7 +442,7 @@ class InteractiveWindow:
 
         for idx in indices:
             # Updating vis explicitly in order not to remove it
-            self._update_element(idx, update_vis=False)
+            self._update_elements(idx, update_vis=False)
             if to_vis:
                 self._add_geometry_to_vis(self.elements[idx]["drawable"])
 
@@ -843,46 +843,50 @@ class InteractiveWindow:
         if self._bbox is not None:
             self._add_geometry_to_vis(self._bbox)
 
-    def _update_element(self, idx, update_vis=True):
+    def _update_elements(self, indices, update_vis=True):
         num_elems = len(self.elements)
-        if num_elems == 0 or idx not in range(num_elems):
+
+        if not isinstance(indices, (list, range)):
+            indices = [indices]
+
+        if num_elems == 0 or max(indices) >= num_elems:
             warnings.warn(
-                "Tried to update index {idx}, but {num_elems} elements present."
+                "Tried to update index {indices}, but {num_elems} elements present."
             )
             return
 
-        elem = self.elements[idx]
+        for idx in indices:
+            elem = self.elements[idx]
+            is_selected = elem["selected"] and self.select_filter(elem)
+            is_current = self._started and (idx == self.i)
 
-        is_selected = elem["selected"] and self.select_filter(elem)
-        is_current = self._started and (idx == self.i)
-
-        self.print_debug(
-            "[_update_element]"
-            f"Updating element at index: {idx}.\n"
-            f"Selected = {is_selected}, current = {is_current}.",
-            require_verbose=True,
-        )
-
-        if self._preferences["paint_selected"] and is_selected:
-            color = self._colors_selected_current[True, is_current]
             self.print_debug(
-                f"[_update_element] Painting drawable to color: {color}.",
+                "[_update_element]"
+                f"Updating element at index: {idx}.\n"
+                f"Selected = {is_selected}, current = {is_current}.",
                 require_verbose=True,
             )
 
-        else:
-            highlight_offset = self._preferences["highlight_color_multiplier"] * (
-                int(is_selected) + int(is_current)
-            )
-            color = elem["color"] + highlight_offset
+            if self._preferences["paint_selected"] and is_selected:
+                color = self._colors_selected_current[True, is_current]
+                self.print_debug(
+                    f"[_update_element] Painting drawable to color: {color}.",
+                    require_verbose=True,
+                )
 
-        self._set_element_colors(elem["drawable"], color)
+            else:
+                highlight_offset = self._preferences["highlight_color_multiplier"] * (
+                    int(is_selected) + int(is_current)
+                )
+                color = elem["color"] + highlight_offset
 
-        if update_vis:
-            self.print_debug(
-                "[_update_element] Adding to geometry.", require_verbose=True
-            )
-            self._vis.update_geometry(elem["drawable"])
+            self._set_element_colors(elem["drawable"], color)
+
+            if update_vis:
+                self.print_debug(
+                    "[_update_element] Adding to geometry.", require_verbose=True
+                )
+                self._vis.update_geometry(elem["drawable"])
 
     def _update_current_idx(self, idx=None, update_old=True):
         if idx is not None:
@@ -901,9 +905,9 @@ class InteractiveWindow:
             )
             idx = len(self.elements) - 1
 
-        self._update_element(self.i)
+        self._update_elements(self.i)
         if update_old:
-            self._update_element(self.i_old)
+            self._update_elements(self.i_old)
         self._update_bounding_box()
 
     def _get_range(self, indices_or_slice):
@@ -929,10 +933,7 @@ class InteractiveWindow:
         selected[indices] = not np.sum(selected[indices]) == len(selected[indices])
         self.selected = selected.tolist()
 
-        i_old = self.i
-        for i in indices:
-            self._update_current_idx(i, update_old=self._started)
-        self._update_current_idx(i_old, update_old=self._started)
+        self._update_elements(indices)
 
     def _apply_function_to_elements(self, func, action, check_extra_functions=True):
         """Apply function to selected elements."""
