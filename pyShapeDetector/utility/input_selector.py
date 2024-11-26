@@ -245,6 +245,14 @@ class SingleChoiceSelector:
         self._result = self.default_value
         self._root.destroy()
 
+    def _on_number_key(self, event):
+        """Handles number key presses to select a choice."""
+        key = event.char
+        if key.isdigit():
+            index = int(key) - 1 if key != "0" else 9  # 0 corresponds to index 9
+            if 0 <= index < len(self.choices):
+                self._on_button_press(self.choices[index])
+
     def get_result(self):
         """Opens the GUI and waits for the user to select a choice."""
         self._root = tk.Tk()
@@ -266,6 +274,11 @@ class SingleChoiceSelector:
                 "Default.TButton" if choice == self.default_value else "TButton"
             )
 
+            if row <= 10:
+                ttk.Label(self._root, text=f"{row % 10}").grid(
+                    row=row, column=0, padx=10, pady=5, sticky="e"
+                )
+
             # Create the button
             button = ttk.Button(
                 self._root,
@@ -273,17 +286,21 @@ class SingleChoiceSelector:
                 command=lambda c=choice: self._on_button_press(c),
                 style=button_style,
             )
-            button.grid(row=row, column=0, padx=20, pady=5, sticky="ew")
+            button.grid(row=row, column=1, padx=10, pady=5, sticky="ew")
 
             # Add "Default" label if this is the default value
             if choice == self.default_value:
                 ttk.Label(self._root, text="Default", foreground="gray").grid(
-                    row=row, column=1, padx=10, pady=5, sticky="w"
+                    row=row, column=2, padx=10, pady=5, sticky="w"
                 )
 
         # Bind the Enter key to selecting the default value
         self._root.bind("<Return>", self._on_enter_key)
         self._root.bind("<Escape>", lambda event: self._root.destroy())
+
+        # Bind number keys 1-9 and 0 to corresponding choices
+        for digit in range(min(10, len(self.choices))):
+            self._root.bind(str(digit), self._on_number_key)
 
         # Start the GUI loop
         self._root.mainloop()
