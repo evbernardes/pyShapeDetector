@@ -13,7 +13,11 @@ from scipy.spatial import QhullError, ConvexHull, Delaunay
 from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
 from .plane import Plane, _get_vertices_from_vectors
 
-from pyShapeDetector.utility import check_vertices_clockwise, get_area_with_shoelace
+from pyShapeDetector.utility import (
+    check_vertices_clockwise,
+    get_area_with_shoelace,
+    midrange,
+)
 
 from importlib.util import find_spec
 
@@ -162,6 +166,7 @@ class PlaneBounded(Plane):
     add_bound_points
     intersection_vertices
     simplify_vertices
+    smooth_boundary_with_fft
     contract_boundary
     add_line
     glue_planes_with_intersections
@@ -931,6 +936,65 @@ class PlaneBounded(Plane):
 
         vertices_new = self.vertices[indices]
         self.set_vertices(vertices_new, flatten=False, convex=self.is_convex)
+
+    def smooth_boundary_with_fft(self, num_frequencies_to_keep):
+        """
+        Use a Fast Fourier Transform to smooth boundaries of PlaneBounded
+        instance by keeping only the first frequencies.
+
+        Parameters
+        ----------
+        num_frequencies_to_keep :int
+            Number of frequencies to keep.
+        """
+        if not isinstance(num_frequencies_to_keep, int) or num_frequencies_to_keep < 1:
+            raise ValueError(
+                "Expected positive integer as number of frequencies, "
+                f"got {num_frequencies_to_keep}"
+            )
+
+        # centroid = midrange(self.vertices_projections)
+        centroid = self.vertices_projections.mean(axis=0)
+        # projections_centered = self.vertices_projections - centroid
+        # projections_centered = np.vstack(
+        #     [projections_centered, projections_centered[0]]
+        # )
+        x, y = self.vertices_projections.T
+        x = np.hstack([x, x[0]])
+        y = np.hstack([y, y[0]])
+
+        # Perform Fourier Transform on x and y coordinates
+        x_fft = np.fft.fft(x)
+        y_fft = np.fft.fft(y)
+
+        # Keep only the first `num_frequencies` coefficients, zeroing out the rest
+        x_fft[num_frequencies_to_keep:] = 0
+        y_fft[num_frequencies_to_keep:] = 0
+
+        # Perform Inverse Fourier Transform to reconstruct the smoothed boundary
+        x_smooth = np.fft.ifft(x_fft).real
+        y_smooth = np.fft.ifft(y_fft).real
+        smoothed_projections = np.vstack([x_smooth, y_smooth]).T
+        smoothed_centroid = smoothed_projections.mean(axis=0)
+
+        # smoothed_projections += centroid - smoothed_centroid
+
+        original_distances = np.linalg.norm(
+            self.vertices_projections - centroid, axis=1
+        )
+        smoothed_distances = np.linalg.norm(
+            smoothed_projections - smoothed_centroid, axis=1
+        )
+
+        scale_factor = np.mean(original_distances) / np.mean(smoothed_distances)
+
+        corrected_projections = centroid + scale_factor * (
+            smoothed_projections - smoothed_centroid
+        )
+
+        new_vertices = self.get_points_from_projections(corrected_projections)
+
+        self.set_vertices(new_vertices, flatten=False, convex=False)
 
     def contract_boundary(self, points=None, contract_holes=True):
         """
