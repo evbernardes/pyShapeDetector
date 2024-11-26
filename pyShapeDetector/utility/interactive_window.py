@@ -1352,7 +1352,7 @@ class InteractiveWindow:
         try:
             self._vis.run()
             # add hidden elements back to elements list
-            self._insert_elements(self._hidden_elements)
+            self._insert_elements(self._hidden_elements, to_vis=False)
         except Exception as e:
             raise e
         finally:
