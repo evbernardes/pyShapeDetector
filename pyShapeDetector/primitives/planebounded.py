@@ -193,6 +193,10 @@ class PlaneBounded(Plane):
         return surface_area
 
     @property
+    def center(self):
+        return self.flatten_points(midrange(self.vertices))
+
+    @property
     def is_clockwise(self):
         return self._is_clockwise
 
