@@ -934,9 +934,12 @@ class InteractiveWindow:
             self._update_current_idx(i, update_old=self._started)
         self._update_current_idx(i_old, update_old=self._started)
 
-    def _apply_function_to_elements(self, func, action):
+    def _apply_function_to_elements(self, func, action, check_extra_functions=True):
         """Apply function to selected elements."""
-        if not self.extra_functions or action == 1 or self.functions is None:
+        if check_extra_functions and not self.extra_functions:
+            return
+
+        if action == 1 or self.functions is None:
             return
 
         indices = self.selected_indices
@@ -1117,8 +1120,10 @@ class InteractiveWindow:
             except KeyboardInterrupt:
                 return
 
+        self.print_debug(f"Chosen function from menu: {func}")
+
         if func is not None:
-            self._apply_function_to_elements(func, action)
+            self._apply_function_to_elements(func, action, check_extra_functions=False)
 
     def _cb_hide_unhide(self, vis, action, mods):
         """Hide selected elements or unhide all hidden elements."""
