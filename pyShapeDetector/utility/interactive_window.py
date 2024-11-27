@@ -426,7 +426,7 @@ class InteractiveWindow:
                     elem["drawable"], color="random"
                 )
 
-            if self._preferences["paint_selected"] and selected[i]:
+            elif self._preferences["paint_selected"] and selected[i]:
                 self.print_debug(
                     f"[_insert_elements] Painting and inserting element at index {i}.",
                     require_verbose=True,
@@ -603,52 +603,59 @@ class InteractiveWindow:
         from open3d.geometry import Geometry as Open3D_Geometry
 
         if isinstance(elem, Open3D_Geometry):
-            return elem
+            elem_new = copy.deepcopy(elem)
 
-        try:
-            elem_new = elem.as_open3d
-            mesh_show_back_face = self._preferences["mesh_show_back_face"]
-            if mesh_show_back_face and TriangleMesh.is_instance_or_open3d(elem_new):
-                mesh = TriangleMesh(elem_new)
-                mesh.add_reverse_triangles()
-                elem_new = mesh.as_open3d
+        else:
+            try:
+                elem_new = copy.deepcopy(elem.as_open3d)
+                mesh_show_back_face = self._preferences["mesh_show_back_face"]
+                if mesh_show_back_face and TriangleMesh.is_instance_or_open3d(elem_new):
+                    mesh = TriangleMesh(elem_new)
+                    mesh.add_reverse_triangles()
+                    elem_new = mesh.as_open3d
 
-        except Exception as e:
-            warnings.warn(f"Could not convert element: {elem}, got: {str(e)}")
-            elem_new = elem
+            except Exception as e:
+                warnings.warn(f"Could not convert element: {elem}, got: {str(e)}")
+                elem_new = elem
 
         if self._preferences["paint_random"]:
             elem_new = self._get_painted_element(elem_new, color="random")
 
         return elem_new
 
-    def _extract_element_colors(self, element):
-        if hasattr(element, "color"):
-            return np.asarray(element.color).copy()
-        if hasattr(element, "colors"):
-            return np.asarray(element.colors).copy()
-        if hasattr(element, "vertex_colors"):
-            return np.asarray(element.vertex_colors).copy()
+    def _extract_element_colors(self, drawable_element):
+        if hasattr(drawable_element, "vertex_colors"):
+            return np.asarray(drawable_element.vertex_colors).copy()
+        if hasattr(drawable_element, "mesh"):
+            return np.asarray(drawable_element.mesh.vertex_colors).copy()
+        if hasattr(drawable_element, "color"):
+            return np.asarray(drawable_element.color).copy()
+        if hasattr(drawable_element, "colors"):
+            return np.asarray(drawable_element.colors).copy()
+
+        warnings.warn("Could not get color from element {element}.")
         return None
 
     def _set_element_colors(self, element, input_color):
-        if input_color is not None:
-            input_color = np.clip(input_color, 0, 1)
-            if hasattr(element, "color"):
-                try:
-                    element.paint_uniform_color(input_color)
-                except Exception:
-                    element.color = input_color
-            if hasattr(element, "colors"):
-                try:
-                    element.paint_uniform_color(input_color)
-                except Exception:
-                    element.colors = Vector3dVector(input_color)
-            if hasattr(element, "vertex_colors"):
-                try:
-                    element.paint_uniform_color(input_color)
-                except Exception:
-                    element.vertex_colors = Vector3dVector(input_color)
+        if input_color is None:
+            return
+
+        color = np.clip(input_color, 0, 1)
+
+        if hasattr(element, "vertex_colors"):
+            if color.ndim == 2:
+                element.vertex_colors = Vector3dVector(color)
+            else:
+                element.paint_uniform_color(color)
+
+        elif hasattr(element, "colors"):
+            if color.ndim == 2:
+                element.colors = Vector3dVector(color)
+            else:
+                element.paint_uniform_color(color)
+
+        elif hasattr(element, "color"):
+            element.color = color
 
     def _get_painted_element(self, element, color):
         from .helpers_visualization import get_painted
@@ -884,7 +891,8 @@ class InteractiveWindow:
 
             if update_vis:
                 self.print_debug(
-                    "[_update_element] Adding to geometry.", require_verbose=True
+                    "[_update_element] Updating geometry on visualizer.",
+                    require_verbose=True,
                 )
                 self._vis.update_geometry(elem["drawable"])
 
