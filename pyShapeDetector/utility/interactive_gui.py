@@ -104,7 +104,7 @@ class InteractiveWindow:
         Default: True
     paint_random : boolean, optional
         If True, paint all elements with a random color. Default: False
-    number_points_for_distance : int, optional
+    number_points_distance : int, optional
         Number of points in element distance calculator. Default: 30.
     number_undo_states : int, optional
         Number of states to save for undoing. Default: 10.
@@ -133,7 +133,7 @@ class InteractiveWindow:
         bbox_expand=0.0,
         paint_selected=True,
         paint_random=False,
-        number_points_for_distance=30,
+        number_points_distance=30,
         number_undo_states=10,
         number_redo_states=5,
         random_color_multiplier=2 / 3,
@@ -175,20 +175,20 @@ class InteractiveWindow:
         self.color_unselected = COLOR_UNSELECTED
         self.color_unselected_current = COLOR_UNSELECTED_CURRENT
 
-        # preferences dict:
-        self._preferences = {
+        # # preferences dict:
+        self._settings = {
             "draw_boundary_lines": bool(draw_boundary_lines),
             "mesh_show_back_face": bool(mesh_show_back_face),
-            "bbox_expand": float(bbox_expand),
             "paint_selected": bool(paint_selected),
             "paint_random": bool(paint_random),
-            "number_points_for_distance": int(number_points_for_distance),
+            "debug": bool(debug),
+            "verbose": bool(verbose),
+            "bbox_expand": float(bbox_expand),
+            "number_points_distance": int(number_points_distance),
             "random_color_multiplier": np.clip(float(random_color_multiplier), 0, 1),
             "highlight_color_multiplier": np.max(float(highlight_color_multiplier), 0),
             "number_undo_states": int(number_undo_states),
             "number_redo_states": int(number_redo_states),
-            "debug": bool(debug),
-            "verbose": bool(verbose),
         }
 
         # (selected, current) -> color
@@ -200,8 +200,8 @@ class InteractiveWindow:
         }
 
     def print_debug(self, text, require_verbose=False):
-        is_debug_activated = self._preferences["debug"]
-        is_verbose_activated = self._preferences["verbose"]
+        is_debug_activated = self._settings["debug"]
+        is_verbose_activated = self._settings["verbose"]
 
         if not is_debug_activated or (require_verbose and not is_verbose_activated):
             return
@@ -404,7 +404,7 @@ class InteractiveWindow:
             # save original colors
             elem["color"] = self._extract_element_colors(elem["drawable"])
 
-            if self._preferences["paint_random"]:
+            if self._settings["paint_random"]:
                 self.print_debug(
                     f"[_insert_elements] Randomly painting element at index {i}.",
                     require_verbose=True,
@@ -413,7 +413,7 @@ class InteractiveWindow:
                     elem["drawable"], color="random"
                 )
 
-            elif self._preferences["paint_selected"] and selected[i]:
+            elif self._settings["paint_selected"] and selected[i]:
                 self.print_debug(
                     f"[_insert_elements] Painting and inserting element at index {i}.",
                     require_verbose=True,
@@ -550,7 +550,7 @@ class InteractiveWindow:
             f"Saving state with {len(input_elements)} inputs and {num_outputs} outputs."
         )
 
-        while len(self._past_states) > self._preferences["number_undo_states"]:
+        while len(self._past_states) > self._settings["number_undo_states"]:
             self._past_states.pop(0)
 
     def _check_and_initialize_inputs(self):
@@ -595,7 +595,7 @@ class InteractiveWindow:
         else:
             try:
                 elem_new = copy.deepcopy(elem.as_open3d)
-                mesh_show_back_face = self._preferences["mesh_show_back_face"]
+                mesh_show_back_face = self._settings["mesh_show_back_face"]
                 if mesh_show_back_face and TriangleMesh.is_instance_or_open3d(elem_new):
                     mesh = TriangleMesh(elem_new)
                     mesh.add_reverse_triangles()
@@ -605,7 +605,7 @@ class InteractiveWindow:
                 warnings.warn(f"Could not convert element: {elem}, got: {str(e)}")
                 elem_new = elem
 
-        if self._preferences["paint_random"]:
+        if self._settings["paint_random"]:
             elem_new = self._get_painted_element(elem_new, color="random")
 
         return elem_new
@@ -652,7 +652,7 @@ class InteractiveWindow:
 
         # lower luminance of random colors to not interfere with highlights
         if isinstance(color, str) and color == "random":
-            multiplier = self._preferences["random_color_multiplier"]
+            multiplier = self._settings["random_color_multiplier"]
             color = np.random.random(3) * multiplier
 
         color = np.clip(color, 0, 1)
@@ -663,7 +663,7 @@ class InteractiveWindow:
         from pyShapeDetector.primitives import Primitive
         from pyShapeDetector.geometry import TriangleMesh, PointCloud
 
-        number_points_for_distance = self._preferences["number_points_for_distance"]
+        number_points_distance = self._settings["number_points_distance"]
 
         elements_distance = []
         for elem in elems:
@@ -672,12 +672,12 @@ class InteractiveWindow:
 
             # assert our PointCloud class instead of Open3D PointCloud class
             elif TriangleMesh.is_instance_or_open3d(elem):
-                pcd = elem.sample_points_uniformly(number_points_for_distance)
+                pcd = elem.sample_points_uniformly(number_points_distance)
                 elements_distance.append(PointCloud(pcd))
 
             elif PointCloud.is_instance_or_open3d(elem):
-                if len(elem.points) > number_points_for_distance:
-                    ratio = int(len(elem.points) / number_points_for_distance)
+                if len(elem.points) > number_points_distance:
+                    ratio = int(len(elem.points) / number_points_distance)
                     pcd = elem.uniform_down_sample(ratio)
                 else:
                     pcd = elem
@@ -695,6 +695,15 @@ class InteractiveWindow:
         self._info.frame = gui.Rect(
             r.x, r.get_bottom() - pref.height, pref.width, pref.height
         )
+
+        width = 17 * layout_context.theme.font_size
+        height = min(
+            r.height,
+            self._settings_panel.calc_preferred_size(
+                layout_context, gui.Widget.Constraints()
+            ).height,
+        )
+        self._settings_panel.frame = gui.Rect(r.get_right() - width, r.y, width, height)
 
     def _on_mouse(self, event):
         # We could override BUTTON_DOWN without a modifier, but that would
@@ -788,8 +797,8 @@ class InteractiveWindow:
         self.window = self.app.create_window(self.window_name, 1024, 768)
         self.window.set_on_layout(self._on_layout)
 
-        em = self.window.theme.font_size
-        separation_height = int(round(0.5 * em))
+        # em = self.window.theme.font_size
+        # separation_height = int(round(0.5 * em))
 
         # Set up a scene as a 3D widget
         self._scene = gui.SceneWidget()
@@ -797,24 +806,6 @@ class InteractiveWindow:
         self._scene.scene.set_lighting(
             rendering.Open3DScene.LightingProfile.NO_SHADOWS, (0, 0, 0)
         )
-
-        self._settings_panel = gui.Vert(
-            0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em)
-        )
-        for key, value in self._preferences.items():
-            # def wrapper(new_value):
-            #     print(new_value)
-            #     self._cb_set_one_preference(key, new_value, type(value))
-
-            if isinstance(value, bool):
-                element = gui.Checkbox(key)
-                element.set_on_checked(
-                    lambda new_value: self._cb_set_one_preference(
-                        key, new_value, type(value)
-                    )
-                )
-                self._settings_panel.add_child(element)
-                self._settings_panel.add_fixed(separation_height)
 
         self.material_regular = rendering.MaterialRecord()
         self.material_regular.base_color = [1.0, 1.0, 1.0, 1.0]  # White color
@@ -829,11 +820,12 @@ class InteractiveWindow:
         self._info.visible = False
 
         self.window.add_child(self._scene)
-        self.window.add_child(self._settings_panel)
         self.window.add_child(self._info)
 
         self._scene.set_on_key(self._on_key)
         self._scene.set_on_mouse(self._on_mouse)
+
+        self._create_settings_panel()
 
         # self._scene.set_view_controls(gui.SceneWidget.Controls.ROTATE_MODEL)
 
@@ -846,13 +838,101 @@ class InteractiveWindow:
     #     self._vis.close()
     #     sys.exit(0)
 
-    def _update_get_plane_boundaries(self):
+    def _create_settings_panel(self):
+        self._settings_callbacks = {
+            "draw_boundary_lines": (self._set_draw_boundary_lines, None),
+            "mesh_show_back_face": (self._set_mesh_show_back_face, None),
+            "paint_selected": (self._set_paint_selected, None),
+            "paint_random": (self._set_paint_random, None),
+            "debug": (self._set_debug, None),
+            "verbose": (self._set_verbose, None),
+            "bbox_expand": (self._set_bbox_expand, [0, 10]),
+            "number_points_distance": (self._set_number_points_distance, [5, 50]),
+            # "random_color_multiplier": (self._set_random_color_multiplier),
+            # "highlight_color_multiplier": (self._set_highlight_color_multiplier),
+            "number_undo_states": (self._set_number_undo_states, [1, 10]),
+            "number_redo_states": (self._set_number_redo_states, [1, 10]),
+        }
+
+        em = self.window.theme.font_size
+        separation_height = int(round(0.5 * em))
+
+        self._settings_panel = gui.Vert(
+            0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em)
+        )
+
+        self._settings_panel_collapsable = gui.CollapsableVert(
+            "Settings", 0.25 * em, gui.Margins(em, 0, 0, 0)
+        )
+
+        # for key, value in self._settings.items():
+        #     cb = self._preferences_setters[key]
+        for key, (cb, limits) in self._settings_callbacks.items():
+            key_pretty = key.replace("_", " ").capitalize()
+            label = gui.Label(key_pretty)
+            value = self._settings[key]
+            if isinstance(value, bool):
+                element = gui.Checkbox(key_pretty + "?")
+                element.checked = value
+                element.set_on_checked(cb)
+            elif isinstance(value, int):
+                # self._settings_panel.add_child(gui.Label(key_pretty))
+                slider = gui.Slider(gui.Slider.INT)
+                slider.set_limits(*limits)
+                slider.int_value = value
+                slider.set_on_value_changed(cb)
+
+                element = gui.VGrid(2, 0.25 * em)
+                element.add_child(label)
+                element.add_child(slider)
+            elif isinstance(value, float):
+                slider = gui.Slider(gui.Slider.DOUBLE)
+                slider.set_limits(*limits)
+                slider.double_value = value
+                slider.set_on_value_changed(cb)
+
+                element = gui.VGrid(2, 0.25 * em)
+                element.add_child(label)
+                element.add_child(slider)
+            else:
+                continue
+
+            self._settings_panel_collapsable.add_child(element)
+            self._settings_panel_collapsable.add_fixed(separation_height)
+
+        self._settings_panel.add_child(self._settings_panel_collapsable)
+
+        self.window.add_child(self._settings_panel)
+
+    # for key, value in self._preferences.items():
+    #     print(key, value)
+    #     if isinstance(value, bool):
+    #         element = gui.Checkbox(key)
+    #         element.checked = value
+    #         element.set_on_checked(
+    #             lambda new_value: self._cb_set_one_preference(
+    #                 key, new_value, type(value)
+    #             )
+    #         )
+    #         self._settings_panel.add_child(element)
+    #         self._settings_panel.add_fixed(separation_height)
+
+    #                 # Extra keys for functions
+    # for key, f in self.function_key_mappings.items():
+    #     vis.register_key_action_callback(
+    #         key,
+    #         lambda vis, action, mods, func=f: self._apply_function_to_elements(
+    #             func, action
+    #         ),
+    #     )
+
+    def _update_plane_boundaries(self):
         for plane in self._plane_boundaries:
             self._remove_geometry_from_scene(plane)
 
         plane_boundaries = []
 
-        if self._preferences["draw_boundary_lines"]:
+        if self._settings["draw_boundary_lines"]:
             for elem in self.elements:
                 try:
                     lineset = elem["raw"].vertices_LineSet.as_open3d
@@ -877,7 +957,7 @@ class InteractiveWindow:
             AxisAlignedBoundingBox,
         )
 
-        bbox_expand = self._preferences["bbox_expand"]
+        bbox_expand = self._settings["bbox_expand"]
         self.print_debug("Updating bounding box...", require_verbose=True)
 
         # vis = self._vis
@@ -918,6 +998,9 @@ class InteractiveWindow:
     def _update_elements(self, indices, update_vis=True):
         num_elems = len(self.elements)
 
+        if indices is None:
+            indices = range(len(self.elements))
+
         if not isinstance(indices, (list, range)):
             indices = [indices]
 
@@ -942,7 +1025,7 @@ class InteractiveWindow:
                 require_verbose=True,
             )
 
-            if self._preferences["paint_selected"] and is_selected:
+            if self._settings["paint_selected"] and is_selected:
                 color = self._colors_selected_current[True, is_current]
                 self.print_debug(
                     f"[_update_element] Painting drawable to color: {color}.",
@@ -950,7 +1033,7 @@ class InteractiveWindow:
                 )
 
             else:
-                highlight_offset = self._preferences["highlight_color_multiplier"] * (
+                highlight_offset = self._settings["highlight_color_multiplier"] * (
                     int(is_selected) + int(is_current)
                 )
                 color = elem["color"] + highlight_offset
@@ -1062,7 +1145,7 @@ class InteractiveWindow:
 
         self._last_used_function = function
         self._future_states = []
-        self._update_get_plane_boundaries()
+        self._update_plane_boundaries()
 
     ###########################################################################
     ################### Callback functions for Visualizer #####################
@@ -1199,26 +1282,72 @@ class InteractiveWindow:
         # TODO: find a way to make hiding work with undoing
         self._past_states = []
         self._future_states = []
-        self._update_get_plane_boundaries()
+        self._update_plane_boundaries()
 
     def _cb_set_color_mode(self):
-        self._preferences["paint_random"] = not self._preferences["paint_random"]
+        self._settings["paint_random"] = not self._settings["paint_random"]
         self._reset_visualiser_elements()
 
-    def _cb_set_one_preference(self, key, value, preference_type):
-        print(key, value, preference_type)
-        self._preferences[key] = preference_type(value)
+    def _set_draw_boundary_lines(self, value):
+        self._settings["draw_boundary_lines"] = value
+        self._update_plane_boundaries()
+
+    def _set_mesh_show_back_face(self, value):
+        self._settings["mesh_show_back_face"] = value
         self._reset_visualiser_elements()
+
+    def _set_paint_selected(self, value):
+        self._settings["paint_selected"] = value
+        self._update_elements(None)
+
+    def _set_paint_random(self, value):
+        self._settings["paint_random"] = value
+        self._reset_visualiser_elements()
+
+    def _set_debug(self, value):
+        self._settings["debug"] = value
+
+    def _set_verbose(self, value):
+        self._settings["verbose"] = value
+
+    def _set_bbox_expand(self, value):
+        self._settings["bbox_expand"] = value
+        self._update_current_bounding_box()
+
+    def _set_number_points_distance(self, value):
+        self._settings["number_points_distance"] = value
+        for elem in self.elements:
+            elem["distance_checker"] = self._get_element_distances([elem["raw"]])[0]
+
+    def _set_random_color_multiplier(self, value):
+        self._settings["random_color_multiplier"] = value
+        self._reset_visualiser_elements()
+
+    def _set_highlight_color_multiplier(self, value):
+        self._settings["highlight_color_multiplier"] = value
+        self._update_elements(None)
+
+    def _set_number_undo_states(self, value):
+        value = int(value)
+        self._settings["number_undo_states"] = value
+        self._past_states = self._past_states[-value:]
+
+    def _set_number_redo_states(self, value):
+        value = int(value)
+        self._settings["number_redo_states"] = value
+        self._future_states = self._future_states[-value:]
+
+    # def _cb_set_one_preference(self, key, value, preference_type):
+    #     print(key, value, preference_type)
+    #     self._preferences[key] = preference_type(value)
+    #     self._reset_visualiser_elements()
 
     def _cb_set_preferences(self):
         from .helpers_visualization import get_inputs
 
         try:
             new_preferences = get_inputs(
-                {
-                    name: (type(value), value)
-                    for name, value in self._preferences.items()
-                },
+                {name: (type(value), value) for name, value in self._settings.items()},
                 window_name="Set preferences",
                 as_dict=True,
             )
@@ -1230,8 +1359,8 @@ class InteractiveWindow:
         except KeyboardInterrupt:
             return
 
-        if new_preferences != self._preferences:
-            self._preferences = new_preferences
+        if new_preferences != self._settings:
+            self._settings = new_preferences
             self._reset_visualiser_elements()
 
     def _cb_undo_redo(self):
@@ -1286,12 +1415,12 @@ class InteractiveWindow:
                 }
             )
 
-            while len(self._future_states) > self._preferences["number_redo_states"]:
+            while len(self._future_states) > self._settings["number_redo_states"]:
                 self._future_states.pop(0)
 
             self._update_current_idx(indices[-1])
 
-        self._update_get_plane_boundaries()
+        self._update_plane_boundaries()
 
     def _reset_visualiser_elements(self, startup=False, reset_fixed=False):
         """Prepare elements for visualization"""
@@ -1331,7 +1460,7 @@ class InteractiveWindow:
         self._insert_elements(elems_raw, selected=pre_selected, to_vis=True)
         self.print_debug(f"Finished inserting {len(self.elements)} elements.")
 
-        self._update_get_plane_boundaries()
+        self._update_plane_boundaries()
         self._update_current_bounding_box()
 
         self._update_current_idx(current_idx)
