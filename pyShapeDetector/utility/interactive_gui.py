@@ -33,28 +33,28 @@ def get_key_name(key):
 
 
 KEYS_NORMAL = {
-    "Toggle": [gui.KeyName.SPACE, "_cb_toggle"],  # GLFW_KEY_SPACE = 32
-    "Previous": [gui.KeyName.LEFT, "_cb_next"],  # GLFW_KEY_LEFT = 263
-    "Next": [gui.KeyName.RIGHT, "_cb_previous"],  # GLFW_KEY_RIGHT = 262
+    "Toggle": [gui.KeyName.SPACE, "_cb_toggle"],
+    "Previous": [gui.KeyName.LEFT, "_cb_previous"],
+    "Next": [gui.KeyName.RIGHT, "_cb_next"],
     "Print Help": [gui.KeyName.H, "_cb_print_help"],
     "Print Info": [gui.KeyName.I, "_cb_print_info"],
-    # "Functions menu": ["Enter", 257],  # GLFW_KEY_ENTER = 257
+    "Functions menu": [gui.KeyName.ENTER, "_cb_functions_menu"],
     # "Finish": ["F", ord("F")],
-    # "Preferences": ["P", ord("P")],
+    "Preferences": [gui.KeyName.P, "_cb_set_preferences"],
     "Color mode": [gui.KeyName.M, "_cb_set_color_mode"],
 }
 
-# MODIFIER_KEY = ["LCtrl", 341]  # GLFW_KEY_LCTRL = 341
 KEY_MODIFIER_EXTRA = gui.KeyName.LEFT_CONTROL
 KEY_MODIFIER_REVERT = gui.KeyName.LEFT_SHIFT
 
 KEYS_EXTRA = {
-    # "Print Help": ["H", ord("H")],
-    # "Print Info": ["I", ord("I")],
     # "Center current": ["C", ord("C")],
-    # "Apply last used function": ["Enter", 257],  # GLFW_KEY_ENTER = 257
-    # "Undo": ["Z", ord("Z")],
-    # "Redo": ["Y", ord("Y")],
+    "Apply last used function": [
+        gui.KeyName.ENTER,
+        "_cb_apply_last_used_function",
+    ],  # GLFW_KEY_ENTER = 257
+    "Undo": [gui.KeyName.Z, "_cb_undo"],
+    "Redo": [gui.KeyName.Y, "_cb_redo"],
     "Hide/Unhide": [gui.KeyName.U, "_cb_hide_unhide"],
     "Toggle all": [gui.KeyName.A, "_cb_toggle_all"],
     "Toggle last": [gui.KeyName.L, "_cb_toggle_last"],
@@ -770,23 +770,23 @@ class InteractiveWindow:
             view_matrix = self._scene.scene.camera.get_view_matrix()
             camera_direction = -view_matrix[:3, 2]
 
-            # This is not called on the main thread, so we need to
-            # post to the main thread to safely access UI items.
-            def update_label():
-                self._info.text = (
-                    f"pos: {self._click_position}, dir: {camera_direction}"
-                )
-                # self.info.text = (
-                #     f"current: {self.i + 1} / {len(self._element_dicts)}"
-                #     "selected: {self.current_selected}"
-                # )
-                self._info.visible = self._info.text != ""
-                # We are sizing the info label to be exactly the right size,
-                # so since the text likely changed width, we need to
-                # re-layout to set the new frame.
-                self.window.set_needs_layout()
+            # # This is not called on the main thread, so we need to
+            # # post to the main thread to safely access UI items.
+            # def update_label():
+            #     self._info.text = (
+            #         f"pos: {self._click_position}, dir: {camera_direction}"
+            #     )
+            #     # self.info.text = (
+            #     #     f"current: {self.i + 1} / {len(self._element_dicts)}"
+            #     #     "selected: {self.current_selected}"
+            #     # )
+            #     self._info.visible = self._info.text != ""
+            #     # We are sizing the info label to be exactly the right size,
+            #     # so since the text likely changed width, we need to
+            #     # re-layout to set the new frame.
+            #     self.window.set_needs_layout()
 
-            gui.Application.instance.post_to_main_thread(self.window, update_label)
+            # gui.Application.instance.post_to_main_thread(self.window, update_label)
 
             distances = self.distances_to_point(self._click_position, camera_direction)
 
@@ -870,6 +870,11 @@ class InteractiveWindow:
         for _, (key, cb) in key_set.items():
             if event.key == key:
                 getattr(self, cb)()
+                return gui.Widget.EventCallbackResult.HANDLED
+
+        for function_key, function in self.function_key_mappings.items():
+            if event.key == function_key:
+                self._apply_function_to_elements(function)
                 return gui.Widget.EventCallbackResult.HANDLED
 
         return gui.Widget.EventCallbackResult.IGNORED
@@ -1054,12 +1059,10 @@ class InteractiveWindow:
             bbox.color = self.color_bbox_unselected
 
         self._current_bbox = bbox.as_open3d
-        self.print_debug(f"New bounding box: {bbox}")
-        # self.print_debug(f"New bounding box as LineSet: {self._current_bbox}")
+        self.print_debug(f"New bounding box: {bbox}", require_verbose=True)
 
         if self._current_bbox is not None:
             self._add_geometry_to_scene(self._current_bbox)
-            # self.print_debug(f"Bounding box added.")
 
     def _update_elements(self, indices, update_vis=True):
         num_elems = len(self.elements)
@@ -1110,6 +1113,24 @@ class InteractiveWindow:
                 )
                 self._add_geometry_to_scene(elem["drawable"])
 
+        # This is not called on the main thread, so we need to
+        # post to the main thread to safely access UI items.
+        def update_label():
+            self._info.text = (
+                f"Current: {self.i + 1} / {len(self._element_dicts)} | "
+                f"selected: {'YES' if self.is_current_selected else 'NO'}"
+            )
+
+            if n := len(self._hidden_elements):
+                self._info.text += f"\n{n} hidden elements"
+            self._info.visible = self._info.text != ""
+            # We are sizing the info label to be exactly the right size,
+            # so since the text likely changed width, we need to
+            # re-layout to set the new frame.
+            self.window.set_needs_layout()
+
+        gui.Application.instance.post_to_main_thread(self.window, update_label)
+
     def _update_current_idx(self, idx=None, update_old=True):
         if idx is not None:
             self.i_old = self.i
@@ -1130,23 +1151,7 @@ class InteractiveWindow:
         self._update_elements(self.i)
         if update_old:
             self._update_elements(self.i_old)
-        self.print_debug("Calling update bounding box...", require_verbose=True)
         self._update_current_bounding_box()
-
-        # # This is not called on the main thread, so we need to
-        # # post to the main thread to safely access UI items.
-        # def update_label():
-        #     self.info.text = (
-        #         f"current: {self.i + 1} / {len(self._element_dicts)}"
-        #         "selected: {self.current_selected}"
-        #     )
-        #     self.info.visible = self.info.text != ""
-        #     # We are sizing the info label to be exactly the right size,
-        #     # so since the text likely changed width, we need to
-        #     # re-layout to set the new frame.
-        #     self.window.set_needs_layout()
-
-        # gui.Application.instance.post_to_main_thread(self.window, update_label)
 
     def _get_range(self, indices_or_slice):
         if isinstance(indices_or_slice, (range, list, np.ndarray)):
@@ -1173,28 +1178,23 @@ class InteractiveWindow:
 
         self._update_elements(indices)
 
-    def _apply_function_to_elements(self, func, action, check_extra_functions=True):
+    def _apply_function_to_elements(self, function):
         """Apply function to selected elements."""
-        if check_extra_functions and not self._is_modifier_extra:
-            return
-
-        if action == 1 or self.functions is None:
-            return
 
         indices = self.selected_indices
         self.print_debug(
-            f"Applying {func.__name__} function to {len(indices)} elements, indices: "
+            f"Applying {function.__name__} function to {len(indices)} elements, indices: "
         )
         self.print_debug(indices)
         input_elements = [self.elements[i]["raw"] for i in indices]
 
         try:
-            output_elements = func(input_elements)
+            output_elements = function(input_elements)
         except KeyboardInterrupt:
             return
         except Exception as e:
             warnings.warn(
-                f"Failed to apply {func.__name__} function to "
+                f"Failed to apply {function.__name__} function to "
                 f"elements in indices {indices}, got following error: {str(e)}"
             )
             time.sleep(0.5)
@@ -1210,7 +1210,7 @@ class InteractiveWindow:
         assert self._pop_elements(indices, from_vis=True) == input_elements
         self._insert_elements(output_elements, to_vis=True)
 
-        self._last_used_function = func
+        self._last_used_function = function
         self._future_states = []
         self._update_get_plane_boundaries()
 
@@ -1323,30 +1323,29 @@ class InteractiveWindow:
     #     ctr.set_up([0, 1, 0])  # Define the camera "up" direction
     #     ctr.set_zoom(0.1)  # Adjust zoom level if necessary
 
-    def _cb_functions_menu(self, vis, action, mods):
-        if action == 1:
+    def _cb_apply_last_used_function(self):
+        func = self._last_used_function
+
+        if func is not None:
+            self.print_debug(f"Re-applying last function: {func}")
+            self._apply_function_to_elements(func)
+
+    def _cb_functions_menu(self):
+        if self.functions is None or len(self.functions) == 0:
+            warnings.warn("No functions, cannot call menu.")
             return
 
-        if self._is_modifier_extra:
-            func = self._last_used_function
-        else:
-            if self.functions is None or len(self.functions) == 0:
-                warnings.warn("No functions, cannot call menu.")
-                return
+        from .helpers_visualization import select_function_with_gui
 
-            from .helpers_visualization import select_function_with_gui
-
-            try:
-                func = select_function_with_gui(
-                    self.functions, self._last_used_function
-                )
-            except KeyboardInterrupt:
-                return
+        try:
+            func = select_function_with_gui(self.functions, self._last_used_function)
+        except KeyboardInterrupt:
+            return
 
         self.print_debug(f"Chosen function from menu: {func}")
 
         if func is not None:
-            self._apply_function_to_elements(func, action, check_extra_functions=False)
+            self._apply_function_to_elements(func)
 
     def _cb_hide_unhide(self):
         """Hide selected elements or unhide all hidden elements."""
@@ -1371,10 +1370,7 @@ class InteractiveWindow:
         self._preferences["paint_random"] = not self._preferences["paint_random"]
         self._reset_visualiser_elements()
 
-    def _cb_set_preferences(self, vis, action, mods):
-        if action == 1:
-            return
-
+    def _cb_set_preferences(self):
         from .helpers_visualization import get_inputs
 
         try:
@@ -1398,9 +1394,9 @@ class InteractiveWindow:
             self._preferences = new_preferences
             self._reset_visualiser_elements()
 
-    def _cb_redo(self, vis, action, mods):
-        if not self._is_modifier_extra or action == 1 or len(self._future_states) == 0:
-            return
+    def _cb_redo(self):
+        if len(self._future_states) == 0:
+                return
 
         future_state = self._future_states.pop()
 
@@ -1422,8 +1418,8 @@ class InteractiveWindow:
         self._update_current_idx(len(self.elements) - 1)
         self._update_get_plane_boundaries()
 
-    def _cb_undo(self, vis, action, mods):
-        if not self._is_modifier_extra or action == 1 or len(self._past_states) == 0:
+    def _cb_undo(self):
+        if len(self._past_states) == 0:
             return
 
         last_state = self._past_states.pop()
