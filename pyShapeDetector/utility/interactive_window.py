@@ -501,9 +501,16 @@ class InteractiveWindow:
 
     def distances_to_point(self, screen_point, screen_vector):
         from pyShapeDetector.geometry import PointCloud
-        from pyShapeDetector.primitives import Primitive, Plane
+        from pyShapeDetector.primitives import Primitive, Plane, Sphere
 
         screen_plane = Plane.from_normal_point(screen_vector, screen_point)
+        self._insert_elements(
+            [
+                Sphere.from_center_radius(screen_point, 0.1),
+                screen_plane.get_square_plane(1, screen_point),
+            ],
+            to_vis=True,
+        )
 
         def _is_point_in_convex_region(elem, point=screen_point, plane=screen_plane):
             """Check if mouse-click was done inside of the element actual region."""

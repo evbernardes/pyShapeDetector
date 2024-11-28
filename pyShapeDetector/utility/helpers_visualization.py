@@ -24,7 +24,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from multiprocessing import Manager, Process
 from open3d import visualization
-from .interactive_window import InteractiveWindow
+
+from .interactive_gui import InteractiveWindow
+
+# from .interactive_window import InteractiveWindow
 from .input_selector import InputSelector, SingleChoiceSelector
 
 
@@ -574,7 +577,7 @@ def apply_function_manually(
     element_selector.select_filter = select_filter
     element_selector.add_elements(fixed_elements, fixed=True)
 
-    element_selector.run(print_instructions=print_instructions)
+    element_selector.run()
 
     if return_indices:
         indices = [state["indices"] for state in element_selector._past_states]
