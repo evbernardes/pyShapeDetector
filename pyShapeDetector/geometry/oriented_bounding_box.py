@@ -27,7 +27,7 @@ class OrientedBoundingBox(Open3D_Geometry):
     expanded
     split
     as_planes
-
+    as_lineset
     """
 
     def contains_points(self, points, inclusive=True, eps=1e-5):
@@ -107,13 +107,11 @@ class OrientedBoundingBox(Open3D_Geometry):
         """
         Get the bounded planes for the faces of the bounding box.
 
-        Returns:
-            planes: list of tuples (a, b, c, d) representing the plane equations
-            faces: list of lists of vertices for each face
+        Returns
+        -------
+            list of planes
         """
         from pyShapeDetector.primitives import PlaneBounded
-
-
 
         # Face vertices (relative to the center and extent)
         face_offsets = [
@@ -129,7 +127,7 @@ class OrientedBoundingBox(Open3D_Geometry):
 
         center = self.center
         half_extent = self.extent / 2.0
-        axes = self.R.T # Local axes directions
+        axes = self.R.T  # Local axes directions
 
         vertices = center + [
             np.dot(offset * half_extent, axes) for offset in face_offsets
@@ -152,3 +150,54 @@ class OrientedBoundingBox(Open3D_Geometry):
             planes.append(plane_face)
 
         return planes
+
+    def as_lineset(self):
+        """
+        Convert bounding box to lineset instance.
+
+        Returns
+        -------
+            LineSet
+        """
+        from pyShapeDetector.geometry import LineSet
+
+        center = self.center
+        half_extent = self.extent / 2.0
+        axes = self.R.T  # Local axes directions
+
+        # Face vertices (relative to the center and extent)
+        face_offsets = [
+            [+1, +1, +1],
+            [+1, +1, -1],
+            [+1, -1, +1],
+            [+1, -1, -1],
+            [-1, +1, +1],
+            [-1, +1, -1],
+            [-1, -1, +1],
+            [-1, -1, -1],
+        ]
+
+        # Compute the vertices of the bounding box
+        vertices = center + [
+            np.dot(offset * half_extent, axes) for offset in face_offsets
+        ]
+
+        # Define edges (pairs of vertices)
+        lines = [
+            [0, 1],
+            [1, 3],
+            [3, 2],
+            [2, 0],  # Front face edges
+            [4, 5],
+            [5, 7],
+            [7, 6],
+            [6, 4],  # Back face edges
+            [0, 4],
+            [1, 5],
+            [2, 6],
+            [3, 7],  # Connecting edges between front and back
+        ]
+
+        lineset = LineSet(vertices, lines)
+        lineset.color = self.color
+        return lineset
