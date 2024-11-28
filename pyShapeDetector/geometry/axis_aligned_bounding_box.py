@@ -287,4 +287,4 @@ class AxisAlignedBoundingBox(Open3D_Geometry):
         -------
             LineSet
         """
-        return self.obb.as_planes()
+        return self.obb.as_lineset()
