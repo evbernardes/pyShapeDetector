@@ -14,10 +14,7 @@ import inspect
 from abc import ABC
 import numpy as np
 from open3d.utility import Vector3dVector
-import open3d.visualization.gui as gui
-import open3d.visualization.rendering as rendering
-
-# from pyShapeDetector.geometry import LineSet
+from open3d.visualization import gui, rendering
 
 COLOR_BBOX_SELECTED = (0, 0.8, 0)
 COLOR_BBOX_UNSELECTED = (1, 0, 0)
