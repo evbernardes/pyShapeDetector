@@ -13,10 +13,11 @@ import warnings
 import inspect
 from abc import ABC
 import numpy as np
-from open3d import visualization
 from open3d.utility import Vector3dVector
 import open3d.visualization.gui as gui
 import open3d.visualization.rendering as rendering
+
+# from pyShapeDetector.geometry import LineSet
 
 COLOR_BBOX_SELECTED = (0, 0.8, 0)
 COLOR_BBOX_UNSELECTED = (1, 0, 0)
@@ -36,20 +37,20 @@ KEYS_ACTIONS = {
     "Toggle": [gui.KeyName.SPACE, "_cb_toggle", False, False],
     "[Fast] Previous": [gui.KeyName.LEFT, "_cb_previous", False, True],
     "[Fast] Next": [gui.KeyName.RIGHT, "_cb_next", False, True],
-    "Print Help": [gui.KeyName.H, "_cb_print_help", False, False],
-    "Print Info": [gui.KeyName.I, "_cb_print_info", False, False],
+    "Print help": [gui.KeyName.H, "_cb_print_help", False, False],
+    "Print info": [gui.KeyName.I, "_cb_print_info", False, False],
     "Functions menu": [gui.KeyName.ENTER, "_cb_functions_menu", False, False],
-    "Preferences": [gui.KeyName.P, "_cb_set_preferences", False, False],
-    "Color mode": [gui.KeyName.M, "_cb_set_color_mode", False, False],
+    "Set preferences": [gui.KeyName.P, "_cb_set_preferences", False, False],
+    "Set color mode": [gui.KeyName.M, "_cb_set_color_mode", False, False],
     ##############
     # CTRL keys: #
     ##############
-    "Repeat last func": [gui.KeyName.ENTER, "_cb_repeat_last_function", True, False],
+    "Repeat last funtion": [gui.KeyName.ENTER, "_cb_repeat_last_function", True, False],
     "Undo [Redo]": [gui.KeyName.Z, "_cb_undo_redo", True, True],
     "[Un]Hide": [gui.KeyName.U, "_cb_hide_unhide", True, True],
-    "Toggle all": [gui.KeyName.A, "_cb_toggle_all", True, True],
-    "Toggle last": [gui.KeyName.L, "_cb_toggle_last", True, False],
-    "Toggle type": [gui.KeyName.T, "_cb_toggle_type", True, False],
+    "[Un]select all": [gui.KeyName.A, "_cb_toggle_all", True, True],
+    "[Un]select last modified": [gui.KeyName.L, "_cb_toggle_last", True, True],
+    "[Un]select per type": [gui.KeyName.T, "_cb_toggle_type", True, True],
 }
 
 KEY_EXTRA_FUNCTIONS = gui.KeyName.LEFT_CONTROL
@@ -63,7 +64,6 @@ def get_key_name(key):
 def get_action_line(desc, values):
     key, _, modifier, revert = values
 
-    # key_name = get_key_name(key)
     line = "("
     if modifier:
         line += f"{get_key_name(KEY_EXTRA_FUNCTIONS)} + "
@@ -71,76 +71,6 @@ def get_action_line(desc, values):
         line += f"[{get_key_name(KEY_MODIFIER)}] + "
     line += f"{get_key_name(key)}): {desc}"
     return line
-    # line += f"{({get_key_name(KEY_MODIFIER_EXTRA)}) + ""
-    # line = f"{({get_key_name(KEY_MODIFIER_EXTRA)}) + ({chr(key)})}"
-
-
-KEYS_NORMAL = {
-    "Toggle": [gui.KeyName.SPACE, "_cb_toggle"],
-    "Previous": [gui.KeyName.LEFT, "_cb_previous"],
-    "Next": [gui.KeyName.RIGHT, "_cb_next"],
-    "Print Help": [gui.KeyName.H, "_cb_print_help"],
-    "Print Info": [gui.KeyName.I, "_cb_print_info"],
-    "Functions menu": [gui.KeyName.ENTER, "_cb_functions_menu"],
-    # "Finish": ["F", ord("F")],
-    "Preferences": [gui.KeyName.P, "_cb_set_preferences"],
-    "Color mode": [gui.KeyName.M, "_cb_set_color_mode"],
-}
-
-
-KEYS_EXTRA = {
-    # "Center current": ["C", ord("C")],
-    "Apply last used function": [
-        gui.KeyName.ENTER,
-        "_cb_apply_last_used_function",
-    ],  # GLFW_KEY_ENTER = 257
-    "Undo": [gui.KeyName.Z, "_cb_undo"],
-    "Redo": [gui.KeyName.Y, "_cb_redo"],
-    "Hide/Unhide": [gui.KeyName.U, "_cb_hide_unhide"],
-    "Toggle all": [gui.KeyName.A, "_cb_toggle_all"],
-    "Toggle last": [gui.KeyName.L, "_cb_toggle_last"],
-    "Toggle type": [gui.KeyName.T, "_cb_toggle_type"],
-    # "Toggle click": ["LShift", 340],  # GLFW_KEY_LSHIFT = 340
-}
-
-# all_keys = [key[1] for key in KEYS_NORMAL.values()]
-# all_keys += [key[1] for key in KEYS_EXTRA.values()]
-# Accounting for extra used of Enter
-# assert len(all_keys) == len(set(all_keys)) + 1
-
-
-def _unproject_screen_to_world(vis, x, y):
-    """
-    Convert screen coordinates (x, y, depth) to 3D coordinates.
-    """
-
-    depth = vis.capture_depth_float_buffer(True)
-    depth = np.asarray(depth)[y, x]
-
-    intrinsic = vis.get_view_control().convert_to_pinhole_camera_parameters().intrinsic
-    extrinsic = vis.get_view_control().convert_to_pinhole_camera_parameters().extrinsic
-
-    fx = intrinsic.intrinsic_matrix[0, 0]
-    fy = intrinsic.intrinsic_matrix[1, 1]
-    cx = intrinsic.intrinsic_matrix[0, 2]
-    cy = intrinsic.intrinsic_matrix[1, 2]
-
-    # Convert screen space to camera space
-    z = depth
-    x = (x - cx) * z / fx
-    y = (y - cy) * z / fy
-
-    # Convert camera space to world space
-    camera_space_point = np.array([x, y, z, 1.0]).reshape(4, 1)
-    world_space_point = np.dot(np.linalg.inv(extrinsic), camera_space_point)
-    point = world_space_point[:3].flatten()
-
-    # Extract the camera forward direction (view normal vector)
-    camera_forward = np.array([0, 0, -1, 1.0])  # The forward direction in camera space
-    world_forward_vector = np.dot(np.linalg.inv(extrinsic), camera_forward)[:3]
-    normal_view_vector = world_forward_vector / np.linalg.norm(world_forward_vector)
-
-    return point, normal_view_vector
 
 
 class InteractiveWindow:
@@ -386,7 +316,13 @@ class InteractiveWindow:
         self.current_element["selected"] = boolean_value
 
     def _add_geometry_to_scene(self, elem):
-        self._scene.scene.add_geometry(str(id(elem)), elem, self.mat)
+        from open3d.geometry import LineSet, AxisAlignedBoundingBox, OrientedBoundingBox
+
+        if isinstance(elem, (LineSet, AxisAlignedBoundingBox, OrientedBoundingBox)):
+            mat = self.material_line
+        else:
+            mat = self.material_regular
+        self._scene.scene.add_geometry(str(id(elem)), elem, mat)
 
     def _remove_geometry_from_scene(self, elem):
         self._scene.scene.remove_geometry(str(id(elem)))
@@ -839,12 +775,6 @@ class InteractiveWindow:
                 getattr(self, cb_name)()
                 return gui.Widget.EventCallbackResult.HANDLED
 
-        # key_set = KEYS_EXTRA if self._is_extra_functions else KEYS_NORMAL
-        # for _, (key, cb) in key_set.items():
-        #     if event.key == key:
-        #         getattr(self, cb)()
-        #         return gui.Widget.EventCallbackResult.HANDLED
-
         for function_key, function in self.function_key_mappings.items():
             if event.key == function_key:
                 self._apply_function_to_elements(function)
@@ -872,10 +802,14 @@ class InteractiveWindow:
 
         self.window.add_child(self._scene)
 
-        self.mat = rendering.MaterialRecord()
-        self.mat.base_color = [1.0, 1.0, 1.0, 1.0]  # White color
-        self.mat.shader = "defaultUnlit"
-        self.mat.point_size = 3 * self.window.scaling
+        self.material_regular = rendering.MaterialRecord()
+        self.material_regular.base_color = [1.0, 1.0, 1.0, 1.0]  # White color
+        self.material_regular.shader = "defaultUnlit"
+        self.material_regular.point_size = 3 * self.window.scaling
+
+        self.material_line = rendering.MaterialRecord()
+        self.material_line.shader = "unlitLine"
+        self.material_line.line_width = 1.5 * self.window.scaling
 
         self._info = gui.Label("")
         self._info.visible = False
@@ -956,8 +890,8 @@ class InteractiveWindow:
         else:
             bbox.color = self.color_bbox_unselected
 
-        self._current_bbox = bbox.as_open3d
         self.print_debug(f"New bounding box: {bbox}", require_verbose=True)
+        self._current_bbox = bbox.as_open3d
 
         if self._current_bbox is not None:
             self._add_geometry_to_scene(self._current_bbox)
@@ -1068,11 +1002,10 @@ class InteractiveWindow:
     def _toggle_indices(self, indices_or_slice):
         indices = self._get_range(indices_or_slice)
 
-        selectable = [self.select_filter(elem) for elem in self.elements]
-
-        selected = np.logical_or(self.selected, ~np.asarray(selectable))
-        selected[indices] = not np.sum(selected[indices]) == len(selected[indices])
-        self.selected = selected.tolist()
+        for idx in indices:
+            elem = self.elements[idx]
+            selected = (not self._is_modifier_pressed) and self.select_filter(elem)
+            elem["selected"] = selected
 
         self._update_elements(indices)
 
@@ -1399,7 +1332,7 @@ class InteractiveWindow:
         self._scene.look_at(center, center - [0, 0, 3], [0, -1, 0])
 
         self._instructions = (
-            # "**************************************************"
+            # "**************************************************"missing required attributes (0xd), declared=0x
             # + "\nStarting manual selector. Instructions:"
             # + "\nGreen: selected. White: unselected. Blue: current."
             # + "\n******************** KEYS: ***********************\n"
