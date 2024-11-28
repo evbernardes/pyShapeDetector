@@ -815,6 +815,8 @@ class InteractiveWindow:
         self._scene.set_on_key(self._on_key)
         self._scene.set_on_mouse(self._on_mouse)
 
+        self._scene.set_view_controls(gui.SceneWidget.Controls.ROTATE_MODEL)
+
         # self._settings_panel = gui.Vert(
         #     0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em)
         # )
