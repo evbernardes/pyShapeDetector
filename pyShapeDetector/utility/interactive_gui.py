@@ -28,8 +28,51 @@ COLOR_UNSELECTED_CURRENT = (0.6, 0.6, 0.6)
 COLOR_UNSELECTED = (0.3, 0.3, 0.3)
 
 
+# Description: [key, '_cb_function_name', extra, modifier]
+KEYS_ACTIONS = {
+    ################
+    # Normal keys: #
+    ################
+    "Toggle": [gui.KeyName.SPACE, "_cb_toggle", False, False],
+    "[Fast] Previous": [gui.KeyName.LEFT, "_cb_previous", False, True],
+    "[Fast] Next": [gui.KeyName.RIGHT, "_cb_next", False, True],
+    "Print Help": [gui.KeyName.H, "_cb_print_help", False, False],
+    "Print Info": [gui.KeyName.I, "_cb_print_info", False, False],
+    "Functions menu": [gui.KeyName.ENTER, "_cb_functions_menu", False, False],
+    "Preferences": [gui.KeyName.P, "_cb_set_preferences", False, False],
+    "Color mode": [gui.KeyName.M, "_cb_set_color_mode", False, False],
+    ##############
+    # CTRL keys: #
+    ##############
+    "Repeat last func": [gui.KeyName.ENTER, "_cb_repeat_last_function", True, False],
+    "Undo [Redo]": [gui.KeyName.Z, "_cb_undo_redo", True, True],
+    "[Un]Hide": [gui.KeyName.U, "_cb_hide_unhide", True, True],
+    "Toggle all": [gui.KeyName.A, "_cb_toggle_all", True, True],
+    "Toggle last": [gui.KeyName.L, "_cb_toggle_last", True, False],
+    "Toggle type": [gui.KeyName.T, "_cb_toggle_type", True, False],
+}
+
+KEY_EXTRA_FUNCTIONS = gui.KeyName.LEFT_CONTROL
+KEY_MODIFIER = gui.KeyName.LEFT_SHIFT
+
+
 def get_key_name(key):
     return str(key).split(".")[1]
+
+
+def get_action_line(desc, values):
+    key, _, modifier, revert = values
+
+    # key_name = get_key_name(key)
+    line = "("
+    if modifier:
+        line += f"{get_key_name(KEY_EXTRA_FUNCTIONS)} + "
+    if revert:
+        line += f"[{get_key_name(KEY_MODIFIER)}] + "
+    line += f"{get_key_name(key)}): {desc}"
+    return line
+    # line += f"{({get_key_name(KEY_MODIFIER_EXTRA)}) + ""
+    # line = f"{({get_key_name(KEY_MODIFIER_EXTRA)}) + ({chr(key)})}"
 
 
 KEYS_NORMAL = {
@@ -44,8 +87,6 @@ KEYS_NORMAL = {
     "Color mode": [gui.KeyName.M, "_cb_set_color_mode"],
 }
 
-KEY_MODIFIER_EXTRA = gui.KeyName.LEFT_CONTROL
-KEY_MODIFIER_REVERT = gui.KeyName.LEFT_SHIFT
 
 KEYS_EXTRA = {
     # "Center current": ["C", ord("C")],
@@ -195,14 +236,9 @@ class InteractiveWindow:
         self.i_old = 0
         self.i = 0
         self.finish = False
-        self._is_modifier_extra = False
-        self._is_modifier_revert = False
-        self.mouse_toggle = False
-        self.mouse_position = (0, 0)
-        self._click_position = (0.0, 0.0, 0.0)
+        self._is_extra_functions = False
+        self._is_modifier_pressed = False
         self._started = False
-
-        # self._vis = None
 
         # Set up colors and elements
         self.color_bbox_selected = COLOR_BBOX_SELECTED
@@ -254,6 +290,13 @@ class InteractiveWindow:
                 key = ord(str((n + 1) % 10))
                 key_mappings[key] = f
         return key_mappings
+
+    @property
+    def function_key_mappings_info(self):
+        return [
+            f"({get_key_name(KEY_EXTRA_FUNCTIONS)} + {chr(key)}) {func.__name__}"
+            for key, func in self.function_key_mappings.items()
+        ]
 
     @property
     def functions(self):
@@ -342,14 +385,10 @@ class InteractiveWindow:
             )
         self.current_element["selected"] = boolean_value
 
-    def _add_geometry_to_scene(self, elem, reset_bounding_box=False):
-        # override reset_bounding_box if has not started yet
-        # reset_bounding_box = reset_bounding_box or not self._started
-        # self._vis.add_geometry(elem, reset_bounding_box=reset_bounding_box)
+    def _add_geometry_to_scene(self, elem):
         self._scene.scene.add_geometry(str(id(elem)), elem, self.mat)
 
-    def _remove_geometry_from_scene(self, elem, reset_bounding_box=False):
-        # self._vis.remove_geometry(elem, reset_bounding_box=reset_bounding_box)
+    def _remove_geometry_from_scene(self, elem):
         self._scene.scene.remove_geometry(str(id(elem)))
 
     def add_elements(self, elems_raw, pre_selected=None, fixed=False):
@@ -519,13 +558,6 @@ class InteractiveWindow:
         from pyShapeDetector.primitives import Primitive, Plane, Sphere
 
         screen_plane = Plane.from_normal_point(screen_vector, screen_point)
-        # self._insert_elements(
-        #     [
-        #         Sphere.from_center_radius(screen_point, 0.05),
-        #         screen_plane.get_square_plane(1, screen_point),
-        #     ],
-        #     to_vis=True,
-        # )
 
         def _is_point_in_convex_region(elem, point=screen_point, plane=screen_plane):
             """Check if mouse-click was done inside of the element actual region."""
@@ -752,43 +784,21 @@ class InteractiveWindow:
             depth = np.asarray(depth_image)[y, x]
 
             if depth == 1.0:  # clicked on nothing (i.e. the far plane)
-                self._click_position = None
-            else:
-                world = self._scene.scene.camera.unproject(
-                    x,
-                    y,
-                    depth,
-                    self._scene.frame.width,
-                    self._scene.frame.height,
-                )
-                self._click_position = world
-
-            if self._click_position is None:
                 return
+
+            click_position = self._scene.scene.camera.unproject(
+                x,
+                y,
+                depth,
+                self._scene.frame.width,
+                self._scene.frame.height,
+            )
 
             # self.widget3d.scene.get_
             view_matrix = self._scene.scene.camera.get_view_matrix()
             camera_direction = -view_matrix[:3, 2]
 
-            # # This is not called on the main thread, so we need to
-            # # post to the main thread to safely access UI items.
-            # def update_label():
-            #     self._info.text = (
-            #         f"pos: {self._click_position}, dir: {camera_direction}"
-            #     )
-            #     # self.info.text = (
-            #     #     f"current: {self.i + 1} / {len(self._element_dicts)}"
-            #     #     "selected: {self.current_selected}"
-            #     # )
-            #     self._info.visible = self._info.text != ""
-            #     # We are sizing the info label to be exactly the right size,
-            #     # so since the text likely changed width, we need to
-            #     # re-layout to set the new frame.
-            #     self.window.set_needs_layout()
-
-            # gui.Application.instance.post_to_main_thread(self.window, update_label)
-
-            distances = self.distances_to_point(self._click_position, camera_direction)
+            distances = self.distances_to_point(click_position, camera_direction)
 
             i_min_distance = np.argmin(distances)
             if distances[i_min_distance] is np.inf:
@@ -798,67 +808,22 @@ class InteractiveWindow:
             self.i = i_min_distance
             if event.is_modifier_down(gui.KeyModifier.SHIFT):
                 self._cb_toggle()
-
             self._update_current_idx()
-
-        # # Capture both depth and normal images
-        # def depth_callback(depth_image):
-        #     def normal_callback(normal_image):
-        #         depth_and_normal_callback(depth_image, normal_image)
-
-        #     self.widget3d.scene.scene.render_to_normal_image(normal_callback)
-
-        # self.widget3d.scene.scene.render_to_depth_image(depth_callback)
 
         self._scene.scene.scene.render_to_depth_image(depth_callback)
 
-        # if self._click_position is None:
-        #     return gui.Widget.EventCallbackResult.IGNORED
-
-        # # self.widget3d.scene.get_
-        # view_matrix = self.widget3d.scene.camera.get_view_matrix()
-        # camera_direction = -view_matrix[:3, 2]
-
-        # # This is not called on the main thread, so we need to
-        # # post to the main thread to safely access UI items.
-        # def update_label():
-        #     self.info.text = f"pos: {self._click_position}, dir: {camera_direction}"
-        #     # self.info.text = (
-        #     #     f"current: {self.i + 1} / {len(self._element_dicts)}"
-        #     #     "selected: {self.current_selected}"
-        #     # )
-        #     self.info.visible = self.info.text != ""
-        #     # We are sizing the info label to be exactly the right size,
-        #     # so since the text likely changed width, we need to
-        #     # re-layout to set the new frame.
-        #     self.window.set_needs_layout()
-
-        # gui.Application.instance.post_to_main_thread(self.window, update_label)
-
-        # distances = self.distances_to_point(self._click_position, camera_direction)
-
-        # i_min_distance = np.argmin(distances)
-        # if distances[i_min_distance] is np.inf:
-        #     return gui.Widget.EventCallbackResult.IGNORED
-
-        # self.i_old = self.i
-        # self.i = i_min_distance
-        # if event.is_modifier_down(gui.KeyModifier.SHIFT):
-        #     self._cb_toggle()
-
-        # self._update_current_idx()
         return gui.Widget.EventCallbackResult.HANDLED
 
     def _on_key(self, event):
         self.print_debug(f"Key: {event.key}, type: {event.type}", require_verbose=True)
 
         # First check if modifier (ctrl) is being pressed...
-        if event.key == KEY_MODIFIER_EXTRA:
-            self._is_modifier_extra = event.type == gui.KeyEvent.Type.DOWN
+        if event.key == KEY_EXTRA_FUNCTIONS:
+            self._is_extra_functions = event.type == gui.KeyEvent.Type.DOWN
             return gui.Widget.EventCallbackResult.HANDLED
 
-        if event.key == KEY_MODIFIER_REVERT:
-            self._is_modifier_revert = event.type == gui.KeyEvent.Type.DOWN
+        if event.key == KEY_MODIFIER:
+            self._is_modifier_pressed = event.type == gui.KeyEvent.Type.DOWN
             return gui.Widget.EventCallbackResult.HANDLED
 
         # If not, ignore every release
@@ -866,11 +831,19 @@ class InteractiveWindow:
             return gui.Widget.EventCallbackResult.IGNORED
 
         # If down key, check if it's one of the callbacks:
-        key_set = KEYS_EXTRA if self._is_modifier_extra else KEYS_NORMAL
-        for _, (key, cb) in key_set.items():
+        for _, (key, cb_name, extra_functions, _) in KEYS_ACTIONS.items():
             if event.key == key:
-                getattr(self, cb)()
+                if extra_functions != self._is_extra_functions:
+                    return gui.Widget.EventCallbackResult.IGNORED
+
+                getattr(self, cb_name)()
                 return gui.Widget.EventCallbackResult.HANDLED
+
+        # key_set = KEYS_EXTRA if self._is_extra_functions else KEYS_NORMAL
+        # for _, (key, cb) in key_set.items():
+        #     if event.key == key:
+        #         getattr(self, cb)()
+        #         return gui.Widget.EventCallbackResult.HANDLED
 
         for function_key, function in self.function_key_mappings.items():
             if event.key == function_key:
@@ -914,81 +887,6 @@ class InteractiveWindow:
         # self._settings_panel = gui.Vert(
         #     0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em)
         # )
-
-        # vis = visualization.VisualizerWithKeyCallback()
-
-        # # Register signal handler to gracefully stop the program
-        # signal.signal(signal.SIGINT, self._signal_handler)
-
-        # # Normal keys
-        # vis.register_key_action_callback(KEYS_NORMAL["Toggle"][1], self._cb_toggle)
-        # vis.register_key_action_callback(KEYS_NORMAL["Next"][1], self._cb_next)
-        # vis.register_key_action_callback(KEYS_NORMAL["Previous"][1], self._cb_previous)
-        # vis.register_key_action_callback(
-        #     KEYS_NORMAL["Finish"][1], self._cb_finish_process
-        # )
-        # vis.register_key_action_callback(
-        #     KEYS_NORMAL["Preferences"][1], self._cb_set_preferences
-        # )
-        # vis.register_key_action_callback(
-        #     KEYS_NORMAL["Color mode"][1], self._cb_set_color_mode
-        # )
-        # vis.register_key_action_callback(EXTRA_KEY[1], self._cb_switch_extra)
-
-        # vis.register_key_action_callback(
-        #     KEYS_EXTRA["Toggle click"][1], self._cb_switch_mouse_toggle
-        # )
-
-        # # Extra (LCtrl) keys
-        # vis.register_key_action_callback(
-        #     KEYS_EXTRA["Print Help"][1], self._cb_print_help
-        # )
-        # vis.register_key_action_callback(
-        #     KEYS_EXTRA["Print Info"][1], self._cb_print_info
-        # )
-        # vis.register_key_action_callback(
-        #     KEYS_EXTRA["Center current"][1], self._cb_center_current
-        # )
-        # vis.register_key_action_callback(
-        #     KEYS_EXTRA["Hide/Unhide"][1], self._cb_hide_unhide
-        # )
-        # vis.register_key_action_callback(
-        #     KEYS_EXTRA["Toggle all"][1], self._cb_toggle_all
-        # )
-        # vis.register_key_action_callback(
-        #     KEYS_EXTRA["Toggle last"][1], self._cb_toggle_last
-        # )
-        # vis.register_key_action_callback(
-        #     KEYS_EXTRA["Toggle type"][1], self._cb_toggle_type
-        # )
-
-        # vis.register_key_action_callback(KEYS_EXTRA["Undo"][1], self._cb_undo)
-        # vis.register_key_action_callback(KEYS_EXTRA["Redo"][1], self._cb_redo)
-        # vis.register_key_action_callback(
-        #     KEYS_NORMAL["Functions menu"][1], self._cb_functions_menu
-        # )
-
-        # # This is called by "self._cb_functions_menu" now
-        # # vis.register_key_action_callback(
-        # #     KEYS_EXTRA["Apply last used function"][1], self._cb_apply_last_used_function
-        # # )
-
-        # # Extra keys for functions
-        # for key, f in self.function_key_mappings.items():
-        #     vis.register_key_action_callback(
-        #         key,
-        #         lambda vis, action, mods, func=f: self._apply_function_to_elements(
-        #             func, action
-        #         ),
-        #     )
-
-        # window_name = self.window_name
-        # if window_name == "":
-        #     window_name = "Element selector."
-
-        # vis.create_window(window_name)
-
-        # self._vis = vis
 
     # def _signal_handler(self, sig, frame):
     #     self._vis.destroy_window()
@@ -1227,11 +1125,13 @@ class InteractiveWindow:
 
     def _cb_next(self):
         """Highlight next element in list."""
-        self._update_current_idx(min(self.i + 1, len(self.elements) - 1))
+        delta = 1 + 4 * self._is_modifier_pressed
+        self._update_current_idx(min(self.i + delta, len(self.elements) - 1))
 
     def _cb_previous(self):
         """Highlight previous element in list."""
-        self._update_current_idx(max(self.i - 1, 0))
+        delta = 1 + 4 * self._is_modifier_pressed
+        self._update_current_idx(max(self.i - delta, 0))
 
     def _cb_toggle_all(self):
         """Toggle the all elements between all selected/all unselected."""
@@ -1275,24 +1175,6 @@ class InteractiveWindow:
         self.finish = True
         vis.close()
 
-    def _cb_switch_extra(self, vis, action, mods):
-        """Switch to mouse selection + extra LCtrl functions."""
-        if self._is_modifier_extra == bool(action):
-            return
-
-        self._is_modifier_extra = bool(action)
-
-        if self._is_modifier_extra:
-            vis.register_mouse_button_callback(self.on_mouse_button)
-            vis.register_mouse_move_callback(self.on_mouse_move)
-        else:
-            vis.register_mouse_button_callback(None)
-            vis.register_mouse_move_callback(None)
-
-    def _cb_switch_mouse_toggle(self, vis, action, mods):
-        """Switch to mouse selection + extra LCtrl mode."""
-        self.mouse_toggle = bool(action)
-
     def _cb_print_help(self):
         print(self._instructions)
         time.sleep(0.5)
@@ -1323,7 +1205,7 @@ class InteractiveWindow:
     #     ctr.set_up([0, 1, 0])  # Define the camera "up" direction
     #     ctr.set_zoom(0.1)  # Adjust zoom level if necessary
 
-    def _cb_apply_last_used_function(self):
+    def _cb_repeat_last_function(self):
         func = self._last_used_function
 
         if func is not None:
@@ -1351,13 +1233,14 @@ class InteractiveWindow:
         """Hide selected elements or unhide all hidden elements."""
 
         indices = self.selected_indices
-        num_elements = len(indices)
 
-        if num_elements == 0:
+        if self._is_modifier_pressed:
+            # UNHIDE
             self._insert_elements(self._hidden_elements, selected=True, to_vis=True)
             self._hidden_elements = []
 
         else:
+            # HIDE SELECTED
             self._hidden_elements += self._pop_elements(indices, from_vis=True)
             self.selected = False
 
@@ -1394,84 +1277,64 @@ class InteractiveWindow:
             self._preferences = new_preferences
             self._reset_visualiser_elements()
 
-    def _cb_redo(self):
-        if len(self._future_states) == 0:
+    def _cb_undo_redo(self):
+        if self._is_modifier_pressed:
+            # REDO
+            if len(self._future_states) == 0:
                 return
 
-        future_state = self._future_states.pop()
+            future_state = self._future_states.pop()
 
-        modified_elements = future_state["modified_elements"]
-        indices = future_state["indices"]
+            modified_elements = future_state["modified_elements"]
+            indices = future_state["indices"]
 
-        self.print_debug(
-            f"Redoing last operation, removing {len(indices)} inputs and "
-            f"resetting {len(modified_elements)} inputs."
-        )
+            self.print_debug(
+                f"Redoing last operation, removing {len(indices)} inputs and "
+                f"resetting {len(modified_elements)} inputs."
+            )
 
-        input_elements = [self.elements[i]["raw"] for i in indices]
-        self._save_state(indices, input_elements, len(modified_elements))
+            input_elements = [self.elements[i]["raw"] for i in indices]
+            self._save_state(indices, input_elements, len(modified_elements))
 
-        self.i = future_state["current_index"]
-        self._pop_elements(indices, from_vis=True)
-        self._insert_elements(modified_elements, to_vis=True)
+            self.i = future_state["current_index"]
+            self._pop_elements(indices, from_vis=True)
+            self._insert_elements(modified_elements, to_vis=True)
 
-        self._update_current_idx(len(self.elements) - 1)
+            self._update_current_idx(len(self.elements) - 1)
+        else:
+            # UNDO
+            if len(self._past_states) == 0:
+                return
+
+            last_state = self._past_states.pop()
+            indices = last_state["indices"]
+            elements = last_state["elements"]
+            num_outputs = last_state["num_outputs"]
+            num_elems = len(self.elements)
+
+            self.print_debug(
+                f"Undoing last operation, removing {num_outputs} outputs and "
+                f"resetting {len(elements)} inputs."
+            )
+
+            indices_to_pop = range(num_elems - num_outputs, num_elems)
+            modified_elements = self._pop_elements(indices_to_pop, from_vis=True)
+            self._insert_elements(elements, indices, selected=True, to_vis=True)
+
+            self._future_states.append(
+                {
+                    "modified_elements": modified_elements,
+                    "indices": indices,
+                    "current_index": self.i,
+                }
+            )
+
+            while len(self._future_states) > self._preferences["number_redo_states"]:
+                self._future_states.pop(0)
+
+            self._update_current_idx(indices[-1])
+
         self._update_get_plane_boundaries()
-
-    def _cb_undo(self):
-        if len(self._past_states) == 0:
-            return
-
-        last_state = self._past_states.pop()
-        indices = last_state["indices"]
-        elements = last_state["elements"]
-        num_outputs = last_state["num_outputs"]
-        num_elems = len(self.elements)
-
-        self.print_debug(
-            f"Undoing last operation, removing {num_outputs} outputs and "
-            f"resetting {len(elements)} inputs."
-        )
-
-        indices_to_pop = range(num_elems - num_outputs, num_elems)
-        modified_elements = self._pop_elements(indices_to_pop, from_vis=True)
-        self._insert_elements(elements, indices, selected=True, to_vis=True)
-
-        self._future_states.append(
-            {
-                "modified_elements": modified_elements,
-                "indices": indices,
-                "current_index": self.i,
-            }
-        )
-
-        while len(self._future_states) > self._preferences["number_redo_states"]:
-            self._future_states.pop(0)
-
-        self._update_current_idx(indices[-1])
-        self._update_get_plane_boundaries()
-
-    def on_mouse_move(self, vis, x, y):
-        """Get mouse position."""
-        self.mouse_position = (int(x), int(y))
-
-    def on_mouse_button(self, vis, button, action, mods):
-        if action == 1:
-            return
-
-        point, vector = _unproject_screen_to_world(vis, *self.mouse_position)
-
-        distances = self.distances_to_point(point, vector)
-
-        i_min_distance = np.argmin(distances)
-        if distances[i_min_distance] is np.inf:
-            return
-
-        self.i_old = self.i
-        self.i = np.argmin(distances)
-        if self.mouse_toggle:
-            self._cb_toggle(vis, 0, None)
-        self._update_current_idx()
 
     def _reset_visualiser_elements(self, startup=False, reset_fixed=False):
         """Prepare elements for visualization"""
@@ -1542,27 +1405,11 @@ class InteractiveWindow:
             # + "\n******************** KEYS: ***********************\n"
             "******************** KEYS: ***********************\n"
             + "\n".join(
-                [
-                    f"({get_key_name(key)}) {desc}"
-                    for desc, (key, _) in KEYS_NORMAL.items()
-                ]
+                [get_action_line(desc, values) for desc, values in KEYS_ACTIONS.items()]
             )
-            + f"\n({get_key_name(KEY_MODIFIER_EXTRA)}) Enables mouse selection"
+            + f"\n({get_key_name(KEY_EXTRA_FUNCTIONS)}) Enables mouse selection"
             + "\n"
-            + "\n".join(
-                [
-                    f"({get_key_name(KEY_MODIFIER_EXTRA)}) + ({get_key_name(key)}) {desc}"
-                    for desc, (key, _) in KEYS_EXTRA.items()
-                ],
-            )
-            # adding one line for each function
-            + "\n"
-            + "\n".join(
-                [
-                    f"({get_key_name(KEY_MODIFIER_EXTRA)}) + ({chr(key)}) {func.__name__}"
-                    for key, func in self.function_key_mappings.items()
-                ],
-            )
+            + "\n".join(self.function_key_mappings_info)
             + "\n**************************************************"
         )
 
