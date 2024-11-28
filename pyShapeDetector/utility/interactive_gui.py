@@ -780,8 +780,6 @@ class InteractiveWindow:
         return gui.Widget.EventCallbackResult.IGNORED
 
     def _setup_window_and_scene(self):
-        # em = self.window.theme.font_size
-
         # Set up the application
         self.app = gui.Application.instance
         self.app.initialize()
@@ -790,6 +788,9 @@ class InteractiveWindow:
         self.window = self.app.create_window(self.window_name, 1024, 768)
         self.window.set_on_layout(self._on_layout)
 
+        em = self.window.theme.font_size
+        separation_height = int(round(0.5 * em))
+
         # Set up a scene as a 3D widget
         self._scene = gui.SceneWidget()
         self._scene.scene = rendering.Open3DScene(self.window.renderer)
@@ -797,7 +798,23 @@ class InteractiveWindow:
             rendering.Open3DScene.LightingProfile.NO_SHADOWS, (0, 0, 0)
         )
 
-        self.window.add_child(self._scene)
+        self._settings_panel = gui.Vert(
+            0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em)
+        )
+        for key, value in self._preferences.items():
+            # def wrapper(new_value):
+            #     print(new_value)
+            #     self._cb_set_one_preference(key, new_value, type(value))
+
+            if isinstance(value, bool):
+                element = gui.Checkbox(key)
+                element.set_on_checked(
+                    lambda new_value: self._cb_set_one_preference(
+                        key, new_value, type(value)
+                    )
+                )
+                self._settings_panel.add_child(element)
+                self._settings_panel.add_fixed(separation_height)
 
         self.material_regular = rendering.MaterialRecord()
         self.material_regular.base_color = [1.0, 1.0, 1.0, 1.0]  # White color
@@ -810,12 +827,15 @@ class InteractiveWindow:
 
         self._info = gui.Label("")
         self._info.visible = False
+
+        self.window.add_child(self._scene)
+        self.window.add_child(self._settings_panel)
         self.window.add_child(self._info)
 
         self._scene.set_on_key(self._on_key)
         self._scene.set_on_mouse(self._on_mouse)
 
-        self._scene.set_view_controls(gui.SceneWidget.Controls.ROTATE_MODEL)
+        # self._scene.set_view_controls(gui.SceneWidget.Controls.ROTATE_MODEL)
 
         # self._settings_panel = gui.Vert(
         #     0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em)
@@ -1183,6 +1203,11 @@ class InteractiveWindow:
 
     def _cb_set_color_mode(self):
         self._preferences["paint_random"] = not self._preferences["paint_random"]
+        self._reset_visualiser_elements()
+
+    def _cb_set_one_preference(self, key, value, preference_type):
+        print(key, value, preference_type)
+        self._preferences[key] = preference_type(value)
         self._reset_visualiser_elements()
 
     def _cb_set_preferences(self):
