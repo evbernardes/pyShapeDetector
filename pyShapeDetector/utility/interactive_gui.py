@@ -110,10 +110,10 @@ class InteractiveWindow:
         Number of states to save for undoing. Default: 10.
     number_redo_states : int, optional
         Number of states to save for redoing. Default: 5.
-    random_color_multiplier : float, optional
+    random_color_brightness : float, optional
         Random colors are multiplied by this value to reduce their brightness,
         creating bigger contrast with selected objects. Default: 2/3.
-    highlight_color_multiplier : float, optional
+    highlight_color_brightness : float, optional
         Multiplier for color to show selected and current elements. Default: 0.3.
     debug : boolean, optional
         If True, prints debug information. Default: False.
@@ -136,8 +136,8 @@ class InteractiveWindow:
         number_points_distance=30,
         number_undo_states=10,
         number_redo_states=5,
-        random_color_multiplier=2 / 3,
-        highlight_color_multiplier=0.3,
+        random_color_brightness=2 / 3,
+        highlight_color_brightness=0.3,
         debug=False,
         verbose=False,
         return_finish_flag=False,
@@ -185,8 +185,8 @@ class InteractiveWindow:
             "verbose": bool(verbose),
             "bbox_expand": float(bbox_expand),
             "number_points_distance": int(number_points_distance),
-            "random_color_multiplier": np.clip(float(random_color_multiplier), 0, 1),
-            "highlight_color_multiplier": np.max(float(highlight_color_multiplier), 0),
+            "random_color_brightness": np.clip(float(random_color_brightness), 0, 1),
+            "highlight_color_brightness": np.max(float(highlight_color_brightness), 0),
             "number_undo_states": int(number_undo_states),
             "number_redo_states": int(number_redo_states),
         }
@@ -652,7 +652,7 @@ class InteractiveWindow:
 
         # lower luminance of random colors to not interfere with highlights
         if isinstance(color, str) and color == "random":
-            multiplier = self._settings["random_color_multiplier"]
+            multiplier = self._settings["random_color_brightness"]
             color = np.random.random(3) * multiplier
 
         color = np.clip(color, 0, 1)
@@ -848,8 +848,14 @@ class InteractiveWindow:
             "verbose": (self._set_verbose, None),
             "bbox_expand": (self._set_bbox_expand, [0, 10]),
             "number_points_distance": (self._set_number_points_distance, [5, 50]),
-            # "random_color_multiplier": (self._set_random_color_multiplier),
-            # "highlight_color_multiplier": (self._set_highlight_color_multiplier),
+            "random_color_brightness": (
+                self._set_random_color_brightness,
+                [0, 1],
+            ),
+            "highlight_color_brightness": (
+                self._set_highlight_color_brightness,
+                [0, 1],
+            ),
             "number_undo_states": (self._set_number_undo_states, [1, 10]),
             "number_redo_states": (self._set_number_redo_states, [1, 10]),
         }
@@ -1033,7 +1039,7 @@ class InteractiveWindow:
                 )
 
             else:
-                highlight_offset = self._settings["highlight_color_multiplier"] * (
+                highlight_offset = self._settings["highlight_color_brightness"] * (
                     int(is_selected) + int(is_current)
                 )
                 color = elem["color"] + highlight_offset
@@ -1319,12 +1325,13 @@ class InteractiveWindow:
         for elem in self.elements:
             elem["distance_checker"] = self._get_element_distances([elem["raw"]])[0]
 
-    def _set_random_color_multiplier(self, value):
-        self._settings["random_color_multiplier"] = value
-        self._reset_visualiser_elements()
+    def _set_random_color_brightness(self, value):
+        self._settings["random_color_brightness"] = value
+        if self._settings["paint_random"]:
+            self._reset_visualiser_elements()
 
-    def _set_highlight_color_multiplier(self, value):
-        self._settings["highlight_color_multiplier"] = value
+    def _set_highlight_color_brightness(self, value):
+        self._settings["highlight_color_brightness"] = value
         self._update_elements(None)
 
     def _set_number_undo_states(self, value):
@@ -1352,8 +1359,8 @@ class InteractiveWindow:
                 as_dict=True,
             )
 
-            new_preferences["random_color_multiplier"] = np.clip(
-                new_preferences["random_color_multiplier"], 0, 1
+            new_preferences["random_color_brightness"] = np.clip(
+                new_preferences["random_color_brightness"], 0, 1
             )
 
         except KeyboardInterrupt:
