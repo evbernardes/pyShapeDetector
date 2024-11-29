@@ -16,14 +16,10 @@ import numpy as np
 from open3d.utility import Vector3dVector
 from open3d.visualization import gui, rendering
 
-COLOR_BBOX_SELECTED = (0, 0.8, 0)
-COLOR_BBOX_UNSELECTED = (1, 0, 0)
-
-COLOR_SELECTED_CURRENT = np.array([255, 234, 0]) / 255  # flashy yellow
-COLOR_SELECTED = 0.7 * COLOR_SELECTED_CURRENT
-
-COLOR_UNSELECTED_CURRENT = (0.6, 0.6, 0.6)
-COLOR_UNSELECTED = (0.3, 0.3, 0.3)
+COLOR_BBOX_SELECTED_DEFAULT = np.array([0, 204.8, 0.0]) / 255
+COLOR_BBOX_UNSELECTED_DEFAULT = np.array([255.0, 0.0, 0.0]) / 255
+COLOR_SELECTED_DEFAULT = np.array([178.5, 163.8, 0.0]) / 255
+COLOR_UNSELECTED_DEFAULT = np.array([76.5, 76.5, 76.5]) / 255
 
 
 # Description: [key, '_cb_function_name', extra, modifier]
@@ -34,10 +30,10 @@ KEYS_ACTIONS = {
     "Toggle": [gui.KeyName.SPACE, "_cb_toggle", False, False],
     "[Fast] Previous": [gui.KeyName.LEFT, "_cb_previous", False, True],
     "[Fast] Next": [gui.KeyName.RIGHT, "_cb_next", False, True],
-    "Print help": [gui.KeyName.H, "_cb_print_help", False, False],
+    "Show help": [gui.KeyName.H, "_cb_show_help", False, False],
     "Print info": [gui.KeyName.I, "_cb_print_info", False, False],
     "Functions menu": [gui.KeyName.ENTER, "_cb_functions_menu", False, False],
-    "Show preferences": [gui.KeyName.P, "_cb_show_preferences", False, False],
+    "Show preferences": [gui.KeyName.P, "_cb_toggle_settings_panel", False, False],
     ##############
     # CTRL keys: #
     ##############
@@ -57,7 +53,7 @@ def get_key_name(key):
     return str(key).split(".")[1]
 
 
-class InteractiveWindow:
+class AppWindow:
     """
     Visualizer class used to manually select elements and apply functions to
     them.
@@ -108,9 +104,14 @@ class InteractiveWindow:
         If both this and 'debug' are True, prints extra debug information.
         Default: False.
 
+
     return_finish_flag : boolean, optional
         Should be deprecated.
     """
+
+    MENU_QUIT = 3
+    MENU_SHOW_SETTINGS = 11
+    MENU_HELP = 21
 
     def __init__(
         self,
@@ -128,6 +129,10 @@ class InteractiveWindow:
         debug=False,
         verbose=False,
         return_finish_flag=False,
+        color_selected=COLOR_SELECTED_DEFAULT,
+        # color_unselected=COLOR_UNSELECTED,
+        color_bbox_selected=COLOR_BBOX_SELECTED_DEFAULT,
+        color_bbox_unselected=COLOR_BBOX_UNSELECTED_DEFAULT,
     ):
         self._past_states = []
         self._future_states = []
@@ -154,23 +159,21 @@ class InteractiveWindow:
         self._is_modifier_pressed = False
         self._started = False
 
-        # Set up colors and elements
-        self.color_bbox_selected = COLOR_BBOX_SELECTED
-        self.color_bbox_unselected = COLOR_BBOX_UNSELECTED
-        self.color_selected = COLOR_SELECTED
-        self.color_selected_current = COLOR_SELECTED_CURRENT
-        self.color_unselected = COLOR_UNSELECTED
-        self.color_unselected_current = COLOR_UNSELECTED_CURRENT
-
         # # preferences dict:
         settings_dict = {
             "draw_boundary_lines": bool(draw_boundary_lines),
             "mesh_show_back_face": bool(mesh_show_back_face),
             "paint_selected": bool(paint_selected),
+            "color_selected": color_selected,
+            # "color_selected_current": COLOR_SELECTED_CURRENT,
+            # "color_unselected": color_unselected,
+            # "color_unselected_current": COLOR_UNSELECTED_CURRENT,
             "paint_random": bool(paint_random),
             "debug": bool(debug),
             "verbose": bool(verbose),
             "bbox_expand": float(bbox_expand),
+            "color_bbox_selected": color_bbox_selected,
+            "color_bbox_unselected": color_bbox_unselected,
             "number_points_distance": int(number_points_distance),
             "random_color_brightness": np.clip(float(random_color_brightness), 0, 1),
             "highlight_color_brightness": np.max(float(highlight_color_brightness), 0),
@@ -179,14 +182,6 @@ class InteractiveWindow:
         }
 
         self._settings = Settings(self, **settings_dict)
-
-        # (selected, current) -> color
-        self._colors_selected_current = {
-            (False, False): self.color_unselected,
-            (False, True): self.color_unselected_current,
-            (True, False): self.color_selected,
-            (True, True): self.color_selected_current,
-        }
 
     def print_debug(self, text, require_verbose=False):
         is_debug_activated = self._settings.debug
@@ -408,7 +403,7 @@ class InteractiveWindow:
                     require_verbose=True,
                 )
                 is_current = self._started and (self.i == idx)
-                color = self._colors_selected_current[True, is_current]
+                color = self._settings.get_element_color(True, is_current)
                 elem["drawable"] = self._get_painted_element(elem["drawable"], color)
 
             self.print_debug(
@@ -677,6 +672,38 @@ class InteractiveWindow:
 
         return elements_distance
 
+    def _on_menu_help(self):
+        em = self.window.theme.font_size
+        dlg = gui.Dialog("Help")
+
+        # Add the text
+        dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
+        dlg_layout.add_child(gui.Label("Open3D GUI Example"))
+
+        # Add the Ok button. We need to define a callback function to handle
+        # the click.
+        ok = gui.Button("OK")
+        ok.set_on_clicked(self._on_about_ok)
+
+        # We want the Ok button to be an the right side, so we need to add
+        # a stretch item to the layout, otherwise the button will be the size
+        # of the entire row. A stretch item takes up as much space as it can,
+        # which forces the button to be its minimum size.
+        h = gui.Horiz()
+        h.add_stretch()
+        h.add_child(ok)
+        h.add_stretch()
+        dlg_layout.add_child(h)
+
+        dlg.add_child(dlg_layout)
+        self.window.show_dialog(dlg)
+
+    # def _on_menu_toggle_settings_panel(self):
+    #     self._settings._panel.visible = not self._settings._panel.visible
+    #     self._menubar.set_checked(
+    #         InteractiveWindow.MENU_SHOW_SETTINGS, self._settings._panel.visible
+    #     )
+
     def _on_layout(self, layout_context):
         r = self.window.content_rect
         self._scene.frame = r
@@ -808,9 +835,16 @@ class InteractiveWindow:
         self._scene.set_on_mouse(self._on_mouse)
 
         # self._create_settings_panel()
-        self._settings._create_panel_on_window(self.window)
+        # self._settings._create_panel_on_window(self.window)
 
-        # self._scene.set_view_controls(gui.SceneWidget.Controls.ROTATE_MODEL)
+        # self.window.show_menu(True)
+
+        self._menubar = gui.Application.instance.menubar = gui.Menu()
+        self._settings._create_menu(AppWindow.MENU_SHOW_SETTINGS)
+        self._menu_help = MenuHelp(self)
+        self._menu_help._create_menu(AppWindow.MENU_HELP)
+
+        # self._help = MenuHelp(self)
 
         # self._settings_panel = gui.Vert(
         #     0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em)
@@ -880,9 +914,9 @@ class InteractiveWindow:
                 bbox = AxisAlignedBoundingBox(bbox_original).expanded(bbox_expand)
 
         if self.is_current_selected:
-            bbox.color = self.color_bbox_selected
+            bbox.color = self._settings.color_bbox_selected
         else:
-            bbox.color = self.color_bbox_unselected
+            bbox.color = self._settings.color_bbox_unselected
 
         self.print_debug(f"New bounding box: {bbox}", require_verbose=True)
         self._current_bbox = bbox.as_open3d
@@ -898,6 +932,9 @@ class InteractiveWindow:
 
         if not isinstance(indices, (list, range)):
             indices = [indices]
+
+        if len(indices) == 0:
+            return
 
         if num_elems == 0 or max(indices) >= num_elems:
             warnings.warn(
@@ -921,7 +958,7 @@ class InteractiveWindow:
             )
 
             if self._settings.paint_selected and is_selected:
-                color = self._colors_selected_current[True, is_current]
+                color = self._settings.get_element_color(True, is_current)
                 self.print_debug(
                     f"[_update_element] Painting drawable to color: {color}.",
                     require_verbose=True,
@@ -1105,9 +1142,10 @@ class InteractiveWindow:
         self.finish = True
         vis.close()
 
-    def _cb_print_help(self):
-        print(self._instructions)
-        time.sleep(0.5)
+    def _cb_show_help(self):
+        self._menu_help._on_menu_toggle()
+        # print(self._instructions)
+        # time.sleep(0.5)
 
     def _cb_print_info(self):
         elem = self.current_element
@@ -1141,6 +1179,9 @@ class InteractiveWindow:
         if func is not None:
             self.print_debug(f"Re-applying last function: {func}")
             self._apply_function_to_elements(func)
+
+    def _cb_toggle_settings_panel(self):
+        self._settings._on_menu_toggle()
 
     def _cb_functions_menu(self):
         if self.functions is None or len(self.functions) == 0:
@@ -1178,11 +1219,6 @@ class InteractiveWindow:
         self._past_states = []
         self._future_states = []
         self._update_plane_boundaries()
-
-    def _cb_show_preferences(self):
-        _panel_collapsable = self._settings._panel_collapsable
-        _panel_collapsable.set_is_open(not _panel_collapsable.get_is_open())
-        self.window.set_needs_layout()
 
     def _cb_undo_redo(self):
         if self._is_modifier_pressed:
@@ -1318,14 +1354,14 @@ class InteractiveWindow:
             return line
 
         self._instructions = (
-            "******************** KEYS: ***********************\n"
-            + "\n".join(
+            # "******************** KEYS: ***********************\n"
+            "\n".join(
                 [get_action_line(desc, values) for desc, values in KEYS_ACTIONS.items()]
             )
             + f"\n({get_key_name(KEY_EXTRA_FUNCTIONS)}) Enables mouse selection"
             + "\n"
             + "\n".join(self.function_key_mappings_info)
-            + "\n**************************************************"
+            # + "\n**************************************************"
         )
 
         if print_instructions:
@@ -1349,10 +1385,16 @@ class Settings:
     _draw_boundary_lines = True
     _mesh_show_back_face = True
     _paint_selected = True
+    _color_selected = gui.Color(*COLOR_SELECTED_DEFAULT)
+    # _color_selected_current = gui.Color(*COLOR_SELECTED_CURRENT)
+    # _color_unselected = gui.Color(*COLOR_UNSELECTED_DEFAULT)
+    # _color_unselected_current = gui.Color(*COLOR_UNSELECTED_CURRENT)
     _paint_random = False
     _debug = False
     _verbose = False
     _bbox_expand = 0.0
+    _color_bbox_selected = gui.Color(*COLOR_BBOX_SELECTED_DEFAULT)
+    _color_bbox_unselected = gui.Color(*COLOR_BBOX_UNSELECTED_DEFAULT)
     _number_points_distance = 30
     _random_color_brightness = 2 / 3
     _highlight_color_brightness = 0.3
@@ -1364,13 +1406,19 @@ class Settings:
         ("draw_boundary_lines", bool, None),
         ("mesh_show_back_face", bool, None),
         ("paint_selected", bool, None),
+        ("color_selected", gui.Color, None),
+        # ("color_selected_current", gui.Color, None),
+        # ("color_unselected", gui.Color, None),
+        # ("color_unselected_current", gui.Color, None),
         ("paint_random", bool, None),
         ("debug", bool, None),
         ("verbose", bool, None),
         ("bbox_expand", float, (0, 2)),
+        ("color_bbox_selected", gui.Color, None),
+        ("color_bbox_unselected", gui.Color, None),
         ("number_points_distance", int, (5, 50)),
-        ("random_color_brightness", float, (0, 1)),
-        ("highlight_color_brightness", float, (0, 1)),
+        ("random_color_brightness", float, (0.01, 1)),
+        ("highlight_color_brightness", float, (0.01, 1)),
         ("number_undo_states", int, (1, 10)),
         ("number_redo_states", int, (1, 10)),
     ]
@@ -1492,6 +1540,44 @@ class Settings:
         self._app_instance._update_current_bounding_box()
 
     @property
+    def color_bbox_selected(self):
+        color = self._color_bbox_selected
+        return (color.red, color.green, color.blue)
+
+    @color_bbox_selected.setter
+    def color_bbox_selected(self, values):
+        if isinstance(values, gui.Color):
+            self._color_bbox_selected = values
+        elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
+            self._color_bbox_selected = gui.Color(*np.clip(values, 0, 1))
+        else:
+            raise TypeError("color_selected should be a list or tuple of 3 values.")
+
+    def _cb_color_bbox_selected(self, values):
+        self.color_bbox_selected = values
+        if self._app_instance.is_current_selected:
+            self._app_instance._update_current_bounding_box()
+
+    @property
+    def color_bbox_unselected(self):
+        color = self._color_bbox_unselected
+        return (color.red, color.green, color.blue)
+
+    @color_bbox_unselected.setter
+    def color_bbox_unselected(self, values):
+        if isinstance(values, gui.Color):
+            self._color_bbox_unselected = values
+        elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
+            self._color_bbox_unselected = gui.Color(*np.clip(values, 0, 1))
+        else:
+            raise TypeError("color_selected should be a list or tuple of 3 values.")
+
+    def _cb_color_bbox_unselected(self, values):
+        self.color_bbox_unselected = values
+        if not self._app_instance.is_current_selected:
+            self._app_instance._update_current_bounding_box()
+
+    @property
     def number_points_distance(self):
         return self._number_points_distance
 
@@ -1536,7 +1622,9 @@ class Settings:
 
     def _cb_highlight_color_brightness(self, value):
         self.highlight_color_brightness = value
-        self._app_instance._update_elements(None)
+        if not self.paint_selected:
+            indices = np.where(self._app_instance.selected)[0].tolist()
+            self._app_instance._update_elements(indices)
 
     @property
     def number_undo_states(self):
@@ -1567,30 +1655,124 @@ class Settings:
         self.number_redo_states = value
         self._app_instance._future_states = self._app_instance._future_states[-value:]
 
-    def _create_panel_on_window(self, window):
+    @property
+    def color_selected(self):
+        color = self._color_selected
+        return (color.red, color.green, color.blue)
+
+    @color_selected.setter
+    def color_selected(self, values):
+        if isinstance(values, gui.Color):
+            self._color_selected = values
+        elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
+            self._color_selected = gui.Color(*np.clip(values, 0, 1))
+        else:
+            raise TypeError("color_selected should be a list or tuple of 3 values.")
+
+    def _cb_color_selected(self, values):
+        self.color_selected = values
+        indices = np.where(self._app_instance.selected)[0].tolist()
+        self._app_instance._update_elements(indices)
+
+    # @property
+    # def color_selected_current(self):
+    #     color = self._color_selected_current
+    #     return (color.red, color.green, color.blue)
+
+    # @color_selected_current.setter
+    # def color_selected_current(self, values):
+    #     if isinstance(values, gui.Color):
+    #         self._color_selected_current = values
+    #     elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
+    #         self._color_selected_current = gui.Color(*np.clip(values, 0, 1))
+    #     else:
+    #         raise TypeError(
+    #             "color_selected_current should be a list or tuple of 3 values."
+    #         )
+
+    # def _cb_color_selected_current(self, values):
+    #     self.color_selected_current = values
+    #     self._app_instance._update_elements(self._app_instance.i)
+
+    @property
+    def color_unselected(self):
+        color = self._color_unselected
+        return (color.red, color.green, color.blue)
+
+    @color_unselected.setter
+    def color_unselected(self, values):
+        if isinstance(values, gui.Color):
+            self._color_unselected = values
+        elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
+            self._color_unselected = gui.Color(*np.clip(values, 0, 1))
+        else:
+            raise TypeError("color_unselected should be a list or tuple of 3 values.")
+
+    def _cb_color_unselected(self, values):
+        self.color_unselected = values
+        unselected = ~np.array(self._app_instance.selected)
+        indices = np.where(unselected)[0].tolist()
+        self._app_instance._update_elements(indices)
+
+    # @property
+    # def color_unselected_current(self):
+    #     color = self._color_unselected_current
+    #     return (color.red, color.green, color.blue)
+
+    # @color_unselected_current.setter
+    # def color_unselected_current(self, values):
+    #     if isinstance(values, gui.Color):
+    #         self._color_unselected_current = values
+    #     elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
+    #         self._color_unselected_current = gui.Color(*np.clip(values, 0, 1))
+    #     else:
+    #         raise TypeError(
+    #             "color_unselected_current should be a list or tuple of 3 values."
+    #         )
+
+    # def _cb_color_unselected_current(self, values):
+    #     self.color_unselected_current = values
+    #     self._app_instance._update_elements(self._app_instance.i)
+
+    def get_element_color(self, is_selected, is_current, is_bbox=False):
+        if not is_selected and not is_current:
+            return np.array(self.color_unselected)
+
+        if not is_selected and is_current:
+            # return self.color_unselected_current
+            return np.array(self.color_unselected) / self.highlight_color_brightness
+
+        if is_selected and not is_current:
+            return np.array(self.color_selected)
+
+        if is_selected and is_current:
+            # return self.color_selected_current
+            return np.array(self.color_selected) / self.highlight_color_brightness
+
+    def _create_panel(self, window):
         em = window.theme.font_size
         separation_height = int(round(0.5 * em))
 
-        self._panel = gui.Vert(
-            0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em)
-        )
+        _panel = gui.Vert(0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em))
 
         _panel_collapsable = gui.CollapsableVert(
             "Settings", 0.25 * em, gui.Margins(em, 0, 0, 0)
         )
 
-        for key, option_type, limits in self._options:
+        for key, value_type, limits in self._options:
             name_pretty = key.replace("_", " ").capitalize()
             label = gui.Label(name_pretty)
             value = getattr(self, key)
-            cb = getattr(self, "_cb_" + key)  # callback function
+            try:
+                cb = getattr(self, "_cb_" + key)  # callback function
+            except AttributeError:
+                continue
 
-            if isinstance(value, bool):
+            if value_type is bool:
                 element = gui.Checkbox(name_pretty + "?")
                 element.checked = value
                 element.set_on_checked(cb)
-            elif isinstance(value, int):
-                # self._settings_panel.add_child(gui.Label(key_pretty))
+            elif value_type is int:
                 slider = gui.Slider(gui.Slider.INT)
                 slider.set_limits(*limits)
                 slider.int_value = value
@@ -1599,7 +1781,7 @@ class Settings:
                 element = gui.VGrid(2, 0.25 * em)
                 element.add_child(label)
                 element.add_child(slider)
-            elif isinstance(value, float):
+            elif value_type is float:
                 slider = gui.Slider(gui.Slider.DOUBLE)
                 slider.set_limits(*limits)
                 slider.double_value = value
@@ -1608,16 +1790,43 @@ class Settings:
                 element = gui.VGrid(2, 0.25 * em)
                 element.add_child(label)
                 element.add_child(slider)
+            elif value_type is gui.Color:
+                color_selector = gui.ColorEdit()
+                color_selector.color_value = gui.Color(*value)
+                color_selector.set_on_value_changed(cb)
+
+                element = gui.VGrid(2, 0.25 * em)
+                element.add_child(label)
+                element.add_child(color_selector)
             else:
                 continue
 
             _panel_collapsable.add_child(element)
             _panel_collapsable.add_fixed(separation_height)
 
-        self._panel.add_child(_panel_collapsable)
-        _panel_collapsable.set_is_open(False)
+        _panel.add_child(_panel_collapsable)
+        _panel.visible = False
+
+        self._panel = _panel
         self._panel_collapsable = _panel_collapsable
         window.add_child(self._panel)
+
+    def _create_menu(self, id):
+        self.menu_id = id
+        window = self._app_instance.window
+        self._create_panel(window)
+
+        menubar = self._app_instance._menubar
+        settings_menu = gui.Menu()
+        settings_menu.add_item("Show Preferences (P)", id)
+        settings_menu.set_checked(id, True)
+        menubar.add_menu("Preferences", settings_menu)
+        window.set_on_menu_item_activated(id, self._on_menu_toggle)
+
+    def _on_menu_toggle(self):
+        menubar = self._app_instance._menubar
+        self._panel.visible = not self._panel.visible
+        menubar.set_checked(self.menu_id, self._panel.visible)
 
     def _on_layout(self, content_rect, layout_context):
         r = content_rect
@@ -1629,3 +1838,56 @@ class Settings:
             ).height,
         )
         self._panel.frame = gui.Rect(r.get_right() - width, r.y, width, height)
+
+
+class MenuHelp:
+    def __init__(self, app_instance):
+        self._app_instance = app_instance
+
+    def _create_menu(self, id):
+        self.menu_id = id
+        window = self._app_instance.window
+        menubar = self._app_instance._menubar
+
+        help_menu = gui.Menu()
+        help_menu.add_item("Help (H)", id)
+        menubar.add_menu("Help", help_menu)
+        window.set_on_menu_item_activated(id, self._on_menu_toggle)
+
+    def _on_about_ok(self):
+        self._app_instance.window.close_dialog()
+
+    def _on_menu_toggle(self):
+        # menubar = self._app_instance._menubar
+        # self._panel.visible = not self._panel.visible
+        # menubar.set_checked(self.menu_id, self._panel.visible)
+        window = self._app_instance.window
+        em = window.theme.font_size
+        dlg = gui.Dialog("About")
+
+        # Add the text
+        dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
+        # dlg_layout.add_child(gui.Label("Open3D GUI Example"))
+        dlg_layout.add_child(gui.Label(self._app_instance._instructions))
+
+        # Add the Ok button. We need to define a callback function to handle
+        # the click.
+        ok = gui.Button("OK")
+        ok.set_on_clicked(self._on_about_ok)
+
+        # We want the Ok button to be an the right side, so we need to add
+        # a stretch item to the layout, otherwise the button will be the size
+        # of the entire row. A stretch item takes up as much space as it can,
+        # which forces the button to be its minimum size.
+        h = gui.Horiz()
+        h.add_stretch()
+        h.add_child(ok)
+        h.add_stretch()
+        dlg_layout.add_child(h)
+
+        dlg.add_child(dlg_layout)
+        window.show_dialog(dlg)
+
+
+# class FunctionMenu:
+# def __init__(self, _app_instance, functions):

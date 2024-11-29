@@ -25,7 +25,7 @@ import numpy as np
 from multiprocessing import Manager, Process
 from open3d import visualization
 
-from .interactive_gui import InteractiveWindow
+from .interactive_gui import AppWindow
 
 # from .interactive_window import InteractiveWindow
 from .input_selector import InputSelector, SingleChoiceSelector
@@ -487,7 +487,7 @@ def select_manually(
     list
         List of booleans showing which of the elements where selected.
     """
-    element_selector = InteractiveWindow(**args)
+    element_selector = AppWindow(**args)
     element_selector.add_elements(elements, pre_selected=pre_selected)
     element_selector.add_elements(fixed_elements, fixed=True)
     element_selector.run()
@@ -571,7 +571,7 @@ def apply_function_manually(
     if pre_selected is None:
         pre_selected = [False] * len(elements)
 
-    element_selector = InteractiveWindow(**args)
+    element_selector = AppWindow(**args)
     element_selector.add_elements(elements, pre_selected=pre_selected)
     element_selector.functions = function
     element_selector.select_filter = select_filter
