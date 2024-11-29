@@ -49,8 +49,9 @@ class Settings:
         ("number_redo_states", int, (1, 10)),
     ]
 
-    def __init__(self, app_instance, **kwargs):
+    def __init__(self, app_instance, name="Preferences", **kwargs):
         self._app_instance = app_instance
+        self._name = name
 
         for key, value in kwargs.items():
             if hasattr(self, key):
@@ -437,16 +438,17 @@ class Settings:
     def _create_menu(self, id):
         self.menu_id = id
         window = self._app_instance.window
-        self._create_panel(window)
         menubar = self._app_instance._menubar
 
-        settings_menu = gui.Menu()
-        settings_menu.add_item("Show Preferences (P)", id)
-        settings_menu.set_checked(id, False)
-        menubar.add_menu("Preferences", settings_menu)
+        self._create_panel(window)
+
+        menu = gui.Menu()
+        menubar.add_menu(self._name, menu)
+
+        menu.add_item("Show Preferences (P)", id)
+        menu.set_checked(id, False)
 
         window.set_on_menu_item_activated(id, self._on_menu_toggle)
-        menubar.set_checked(id, False)
 
     def _on_menu_toggle(self):
         window = self._app_instance.window
