@@ -114,11 +114,8 @@ def select_function_with_gui(functions, default_function=None):
         if not callable(func):
             raise ValueError(f"Expected functions, got {type(func)}.")
 
-    if default_function is None:
+    if default_function is None or default_function not in functions:
         default_function = functions[0]
-
-    if default_function not in functions:
-        raise ValueError("Default function not in input functions.")
 
     # Get function names for display
     function_names = [f.__name__ for f in functions]
@@ -502,7 +499,8 @@ def select_manually(
 
 def apply_function_manually(
     elements,
-    function,
+    functions=[],
+    function_submenus={},
     select_filter=None,
     fixed_elements=[],
     pre_selected=None,
@@ -544,8 +542,8 @@ def apply_function_manually(
     ----------
     elements : list
         Elements to be drawn.
-    function : function
-        Function to be applied on elements.
+    functions : function or list of functions
+        Function(s) to be applied on elements.
     select_filter : function, optional
         Function that returns boolean. If given, only selects elements when
         if the return value for them is True. Default: None
@@ -573,7 +571,9 @@ def apply_function_manually(
 
     element_selector = AppWindow(**args)
     element_selector.add_elements(elements, pre_selected=pre_selected)
-    element_selector.functions = function
+    element_selector.functions = functions
+    for name, functions in function_submenus.items():
+        element_selector.add_function_submenu(name, functions)
     element_selector.select_filter = select_filter
     element_selector.add_elements(fixed_elements, fixed=True)
 

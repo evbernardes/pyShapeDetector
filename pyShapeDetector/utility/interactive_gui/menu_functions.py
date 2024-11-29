@@ -22,7 +22,6 @@ class MenuFunctions:
         for i, func in functions_dict.items():
             name_function = func.__name__.replace("_", " ").capitalize()
 
-            self._app_instance.print_debug(f"Linking {i} to {func}.")
             menu.add_item(name_function, i)
             menu.set_checked(i, False)
 

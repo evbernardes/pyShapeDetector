@@ -31,7 +31,7 @@ KEYS_ACTIONS = {
     "[Fast] Next": [gui.KeyName.RIGHT, "_cb_next", False, True],
     "Show help": [gui.KeyName.H, "_cb_toggle_help_panel", False, False],
     "Print info": [gui.KeyName.I, "_cb_print_info", False, False],
-    "Functions menu": [gui.KeyName.ENTER, "_cb_functions_menu", False, False],
+    # "Functions menu": [gui.KeyName.ENTER, "_cb_functions_menu", False, False],
     "Show preferences": [gui.KeyName.P, "_cb_toggle_settings_panel", False, False],
     ##############
     # CTRL keys: #
@@ -111,8 +111,12 @@ class AppWindow:
     """
 
     MENU_QUIT = 3
-    MENU_SHOW_FUNCTIONS = 10
-    MENU_SHOW_SETTINGS = 11
+    MENU_SHOW_FUNCTIONS = 2
+    NUMBER_SUBFUNCTIONS = 5
+    MENU_SUBFUNCTIONS = range(
+        MENU_SHOW_FUNCTIONS + 1, MENU_SHOW_FUNCTIONS + 1 + NUMBER_SUBFUNCTIONS
+    )
+    MENU_SHOW_SETTINGS = 20
     MENU_HELP = 21
 
     def __init__(
@@ -132,6 +136,7 @@ class AppWindow:
         self._pre_selected = []
         self._current_bbox = None
         self._functions = None
+        self._function_submenus = {}
         self._last_used_function = None
         self._select_filter = lambda x: True
         self._instructions = ""
@@ -212,6 +217,26 @@ class AppWindow:
                 )
 
         self._functions = new_functions
+
+    @property
+    def function_submenus(self):
+        return self._function_submenus
+
+    def add_function_submenu(self, name, functions):
+        if len(self.function_submenus) >= AppWindow.NUMBER_SUBFUNCTIONS:
+            raise RuntimeError(
+                f"Only {AppWindow.NUMBER_SUBFUNCTIONS} function submenus allowed."
+            )
+
+        if callable(functions):
+            functions = [functions]
+        if isinstance(functions, (list, tuple, np.ndarray)):
+            functions = list(functions)
+        for function in functions:
+            if not callable(function):
+                raise TypeError("Expected function or list of functions.")
+
+        self.function_submenus[name] = MenuFunctions(self, functions, name=name)
 
     @property
     def select_filter(self):
@@ -821,10 +846,18 @@ class AppWindow:
         self._main_panel = gui.Vert(em, gui.Margins(em, em, em, em))
         self.window.add_child(self._main_panel)
         self._main_panel.visible = True
+
         self._menu_help = MenuHelp(self)
         self._menu_help._create_menu(AppWindow.MENU_HELP)
-        self._menu_functions = MenuFunctions(self, self.functions)
-        self._menu_functions._create_menu(AppWindow.MENU_SHOW_FUNCTIONS)
+
+        self._menu_quick_functions = MenuFunctions(
+            self, self.functions, name="Hot functions"
+        )
+        self._menu_quick_functions._create_menu(AppWindow.MENU_SHOW_FUNCTIONS)
+
+        for i, submenu in enumerate(self.function_submenus.values()):
+            submenu._create_menu(AppWindow.MENU_SUBFUNCTIONS[i])
+
         self._settings._create_menu(AppWindow.MENU_SHOW_SETTINGS)
 
         # self._help = MenuHelp(self)
@@ -1164,22 +1197,22 @@ class AppWindow:
     def _cb_toggle_settings_panel(self):
         self._settings._on_menu_toggle()
 
-    def _cb_functions_menu(self):
-        if self.functions is None or len(self.functions) == 0:
-            warnings.warn("No functions, cannot call menu.")
-            return
+    # def _cb_functions_menu(self):
+    #     if self.functions is None or len(self.functions) == 0:
+    #         warnings.warn("No functions, cannot call menu.")
+    #         return
 
-        from ..helpers_visualization import select_function_with_gui
+    #     from ..helpers_visualization import select_function_with_gui
 
-        try:
-            func = select_function_with_gui(self.functions, self._last_used_function)
-        except KeyboardInterrupt:
-            return
+    #     try:
+    #         func = select_function_with_gui(self.functions, self._last_used_function)
+    #     except KeyboardInterrupt:
+    #         return
 
-        self.print_debug(f"Chosen function from menu: {func}")
+    #     self.print_debug(f"Chosen function from menu: {func}")
 
-        if func is not None:
-            self._apply_function_to_elements(func)
+    #     if func is not None:
+    #         self._apply_function_to_elements(func)
 
     def _cb_hide_unhide(self):
         """Hide selected elements or unhide all hidden elements."""
