@@ -432,21 +432,19 @@ class Settings:
 
         _panel_collapsable.visible = False
         self._app_instance._main_panel.add_child(_panel_collapsable)
-
-        # self._panel = _panel
         self._panel = _panel_collapsable
-        # window.add_child(self._panel)
 
     def _create_menu(self, id):
         self.menu_id = id
         window = self._app_instance.window
         self._create_panel(window)
-
         menubar = self._app_instance._menubar
+
         settings_menu = gui.Menu()
         settings_menu.add_item("Show Preferences (P)", id)
         settings_menu.set_checked(id, False)
         menubar.add_menu("Preferences", settings_menu)
+
         window.set_on_menu_item_activated(id, self._on_menu_toggle)
         menubar.set_checked(id, False)
 

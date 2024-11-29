@@ -17,6 +17,8 @@ from open3d.utility import Vector3dVector
 from open3d.visualization import gui, rendering
 
 from .settings import Settings
+from .menu_functions import MenuFunctions
+from .menu_help import MenuHelp
 
 
 # Description: [key, '_cb_function_name', extra, modifier]
@@ -27,7 +29,7 @@ KEYS_ACTIONS = {
     "Toggle": [gui.KeyName.SPACE, "_cb_toggle", False, False],
     "[Fast] Previous": [gui.KeyName.LEFT, "_cb_previous", False, True],
     "[Fast] Next": [gui.KeyName.RIGHT, "_cb_next", False, True],
-    "Show help": [gui.KeyName.H, "_cb_show_help", False, False],
+    "Show help": [gui.KeyName.H, "_cb_toggle_help_panel", False, False],
     "Print info": [gui.KeyName.I, "_cb_print_info", False, False],
     "Functions menu": [gui.KeyName.ENTER, "_cb_functions_menu", False, False],
     "Show preferences": [gui.KeyName.P, "_cb_toggle_settings_panel", False, False],
@@ -813,9 +815,10 @@ class AppWindow:
 
         self._menubar = gui.Application.instance.menubar = gui.Menu()
         em = self.window.theme.font_size
-        self._main_panel = gui.Vert(
-            0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em)
-        )
+        # self._main_panel = gui.Vert(
+        #     0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em)
+        # )
+        self._main_panel = gui.Vert(em, gui.Margins(em, em, em, em))
         self.window.add_child(self._main_panel)
         self._main_panel.visible = True
         self._menu_help = MenuHelp(self)
@@ -1122,11 +1125,6 @@ class AppWindow:
         self.finish = True
         vis.close()
 
-    def _cb_show_help(self):
-        self._menu_help._on_menu_toggle()
-        # print(self._instructions)
-        # time.sleep(0.5)
-
     def _cb_print_info(self):
         elem = self.current_element
 
@@ -1159,6 +1157,9 @@ class AppWindow:
         if func is not None:
             self.print_debug(f"Re-applying last function: {func}")
             self._apply_function_to_elements(func)
+
+    def _cb_toggle_help_panel(self):
+        self._menu_help._on_menu_toggle()
 
     def _cb_toggle_settings_panel(self):
         self._settings._on_menu_toggle()
@@ -1312,15 +1313,6 @@ class AppWindow:
         # Ensure proper format of inputs, check elements and raise warnings
         self._check_and_initialize_inputs()
 
-        # Set up the visualizer
-        self._setup_window_and_scene()
-        self._reset_visualiser_elements(startup=True)
-
-        bounds = self._scene.scene.bounding_box
-        center = bounds.get_center()
-        self._scene.setup_camera(60, bounds, center)
-        self._scene.look_at(center, center - [0, 0, 3], [0, -1, 0])
-
         def get_action_line(desc, values):
             """Helper to make pretty lines for instructions"""
             key, _, modifier, revert = values
@@ -1344,6 +1336,15 @@ class AppWindow:
             # + "\n**************************************************"
         )
 
+        # Set up the visualizer
+        self._setup_window_and_scene()
+        self._reset_visualiser_elements(startup=True)
+
+        bounds = self._scene.scene.bounding_box
+        center = bounds.get_center()
+        self._scene.setup_camera(60, bounds, center)
+        self._scene.look_at(center, center - [0, 0, 3], [0, -1, 0])
+
         if print_instructions:
             print(self._instructions)
             time.sleep(0.2)
@@ -1359,126 +1360,3 @@ class AppWindow:
         # finally:
         #     self._vis.close()
         #     self._vis.destroy_window()
-
-
-class MenuHelp:
-    def __init__(self, app_instance):
-        self._app_instance = app_instance
-
-    def _create_menu(self, id):
-        self.menu_id = id
-        window = self._app_instance.window
-        menubar = self._app_instance._menubar
-
-        help_menu = gui.Menu()
-        help_menu.add_item("Help (H)", id)
-        menubar.add_menu("Help", help_menu)
-        window.set_on_menu_item_activated(id, self._on_menu_toggle)
-
-    def _on_about_ok(self):
-        self._app_instance.window.close_dialog()
-
-    def _on_menu_toggle(self):
-        # menubar = self._app_instance._menubar
-        # self._panel.visible = not self._panel.visible
-        # menubar.set_checked(self.menu_id, self._panel.visible)
-        window = self._app_instance.window
-        em = window.theme.font_size
-        dlg = gui.Dialog("About")
-
-        # Add the text
-        dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
-        # dlg_layout.add_child(gui.Label("Open3D GUI Example"))
-        dlg_layout.add_child(gui.Label(self._app_instance._instructions))
-
-        # Add the Ok button. We need to define a callback function to handle
-        # the click.
-        ok = gui.Button("OK")
-        ok.set_on_clicked(self._on_about_ok)
-
-        # We want the Ok button to be an the right side, so we need to add
-        # a stretch item to the layout, otherwise the button will be the size
-        # of the entire row. A stretch item takes up as much space as it can,
-        # which forces the button to be its minimum size.
-        h = gui.Horiz()
-        h.add_stretch()
-        h.add_child(ok)
-        h.add_stretch()
-        dlg_layout.add_child(h)
-
-        dlg.add_child(dlg_layout)
-        window.show_dialog(dlg)
-
-
-class MenuFunctions:
-    def __init__(self, app_instance, functions, name="Menu Functions"):
-        self._app_instance = app_instance
-        self._functions = functions
-        self._name = name
-        self._selected_func = None
-
-    # def _on_clicked(self, func):
-    #     self._app_instance._apply_function_to_elements()
-
-    def _create_panel(self, window):
-        em = window.theme.font_size
-        separation_height = int(round(0.5 * em))
-
-        # _panel = gui.Vert(0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em))
-
-        _panel_collapsable = gui.CollapsableVert(
-            self._name, 0.25 * em, gui.Margins(em, 0, 0, 0)
-        )
-
-        for func in self._functions:
-            name_pretty = func.__name__.replace("_", " ").capitalize()
-
-            button = gui.Button(name_pretty)
-            button.set_on_clicked(
-                lambda: self._app_instance._apply_function_to_elements(func),
-            )
-
-            # element = gui.VGrid(2, 0.25 * em)
-            # element.add_child(label)
-            # element.add_child(color_selector)
-
-            _panel_collapsable.add_child(button)
-            _panel_collapsable.add_fixed(separation_height)
-
-        _panel_collapsable.visible = False
-        self._app_instance._main_panel.add_child(_panel_collapsable)
-
-        # self._panel = _panel
-        self._panel = _panel_collapsable
-        # window.add_child(self._panel)
-
-    def _create_menu(self, id):
-        self.menu_id = id
-        window = self._app_instance.window
-        self._create_panel(window)
-
-        menubar = self._app_instance._menubar
-        functions_menu = gui.Menu()
-        functions_menu.add_item(self._name, id)
-        functions_menu.set_checked(id, False)
-        menubar.add_menu("Functions", functions_menu)
-        window.set_on_menu_item_activated(id, self._on_menu_toggle)
-        menubar.set_checked(id, False)
-
-    def _on_menu_toggle(self):
-        window = self._app_instance.window
-        menubar = self._app_instance._menubar
-        self._panel.visible = not self._panel.visible
-        menubar.set_checked(self.menu_id, self._panel.visible)
-        window.set_needs_layout()
-
-    def _on_layout(self, content_rect, layout_context):
-        r = content_rect
-        width = 17 * layout_context.theme.font_size
-        height = min(
-            r.height,
-            self._panel.calc_preferred_size(
-                layout_context, gui.Widget.Constraints()
-            ).height,
-        )
-        self._panel.frame = gui.Rect(r.get_right() - width, r.y, width, height)
