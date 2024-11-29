@@ -25,7 +25,7 @@ import numpy as np
 from multiprocessing import Manager, Process
 from open3d import visualization
 
-from .interactive_gui import AppWindow
+from .interactive_gui.interactive_gui import AppWindow
 
 # from .interactive_window import InteractiveWindow
 from .input_selector import InputSelector, SingleChoiceSelector
