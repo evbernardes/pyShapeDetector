@@ -57,18 +57,6 @@ def get_key_name(key):
     return str(key).split(".")[1]
 
 
-def get_action_line(desc, values):
-    key, _, modifier, revert = values
-
-    line = "("
-    if modifier:
-        line += f"{get_key_name(KEY_EXTRA_FUNCTIONS)} + "
-    if revert:
-        line += f"[{get_key_name(KEY_MODIFIER)}] + "
-    line += f"{get_key_name(key)}): {desc}"
-    return line
-
-
 class InteractiveWindow:
     """
     Visualizer class used to manually select elements and apply functions to
@@ -1317,11 +1305,19 @@ class InteractiveWindow:
         self._scene.setup_camera(60, bounds, center)
         self._scene.look_at(center, center - [0, 0, 3], [0, -1, 0])
 
+        def get_action_line(desc, values):
+            """Helper to make pretty lines for instructions"""
+            key, _, modifier, revert = values
+
+            line = "("
+            if modifier:
+                line += f"{get_key_name(KEY_EXTRA_FUNCTIONS)} + "
+            if revert:
+                line += f"[{get_key_name(KEY_MODIFIER)}] + "
+            line += f"{get_key_name(key)}): {desc}"
+            return line
+
         self._instructions = (
-            # "**************************************************"missing required attributes (0xd), declared=0x
-            # + "\nStarting manual selector. Instructions:"
-            # + "\nGreen: selected. White: unselected. Blue: current."
-            # + "\n******************** KEYS: ***********************\n"
             "******************** KEYS: ***********************\n"
             + "\n".join(
                 [get_action_line(desc, values) for desc, values in KEYS_ACTIONS.items()]
