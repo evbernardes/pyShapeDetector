@@ -115,7 +115,7 @@ class AppWindow:
 
     MENU_QUIT = 3
     MENU_SHOW_FUNCTIONS = 2
-    NUMBER_SUBFUNCTIONS = 5
+    NUMBER_SUBFUNCTIONS = 10
     MENU_SUBFUNCTIONS = range(
         MENU_SHOW_FUNCTIONS + 1, MENU_SHOW_FUNCTIONS + 1 + NUMBER_SUBFUNCTIONS
     )
@@ -139,7 +139,6 @@ class AppWindow:
         self._pre_selected = []
         self._current_bbox = None
         self._functions = None
-        self._function_submenus = {}
         self._last_used_function = None
         self._select_filter = lambda x: True
         self._instructions = ""
@@ -251,8 +250,8 @@ class AppWindow:
         parsed_descriptor["parameters"] = all_parsed_parameters
 
         # testing function with empty argument
-        kwargs = parse_parameters_as_kwargs(all_parsed_parameters)
-        function([], **kwargs)
+        # kwargs = parse_parameters_as_kwargs(all_parsed_parameters)
+        # function([], **kwargs)
 
         if self._functions is None:
             self._functions = []
