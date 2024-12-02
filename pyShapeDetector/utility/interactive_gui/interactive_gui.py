@@ -181,12 +181,6 @@ class AppWindow:
             )
             hotkey = None
 
-        # elif hotkey in used_hotkeys:
-        #     warnings.warn(
-        #         f"hotkey {hotkey} already assigned to function {used_hotkeys[hotkey]}, "
-        #         "resetting it to {parsed_descriptor['name']}."
-        #     )
-
         if hotkey is not None:
             hotkey = ord(str(hotkey))
             if self.functions is not None:
@@ -273,7 +267,6 @@ class AppWindow:
     @property
     def function_submenu_names(self):
         return self._function_submenu_names
-        # return set([value["menu"] for value in self.functions])
 
     @property
     def function_key_mappings(self):
@@ -282,11 +275,8 @@ class AppWindow:
             for function_descriptor in self.functions:
                 if (hotkey := function_descriptor["hotkey"]) is not None:
                     key_mappings[hotkey] = function_descriptor
-                # key = ord(str((n + 1) % 10))
-                # key_mappings[key] = f
         return key_mappings
 
-    # def create_function_submenus(self, name, functions):
     def create_function_submenus(self):
         submenu_names = self.function_submenu_names
 
@@ -314,6 +304,7 @@ class AppWindow:
     def select_filter(self, new_function):
         if new_function is None:
             new_function = lambda x: True
+
         elif (N := len(inspect.signature(new_function).parameters)) != 1:
             raise ValueError(
                 f"Expected filter function with 1 parameter (element), got {N}."
@@ -376,7 +367,6 @@ class AppWindow:
         if fixed:
             self._fixed_elements += new_raw_elements
         else:
-            # self._insert_elements(new_elements, to_vis=False)
             self._elements_input += new_raw_elements
             self._pre_selected += pre_selected
 
@@ -392,13 +382,13 @@ class AppWindow:
     def _remove_geometry_from_scene(self, elem):
         self._scene.scene.remove_geometry(str(id(elem)))
 
-    def _pop_elements(self, indices, from_vis=False):
+    def _pop_elements(self, indices, from_gui=False):
         # update_old = self.i in indices
         # idx_new = self.i
         elements_popped = []
         for n, i in enumerate(indices):
             elem = self._element_dicts.pop(i - n)
-            if from_vis:
+            if from_gui:
                 self._remove_geometry_from_scene(elem["drawable"])
             elements_popped.append(elem["raw"])
 
@@ -418,7 +408,7 @@ class AppWindow:
             self.i_old = self.i
         return elements_popped
 
-    def _insert_elements(self, elems_raw, indices=None, selected=False, to_vis=False):
+    def _insert_elements(self, elems_raw, indices=None, selected=False, to_gui=False):
         if indices is None:
             indices = range(len(self.elements), len(self.elements) + len(elems_raw))
 
@@ -475,7 +465,7 @@ class AppWindow:
         for idx in indices:
             # Updating vis explicitly in order not to remove it
             self._update_elements(idx, update_vis=False)
-            if to_vis:
+            if to_gui:
                 self._add_geometry_to_scene(self.elements[idx]["drawable"])
 
         self.print_debug(f"{len(self.elements)} now.", require_verbose=True)
@@ -822,10 +812,6 @@ class AppWindow:
         bbox_expand = self._settings.bbox_expand
         self.print_debug("Updating bounding box...", require_verbose=True)
 
-        # vis = self._vis
-        # if vis is None:
-        #     return
-
         if self._current_bbox is not None:
             self._remove_geometry_from_scene(self._current_bbox)
 
@@ -1006,8 +992,8 @@ class AppWindow:
             output_elements = [output_elements]
 
         self._save_state(indices, input_elements, len(output_elements))
-        assert self._pop_elements(indices, from_vis=True) == input_elements
-        self._insert_elements(output_elements, to_vis=True)
+        assert self._pop_elements(indices, from_gui=True) == input_elements
+        self._insert_elements(output_elements, to_gui=True)
 
         self._last_used_function = function
         self._future_states = []
@@ -1041,14 +1027,14 @@ class AppWindow:
             pre_selected = self.selected
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", message="No elements left")
-                elems_raw = self._pop_elements(range(len(self.elements)), from_vis=True)
+                elems_raw = self._pop_elements(range(len(self.elements)), from_gui=True)
             assert len(self.elements) == 0
 
         self.print_debug(
             f"\ninserting elements at startup, there are {len(elems_raw)}.",
             require_verbose=True,
         )
-        self._insert_elements(elems_raw, selected=pre_selected, to_vis=True)
+        self._insert_elements(elems_raw, selected=pre_selected, to_gui=True)
         self.print_debug(f"Finished inserting {len(self.elements)} elements.")
 
         self._update_plane_boundaries()
@@ -1076,13 +1062,14 @@ class AppWindow:
         self._scene.look_at(center, center - [0, 0, 3], [0, -1, 0])
 
         self.app.run()
+        self._insert_elements(self._hidden_elements, to_gui=False)
 
         # try:
-        #     self._vis.run()
+        #     self.app.run()
         #     # add hidden elements back to elements list
-        #     # self._insert_elements(self._hidden_elements, to_vis=False)
+        #     self._insert_elements(self._hidden_elements, to_vis=False)
         # except Exception as e:
         #     raise e
         # finally:
-        #     self._vis.close()
-        #     self._vis.destroy_window()
+        #     self.app.quit()
+        #     # self.app.destroy_window()

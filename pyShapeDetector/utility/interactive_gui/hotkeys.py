@@ -15,7 +15,7 @@ class Hotkeys:
         self._is_modifier_pressed = False
         self._bindings = {
             (gui.KeyName.SPACE, False): {
-                "desc": "Toggle",
+                "desc": "Selected/unselect current",
                 "callback": self._cb_toggle,
                 "modifier": True,
             },
