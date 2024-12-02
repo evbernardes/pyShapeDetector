@@ -441,7 +441,7 @@ def select_manually(
     fixed_elements=[],
     pre_selected=None,
     return_finish_flag=False,
-    **args,
+    **kwargs,
 ):
     """Plots elements on an interactive visualizer so that separate elements
     can be manually selected with the mouse and/or keyboard.
@@ -484,12 +484,16 @@ def select_manually(
     list
         List of booleans showing which of the elements where selected.
     """
-    element_selector = AppWindow(**args)
+
+    if "print_instructions" in kwargs:
+        warnings.warn("print_instructions option not used anymore")
+
+    element_selector = AppWindow(**kwargs)
     element_selector.add_elements(elements, pre_selected=pre_selected)
     element_selector.add_elements(fixed_elements, fixed=True)
     element_selector.run()
 
-    if "function" in args:
+    if "functions" in kwargs:
         warnings.warn("To use a function, try 'apply_function_manually' instead.")
 
     if return_finish_flag:
@@ -505,8 +509,7 @@ def apply_function_manually(
     fixed_elements=[],
     pre_selected=None,
     return_indices=False,
-    print_instructions=True,
-    **args,
+    **kwargs,
 ):
     """Plots elements on an interactive visualizer so that separate elements
     can be manually selected with the mouse and/or keyboard, and then apply
@@ -569,7 +572,10 @@ def apply_function_manually(
     if pre_selected is None:
         pre_selected = [False] * len(elements)
 
-    element_selector = AppWindow(**args)
+    if "print_instructions" in kwargs:
+        warnings.warn("print_instructions option not used anymore")
+
+    element_selector = AppWindow(**kwargs)
     element_selector.add_elements(elements, pre_selected=pre_selected)
 
     for function in functions:

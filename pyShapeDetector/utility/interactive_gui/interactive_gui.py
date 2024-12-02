@@ -116,7 +116,6 @@ class AppWindow:
         self._function_submenu_names = []
         self._last_used_function = None
         self._select_filter = lambda x: True
-        self._instructions = ""
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
 
@@ -144,7 +143,6 @@ class AppWindow:
 
     def add_function(self, function_descriptor):
         parsed_descriptor = {}
-        used_hotkeys = {}
 
         if callable(function_descriptor):
             function = function_descriptor
@@ -182,16 +180,23 @@ class AppWindow:
             )
             hotkey = None
 
-        elif hotkey in used_hotkeys:
-            warnings.warn(
-                f"hotkey {hotkey} already assigned to function {used_hotkeys[hotkey]}, "
-                "resetting it to {parsed_descriptor['name']}."
-            )
-
-        used_hotkeys[hotkey] = parsed_descriptor["name"]
+        # elif hotkey in used_hotkeys:
+        #     warnings.warn(
+        #         f"hotkey {hotkey} already assigned to function {used_hotkeys[hotkey]}, "
+        #         "resetting it to {parsed_descriptor['name']}."
+        #     )
 
         if hotkey is not None:
             hotkey = ord(str(hotkey))
+            if self.functions is not None:
+                current_hotkeys = [desc['hotkey'] for desc in self.functions]
+                idx = current_hotkeys.index(hotkey)
+                if hotkey in current_hotkeys:
+                    warnings.warn(
+                        f"hotkey {chr(hotkey)} already assigned to function {self.functions[idx]['name']}, "
+                        f"resetting it to {parsed_descriptor['name']}."
+                    )
+
         parsed_descriptor["hotkey"] = hotkey
 
         all_parsed_parameters = {}
@@ -1051,7 +1056,7 @@ class AppWindow:
         self._update_current_idx(current_idx)
         self._started = True
 
-    def run(self, print_instructions=True):
+    def run(self):
         self.print_debug("Starting ElementSelector instance.")
 
         if len(self._elements_input) == 0:
@@ -1068,10 +1073,6 @@ class AppWindow:
         center = bounds.get_center()
         self._scene.setup_camera(60, bounds, center)
         self._scene.look_at(center, center - [0, 0, 3], [0, -1, 0])
-
-        if print_instructions:
-            print(self._instructions)
-            time.sleep(0.2)
 
         self.app.run()
 
