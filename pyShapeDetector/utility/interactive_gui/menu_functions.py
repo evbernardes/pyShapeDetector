@@ -2,6 +2,8 @@ from open3d.visualization import gui
 
 
 class MenuFunctions:
+    DEFAULT_MENU_NAME = "Misc functions"
+
     def __init__(self, app_instance, function_descriptors, name="Menu Functions"):
         self._app_instance = app_instance
         self._functions = function_descriptors

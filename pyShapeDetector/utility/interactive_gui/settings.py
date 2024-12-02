@@ -96,7 +96,7 @@ class Settings:
 
     def _cb_mesh_show_back_face(self, value):
         self.mesh_show_back_face = value
-        self._app_instance._reset_visualiser_elements()
+        self._app_instance._reset_elements_in_gui()
 
     @property
     def paint_selected(self):
@@ -124,7 +124,7 @@ class Settings:
 
     def _cb_paint_random(self, value):
         self.paint_random = value
-        self._app_instance._reset_visualiser_elements()
+        self._app_instance._reset_elements_in_gui()
 
     @property
     def debug(self):
@@ -235,7 +235,7 @@ class Settings:
     def _cb_random_color_brightness(self, value):
         self.random_color_brightness = value
         if self.paint_random:
-            self._app_instance._reset_visualiser_elements()
+            self._app_instance._reset_elements_in_gui()
 
     @property
     def highlight_color_brightness(self):

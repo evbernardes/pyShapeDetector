@@ -12,8 +12,9 @@ class MenuHelp:
         _panel_collapsable = gui.CollapsableVert("Help", em, gui.Margins(0, 0, 0, 0))
 
         dlg_layout = gui.Vert(em, gui.Margins(0, 0, 0, 0))
-        for line in self._app_instance._instructions.split("\n"):
-            dlg_layout.add_child(gui.Label(line))
+        dlg_layout.add_child(gui.Label(self._app_instance._instructions))
+        # for line in self._app_instance._instructions.split("\n"):
+        # dlg_layout.add_child(gui.Label(line))
 
         _panel_collapsable.add_child(dlg_layout)
 

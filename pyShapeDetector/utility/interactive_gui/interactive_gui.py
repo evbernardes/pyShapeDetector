@@ -7,11 +7,11 @@ Created on Tur Oct 17 13:17:55 2024
 """
 import time
 import copy
+import inspect
 import signal
 import sys
 import warnings
 import inspect
-from abc import ABC
 import numpy as np
 from open3d.utility import Vector3dVector
 from open3d.visualization import gui, rendering
@@ -19,40 +19,14 @@ from open3d.visualization import gui, rendering
 from .settings import Settings
 from .menu_functions import MenuFunctions
 from .menu_help import MenuHelp
-from .helpers import get_pretty_name, parse_parameters_as_kwargs
-
-DEFAULT_MENU_NAME = "Misc functions"
-
-
-# Description: [key, '_cb_function_name', extra, modifier]
-KEYS_ACTIONS = {
-    ################
-    # Normal keys: #
-    ################
-    "Toggle": [gui.KeyName.SPACE, "_cb_toggle", False, False],
-    "[Fast] Previous": [gui.KeyName.LEFT, "_cb_previous", False, True],
-    "[Fast] Next": [gui.KeyName.RIGHT, "_cb_next", False, True],
-    "Show help": [gui.KeyName.H, "_cb_toggle_help_panel", False, False],
-    "Print info": [gui.KeyName.I, "_cb_print_info", False, False],
-    # "Functions menu": [gui.KeyName.ENTER, "_cb_functions_menu", False, False],
-    "Show preferences": [gui.KeyName.P, "_cb_toggle_settings_panel", False, False],
-    ##############
-    # CTRL keys: #
-    ##############
-    "Repeat last funtion": [gui.KeyName.ENTER, "_cb_repeat_last_function", True, False],
-    "Undo [Redo]": [gui.KeyName.Z, "_cb_undo_redo", True, True],
-    "[Un]Hide": [gui.KeyName.U, "_cb_hide_unhide", True, True],
-    "[Un]select all": [gui.KeyName.A, "_cb_toggle_all", True, True],
-    "[Un]select last modified": [gui.KeyName.L, "_cb_toggle_last", True, True],
-    "[Un]select per type": [gui.KeyName.T, "_cb_toggle_type", True, True],
-}
-
-KEY_EXTRA_FUNCTIONS = gui.KeyName.LEFT_CONTROL
-KEY_MODIFIER = gui.KeyName.LEFT_SHIFT
-
-
-def get_key_name(key):
-    return str(key).split(".")[1]
+from .hotkeys import Hotkeys
+from .helpers import (
+    get_pretty_name,
+    extract_element_colors,
+    set_element_colors,
+    get_painted_element,
+    get_distance_checker,
+)
 
 
 class AppWindow:
@@ -139,6 +113,7 @@ class AppWindow:
         self._pre_selected = []
         self._current_bbox = None
         self._functions = None
+        self._function_submenu_names = []
         self._last_used_function = None
         self._select_filter = lambda x: True
         self._instructions = ""
@@ -149,8 +124,6 @@ class AppWindow:
         self.i_old = 0
         self.i = 0
         self.finish = False
-        self._is_extra_functions = False
-        self._is_modifier_pressed = False
         self._started = False
 
         self._settings = Settings(self, **kwargs)
@@ -171,6 +144,7 @@ class AppWindow:
 
     def add_function(self, function_descriptor):
         parsed_descriptor = {}
+        used_hotkeys = {}
 
         if callable(function_descriptor):
             function = function_descriptor
@@ -187,21 +161,39 @@ class AppWindow:
             function = function_descriptor["function"]
             parsed_descriptor["function"] = function_descriptor["function"]
 
-        # if "name" not in function_descriptor:
-        #     parsed_descriptor["name"] = get_pretty_name(function)
         parsed_descriptor["name"] = function_descriptor.get(
             "name", get_pretty_name(function)
         )
 
-        # if "menu" not in function_descriptor:
-        #     parsed_descriptor["menu"] = DEFAULT_MENU_NAME
-        parsed_descriptor["menu"] = function_descriptor.get("menu", DEFAULT_MENU_NAME)
+        menu = function_descriptor.get("menu")
+        if menu is None:
+            menu = MenuFunctions.DEFAULT_MENU_NAME
 
-        # if "hotkey" not in function_descriptor:
-        #     parsed_descriptor["hotkey"] = None
-        parsed_descriptor["hotkey"] = function_descriptor.get("hotkey", None)
+        parsed_descriptor["menu"] = menu
 
-        # if "parameters" not in function_or_descriptor:
+        hotkey = function_descriptor.get("hotkey", None)
+        if hotkey is None:
+            pass
+
+        elif not isinstance(hotkey, int) or not (0 <= hotkey <= 9):
+            warnings.warn(
+                f"Expected integer hotkey between 0 and 9, got {hotkey}. "
+                "Ignoring hotkey"
+            )
+            hotkey = None
+
+        elif hotkey in used_hotkeys:
+            warnings.warn(
+                f"hotkey {hotkey} already assigned to function {used_hotkeys[hotkey]}, "
+                "resetting it to {parsed_descriptor['name']}."
+            )
+
+        used_hotkeys[hotkey] = parsed_descriptor["name"]
+
+        if hotkey is not None:
+            hotkey = ord(str(hotkey))
+        parsed_descriptor["hotkey"] = hotkey
+
         all_parsed_parameters = {}
 
         if parameters := function_descriptor.get("parameters", None):
@@ -224,16 +216,24 @@ class AppWindow:
                 elif parameter_type is int or parameter_type is float:
                     if "limits" not in parsed_parameter:
                         raise AttributeError(
-                            "Expected limits in {parameter['type']} parameter descriptor."
+                            f"Expected limits in {parameter['type']} parameter descriptor."
                         )
 
                     limits = parsed_parameter["limits"]
+
                     if "default" not in parsed_parameter:
                         warnings.warn(
-                            "No default value found in {parameter['type']} "
+                            f"No default value found in {parameter['type']} "
                             "parameter descriptor, getting mean of limits."
                         )
                         parsed_parameter["default"] = sum(limits) / 2.0
+
+                    else:
+                        if not (limits[0] <= parsed_parameter["default"] <= limits[1]):
+                            raise ValueError(
+                                f"Default value {parsed_parameter['default']} is "
+                                f"not within limits {limits}."
+                            )
 
                 elif parameter_type is str:
                     if "options" in parsed_parameter:
@@ -244,22 +244,30 @@ class AppWindow:
                     warnings.warn(f"{parameter_type} is not implemented, ignoring.")
                     continue
 
-            parsed_parameter["default"] = parameter_type[parsed_parameter["default"]]
+            parsed_parameter["default"] = parameter_type(parsed_parameter["default"])
             all_parsed_parameters[name] = parsed_parameter
+
+        for key in all_parsed_parameters.keys():
+            if key not in inspect.signature(function).parameters.keys():
+                raise ValueError(f"Function {function} does not take parameter {key}.")
 
         parsed_descriptor["parameters"] = all_parsed_parameters
 
-        # testing function with empty argument
-        # kwargs = parse_parameters_as_kwargs(all_parsed_parameters)
-        # function([], **kwargs)
-
         if self._functions is None:
             self._functions = []
+
         self._functions.append(parsed_descriptor)
+
+        if menu not in self.function_submenu_names:
+            if menu == MenuFunctions.DEFAULT_MENU_NAME:
+                self._function_submenu_names += [menu]
+            else:
+                self._function_submenu_names.insert(-1, menu)
 
     @property
     def function_submenu_names(self):
-        return set([value["menu"] for value in self.functions])
+        return self._function_submenu_names
+        # return set([value["menu"] for value in self.functions])
 
     @property
     def function_key_mappings(self):
@@ -271,13 +279,6 @@ class AppWindow:
                 # key = ord(str((n + 1) % 10))
                 # key_mappings[key] = f
         return key_mappings
-
-    @property
-    def function_key_mappings_info(self):
-        return [
-            f"({get_key_name(KEY_EXTRA_FUNCTIONS)} + {chr(key)} - {value['name']}"
-            for key, value in self.function_key_mappings.items()
-        ]
 
     # def create_function_submenus(self, name, functions):
     def create_function_submenus(self):
@@ -347,18 +348,6 @@ class AppWindow:
             )
         self.current_element["selected"] = boolean_value
 
-    def _add_geometry_to_scene(self, elem):
-        from open3d.geometry import LineSet, AxisAlignedBoundingBox, OrientedBoundingBox
-
-        if isinstance(elem, (LineSet, AxisAlignedBoundingBox, OrientedBoundingBox)):
-            mat = self.material_line
-        else:
-            mat = self.material_regular
-        self._scene.scene.add_geometry(str(id(elem)), elem, mat)
-
-    def _remove_geometry_from_scene(self, elem):
-        self._scene.scene.remove_geometry(str(id(elem)))
-
     def add_elements(self, elems_raw, pre_selected=None, fixed=False):
         if fixed and pre_selected is not None:
             raise ValueError("Cannot select fixed elements.")
@@ -384,6 +373,18 @@ class AppWindow:
             # self._insert_elements(new_elements, to_vis=False)
             self._elements_input += new_raw_elements
             self._pre_selected += pre_selected
+
+    def _add_geometry_to_scene(self, elem):
+        from open3d.geometry import LineSet, AxisAlignedBoundingBox, OrientedBoundingBox
+
+        if isinstance(elem, (LineSet, AxisAlignedBoundingBox, OrientedBoundingBox)):
+            mat = self.material_line
+        else:
+            mat = self.material_regular
+        self._scene.scene.add_geometry(str(id(elem)), elem, mat)
+
+    def _remove_geometry_from_scene(self, elem):
+        self._scene.scene.remove_geometry(str(id(elem)))
 
     def _pop_elements(self, indices, from_vis=False):
         # update_old = self.i in indices
@@ -418,6 +419,7 @@ class AppWindow:
         if isinstance(selected, bool):
             selected = [selected] * len(indices)
 
+        number_points_distance = self._settings.number_points_distance
         idx_new = self.i
 
         self.print_debug(
@@ -433,19 +435,21 @@ class AppWindow:
                 "raw": elems_raw[i],
                 "selected": selected[i],
                 "drawable": self._get_open3d(elems_raw[i]),
-                "distance_checker": self._get_element_distances([elems_raw[i]])[0],
+                "distance_checker": get_distance_checker(
+                    elems_raw[i], number_points_distance
+                ),
             }
 
             # save original colors
-            elem["color"] = self._extract_element_colors(elem["drawable"])
+            elem["color"] = extract_element_colors(elem["drawable"])
 
             if self._settings.paint_random:
                 self.print_debug(
                     f"[_insert_elements] Randomly painting element at index {i}.",
                     require_verbose=True,
                 )
-                elem["drawable"] = self._get_painted_element(
-                    elem["drawable"], color="random"
+                elem["drawable"] = get_painted_element(
+                    elem["drawable"], "random", self._settings.random_color_brightness
                 )
 
             elif self._settings.paint_selected and selected[i]:
@@ -455,7 +459,7 @@ class AppWindow:
                 )
                 is_current = self._started and (self.i == idx)
                 color = self._settings.get_element_color(True, is_current)
-                elem["drawable"] = self._get_painted_element(elem["drawable"], color)
+                elem["drawable"] = get_painted_element(elem["drawable"], color)
 
             self.print_debug(
                 f"Added {elem['raw']} at index {idx}.", require_verbose=True
@@ -511,65 +515,6 @@ class AppWindow:
                 raise ValueError(f"Expected boolean, got {type(value)}")
 
             elem["selected"] = value and self.select_filter(elem)
-
-    @property
-    def all_drawable_elements(self):
-        return self._fixed_elements + self.elements_drawable
-
-    def _reset_selected(self, indices_true=[]):
-        """Reset boolean array of selected values to False, then revert some to True is asked."""
-        for i, elem in enumerate(self.elements):
-            elem["selected"] = i in indices_true
-
-    def distances_to_point(self, screen_point, screen_vector):
-        from pyShapeDetector.geometry import PointCloud
-        from pyShapeDetector.primitives import Primitive, Plane, Sphere
-
-        screen_plane = Plane.from_normal_point(screen_vector, screen_point)
-
-        def _is_point_in_convex_region(elem, point=screen_point, plane=screen_plane):
-            """Check if mouse-click was done inside of the element actual region."""
-
-            if hasattr(elem, "points"):
-                boundary_points = elem.points
-            elif hasattr(elem, "vertices"):
-                boundary_points = elem.vertices
-            elif hasattr(elem, "mesh"):
-                boundary_points = elem.mesh.vertices
-            else:
-                return False
-
-            boundary_points = np.asarray(boundary_points)
-            if len(boundary_points) < 3:
-                return False
-
-            plane_bounded = plane.get_bounded_plane(boundary_points, convex=True)
-            return plane_bounded.contains_projections(point)
-
-        def _distance_to_point(elem, point=screen_point, plane=screen_plane):
-            """Check if mouse-click was done inside of the element actual region."""
-
-            if not _is_point_in_convex_region(elem, point, plane):
-                return np.inf
-
-            try:
-                return elem.get_distances(point)
-            except AttributeError:
-                warnings.warn(
-                    f"Element of type {type(elem)} "
-                    "found in distance elements, should not happen."
-                )
-                return np.inf
-
-        distances = []
-        for i, elem in enumerate(self.elements):
-            if i == self.i:
-                # for selecting smaller objects closer to bigger ones,
-                # ignores currently selected one
-                distances.append(np.inf)
-            else:
-                distances.append(_distance_to_point(elem["distance_checker"]))
-        return distances
 
     def _save_state(self, indices, input_elements, num_outputs):
         """Save state for undoing."""
@@ -641,119 +586,11 @@ class AppWindow:
                 elem_new = elem
 
         if self._settings.paint_random:
-            elem_new = self._get_painted_element(elem_new, color="random")
+            elem_new = get_painted_element(
+                elem_new, "random", self._settings.random_color_brightness
+            )
 
         return elem_new
-
-    def _extract_element_colors(self, drawable_element):
-        if hasattr(drawable_element, "vertex_colors"):
-            return np.asarray(drawable_element.vertex_colors).copy()
-        if hasattr(drawable_element, "mesh"):
-            return np.asarray(drawable_element.mesh.vertex_colors).copy()
-        if hasattr(drawable_element, "color"):
-            return np.asarray(drawable_element.color).copy()
-        if hasattr(drawable_element, "colors"):
-            return np.asarray(drawable_element.colors).copy()
-
-        warnings.warn("Could not get color from element {element}.")
-        return None
-
-    def _set_element_colors(self, element, input_color):
-        if input_color is None:
-            return
-
-        color = np.clip(input_color, 0, 1)
-
-        if hasattr(element, "vertex_colors"):
-            if color.ndim == 2:
-                element.vertex_colors = Vector3dVector(color)
-            else:
-                element.paint_uniform_color(color)
-
-        elif hasattr(element, "colors"):
-            if color.ndim == 2:
-                element.colors = Vector3dVector(color)
-            else:
-                element.paint_uniform_color(color)
-
-        elif hasattr(element, "color"):
-            element.color = color
-
-    def _get_painted_element(self, element, color):
-        from ..helpers_visualization import get_painted
-
-        if isinstance(element, list):
-            raise RuntimeError("Expected single element, not list.")
-
-        # lower luminance of random colors to not interfere with highlights
-        if isinstance(color, str) and color == "random":
-            multiplier = self._settings.random_color_brightness
-            color = np.random.random(3) * multiplier
-
-        color = np.clip(color, 0, 1)
-
-        return get_painted(element, color)
-
-    def _get_element_distances(self, elems):
-        from pyShapeDetector.primitives import Primitive
-        from pyShapeDetector.geometry import TriangleMesh, PointCloud
-
-        number_points_distance = self._settings.number_points_distance
-
-        elements_distance = []
-        for elem in elems:
-            if isinstance(elem, Primitive):
-                elements_distance.append(elem)
-
-            # assert our PointCloud class instead of Open3D PointCloud class
-            elif TriangleMesh.is_instance_or_open3d(elem):
-                pcd = elem.sample_points_uniformly(number_points_distance)
-                elements_distance.append(PointCloud(pcd))
-
-            elif PointCloud.is_instance_or_open3d(elem):
-                if len(elem.points) > number_points_distance:
-                    ratio = int(len(elem.points) / number_points_distance)
-                    pcd = elem.uniform_down_sample(ratio)
-                else:
-                    pcd = elem
-                elements_distance.append(PointCloud(pcd))
-
-            else:
-                elements_distance.append(None)
-
-        return elements_distance
-
-    def _on_menu_help(self):
-        em = self.window.theme.font_size
-        dlg = gui.Dialog("Help")
-
-        # Add the text
-        dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
-        dlg_layout.add_child(gui.Label("Open3D GUI Example"))
-
-        # Add the Ok button. We need to define a callback function to handle
-        # the click.
-        ok = gui.Button("OK")
-        ok.set_on_clicked(self._on_about_ok)
-
-        # We want the Ok button to be an the right side, so we need to add
-        # a stretch item to the layout, otherwise the button will be the size
-        # of the entire row. A stretch item takes up as much space as it can,
-        # which forces the button to be its minimum size.
-        h = gui.Horiz()
-        h.add_stretch()
-        h.add_child(ok)
-        h.add_stretch()
-        dlg_layout.add_child(h)
-
-        dlg.add_child(dlg_layout)
-        self.window.show_dialog(dlg)
-
-    # def _on_menu_toggle_settings_panel(self):
-    #     self._settings._panel.visible = not self._settings._panel.visible
-    #     self._menubar.set_checked(
-    #         InteractiveWindow.MENU_SHOW_SETTINGS, self._settings._panel.visible
-    #     )
 
     def _on_layout(self, layout_context):
         r = self.window.content_rect
@@ -809,7 +646,7 @@ class AppWindow:
             view_matrix = self._scene.scene.camera.get_view_matrix()
             camera_direction = -view_matrix[:3, 2]
 
-            distances = self.distances_to_point(click_position, camera_direction)
+            distances = self._get_distances_to_point(click_position, camera_direction)
 
             i_min_distance = np.argmin(distances)
             if distances[i_min_distance] is np.inf:
@@ -818,44 +655,63 @@ class AppWindow:
             self.i_old = self.i
             self.i = i_min_distance
             if event.is_modifier_down(gui.KeyModifier.SHIFT):
-                self._cb_toggle()
+                self._hotkeys._cb_toggle()
             self._update_current_idx()
 
         self._scene.scene.scene.render_to_depth_image(depth_callback)
 
         return gui.Widget.EventCallbackResult.HANDLED
 
-    def _on_key(self, event):
-        self.print_debug(f"Key: {event.key}, type: {event.type}", require_verbose=True)
+    def _get_distances_to_point(self, screen_point, screen_vector):
+        """Called by Mouse callback to get distances to point when clicked."""
+        from pyShapeDetector.geometry import PointCloud
+        from pyShapeDetector.primitives import Primitive, Plane, Sphere
 
-        # First check if modifier (ctrl) is being pressed...
-        if event.key == KEY_EXTRA_FUNCTIONS:
-            self._is_extra_functions = event.type == gui.KeyEvent.Type.DOWN
-            return gui.Widget.EventCallbackResult.HANDLED
+        screen_plane = Plane.from_normal_point(screen_vector, screen_point)
 
-        if event.key == KEY_MODIFIER:
-            self._is_modifier_pressed = event.type == gui.KeyEvent.Type.DOWN
-            return gui.Widget.EventCallbackResult.HANDLED
+        def _is_point_in_convex_region(elem, point=screen_point, plane=screen_plane):
+            """Check if mouse-click was done inside of the element actual region."""
 
-        # If not, ignore every release
-        if not event.type == gui.KeyEvent.Type.DOWN:
-            return gui.Widget.EventCallbackResult.IGNORED
+            if hasattr(elem, "points"):
+                boundary_points = elem.points
+            elif hasattr(elem, "vertices"):
+                boundary_points = elem.vertices
+            elif hasattr(elem, "mesh"):
+                boundary_points = elem.mesh.vertices
+            else:
+                return False
 
-        # If down key, check if it's one of the callbacks:
-        for _, (key, cb_name, extra_functions, _) in KEYS_ACTIONS.items():
-            if event.key == key:
-                if extra_functions != self._is_extra_functions:
-                    return gui.Widget.EventCallbackResult.IGNORED
+            boundary_points = np.asarray(boundary_points)
+            if len(boundary_points) < 3:
+                return False
 
-                getattr(self, cb_name)()
-                return gui.Widget.EventCallbackResult.HANDLED
+            plane_bounded = plane.get_bounded_plane(boundary_points, convex=True)
+            return plane_bounded.contains_projections(point)
 
-        for function_key, function_descriptor in self.function_key_mappings.items():
-            if event.key == function_key:
-                self._apply_function_to_elements(function_descriptor["function"])
-                return gui.Widget.EventCallbackResult.HANDLED
+        def _distance_to_point(elem, point=screen_point, plane=screen_plane):
+            """Check if mouse-click was done inside of the element actual region."""
 
-        return gui.Widget.EventCallbackResult.IGNORED
+            if not _is_point_in_convex_region(elem, point, plane):
+                return np.inf
+
+            try:
+                return elem.get_distances(point)
+            except AttributeError:
+                warnings.warn(
+                    f"Element of type {type(elem)} "
+                    "found in distance elements, should not happen."
+                )
+                return np.inf
+
+        distances = []
+        for i, elem in enumerate(self.elements):
+            if i == self.i:
+                # for selecting smaller objects closer to bigger ones,
+                # ignores currently selected one
+                distances.append(np.inf)
+            else:
+                distances.append(_distance_to_point(elem["distance_checker"]))
+        return distances
 
     def _setup_window_and_scene(self):
         # Set up the application
@@ -891,42 +747,35 @@ class AppWindow:
         self.window.add_child(self._scene)
         self.window.add_child(self._info)
 
-        self._scene.set_on_key(self._on_key)
-        self._scene.set_on_mouse(self._on_mouse)
-
-        # self._create_settings_panel()
-        # self._settings._create_panel_on_window(self.window)
-
-        # self.window.show_menu(True)
-
         self._menubar = gui.Application.instance.menubar = gui.Menu()
         em = self.window.theme.font_size
-        # self._main_panel = gui.Vert(
-        #     0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em)
-        # )
         self._main_panel = gui.Vert(em, gui.Margins(em, em, em, em))
         self.window.add_child(self._main_panel)
         self._main_panel.visible = True
 
-        self._menu_help = MenuHelp(self)
-        self._menu_help._create_menu(AppWindow.MENU_HELP)
+        # 1) create hotkeys
+        self._hotkeys = Hotkeys(self, self.function_key_mappings)
+        self._scene.set_on_key(self._hotkeys._on_key)
+        self._scene.set_on_mouse(self._on_mouse)
 
-        # self._menu_quick_functions = MenuFunctions(
-        #     self, self.functions, name="Hot functions"
-        # )
-        # self._menu_quick_functions._create_menu(AppWindow.MENU_SHOW_FUNCTIONS)
-
+        # 2) create function menus
         self.create_function_submenus()
         for i, submenu in enumerate(self.function_submenus.values()):
             submenu._create_menu(AppWindow.MENU_SUBFUNCTIONS[i])
 
         self._settings._create_menu(AppWindow.MENU_SHOW_SETTINGS)
 
-        # self._help = MenuHelp(self)
+        # # 2) create hotkeys
+        # self._hotkeys = Hotkeys(self, self.function_key_mappings)
+        # self._scene.set_on_key(self._hotkeys._on_key)
+        # self._scene.set_on_mouse(self._on_mouse)
 
-        # self._settings_panel = gui.Vert(
-        #     0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em)
-        # )
+        # 3) create instructions
+        self._instructions = self._hotkeys.get_instructions()
+
+        # 4) create help menu with instructions
+        self._menu_help = MenuHelp(self)
+        self._menu_help._create_menu(AppWindow.MENU_HELP)
 
     # def _signal_handler(self, sig, frame):
     #     self._vis.destroy_window()
@@ -1048,11 +897,11 @@ class AppWindow:
                 )
                 color = elem["color"] + highlight_offset
 
-            self._set_element_colors(elem["drawable"], color)
+            set_element_colors(elem["drawable"], color)
 
             if update_vis:
                 self.print_debug(
-                    "[_update_element] Updating geometry on visualizer.",
+                    "[_update_element] Updating geometry on gui.",
                     require_verbose=True,
                 )
                 self._add_geometry_to_scene(elem["drawable"])
@@ -1116,7 +965,8 @@ class AppWindow:
 
         for idx in indices:
             elem = self.elements[idx]
-            selected = (not self._is_modifier_pressed) and self.select_filter(elem)
+            is_selectable = self.select_filter(elem)
+            selected = (not self._hotkeys._is_modifier_pressed) and is_selectable
             elem["selected"] = selected
 
         self._update_elements(indices)
@@ -1157,205 +1007,7 @@ class AppWindow:
         self._future_states = []
         self._update_plane_boundaries()
 
-    ###########################################################################
-    ################### Callback functions for Visualizer #####################
-    ###########################################################################
-    def _cb_toggle(self):
-        """Toggle the current highlighted element between selected/unselected."""
-        if not self.select_filter(self.current_element):
-            return
-
-        self.is_current_selected = not self.is_current_selected
-        self._update_current_idx()
-
-    def _cb_next(self):
-        """Highlight next element in list."""
-        delta = 1 + 4 * self._is_modifier_pressed
-        self._update_current_idx(min(self.i + delta, len(self.elements) - 1))
-
-    def _cb_previous(self):
-        """Highlight previous element in list."""
-        delta = 1 + 4 * self._is_modifier_pressed
-        self._update_current_idx(max(self.i - delta, 0))
-
-    def _cb_toggle_all(self):
-        """Toggle the all elements between all selected/all unselected."""
-        self._toggle_indices(None)
-
-    def _cb_toggle_last(self):
-        """Toggle the elements from last output."""
-
-        if len(self._past_states) == 0:
-            return
-
-        num_outputs = self._past_states[-1]["num_outputs"]
-        self._toggle_indices(slice(-num_outputs, None))
-
-    def _cb_toggle_type(self):
-        from ..helpers_visualization import get_inputs
-
-        elems_raw = [elem["raw"] for elem in self.elements]
-
-        types = set([t for elem in elems_raw for t in elem.__class__.mro()])
-        types.discard(ABC)
-        types.discard(object)
-        types = list(types)
-        types_names = [type_.__name__ for type_ in types]
-
-        try:
-            (selected_type_name,) = get_inputs(
-                {"type": [types_names, types_names[0]]}, window_name="Select type"
-            )
-        except KeyboardInterrupt:
-            return
-
-        selected_type = types[types_names.index(selected_type_name)]
-        idx = np.where([isinstance(elem, selected_type) for elem in elems_raw])[0]
-        self._toggle_indices(idx)
-
-    def _cb_finish_process(self, vis, action, mods):
-        """Signal ending."""
-        if action == 1:
-            return
-        self.finish = True
-        vis.close()
-
-    def _cb_print_info(self):
-        elem = self.current_element
-
-        print()
-        print(f"Current element: ({self.i + 1}/{len(self.elements)}): {elem['raw']}")
-        self.print_debug(f"drawable: {elem['drawable']}")
-        self.print_debug(f"Current index: {self.i}, old index: {self.i_old}")
-        print(f"Current selected: {self.is_current_selected}")
-        print(f"Current bbox: {self._current_bbox}")
-        print(f"{len(self.elements)} current elements")
-        print(f"{len(self._fixed_elements)} fixed elements")
-        print(f"{len(self._hidden_elements)} hidden elements")
-        print(f"{len(self._past_states)} past states (for undoing)")
-        print(f"{len(self._future_states)} future states (for redoing)")
-        time.sleep(0.5)
-
-    # def _cb_center_current(self, vis, action, mods):
-    #     if not self._is_modifier_extra or action == 1:
-    #         return
-
-    #     ctr = self._vis.get_view_control()
-    #     ctr.set_lookat(self._current_bbox.get_center())
-    #     ctr.set_front([0, 0, -1])  # Define the camera front direction
-    #     ctr.set_up([0, 1, 0])  # Define the camera "up" direction
-    #     ctr.set_zoom(0.1)  # Adjust zoom level if necessary
-
-    def _cb_repeat_last_function(self):
-        func = self._last_used_function
-
-        if func is not None:
-            self.print_debug(f"Re-applying last function: {func}")
-            self._apply_function_to_elements(func)
-
-    def _cb_toggle_help_panel(self):
-        self._menu_help._on_menu_toggle()
-
-    def _cb_toggle_settings_panel(self):
-        self._settings._on_menu_toggle()
-
-    # def _cb_functions_menu(self):
-    #     if self.functions is None or len(self.functions) == 0:
-    #         warnings.warn("No functions, cannot call menu.")
-    #         return
-
-    #     from ..helpers_visualization import select_function_with_gui
-
-    #     try:
-    #         func = select_function_with_gui(self.functions, self._last_used_function)
-    #     except KeyboardInterrupt:
-    #         return
-
-    #     self.print_debug(f"Chosen function from menu: {func}")
-
-    #     if func is not None:
-    #         self._apply_function_to_elements(func)
-
-    def _cb_hide_unhide(self):
-        """Hide selected elements or unhide all hidden elements."""
-
-        indices = self.selected_indices
-
-        if self._is_modifier_pressed:
-            # UNHIDE
-            self._insert_elements(self._hidden_elements, selected=True, to_vis=True)
-            self._hidden_elements = []
-
-        else:
-            # HIDE SELECTED
-            self._hidden_elements += self._pop_elements(indices, from_vis=True)
-            self.selected = False
-
-        # TODO: find a way to make hiding work with undoing
-        self._past_states = []
-        self._future_states = []
-        self._update_plane_boundaries()
-
-    def _cb_undo_redo(self):
-        if self._is_modifier_pressed:
-            # REDO
-            if len(self._future_states) == 0:
-                return
-
-            future_state = self._future_states.pop()
-
-            modified_elements = future_state["modified_elements"]
-            indices = future_state["indices"]
-
-            self.print_debug(
-                f"Redoing last operation, removing {len(indices)} inputs and "
-                f"resetting {len(modified_elements)} inputs."
-            )
-
-            input_elements = [self.elements[i]["raw"] for i in indices]
-            self._save_state(indices, input_elements, len(modified_elements))
-
-            self.i = future_state["current_index"]
-            self._pop_elements(indices, from_vis=True)
-            self._insert_elements(modified_elements, to_vis=True)
-
-            self._update_current_idx(len(self.elements) - 1)
-        else:
-            # UNDO
-            if len(self._past_states) == 0:
-                return
-
-            last_state = self._past_states.pop()
-            indices = last_state["indices"]
-            elements = last_state["elements"]
-            num_outputs = last_state["num_outputs"]
-            num_elems = len(self.elements)
-
-            self.print_debug(
-                f"Undoing last operation, removing {num_outputs} outputs and "
-                f"resetting {len(elements)} inputs."
-            )
-
-            indices_to_pop = range(num_elems - num_outputs, num_elems)
-            modified_elements = self._pop_elements(indices_to_pop, from_vis=True)
-            self._insert_elements(elements, indices, selected=True, to_vis=True)
-
-            self._future_states.append(
-                {
-                    "modified_elements": modified_elements,
-                    "indices": indices,
-                    "current_index": self.i,
-                }
-            )
-
-            while len(self._future_states) > self._settings.number_redo_states:
-                self._future_states.pop(0)
-
-            self._update_current_idx(indices[-1])
-
-        self._update_plane_boundaries()
-
-    def _reset_visualiser_elements(self, startup=False, reset_fixed=False):
+    def _reset_elements_in_gui(self, startup=False, reset_fixed=False):
         """Prepare elements for visualization"""
 
         if not startup:
@@ -1408,32 +1060,9 @@ class AppWindow:
         # Ensure proper format of inputs, check elements and raise warnings
         self._check_and_initialize_inputs()
 
-        def get_action_line(desc, values):
-            """Helper to make pretty lines for instructions"""
-            key, _, modifier, revert = values
-
-            line = "("
-            if modifier:
-                line += f"{get_key_name(KEY_EXTRA_FUNCTIONS)} + "
-            if revert:
-                line += f"[{get_key_name(KEY_MODIFIER)}] + "
-            line += f"{get_key_name(key)}): {desc}"
-            return line
-
-        self._instructions = (
-            # "******************** KEYS: ***********************\n"
-            "\n".join(
-                [get_action_line(desc, values) for desc, values in KEYS_ACTIONS.items()]
-            )
-            + f"\n({get_key_name(KEY_EXTRA_FUNCTIONS)}) Enables mouse selection"
-            + "\n"
-            + "\n".join(self.function_key_mappings_info)
-            # + "\n**************************************************"
-        )
-
-        # Set up the visualizer
+        # Set up the gui
         self._setup_window_and_scene()
-        self._reset_visualiser_elements(startup=True)
+        self._reset_elements_in_gui(startup=True)
 
         bounds = self._scene.scene.bounding_box
         center = bounds.get_center()
