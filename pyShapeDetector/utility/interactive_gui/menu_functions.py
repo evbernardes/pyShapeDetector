@@ -1,10 +1,13 @@
 from open3d.visualization import gui
+from .interactive_gui import AppWindow
 
 
 class MenuFunctions:
     DEFAULT_MENU_NAME = "Misc functions"
 
-    def __init__(self, app_instance, function_descriptors, name="Menu Functions"):
+    def __init__(
+        self, app_instance: AppWindow, function_descriptors, name="Menu Functions"
+    ):
         self._app_instance = app_instance
         self._functions = function_descriptors
         self._name = name
@@ -21,12 +24,14 @@ class MenuFunctions:
 
         functions_dict = {id * 100 + i: func for i, func in enumerate(self._functions)}
 
-        for i, desc in functions_dict.items():
-            menu.add_item(desc["name"], i)
+        for i, function_descriptor in functions_dict.items():
+            menu.add_item(function_descriptor["name"], i)
             menu.set_checked(i, False)
 
             _on_click = (
-                lambda f=desc["function"]: app_instance._apply_function_to_elements(f)
+                lambda f=function_descriptor: app_instance._apply_function_to_elements(
+                    f
+                )
             )
 
             window.set_on_menu_item_activated(i, _on_click)

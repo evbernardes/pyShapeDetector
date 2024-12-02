@@ -1,15 +1,23 @@
 from abc import ABC
+import copy
 import time
 import numpy as np
 from open3d.visualization import gui
-from .helpers import get_key_name
+from .interactive_gui import AppWindow
 
 KEY_EXTRA_FUNCTIONS = gui.KeyName.LEFT_CONTROL
 KEY_MODIFIER = gui.KeyName.LEFT_SHIFT
 
 
+def get_key_name(key):
+    if isinstance(key, gui.KeyName):
+        return str(key).split(".")[1]
+    elif isinstance(key, int):
+        return chr(key)
+
+
 class Hotkeys:
-    def __init__(self, app_instance, function_key_mappings={}):
+    def __init__(self, app_instance: AppWindow, function_key_mappings={}):
         self._app_instance = app_instance
         self._is_extra_functions = False
         self._is_modifier_pressed = False
@@ -89,11 +97,20 @@ class Hotkeys:
                 "callback": self._cb_toggle_type,
                 "modifier": True,
             },
+            (gui.KeyName.ESCAPE, False): {
+                "desc": "Quit",
+                "callback": self._cb_quit,
+                "modifier": False,
+            },
         }
 
         for key, function_descriptor in function_key_mappings.items():
-            func = function_descriptor["function"]
-            _callback = lambda f=func: self._app_instance._apply_function_to_elements(f)
+            # func = function_descriptor["function"]
+            _callback = (
+                lambda f=function_descriptor: self._app_instance._apply_function_to_elements(
+                    f
+                )
+            )
 
             self._bindings[(key, True)] = {
                 "desc": function_descriptor["name"],
@@ -149,6 +166,9 @@ class Hotkeys:
         self._app_instance.print_debug(
             f"Key: {event.key}, type: {event.type}", require_verbose=True
         )
+
+        # if event.key == gui.KeyName.ESCAPE:
+        #     return gui.Widget.EventCallbackResult.HANDLED
 
         # First check if extra functions flag (left ctrl) is being pressed...
         if event.key == KEY_EXTRA_FUNCTIONS:
@@ -220,9 +240,9 @@ class Hotkeys:
     def _cb_copy(self):
         """Save elements to be copied."""
         app_instance = self._app_instance
-        copied_elements = [
-            elem["raw"] for elem in app_instance.elements if elem["selected"]
-        ]
+        copied_elements = copy.deepcopy(
+            [elem["raw"] for elem in app_instance.elements if elem["selected"]]
+        )
         app_instance.print_debug(f"Copying {len(copied_elements)} elements.")
         app_instance._copied_elements = copied_elements
 
@@ -358,14 +378,14 @@ class Hotkeys:
         if self._is_modifier_pressed:
             # UNHIDE
             app_instance._insert_elements(
-                app_instance._hidden_elements, selected=True, to_vis=True
+                app_instance._hidden_elements, selected=True, to_gui=True
             )
             app_instance._hidden_elements = []
 
         else:
             # HIDE SELECTED
             app_instance._hidden_elements += app_instance._pop_elements(
-                indices, from_vis=True
+                indices, from_gui=True
             )
             app_instance.selected = False
 
@@ -395,8 +415,8 @@ class Hotkeys:
             app_instance._save_state(indices, input_elements, len(modified_elements))
 
             app_instance.i = future_state["current_index"]
-            app_instance._pop_elements(indices, from_vis=True)
-            app_instance._insert_elements(modified_elements, to_vis=True)
+            app_instance._pop_elements(indices, from_gui=True)
+            app_instance._insert_elements(modified_elements, to_gui=True)
 
             app_instance._update_current_idx(len(app_instance.elements) - 1)
         else:
@@ -417,9 +437,9 @@ class Hotkeys:
 
             indices_to_pop = range(num_elems - num_outputs, num_elems)
             modified_elements = app_instance._pop_elements(
-                indices_to_pop, from_vis=True
+                indices_to_pop, from_gui=True
             )
-            app_instance._insert_elements(elements, indices, selected=True, to_vis=True)
+            app_instance._insert_elements(elements, indices, selected=True, to_gui=True)
 
             app_instance._future_states.append(
                 {
@@ -438,3 +458,6 @@ class Hotkeys:
             app_instance._update_current_idx(indices[-1])
 
         app_instance._update_plane_boundaries()
+
+    def _cb_quit(self):
+        pass

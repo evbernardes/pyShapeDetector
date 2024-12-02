@@ -1,5 +1,6 @@
 import numpy as np
 from open3d.visualization import gui
+from .interactive_gui import AppWindow
 
 COLOR_BBOX_SELECTED_DEFAULT = np.array([0, 204.8, 0.0]) / 255
 COLOR_BBOX_UNSELECTED_DEFAULT = np.array([255.0, 0.0, 0.0]) / 255
@@ -49,7 +50,7 @@ class Settings:
         ("number_redo_states", int, (1, 10)),
     ]
 
-    def __init__(self, app_instance, name="Preferences", **kwargs):
+    def __init__(self, app_instance: AppWindow, name="Preferences", **kwargs):
         self._app_instance = app_instance
         self._name = name
 

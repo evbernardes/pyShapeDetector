@@ -16,13 +16,6 @@ def parse_parameters_as_kwargs(parameters):
     return {name: value["default"] for name, value in parameters.items()}
 
 
-def get_key_name(key):
-    if isinstance(key, gui.KeyName):
-        return str(key).split(".")[1]
-    elif isinstance(key, int):
-        return chr(key)
-
-
 def extract_element_colors(drawable_element):
     if hasattr(drawable_element, "vertex_colors"):
         return np.asarray(drawable_element.vertex_colors).copy()

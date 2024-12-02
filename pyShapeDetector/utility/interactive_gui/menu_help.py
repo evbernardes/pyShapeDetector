@@ -1,8 +1,9 @@
 from open3d.visualization import gui
+from .interactive_gui import AppWindow
 
 
 class MenuHelp:
-    def __init__(self, app_instance, name="Help"):
+    def __init__(self, app_instance: AppWindow, name="Help"):
         self._app_instance = app_instance
         self._name = name
 

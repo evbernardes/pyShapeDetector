@@ -16,10 +16,11 @@ import numpy as np
 from open3d.utility import Vector3dVector
 from open3d.visualization import gui, rendering
 
-from .settings import Settings
-from .menu_functions import MenuFunctions
-from .menu_help import MenuHelp
-from .hotkeys import Hotkeys
+
+# from .settings import Settings
+# from .menu_functions import MenuFunctions
+# from .menu_help import MenuHelp
+# from .hotkeys import Hotkeys
 from .helpers import (
     get_pretty_name,
     extract_element_colors,
@@ -126,6 +127,8 @@ class AppWindow:
         self.finish = False
         self._started = False
 
+        from .settings import Settings
+
         self._settings = Settings(self, **kwargs)
 
     def print_debug(self, text, require_verbose=False):
@@ -143,6 +146,8 @@ class AppWindow:
         return self._functions
 
     def add_function(self, function_descriptor):
+        from .menu_functions import MenuFunctions
+
         parsed_descriptor = {}
 
         if callable(function_descriptor):
@@ -213,13 +218,13 @@ class AppWindow:
                             "Unexpected limits in boolean parameter descriptor."
                         )
 
-                elif parameter_type is int or parameter_type is float:
-                    if "limits" not in parsed_parameter:
-                        raise AttributeError(
-                            f"Expected limits in {parameter['type']} parameter descriptor."
-                        )
+                elif parameter_type in (int, float):
+                    # if "limits" not in parsed_parameter:
+                    #     raise AttributeError(
+                    #         f"Expected limits in {parameter['type']} parameter descriptor."
+                    #     )
 
-                    limits = parsed_parameter["limits"]
+                    limits = parsed_parameter.get("limits", None)
 
                     if "default" not in parsed_parameter:
                         warnings.warn(
@@ -228,7 +233,12 @@ class AppWindow:
                         )
                         parsed_parameter["default"] = sum(limits) / 2.0
 
-                    else:
+                    elif limits is not None:
+                        if not isinstance(limits, (list, tuple)) or len(limits) != 2:
+                            raise ValueError(f"expected list or tuple of 2 elements for limits, got {limits}.")
+
+                        limits = (min(limits), max(limits))
+
                         if not (limits[0] <= parsed_parameter["default"] <= limits[1]):
                             raise ValueError(
                                 f"Default value {parsed_parameter['default']} is "
@@ -278,6 +288,8 @@ class AppWindow:
         return key_mappings
 
     def create_function_submenus(self):
+        from .menu_functions import MenuFunctions
+
         submenu_names = self.function_submenu_names
 
         if len(submenu_names) >= AppWindow.NUMBER_SUBFUNCTIONS:
@@ -710,6 +722,9 @@ class AppWindow:
         return distances
 
     def _setup_window_and_scene(self):
+        from .menu_help import MenuHelp
+        from .hotkeys import Hotkeys
+
         # Set up the application
         self.app = gui.Application.instance
         self.app.initialize()
@@ -743,7 +758,7 @@ class AppWindow:
         self.window.add_child(self._scene)
         self.window.add_child(self._info)
 
-        self._menubar = gui.Application.instance.menubar = gui.Menu()
+        self._menubar = self.app.menubar = gui.Menu()
         em = self.window.theme.font_size
         self._main_panel = gui.Vert(em, gui.Margins(em, em, em, em))
         self.window.add_child(self._main_panel)
@@ -914,7 +929,7 @@ class AppWindow:
             # re-layout to set the new frame.
             self.window.set_needs_layout()
 
-        gui.Application.instance.post_to_main_thread(self.window, update_label)
+        self.app.post_to_main_thread(self.window, update_label)
 
     def _update_current_idx(self, idx=None, update_old=True):
         if idx is not None:
@@ -963,8 +978,34 @@ class AppWindow:
 
         self._update_elements(indices)
 
-    def _apply_function_to_elements(self, function):
+    def _apply_function_to_elements(self, function_descriptor, update_parameters=True):
         """Apply function to selected elements."""
+        from .parameter_updater import ParameterUpdater
+
+        if isinstance(function_descriptor, dict):
+            if update_parameters:
+                try:
+                    ParameterUpdater.update_descriptor_values(
+                        self.window, function_descriptor
+                    )
+                except KeyboardInterrupt:
+                    return
+                except Exception as e:
+                    warnings.warn(
+                        f"Failed to get parameters for function {function_descriptor['name']}, "
+                        f"got following error: {str(e)}"
+                    )
+                    time.sleep(0.5)
+                    return
+
+            function = function_descriptor["function"]
+            parameters = function_descriptor["parameters"]
+            kwargs = {name: value["default"] for name, value in parameters.items()}
+        elif callable(function_descriptor):
+            function = function_descriptor
+            kwargs = {}
+        else:
+            raise RuntimeError(f"{function_descriptor} is neither a function nor dict!")
 
         indices = self.selected_indices
         self.print_debug(
@@ -974,7 +1015,7 @@ class AppWindow:
         input_elements = [self.elements[i]["raw"] for i in indices]
 
         try:
-            output_elements = function(input_elements)
+            output_elements = function(input_elements, **kwargs)
         except KeyboardInterrupt:
             return
         except Exception as e:
@@ -1044,7 +1085,7 @@ class AppWindow:
         self._started = True
 
     def run(self):
-        self.print_debug("Starting ElementSelector instance.")
+        self.print_debug("Starting AppWindow instance.")
 
         if len(self._elements_input) == 0:
             raise RuntimeError("No elements added!")
@@ -1059,15 +1100,15 @@ class AppWindow:
         bounds = self._scene.scene.bounding_box
         center = bounds.get_center()
         self._scene.setup_camera(60, bounds, center)
-        self._scene.look_at(center, center - [0, 0, 3], [0, -1, 0])
+        self._scene.look_at(center, center - [0, 0, 3], [0, 1, 0])
 
         self.app.run()
-        self._insert_elements(self._hidden_elements, to_gui=False)
+        # self._insert_elements(self._hidden_elements, to_gui=False)
 
         # try:
         #     self.app.run()
         #     # add hidden elements back to elements list
-        #     self._insert_elements(self._hidden_elements, to_vis=False)
+        #     self._insert_elements(self._hidden_elements, to_gui=False)
         # except Exception as e:
         #     raise e
         # finally:
