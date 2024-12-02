@@ -500,7 +500,7 @@ def select_manually(
 def apply_function_manually(
     elements,
     functions=[],
-    function_submenus={},
+    # function_submenus={},
     select_filter=None,
     fixed_elements=[],
     pre_selected=None,
@@ -571,9 +571,11 @@ def apply_function_manually(
 
     element_selector = AppWindow(**args)
     element_selector.add_elements(elements, pre_selected=pre_selected)
-    element_selector.functions = functions
-    for name, functions in function_submenus.items():
-        element_selector.add_function_submenu(name, functions)
+    for function in functions:
+        element_selector.add_function(function)
+    # element_selector.functions = functions
+    # for name, functions in function_submenus.items():
+    #     element_selector.add_function_submenu(name, functions)
     element_selector.select_filter = select_filter
     element_selector.add_elements(fixed_elements, fixed=True)
 

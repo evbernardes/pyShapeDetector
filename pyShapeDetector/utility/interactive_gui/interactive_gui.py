@@ -19,6 +19,9 @@ from open3d.visualization import gui, rendering
 from .settings import Settings
 from .menu_functions import MenuFunctions
 from .menu_help import MenuHelp
+from .helpers import get_pretty_name, parse_parameters_as_kwargs
+
+DEFAULT_MENU_NAME = "Misc functions"
 
 
 # Description: [key, '_cb_function_name', extra, modifier]
@@ -164,79 +167,138 @@ class AppWindow:
         print("[DEBUG] " + text)
 
     @property
+    def functions(self):
+        return self._functions
+
+    def add_function(self, function_descriptor):
+        parsed_descriptor = {}
+
+        if callable(function_descriptor):
+            function = function_descriptor
+            parsed_descriptor["function"] = function
+            function_descriptor = {"function": function}
+
+        elif not isinstance(function_descriptor, dict):
+            raise TypeError("Expected either function or dictionary describing it.")
+
+        elif "function" not in function_descriptor:
+            raise AttributeError("Function not found in descriptor.")
+
+        else:
+            function = function_descriptor["function"]
+            parsed_descriptor["function"] = function_descriptor["function"]
+
+        # if "name" not in function_descriptor:
+        #     parsed_descriptor["name"] = get_pretty_name(function)
+        parsed_descriptor["name"] = function_descriptor.get(
+            "name", get_pretty_name(function)
+        )
+
+        # if "menu" not in function_descriptor:
+        #     parsed_descriptor["menu"] = DEFAULT_MENU_NAME
+        parsed_descriptor["menu"] = function_descriptor.get("menu", DEFAULT_MENU_NAME)
+
+        # if "hotkey" not in function_descriptor:
+        #     parsed_descriptor["hotkey"] = None
+        parsed_descriptor["hotkey"] = function_descriptor.get("hotkey", None)
+
+        # if "parameters" not in function_or_descriptor:
+        all_parsed_parameters = {}
+
+        if parameters := function_descriptor.get("parameters", None):
+            for name, parameter in parameters.items():
+                parsed_parameter = parameter.copy()
+
+                parameter_type = parsed_parameter.get("type", None)
+
+                if parameter_type is None:
+                    raise TypeError("Expected explicit parameter type.")
+
+                elif parameter_type is bool:
+                    if "default" not in parsed_parameter:
+                        parsed_parameter["default"] = False
+                    if "limits" in parsed_parameter:
+                        warnings.warn(
+                            "Unexpected limits in boolean parameter descriptor."
+                        )
+
+                elif parameter_type is int or parameter_type is float:
+                    if "limits" not in parsed_parameter:
+                        raise AttributeError(
+                            "Expected limits in {parameter['type']} parameter descriptor."
+                        )
+
+                    limits = parsed_parameter["limits"]
+                    if "default" not in parsed_parameter:
+                        warnings.warn(
+                            "No default value found in {parameter['type']} "
+                            "parameter descriptor, getting mean of limits."
+                        )
+                        parsed_parameter["default"] = sum(limits) / 2.0
+
+                elif parameter_type is str:
+                    if "options" in parsed_parameter:
+                        parsed_parameter["options"] = [
+                            str(option) for option in parsed_parameter["options"]
+                        ]
+                else:
+                    warnings.warn(f"{parameter_type} is not implemented, ignoring.")
+                    continue
+
+            parsed_parameter["default"] = parameter_type[parsed_parameter["default"]]
+            all_parsed_parameters[name] = parsed_parameter
+
+        parsed_descriptor["parameters"] = all_parsed_parameters
+
+        # testing function with empty argument
+        kwargs = parse_parameters_as_kwargs(all_parsed_parameters)
+        function([], **kwargs)
+
+        if self._functions is None:
+            self._functions = []
+        self._functions.append(parsed_descriptor)
+
+    @property
+    def function_submenu_names(self):
+        return set([value["menu"] for value in self.functions])
+
+    @property
     def function_key_mappings(self):
         key_mappings = dict()
         if self.functions is not None:
-            for n, f in enumerate(self.functions):
-                key = ord(str((n + 1) % 10))
-                key_mappings[key] = f
+            for function_descriptor in self.functions:
+                if (hotkey := function_descriptor["hotkey"]) is not None:
+                    key_mappings[hotkey] = function_descriptor
+                # key = ord(str((n + 1) % 10))
+                # key_mappings[key] = f
         return key_mappings
 
     @property
     def function_key_mappings_info(self):
         return [
-            f"({get_key_name(KEY_EXTRA_FUNCTIONS)} + {chr(key)}) {func.__name__}"
-            for key, func in self.function_key_mappings.items()
+            f"({get_key_name(KEY_EXTRA_FUNCTIONS)} + {chr(key)} - {value['name']}"
+            for key, value in self.function_key_mappings.items()
         ]
 
-    @property
-    def functions(self):
-        return self._functions
+    # def create_function_submenus(self, name, functions):
+    def create_function_submenus(self):
+        submenu_names = self.function_submenu_names
 
-    @functions.setter
-    def functions(self, new_functions):
-        if new_functions is None:
-            self._functions = None
-            return
-
-        if isinstance(new_functions, tuple):
-            new_functions = list(new_functions)
-        elif callable(new_functions):
-            new_functions = [new_functions]
-
-        if (N := len(new_functions)) > 10:
-            warnings.warn(
-                f"Got: {N} functions, only the first 10 will have separete keys. "
-                "Use full menu to access others."
-            )
-
-        if not isinstance(new_functions, list):
-            raise ValueError(
-                f"Expected function or list of functions, got {type(new_functions)}."
-            )
-
-        for function in new_functions:
-            if not callable(function):
-                raise ValueError(
-                    f"Expected function or list of functions, got {type(function)}."
-                )
-
-            elif (N := len(inspect.signature(function).parameters)) < 1:
-                raise ValueError(
-                    f"Expected function with at least 1 parameter (list of elements), got {N}."
-                )
-
-        self._functions = new_functions
-
-    @property
-    def function_submenus(self):
-        return self._function_submenus
-
-    def add_function_submenu(self, name, functions):
-        if len(self.function_submenus) >= AppWindow.NUMBER_SUBFUNCTIONS:
+        if len(submenu_names) >= AppWindow.NUMBER_SUBFUNCTIONS:
             raise RuntimeError(
                 f"Only {AppWindow.NUMBER_SUBFUNCTIONS} function submenus allowed."
             )
 
-        if callable(functions):
-            functions = [functions]
-        if isinstance(functions, (list, tuple, np.ndarray)):
-            functions = list(functions)
-        for function in functions:
-            if not callable(function):
-                raise TypeError("Expected function or list of functions.")
+        self.function_submenus = {}
 
-        self.function_submenus[name] = MenuFunctions(self, functions, name=name)
+        for name in submenu_names:
+            function_descriptors = [
+                desc for desc in self.functions if desc["menu"] == name
+            ]
+
+            self.function_submenus[name] = MenuFunctions(
+                self, function_descriptors, name=name
+            )
 
     @property
     def select_filter(self):
@@ -789,9 +851,9 @@ class AppWindow:
                 getattr(self, cb_name)()
                 return gui.Widget.EventCallbackResult.HANDLED
 
-        for function_key, function in self.function_key_mappings.items():
+        for function_key, function_descriptor in self.function_key_mappings.items():
             if event.key == function_key:
-                self._apply_function_to_elements(function)
+                self._apply_function_to_elements(function_descriptor["function"])
                 return gui.Widget.EventCallbackResult.HANDLED
 
         return gui.Widget.EventCallbackResult.IGNORED
@@ -850,11 +912,12 @@ class AppWindow:
         self._menu_help = MenuHelp(self)
         self._menu_help._create_menu(AppWindow.MENU_HELP)
 
-        self._menu_quick_functions = MenuFunctions(
-            self, self.functions, name="Hot functions"
-        )
-        self._menu_quick_functions._create_menu(AppWindow.MENU_SHOW_FUNCTIONS)
+        # self._menu_quick_functions = MenuFunctions(
+        #     self, self.functions, name="Hot functions"
+        # )
+        # self._menu_quick_functions._create_menu(AppWindow.MENU_SHOW_FUNCTIONS)
 
+        self.create_function_submenus()
         for i, submenu in enumerate(self.function_submenus.values()):
             submenu._create_menu(AppWindow.MENU_SUBFUNCTIONS[i])
 
