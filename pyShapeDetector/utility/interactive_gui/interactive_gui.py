@@ -102,6 +102,7 @@ class AppWindow:
         return_finish_flag=False,
         **kwargs,
     ):
+        self._copied_elements = []
         self._past_states = []
         self._future_states = []
         self._element_dicts = []
@@ -189,7 +190,7 @@ class AppWindow:
         if hotkey is not None:
             hotkey = ord(str(hotkey))
             if self.functions is not None:
-                current_hotkeys = [desc['hotkey'] for desc in self.functions]
+                current_hotkeys = [desc["hotkey"] for desc in self.functions]
                 idx = current_hotkeys.index(hotkey)
                 if hotkey in current_hotkeys:
                     warnings.warn(

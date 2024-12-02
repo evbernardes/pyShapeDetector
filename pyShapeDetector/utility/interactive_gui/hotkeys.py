@@ -29,6 +29,21 @@ class Hotkeys:
                 "callback": self._cb_next,
                 "modifier": True,
             },
+            (gui.KeyName.DELETE, False): {
+                "desc": "Delete elements",
+                "callback": self._cb_delete,
+                "modifier": False,
+            },
+            (gui.KeyName.C, True): {
+                "desc": "Copy",
+                "callback": self._cb_copy,
+                "modifier": False,
+            },
+            (gui.KeyName.V, True): {
+                "desc": "Paste",
+                "callback": self._cb_paste,
+                "modifier": False,
+            },
             (gui.KeyName.H, False): {
                 "desc": "Show help",
                 "callback": self._cb_toggle_help_panel,
@@ -193,6 +208,35 @@ class Hotkeys:
         app_instance._update_current_idx(
             min(app_instance.i + delta, len(app_instance.elements) - 1)
         )
+
+    def _cb_delete(self):
+        """Delete current elements."""
+
+        def delete(elements):
+            return []
+
+        self._app_instance._apply_function_to_elements(delete)
+
+    def _cb_copy(self):
+        """Save elements to be copied."""
+        app_instance = self._app_instance
+        copied_elements = [
+            elem["raw"] for elem in app_instance.elements if elem["selected"]
+        ]
+        app_instance.print_debug(f"Copying {len(copied_elements)} elements.")
+        app_instance._copied_elements = copied_elements
+
+    def _cb_paste(self):
+        app_instance = self._app_instance
+
+        def paste(elements):
+            return elements + app_instance._copied_elements
+
+        app_instance.print_debug(
+            f"Pasting {len(app_instance._copied_elements)} elements."
+        )
+        self._app_instance._apply_function_to_elements(paste)
+        app_instance._copied_elements = []
 
     def _cb_previous(self):
         """Highlight previous element in list."""
