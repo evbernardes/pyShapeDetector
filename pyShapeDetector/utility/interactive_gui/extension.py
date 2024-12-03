@@ -3,13 +3,28 @@
 import copy
 import warnings
 import inspect
+import traceback
 from typing import Union, Callable
+
+from open3d.visualization import gui
 
 from .interactive_gui import AppWindow
 from .helpers import get_pretty_name
 
 
 class Parameter:
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, new_name):
+        if not isinstance(new_name, str):
+            raise TypeError(
+                f"Expected string as name for Parameter, got {type(new_name)}."
+            )
+        self._name = new_name
+
     @property
     def type(self):
         return self._type
@@ -21,6 +36,15 @@ class Parameter:
     @property
     def value(self):
         return self._value
+
+    @value.setter
+    def value(self, new_value):
+        if not isinstance(new_value, self.type):
+            raise RuntimeError(
+                "Tried to set paramter of type {self.type} with "
+                f"value of type {type(new_value)}."
+            )
+        self._value = new_value
 
     def _set_type(self, parameter_descriptor: dict):
         _type = parameter_descriptor["type"]
@@ -78,13 +102,58 @@ class Parameter:
                 "Not implemented for parameters of type {self.type}."
             )
 
-        assert isinstance(value, self.type)
-        self._value = value
+        self.value = value
 
-    def __init__(self, parameter_descriptor: dict):
+    def _gui_callback(self, value):
+        if self.type is int and isinstance(value, str):
+            value = float(value)
+        self._value = self.type(value)
+
+    def get_gui_element(self, window):
+        em = window.theme.font_size
+        label = gui.Label(self.name)
+
+        if self.type is bool:
+            element = gui.Checkbox(self.name + "?")
+            element.checked = self.value
+            element.set_on_checked(self._gui_callback)
+        elif self.type is int and self.limits is not None:
+            slider = gui.Slider(gui.Slider.INT)
+            slider.set_limits(*self.limits)
+            slider.int_value = self.value
+            slider.set_on_value_changed(self._gui_callback)
+
+            element = gui.VGrid(2, 0.25 * em)
+            element.add_child(label)
+            element.add_child(slider)
+
+        elif self.type is float and self.limits is not None:
+            slider = gui.Slider(gui.Slider.DOUBLE)
+            slider.set_limits(*self.limits)
+            slider.double_value = self.value
+            slider.set_on_value_changed(self._gui_callback)
+
+            element = gui.VGrid(2, 0.25 * em)
+            element.add_child(label)
+            element.add_child(slider)
+
+        else:
+            # Text field for general inputs
+            text_edit = gui.TextEdit()
+            text_edit.placeholder_text = str(self.value)
+            text_edit.set_on_value_changed(self._gui_callback)
+
+            element = gui.VGrid(2, 0.25 * em)
+            element.add_child(label)
+            element.add_child(text_edit)
+
+        return element
+
+    def __init__(self, key, parameter_descriptor: dict):
         if not isinstance(parameter_descriptor, dict):
             raise TypeError("parameter descriptor should be a dictionary")
 
+        self.name = key
         self._set_type(parameter_descriptor)
         self._set_limits(parameter_descriptor)
         self._set_value(parameter_descriptor)
@@ -172,7 +241,7 @@ class Extension:
         for key, parameter in parameter_descriptors.items():
             if key not in signature.parameters.keys():
                 raise ValueError("Function does not take parameter {key}.")
-            parsed_parameters[key] = Parameter(parameter)
+            parsed_parameters[key] = Parameter(key, parameter)
 
         self._parameters = parsed_parameters
 
@@ -211,3 +280,62 @@ class Extension:
         if app_instance._extensions is None:
             app_instance._extensions = []
         app_instance._extensions.append(self)
+
+    def update(self, app_instance: AppWindow):
+        if len(self.parameters) == 0:
+            return
+
+        window = app_instance._window
+        em = window.theme.font_size
+
+        def _on_accept():
+            window.close_dialog()
+
+        def _on_cancel():
+            app_instance._interrupted = True
+            window.close_dialog()
+
+        separation_height = int(round(0.5 * em))
+        button_separation_width = 2 * separation_height
+
+        dlg = gui.Dialog(f"Parameter selection for {self.name}")
+        dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
+
+        label = gui.Label("Enter parameters:")
+        h = gui.Horiz()
+        h.add_stretch()
+        h.add_child(label)
+        h.add_stretch()
+        dlg_layout.add_child(h)
+
+        previous_values = {}
+        for key, param in self.parameters.items():
+            previous_values[key] = copy.copy(param.value)
+            dlg_layout.add_child(param.get_gui_element(window))
+            dlg_layout.add_fixed(separation_height)
+
+        accept = gui.Button("Accept")
+        accept.set_on_clicked(_on_accept)
+        cancel = gui.Button("Cancel")
+        cancel.set_on_clicked(_on_cancel)
+        h = gui.Horiz()
+        h.add_stretch()
+        h.add_child(accept)
+        h.add_fixed(button_separation_width)
+        h.add_child(cancel)
+        h.add_stretch()
+        dlg_layout.add_child(h)
+        dlg.add_child(dlg_layout)
+
+        try:
+            window.show_dialog(dlg)
+        except Exception:
+            warnings.warn("Could not update to selected values.")
+            traceback.print_exc()
+
+            for key, param in self.parameters.items():
+                param.value = previous_values[key]
+
+        if app_instance._interrupted:
+            for key, param in self.parameters.items():
+                param.value = previous_values[key]

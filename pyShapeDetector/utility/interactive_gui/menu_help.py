@@ -25,7 +25,7 @@ class MenuHelp:
 
     def _create_menu(self, id):
         self.menu_id = id
-        window = self._app_instance.window
+        window = self._app_instance._window
         menubar = self._app_instance._menubar
 
         self._create_panel(window)
@@ -39,7 +39,7 @@ class MenuHelp:
         window.set_on_menu_item_activated(id, self._on_menu_toggle)
 
     def _on_menu_toggle(self):
-        window = self._app_instance.window
+        window = self._app_instance._window
         menubar = self._app_instance._menubar
         self._panel.visible = not self._panel.visible
         menubar.set_checked(self.menu_id, self._panel.visible)

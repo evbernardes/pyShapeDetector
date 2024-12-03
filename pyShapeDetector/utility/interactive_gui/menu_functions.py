@@ -12,7 +12,7 @@ class MenuFunctions:
     def _create_menu(self, id):
         self.menu_id = id
         app_instance = self._app_instance
-        window = app_instance.window
+        window = app_instance._window
         menubar = app_instance._menubar
 
         menu = gui.Menu()

@@ -481,7 +481,7 @@ class AppWindow:
         return elem_new
 
     def _on_layout(self, layout_context):
-        r = self.window.content_rect
+        r = self._window.content_rect
         self._scene.frame = r
         pref = self._info.calc_preferred_size(layout_context, gui.Widget.Constraints())
         self._info.frame = gui.Rect(
@@ -610,15 +610,15 @@ class AppWindow:
         self.app.initialize()
 
         # Create a window
-        self.window = self.app.create_window(self.window_name, 1024, 768)
-        self.window.set_on_layout(self._on_layout)
+        self._window = self.app.create_window(self.window_name, 1024, 768)
+        self._window.set_on_layout(self._on_layout)
 
         # em = self.window.theme.font_size
         # separation_height = int(round(0.5 * em))
 
         # Set up a scene as a 3D widget
         self._scene = gui.SceneWidget()
-        self._scene.scene = rendering.Open3DScene(self.window.renderer)
+        self._scene.scene = rendering.Open3DScene(self._window.renderer)
         self._scene.scene.set_lighting(
             rendering.Open3DScene.LightingProfile.NO_SHADOWS, (0, 0, 0)
         )
@@ -626,22 +626,22 @@ class AppWindow:
         self.material_regular = rendering.MaterialRecord()
         self.material_regular.base_color = [1.0, 1.0, 1.0, 1.0]  # White color
         self.material_regular.shader = "defaultUnlit"
-        self.material_regular.point_size = 3 * self.window.scaling
+        self.material_regular.point_size = 3 * self._window.scaling
 
         self.material_line = rendering.MaterialRecord()
         self.material_line.shader = "unlitLine"
-        self.material_line.line_width = 1.5 * self.window.scaling
+        self.material_line.line_width = 1.5 * self._window.scaling
 
         self._info = gui.Label("")
         self._info.visible = False
 
-        self.window.add_child(self._scene)
-        self.window.add_child(self._info)
+        self._window.add_child(self._scene)
+        self._window.add_child(self._info)
 
         self._menubar = self.app.menubar = gui.Menu()
-        em = self.window.theme.font_size
+        em = self._window.theme.font_size
         self._main_panel = gui.Vert(em, gui.Margins(em, em, em, em))
-        self.window.add_child(self._main_panel)
+        self._window.add_child(self._main_panel)
         self._main_panel.visible = True
 
         # 1) create hotkeys
@@ -807,9 +807,9 @@ class AppWindow:
             # We are sizing the info label to be exactly the right size,
             # so since the text likely changed width, we need to
             # re-layout to set the new frame.
-            self.window.set_needs_layout()
+            self._window.set_needs_layout()
 
-        self.app.post_to_main_thread(self.window, update_label)
+        self.app.post_to_main_thread(self._window, update_label)
 
     def _update_current_idx(self, idx=None, update_old=True):
         if idx is not None:
@@ -862,27 +862,26 @@ class AppWindow:
         self, extension_or_function, update_parameters=True
     ):
         """Apply function to selected elements."""
-        from .parameter_updater import ParameterUpdater
+        # from .parameter_updater import ParameterUpdater
         from .extension import Extension
 
         if isinstance(extension_or_function, Extension):
-            # if update_parameters:
-            #     try:
-            #         ParameterUpdater.update_descriptor_values(
-            #             self.window, extension_or_function
-            #         )
-            #     except KeyboardInterrupt:
-            #         return
-            #     except Exception as e:
-            #         warnings.warn(
-            #             f"Failed to get parameters for function {extension_or_function['name']}, "
-            #             f"got following error: {str(e)}"
-            #         )
-            #         time.sleep(0.5)
-            #         return
+            extension = extension_or_function
+            if update_parameters:
+                try:
+                    extension.update(self)
+                except KeyboardInterrupt:
+                    return
+                except Exception:
+                    warnings.warn(
+                        f"Failed to get parameters for function {extension.name}, "
+                        f"got following error:"
+                    )
+                    traceback.print_exc()
+                    return
 
-            function = extension_or_function.function
-            kwargs = extension_or_function.parameters_kwargs
+            function = extension.function
+            kwargs = extension.parameters_kwargs
         elif callable(extension_or_function):
             function = extension_or_function
             kwargs = {}
