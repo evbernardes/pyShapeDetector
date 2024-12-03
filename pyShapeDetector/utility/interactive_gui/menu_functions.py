@@ -3,13 +3,9 @@ from .interactive_gui import AppWindow
 
 
 class MenuFunctions:
-    DEFAULT_MENU_NAME = "Misc functions"
-
-    def __init__(
-        self, app_instance: AppWindow, function_descriptors, name="Menu Functions"
-    ):
+    def __init__(self, app_instance: AppWindow, extensions, name):
         self._app_instance = app_instance
-        self._functions = function_descriptors
+        self._extensions = extensions
         self._name = name
         self._selected_func = None
 
@@ -22,17 +18,13 @@ class MenuFunctions:
         menu = gui.Menu()
         menubar.add_menu(self._name, menu)
 
-        functions_dict = {id * 100 + i: func for i, func in enumerate(self._functions)}
+        extensions_dict = {id * 100 + i: ext for i, ext in enumerate(self._extensions)}
 
-        for i, function_descriptor in functions_dict.items():
-            menu.add_item(function_descriptor["name"], i)
+        for i, extension in extensions_dict.items():
+            menu.add_item(extension.name, i)
             menu.set_checked(i, False)
 
-            _on_click = (
-                lambda f=function_descriptor: app_instance._apply_function_to_elements(
-                    f
-                )
-            )
+            _on_click = lambda f=extension: app_instance._apply_function_to_elements(f)
 
             window.set_on_menu_item_activated(i, _on_click)
 

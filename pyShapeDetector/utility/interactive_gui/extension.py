@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import copy
+import warnings
+import inspect
+from typing import Union, Callable
+
+from .interactive_gui import AppWindow
+from .helpers import get_pretty_name
+
+
+class Parameter:
+    @property
+    def type(self):
+        return self._type
+
+    @property
+    def limits(self):
+        return self._limits
+
+    @property
+    def value(self):
+        return self._value
+
+    def _set_type(self, parameter_descriptor: dict):
+        _type = parameter_descriptor["type"]
+        if not isinstance(_type, type):
+            raise TypeError("parameter descriptor has invalid type.")
+
+        self._type = _type
+
+    def _set_limits(self, parameter_descriptor: dict):
+        if self.type not in (int, float):
+            self._limits = None
+            return
+
+        limits = parameter_descriptor.get("limits", None)
+        if limits is None:
+            self._limits = None
+            return
+
+        if not isinstance(limits, (list, tuple)) or len(limits) != 2:
+            raise TypeError(
+                f"Limits should be list or tuple of 2 elements, got {limits}."
+            )
+
+        limits = (min(limits), max(limits))
+        self._limits = limits
+
+    def _set_value(self, parameter_descriptor: dict):
+        value = parameter_descriptor.get("default")
+        if value is not None:
+            value = self.type(value)
+
+        if self.type is bool:
+            if value is None:
+                value = False
+
+        elif self.type in (int, float):
+            if self.limits is None:
+                if value is None:
+                    raise TypeError(
+                        "No limits or default value for parameter of type {self.type}."
+                    )
+            else:
+                if value is None:
+                    value = self.limits[0]
+                elif not (self.limits[0] <= value <= self.limits[1]):
+                    warnings.warn("Default value not in limits, resetting it.")
+                    value = self.limits[0]
+
+        elif self.type is str:
+            if value is None:
+                value = ""
+
+        else:
+            raise NotImplementedError(
+                "Not implemented for parameters of type {self.type}."
+            )
+
+        assert isinstance(value, self.type)
+        self._value = value
+
+    def __init__(self, parameter_descriptor: dict):
+        if not isinstance(parameter_descriptor, dict):
+            raise TypeError("parameter descriptor should be a dictionary")
+
+        self._set_type(parameter_descriptor)
+        self._set_limits(parameter_descriptor)
+        self._set_value(parameter_descriptor)
+
+
+class Extension:
+    DEFAULT_MENU_NAME = "Misc functions"
+
+    @property
+    def function(self):
+        return self._function
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def menu(self):
+        return self._menu
+
+    @property
+    def parameters(self):
+        return self._parameters
+
+    @property
+    def parameters_kwargs(self):
+        return {key: param.value for key, param in self.parameters.items()}
+
+    @property
+    def hotkey(self):
+        return self._hotkey
+
+    @property
+    def hotkey_number(self):
+        if self.hotkey is None:
+            return None
+        return int(chr(self.hotkey))
+
+    def _set_name(self, descriptor: dict):
+        name = descriptor.get("name", get_pretty_name(self.function))
+        if not isinstance(name, str):
+            raise TypeError("Name expected to be string.")
+        self._name = name
+
+    def _set_menu(self, descriptor: dict):
+        menu = descriptor.get("menu", Extension.DEFAULT_MENU_NAME)
+        if not isinstance(menu, str):
+            raise TypeError("Menu expected to be string.")
+        self._menu = menu
+
+    def _set_hotkey(self, descriptor: dict):
+        hotkey = descriptor.get("hotkey", None)
+
+        if hotkey is None:
+            self._hotkey = hotkey
+            return
+
+        if not isinstance(hotkey, int) or not (0 <= hotkey <= 9):
+            warnings.warn(
+                f"Expected integer hotkey between 0 and 9, got {hotkey}. "
+                "Ignoring hotkey"
+            )
+            self._hotkey = None
+            return
+
+        self._hotkey = ord(str(hotkey))
+
+        # if self._app_instance.functions is not None:
+        #     current_hotkeys = [desc.hotkey for desc in self._app_instance.functions]
+        #     idx = current_hotkeys.index(hotkey)
+        #     if hotkey in current_hotkeys:
+        #         warnings.warn(
+        #             f"hotkey {chr(hotkey)} already assigned to function {self.functions[idx]['name']}, "
+        #             f"resetting it to {parsed_descriptor['name']}."
+        #         )
+
+    def _set_parameters(self, descriptor: dict):
+        signature = inspect.signature(self.function)
+        parsed_parameters = {}
+        parameter_descriptors = descriptor.get("parameters", {})
+
+        if not isinstance(parameter_descriptors, dict):
+            raise TypeError("parameters expected to be dict.")
+
+        for key, parameter in parameter_descriptors.items():
+            if key not in signature.parameters.keys():
+                raise ValueError("Function does not take parameter {key}.")
+            parsed_parameters[key] = Parameter(parameter)
+
+        self._parameters = parsed_parameters
+
+    def __init__(self, function_or_descriptor: Union[Callable, dict]):
+        if isinstance(function_or_descriptor, dict):
+            if "function" not in function_or_descriptor:
+                raise ValueError("Dict descriptor does not contain 'function'.")
+            descriptor = copy.copy(function_or_descriptor)
+        elif callable(function_or_descriptor):
+            descriptor = {"function": function_or_descriptor}
+        else:
+            raise TypeError("Input should be either a dict descriptor or a function.")
+
+        self._function = descriptor["function"]
+        self._set_name(descriptor)
+        self._set_menu(descriptor)
+        self._set_hotkey(descriptor)
+        self._set_parameters(descriptor)
+
+    def add_to_application(self, app_instance: AppWindow):
+        # Check whether hotkey has already been assigned extension
+        if app_instance.extensions is not None and self.hotkey is not None:
+            current_hotkeys = [ext.hotkey for ext in app_instance.extensions]
+
+            if self.hotkey in current_hotkeys:
+                idx = current_hotkeys.index(self.hotkey)
+                warnings.warn(
+                    f"hotkey {self.hotkey_number} previously assigned to function "
+                    f"{app_instance.extensions[idx].name}, resetting it to {self.name}."
+                )
+                app_instance.extensions[idx]._hotkey = None
+
+        if self.menu not in app_instance.extension_submenu_names:
+            app_instance._extension_submenu_names += [self.menu]
+
+        if app_instance._extensions is None:
+            app_instance._extensions = []
+        app_instance._extensions.append(self)

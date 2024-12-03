@@ -17,7 +17,7 @@ def get_key_name(key):
 
 
 class Hotkeys:
-    def __init__(self, app_instance: AppWindow, function_key_mappings={}):
+    def __init__(self, app_instance: AppWindow):
         self._app_instance = app_instance
         self._is_extra_functions = False
         self._is_modifier_pressed = False
@@ -26,111 +26,125 @@ class Hotkeys:
                 "desc": "Selected/unselect current",
                 "callback": self._cb_toggle,
                 "modifier": True,
+                "menu": None,
             },
             (gui.KeyName.LEFT, False): {
                 "desc": "[Fast] Previous",
                 "callback": self._cb_previous,
                 "modifier": True,
+                "menu": None,
             },
             (gui.KeyName.RIGHT, False): {
                 "desc": "[Fast] Next",
                 "callback": self._cb_next,
                 "modifier": True,
+                "menu": None,
             },
             (gui.KeyName.DELETE, False): {
                 "desc": "Delete elements",
                 "callback": self._cb_delete,
                 "modifier": False,
+                "menu": "Edit",
             },
             (gui.KeyName.C, True): {
                 "desc": "Copy",
                 "callback": self._cb_copy,
                 "modifier": False,
+                "menu": "Edit",
             },
             (gui.KeyName.V, True): {
                 "desc": "Paste",
                 "callback": self._cb_paste,
                 "modifier": False,
+                "menu": "Edit",
             },
             (gui.KeyName.H, False): {
                 "desc": "Show help",
                 "callback": self._cb_toggle_help_panel,
                 "modifier": True,
+                "menu": None,
             },
             (gui.KeyName.I, False): {
                 "desc": "Print info",
                 "callback": self._cb_print_info,
                 "modifier": True,
+                "menu": "Show",
             },
             (gui.KeyName.P, False): {
                 "desc": "Show Preferences",
                 "callback": self._cb_toggle_settings_panel,
                 "modifier": True,
+                "menu": "Show",
             },
             (gui.KeyName.ENTER, True): {
                 "desc": "Repeat last function",
                 "callback": self._cb_repeat_last_function,
                 "modifier": True,
+                "menu": "Edit",
             },
             (gui.KeyName.Z, True): {
                 "desc": "Undo [Redo]",
                 "callback": self._cb_undo_redo,
                 "modifier": True,
+                "menu": "Edit",
             },
             (gui.KeyName.U, True): {
                 "desc": "[Un]Hide",
                 "callback": self._cb_hide_unhide,
                 "modifier": True,
+                "menu": None,
             },
             (gui.KeyName.A, True): {
                 "desc": "[Un]select all",
                 "callback": self._cb_toggle_all,
                 "modifier": True,
+                "menu": None,
             },
             (gui.KeyName.L, True): {
                 "desc": "[Un]select last",
                 "callback": self._cb_toggle_last,
                 "modifier": True,
+                "menu": None,
             },
             (gui.KeyName.T, True): {
                 "desc": "[Un]select type",
                 "callback": self._cb_toggle_type,
                 "modifier": True,
+                "menu": None,
             },
             (gui.KeyName.ESCAPE, False): {
                 "desc": "Quit",
                 "callback": self._cb_quit,
                 "modifier": False,
+                "menu": None,
             },
         }
 
-        for key, function_descriptor in function_key_mappings.items():
+        extension_key_mappings = app_instance.extension_key_mappings
+
+        for key, extension in extension_key_mappings.items():
             # func = function_descriptor["function"]
             _callback = (
-                lambda f=function_descriptor: self._app_instance._apply_function_to_elements(
-                    f
-                )
+                lambda f=extension: self._app_instance._apply_function_to_elements(f)
             )
 
             self._bindings[(key, True)] = {
-                "desc": function_descriptor["name"],
+                "desc": extension.name,
                 "callback": _callback,
                 "modifier": False,
             }
 
         for key, _ in self._bindings.keys():
-            if key not in function_key_mappings:
+            if key not in extension_key_mappings:
                 continue
 
-            function_descriptor = function_key_mappings[key]
+            extension = extension_key_mappings[key]
 
-            hotkey = function_descriptor.get("hotkey")
+            hotkey = extension.hotkey
             if hotkey is None:
                 continue
 
-            function_descriptor[
-                "name"
-            ] += f" ({get_key_name(KEY_EXTRA_FUNCTIONS)} + {chr(hotkey)})"
+            extension._name += f" ({get_key_name(KEY_EXTRA_FUNCTIONS)} + {chr(hotkey)})"
 
     @property
     def bindings(self):

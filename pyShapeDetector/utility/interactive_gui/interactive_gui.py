@@ -8,6 +8,7 @@ Created on Tur Oct 17 13:17:55 2024
 import time
 import copy
 import inspect
+import traceback
 import signal
 import sys
 import warnings
@@ -114,8 +115,8 @@ class AppWindow:
         self._fixed_elements_drawable = []
         self._pre_selected = []
         self._current_bbox = None
-        self._functions = None
-        self._function_submenu_names = []
+        self._extensions = None
+        self._extension_submenu_names = []
         self._last_used_function = None
         self._select_filter = lambda x: True
         self.window_name = window_name
@@ -142,171 +143,50 @@ class AppWindow:
         print("[DEBUG] " + text)
 
     @property
-    def functions(self):
-        return self._functions
+    def extensions(self):
+        return self._extensions
 
-    def add_function(self, function_descriptor):
-        from .menu_functions import MenuFunctions
+    def add_extension(self, function_or_descriptor):
+        # from .menu_functions import MenuFunctions
+        from .extension import Extension
 
-        parsed_descriptor = {}
+        try:
+            extension = Extension(function_or_descriptor)
+            extension.add_to_application(self)
 
-        if callable(function_descriptor):
-            function = function_descriptor
-            parsed_descriptor["function"] = function
-            function_descriptor = {"function": function}
-
-        elif not isinstance(function_descriptor, dict):
-            raise TypeError("Expected either function or dictionary describing it.")
-
-        elif "function" not in function_descriptor:
-            raise AttributeError("Function not found in descriptor.")
-
-        else:
-            function = function_descriptor["function"]
-            parsed_descriptor["function"] = function_descriptor["function"]
-
-        parsed_descriptor["name"] = function_descriptor.get(
-            "name", get_pretty_name(function)
-        )
-
-        menu = function_descriptor.get("menu")
-        if menu is None:
-            menu = MenuFunctions.DEFAULT_MENU_NAME
-
-        parsed_descriptor["menu"] = menu
-
-        hotkey = function_descriptor.get("hotkey", None)
-        if hotkey is None:
-            pass
-
-        elif not isinstance(hotkey, int) or not (0 <= hotkey <= 9):
-            warnings.warn(
-                f"Expected integer hotkey between 0 and 9, got {hotkey}. "
-                "Ignoring hotkey"
-            )
-            hotkey = None
-
-        if hotkey is not None:
-            hotkey = ord(str(hotkey))
-            if self.functions is not None:
-                current_hotkeys = [desc["hotkey"] for desc in self.functions]
-                idx = current_hotkeys.index(hotkey)
-                if hotkey in current_hotkeys:
-                    warnings.warn(
-                        f"hotkey {chr(hotkey)} already assigned to function {self.functions[idx]['name']}, "
-                        f"resetting it to {parsed_descriptor['name']}."
-                    )
-
-        parsed_descriptor["hotkey"] = hotkey
-
-        all_parsed_parameters = {}
-
-        if parameters := function_descriptor.get("parameters", None):
-            for name, parameter in parameters.items():
-                parsed_parameter = parameter.copy()
-
-                parameter_type = parsed_parameter.get("type", None)
-
-                if parameter_type is None:
-                    raise TypeError("Expected explicit parameter type.")
-
-                elif parameter_type is bool:
-                    if "default" not in parsed_parameter:
-                        parsed_parameter["default"] = False
-                    if "limits" in parsed_parameter:
-                        warnings.warn(
-                            "Unexpected limits in boolean parameter descriptor."
-                        )
-
-                elif parameter_type in (int, float):
-                    # if "limits" not in parsed_parameter:
-                    #     raise AttributeError(
-                    #         f"Expected limits in {parameter['type']} parameter descriptor."
-                    #     )
-
-                    limits = parsed_parameter.get("limits", None)
-
-                    if "default" not in parsed_parameter:
-                        warnings.warn(
-                            f"No default value found in {parameter['type']} "
-                            "parameter descriptor, getting mean of limits."
-                        )
-                        parsed_parameter["default"] = sum(limits) / 2.0
-
-                    elif limits is not None:
-                        if not isinstance(limits, (list, tuple)) or len(limits) != 2:
-                            raise ValueError(f"expected list or tuple of 2 elements for limits, got {limits}.")
-
-                        limits = (min(limits), max(limits))
-
-                        if not (limits[0] <= parsed_parameter["default"] <= limits[1]):
-                            raise ValueError(
-                                f"Default value {parsed_parameter['default']} is "
-                                f"not within limits {limits}."
-                            )
-
-                elif parameter_type is str:
-                    if "options" in parsed_parameter:
-                        parsed_parameter["options"] = [
-                            str(option) for option in parsed_parameter["options"]
-                        ]
-                else:
-                    warnings.warn(f"{parameter_type} is not implemented, ignoring.")
-                    continue
-
-            parsed_parameter["default"] = parameter_type(parsed_parameter["default"])
-            all_parsed_parameters[name] = parsed_parameter
-
-        for key in all_parsed_parameters.keys():
-            if key not in inspect.signature(function).parameters.keys():
-                raise ValueError(f"Function {function} does not take parameter {key}.")
-
-        parsed_descriptor["parameters"] = all_parsed_parameters
-
-        if self._functions is None:
-            self._functions = []
-
-        self._functions.append(parsed_descriptor)
-
-        if menu not in self.function_submenu_names:
-            if menu == MenuFunctions.DEFAULT_MENU_NAME:
-                self._function_submenu_names += [menu]
-            else:
-                self._function_submenu_names.insert(-1, menu)
+        except Exception:
+            warnings.warn(f"Could not load extension {function_or_descriptor}, got:")
+            traceback.print_exc()
 
     @property
-    def function_submenu_names(self):
-        return self._function_submenu_names
+    def extension_submenu_names(self):
+        return self._extension_submenu_names
 
     @property
-    def function_key_mappings(self):
+    def extension_key_mappings(self):
         key_mappings = dict()
-        if self.functions is not None:
-            for function_descriptor in self.functions:
-                if (hotkey := function_descriptor["hotkey"]) is not None:
-                    key_mappings[hotkey] = function_descriptor
+        if self.extensions is not None:
+            for extension in self.extensions:
+                if extension.hotkey is not None:
+                    key_mappings[extension.hotkey] = extension
         return key_mappings
 
-    def create_function_submenus(self):
+    def create_extension_submenus(self):
         from .menu_functions import MenuFunctions
 
-        submenu_names = self.function_submenu_names
+        submenu_names = self.extension_submenu_names
 
         if len(submenu_names) >= AppWindow.NUMBER_SUBFUNCTIONS:
             raise RuntimeError(
                 f"Only {AppWindow.NUMBER_SUBFUNCTIONS} function submenus allowed."
             )
 
-        self.function_submenus = {}
+        self._extension_submenus = {}
 
         for name in submenu_names:
-            function_descriptors = [
-                desc for desc in self.functions if desc["menu"] == name
-            ]
+            extensions = [ext for ext in self.extensions if ext.menu == name]
 
-            self.function_submenus[name] = MenuFunctions(
-                self, function_descriptors, name=name
-            )
+            self._extension_submenus[name] = MenuFunctions(self, extensions, name=name)
 
     @property
     def select_filter(self):
@@ -765,13 +645,13 @@ class AppWindow:
         self._main_panel.visible = True
 
         # 1) create hotkeys
-        self._hotkeys = Hotkeys(self, self.function_key_mappings)
+        self._hotkeys = Hotkeys(self)
         self._scene.set_on_key(self._hotkeys._on_key)
         self._scene.set_on_mouse(self._on_mouse)
 
         # 2) create function menus
-        self.create_function_submenus()
-        for i, submenu in enumerate(self.function_submenus.values()):
+        self.create_extension_submenus()
+        for i, submenu in enumerate(self._extension_submenus.values()):
             submenu._create_menu(AppWindow.MENU_SUBFUNCTIONS[i])
 
         self._settings._create_menu(AppWindow.MENU_SHOW_SETTINGS)
@@ -978,34 +858,38 @@ class AppWindow:
 
         self._update_elements(indices)
 
-    def _apply_function_to_elements(self, function_descriptor, update_parameters=True):
+    def _apply_function_to_elements(
+        self, extension_or_function, update_parameters=True
+    ):
         """Apply function to selected elements."""
         from .parameter_updater import ParameterUpdater
+        from .extension import Extension
 
-        if isinstance(function_descriptor, dict):
-            if update_parameters:
-                try:
-                    ParameterUpdater.update_descriptor_values(
-                        self.window, function_descriptor
-                    )
-                except KeyboardInterrupt:
-                    return
-                except Exception as e:
-                    warnings.warn(
-                        f"Failed to get parameters for function {function_descriptor['name']}, "
-                        f"got following error: {str(e)}"
-                    )
-                    time.sleep(0.5)
-                    return
+        if isinstance(extension_or_function, Extension):
+            # if update_parameters:
+            #     try:
+            #         ParameterUpdater.update_descriptor_values(
+            #             self.window, extension_or_function
+            #         )
+            #     except KeyboardInterrupt:
+            #         return
+            #     except Exception as e:
+            #         warnings.warn(
+            #             f"Failed to get parameters for function {extension_or_function['name']}, "
+            #             f"got following error: {str(e)}"
+            #         )
+            #         time.sleep(0.5)
+            #         return
 
-            function = function_descriptor["function"]
-            parameters = function_descriptor["parameters"]
-            kwargs = {name: value["default"] for name, value in parameters.items()}
-        elif callable(function_descriptor):
-            function = function_descriptor
+            function = extension_or_function.function
+            kwargs = extension_or_function.parameters_kwargs
+        elif callable(extension_or_function):
+            function = extension_or_function
             kwargs = {}
         else:
-            raise RuntimeError(f"{function_descriptor} is neither a function nor dict!")
+            raise RuntimeError(
+                f"{extension_or_function} is neither a function nor an Extension!"
+            )
 
         indices = self.selected_indices
         self.print_debug(
