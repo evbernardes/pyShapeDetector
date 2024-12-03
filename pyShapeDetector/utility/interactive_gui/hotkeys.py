@@ -205,25 +205,6 @@ class Hotkeys:
             binding["callback"]()
             return gui.Widget.EventCallbackResult.HANDLED
 
-        # if self._is_extra_functions:
-        #     if function_descriptor := self._function_key_mappings.get(event.key):
-        #         self._app_instance._apply_function_to_elements(
-        #             function_descriptor["function"]
-        #         )
-
-        # for _, (key, cb_name, extra_functions, _) in KEYS_ACTIONS.items():
-        #     if event.key == key:
-        #         if extra_functions != self._is_extra_functions:
-        #             return gui.Widget.EventCallbackResult.IGNORED
-
-        #         getattr(self, cb_name)()
-        #         return gui.Widget.EventCallbackResult.HANDLED
-
-        # for function_key, function_descriptor in self.function_key_mappings.items():
-        #     if event.key == function_key:
-        #         self._apply_function_to_elements(function_descriptor["function"])
-        #         return gui.Widget.EventCallbackResult.HANDLED
-
         return gui.Widget.EventCallbackResult.IGNORED
 
     def _cb_toggle(self):

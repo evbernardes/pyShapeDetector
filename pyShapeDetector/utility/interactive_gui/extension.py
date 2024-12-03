@@ -4,6 +4,7 @@ import copy
 import warnings
 import inspect
 import traceback
+import time
 from typing import Union, Callable
 
 from open3d.visualization import gui
@@ -39,6 +40,14 @@ class Parameter:
 
     @value.setter
     def value(self, new_value):
+        if self.type is float and isinstance(new_value, int):
+            new_value = float(new_value)
+        if self.type is int and isinstance(new_value, float):
+            warnings.warn("Rounding float value to int.")
+            new_value = int(new_value)
+            if self.limits is not None:
+                new_value = max(self.limits[0], new_value)
+
         if not isinstance(new_value, self.type):
             raise RuntimeError(
                 "Tried to set paramter of type {self.type} with "
@@ -221,15 +230,6 @@ class Extension:
 
         self._hotkey = ord(str(hotkey))
 
-        # if self._app_instance.functions is not None:
-        #     current_hotkeys = [desc.hotkey for desc in self._app_instance.functions]
-        #     idx = current_hotkeys.index(hotkey)
-        #     if hotkey in current_hotkeys:
-        #         warnings.warn(
-        #             f"hotkey {chr(hotkey)} already assigned to function {self.functions[idx]['name']}, "
-        #             f"resetting it to {parsed_descriptor['name']}."
-        #         )
-
     def _set_parameters(self, descriptor: dict):
         signature = inspect.signature(self.function)
         parsed_parameters = {}
@@ -262,6 +262,7 @@ class Extension:
         self._set_parameters(descriptor)
 
     def add_to_application(self, app_instance: AppWindow):
+        self._app_instance = app_instance
         # Check whether hotkey has already been assigned extension
         if app_instance.extensions is not None and self.hotkey is not None:
             current_hotkeys = [ext.hotkey for ext in app_instance.extensions]
@@ -281,24 +282,26 @@ class Extension:
             app_instance._extensions = []
         app_instance._extensions.append(self)
 
-    def update(self, app_instance: AppWindow):
+    def update_in_separate_window(self):
+        app_instance = self._app_instance
+
         if len(self.parameters) == 0:
-            return
+            return gui.Widget.EventCallbackResult.IGNORED
 
-        window = app_instance._window
-        em = window.theme.font_size
+        app = app_instance.app
 
-        def _on_accept():
-            window.close_dialog()
+        temp_window = app.create_window(
+            f"Parameter selection for {self.name}", 400, 600
+        )
+        temp_window.show_menu(False)
+        em = temp_window.theme.font_size
 
-        def _on_cancel():
-            app_instance._interrupted = True
-            window.close_dialog()
+        self._accepted = False
 
         separation_height = int(round(0.5 * em))
         button_separation_width = 2 * separation_height
 
-        dlg = gui.Dialog(f"Parameter selection for {self.name}")
+        # dlg = gui.Dialog("Parameter selection")
         dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
 
         label = gui.Label("Enter parameters:")
@@ -311,13 +314,33 @@ class Extension:
         previous_values = {}
         for key, param in self.parameters.items():
             previous_values[key] = copy.copy(param.value)
-            dlg_layout.add_child(param.get_gui_element(window))
+            dlg_layout.add_child(param.get_gui_element(temp_window))
             dlg_layout.add_fixed(separation_height)
+
+        def _on_accept():
+            self._accepted = True
+            temp_window.close()
+
+            self._app_instance._apply_function_to_elements(
+                self, update_parameters=False
+            )
+
+        def _on_cancel():
+            temp_window.close()
+
+        def _on_close():
+            if not self._accepted:
+                for key, param in self.parameters.items():
+                    param.value = previous_values[key]
+
+            return True
 
         accept = gui.Button("Accept")
         accept.set_on_clicked(_on_accept)
         cancel = gui.Button("Cancel")
         cancel.set_on_clicked(_on_cancel)
+        temp_window.set_on_close(_on_close)
+
         h = gui.Horiz()
         h.add_stretch()
         h.add_child(accept)
@@ -325,17 +348,12 @@ class Extension:
         h.add_child(cancel)
         h.add_stretch()
         dlg_layout.add_child(h)
-        dlg.add_child(dlg_layout)
+        temp_window.add_child(dlg_layout)
 
-        try:
-            window.show_dialog(dlg)
-        except Exception:
-            warnings.warn("Could not update to selected values.")
-            traceback.print_exc()
+        return gui.Widget.EventCallbackResult.HANDLED
 
-            for key, param in self.parameters.items():
-                param.value = previous_values[key]
+    def run(self):
+        if self.update_in_separate_window() is gui.Widget.EventCallbackResult.HANDLED:
+            return
 
-        if app_instance._interrupted:
-            for key, param in self.parameters.items():
-                param.value = previous_values[key]
+        self._app_instance._apply_function_to_elements(self, update_parameters=False)

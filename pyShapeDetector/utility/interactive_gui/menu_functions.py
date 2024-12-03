@@ -24,9 +24,7 @@ class MenuFunctions:
             menu.add_item(extension.name, i)
             menu.set_checked(i, False)
 
-            _on_click = lambda f=extension: app_instance._apply_function_to_elements(f)
-
-            window.set_on_menu_item_activated(i, _on_click)
+            window.set_on_menu_item_activated(i, extension.run)
 
     def _on_layout(self, content_rect, layout_context):
         r = content_rect

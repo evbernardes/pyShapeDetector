@@ -862,26 +862,19 @@ class AppWindow:
         self, extension_or_function, update_parameters=True
     ):
         """Apply function to selected elements."""
-        # from .parameter_updater import ParameterUpdater
         from .extension import Extension
 
         if isinstance(extension_or_function, Extension):
             extension = extension_or_function
-            if update_parameters:
-                try:
-                    extension.update(self)
-                except KeyboardInterrupt:
-                    return
-                except Exception:
-                    warnings.warn(
-                        f"Failed to get parameters for function {extension.name}, "
-                        f"got following error:"
-                    )
-                    traceback.print_exc()
-                    return
 
             function = extension.function
+
+            if update_parameters and len(extension.parameters) > 0:
+                extension.update_in_separate_window()
+                return
+
             kwargs = extension.parameters_kwargs
+
         elif callable(extension_or_function):
             function = extension_or_function
             kwargs = {}
