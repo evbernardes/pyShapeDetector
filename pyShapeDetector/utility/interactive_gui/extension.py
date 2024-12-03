@@ -38,6 +38,36 @@ class Parameter:
         self._type = new_type
 
     @property
+    def options(self):
+        return self._options
+
+    @options.setter
+    def options(self, new_options):
+        if new_options is None:
+            if self.type is list:
+                raise TypeError(
+                    f"Parameter {self.name} is of type 'list' and requires 'options'."
+                )
+            else:
+                self._options = None
+                return
+
+        if self.type is not list:
+            warnings.warn(
+                f"Parameter {self.name} is of type {self.type}, ignoring 'options'."
+            )
+            self._options = None
+            return
+
+        if not isinstance(new_options, (tuple, list)) or len(new_options) == 0:
+            raise ValueError(
+                f"Parameter {self.name} requires non-empty of values for "
+                f"options, got {new_options}."
+            )
+
+        self._options = list(new_options)
+
+    @property
     def limits(self):
         return self._limits
 
@@ -65,7 +95,7 @@ class Parameter:
 
     @value.setter
     def value(self, new_value):
-        if new_value is not None:
+        if new_value is not None and self.type is not list:
             new_value = self.type(new_value)
 
         if self.type is bool:
@@ -90,6 +120,13 @@ class Parameter:
         elif self.type is str:
             if new_value is None:
                 new_value = ""
+
+        elif self.type is list:
+            if new_value not in self.options:
+                warnings.warn(
+                    f"value {new_value} not in options {self.options} for parameter {self.name}."
+                )
+                new_value = self.options[0]
 
         else:
             raise NotImplementedError(
@@ -121,9 +158,15 @@ class Parameter:
             )
             self._limit_setter = None
 
+    def _gui_combobox_callback(self, text, index):
+        if self.type is list:
+            # options_strings = [str(option) for option in self.options]
+            self._value = self.options[index]
+
     def _gui_callback(self, value):
         if self.type is int and isinstance(value, str):
             value = float(value)
+
         self._value = self.type(value)
 
     def _reset_values_and_limits(self, app_instance: AppWindow):
@@ -149,6 +192,19 @@ class Parameter:
             element = gui.Checkbox(self.name + "?")
             element.checked = self.value
             element.set_on_checked(self._gui_callback)
+
+        if self.type is list:
+            combobox = gui.Combobox()
+            options_strings = [str(option) for option in self.options]
+            for option_string in self.options:
+                combobox.add_item(option_string)
+            combobox.selected_index = options_strings.index(str(self.value))
+            combobox.set_on_selection_changed(self._gui_combobox_callback)
+
+            element = gui.VGrid(2, 0.25 * em)
+            element.add_child(label)
+            element.add_child(combobox)
+
         elif self.type is int and self.limits is not None:
             slider = gui.Slider(gui.Slider.INT)
             slider.set_limits(*self.limits)
@@ -187,6 +243,7 @@ class Parameter:
 
         self.name = key
         self.type = parameter_descriptor["type"]
+        self.options = parameter_descriptor.get("options")
         # self._set_setters(parameter_descriptor)
         self.limit_setter = parameter_descriptor.get("limit_setter")
         if self.limit_setter is None:
