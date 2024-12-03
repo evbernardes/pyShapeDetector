@@ -30,9 +30,34 @@ class Parameter:
     def type(self):
         return self._type
 
+    @type.setter
+    def type(self, new_type):
+        if not isinstance(new_type, type):
+            raise TypeError("parameter descriptor has invalid type.")
+
+        self._type = new_type
+
     @property
     def limits(self):
         return self._limits
+
+    @limits.setter
+    def limits(self, new_limits):
+        if self.type not in (int, float):
+            self._limits = None
+            return
+
+        if new_limits is None:
+            self._limits = None
+            return
+
+        if not isinstance(new_limits, (list, tuple)) or len(new_limits) != 2:
+            raise TypeError(
+                f"Limits should be list or tuple of 2 elements, got {new_limits}."
+            )
+
+        new_limits = (min(new_limits), max(new_limits))
+        self._limits = new_limits
 
     @property
     def value(self):
@@ -40,110 +65,74 @@ class Parameter:
 
     @value.setter
     def value(self, new_value):
-        if self.type is float and isinstance(new_value, int):
-            new_value = float(new_value)
-        if self.type is int and isinstance(new_value, float):
-            warnings.warn("Rounding float value to int.")
-            new_value = int(new_value)
-            if self.limits is not None:
-                new_value = max(self.limits[0], new_value)
-
-        if not isinstance(new_value, self.type):
-            raise RuntimeError(
-                "Tried to set paramter of type {self.type} with "
-                f"value of type {type(new_value)}."
-            )
-        self._value = new_value
-
-    @property
-    def value_setter(self):
-        return self._value_setter
-
-    @property
-    def limit_setter(self):
-        return self._limit_setter
-
-    def _set_type(self, parameter_descriptor: dict):
-        _type = parameter_descriptor["type"]
-        if not isinstance(_type, type):
-            raise TypeError("parameter descriptor has invalid type.")
-
-        self._type = _type
-
-    def _set_limits(self, parameter_descriptor: dict):
-        if self.type not in (int, float):
-            self._limits = None
-            return
-
-        limits = parameter_descriptor.get("limits", None)
-        if limits is None:
-            self._limits = None
-            return
-
-        if not isinstance(limits, (list, tuple)) or len(limits) != 2:
-            raise TypeError(
-                f"Limits should be list or tuple of 2 elements, got {limits}."
-            )
-
-        limits = (min(limits), max(limits))
-        self._limits = limits
-
-    def _set_value(self, parameter_descriptor: dict):
-        value = parameter_descriptor.get("default")
-        if value is not None:
-            value = self.type(value)
+        if new_value is not None:
+            new_value = self.type(new_value)
 
         if self.type is bool:
-            if value is None:
-                value = False
+            if new_value is None:
+                new_value = False
 
         elif self.type in (int, float):
             if self.limits is None:
-                if value is None:
+                if new_value is None:
                     raise TypeError(
                         "No limits or default value for parameter of type {self.type}."
                     )
             else:
-                if value is None:
-                    value = self.limits[0]
-                elif not (self.limits[0] <= value <= self.limits[1]):
+                if new_value is None:
+                    new_value = self.limits[0]
+                elif not (self.limits[0] <= new_value <= self.limits[1]):
                     warnings.warn("Default value not in limits, resetting it.")
-                    value = self.limits[0]
+                    new_value = self.limits[0]
 
         elif self.type is str:
-            if value is None:
-                value = ""
+            if new_value is None:
+                new_value = ""
 
         else:
             raise NotImplementedError(
                 "Not implemented for parameters of type {self.type}."
             )
 
-        self.value = value
+        self._value = new_value
 
-    def _set_setters(self, parameter_descriptor: dict):
-        value_setter = parameter_descriptor.get("value_setter", None)
-        if value_setter is None or callable(value_setter):
-            self._value_setter = value_setter
+    @property
+    def limit_setter(self):
+        return self._limit_setter
+
+    @limit_setter.setter
+    def limit_setter(self, new_setter):
+        if new_setter is None or callable(new_setter):
+            if self.type not in (int, float):
+                raise TypeError(
+                    "Limit setter only valid for parameters of type int and float."
+                )
+            self._limit_setter = new_setter
         else:
             warnings.warn(
-                f"Input value setter for {self.name} is invalid, "
-                f"expected function and got {type(value_setter)}."
-            )
-
-        limit_setter = parameter_descriptor.get("limit_setter", None)
-        if limit_setter is None or callable(limit_setter):
-            self._limit_setter = limit_setter
-        else:
-            warnings.warn(
-                f"Input value setter for {self.name} is invalid, "
-                f"expected function and got {type(limit_setter)}."
+                f"Input limit setter for {self.name} is invalid, "
+                f"expected function and got {type(new_setter)}."
             )
 
     def _gui_callback(self, value):
         if self.type is int and isinstance(value, str):
             value = float(value)
         self._value = self.type(value)
+
+    def _reset_values_and_limits(self, app_instance: AppWindow):
+        if self.limit_setter is None:
+            return
+
+        try:
+            self.limits = self.limit_setter(app_instance.selected_raw_elements)
+        except Exception:
+            warnings.warn(f"Could not reset limits of parameter {self.name}:")
+            traceback.print_exc()
+        finally:
+            # Recheck changed limits
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+            self.value = self.value
 
     def get_gui_element(self, window):
         em = window.theme.font_size
@@ -190,10 +179,18 @@ class Parameter:
             raise TypeError("parameter descriptor should be a dictionary")
 
         self.name = key
-        self._set_type(parameter_descriptor)
-        self._set_limits(parameter_descriptor)
-        self._set_value(parameter_descriptor)
-        self._set_setters(parameter_descriptor)
+        self.type = parameter_descriptor["type"]
+        # self._set_setters(parameter_descriptor)
+        self.limit_setter = parameter_descriptor.get("limit_setter")
+        if self.limit_setter is None:
+            self.limits = parameter_descriptor.get("limits")
+            self.value = parameter_descriptor.get("default")
+        else:
+            if "default" in parameter_descriptor or "limits" in parameter_descriptor:
+                warnings.warn(
+                    f"Limit setter defined for parameter {self.name}, "
+                    "ignoring default value and limits."
+                )
 
 
 class Extension:
@@ -342,7 +339,7 @@ class Extension:
         previous_values = {}
         for key, param in self.parameters.items():
             previous_values[key] = copy.copy(param.value)
-            # param.reset()
+            param._reset_values_and_limits(app_instance)
             dlg_layout.add_child(param.get_gui_element(temp_window))
             dlg_layout.add_fixed(separation_height)
 

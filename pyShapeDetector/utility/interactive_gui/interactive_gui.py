@@ -373,6 +373,10 @@ class AppWindow:
         return self._fixed_elements
 
     @property
+    def selected_raw_elements(self):
+        return [self.elements[i]["raw"] for i in self.selected_indices]
+
+    @property
     def selected_indices(self):
         return np.where(self.selected)[0].tolist()
 
@@ -908,7 +912,7 @@ class AppWindow:
             f"Applying {function.__name__} function to {len(indices)} elements, indices: "
         )
         self.print_debug(indices)
-        input_elements = [self.elements[i]["raw"] for i in indices]
+        input_elements = self.selected_raw_elements
 
         try:
             output_elements = function(input_elements, **kwargs)
