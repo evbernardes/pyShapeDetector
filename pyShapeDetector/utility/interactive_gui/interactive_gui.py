@@ -802,7 +802,30 @@ class AppWindow:
             )
 
             if n := len(self._hidden_elements):
-                self._info.text += f"\n{n} hidden elements"
+                self._info.text += f" | {n} hidden elements"
+
+            if (func := self._last_used_function) is not None:
+                from .extension import Extension
+
+                if isinstance(func, Extension):
+                    name = func.name
+                    params = func.parameters_kwargs
+                elif callable(func):
+                    name = get_pretty_name(func)
+                    params = {}
+                else:
+                    assert False
+
+                self._info.text += f"\nLast used function: {name}"
+                if len(params) > 0:
+                    self._info.text += f", with :{params}"
+
+                repeat_binding = self._hotkeys.find_binding("Repeat last function")
+                if repeat_binding is not None:
+                    self._info.text += (
+                        f"\n{repeat_binding['key_instruction']} to repeat"
+                    )
+
             self._info.visible = self._info.text != ""
             # We are sizing the info label to be exactly the right size,
             # so since the text likely changed width, we need to
@@ -912,7 +935,7 @@ class AppWindow:
         assert self._pop_elements(indices, from_gui=True) == input_elements
         self._insert_elements(output_elements, to_gui=True)
 
-        self._last_used_function = function
+        self._last_used_function = extension_or_function
         self._future_states = []
         self._update_plane_boundaries()
 

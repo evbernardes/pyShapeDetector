@@ -21,7 +21,7 @@ class Hotkeys:
         self._app_instance = app_instance
         self._is_extra_functions = False
         self._is_modifier_pressed = False
-        self._bindings = {
+        bindings = {
             (gui.KeyName.SPACE, False): {
                 "desc": "Selected/unselect current",
                 "callback": self._cb_toggle,
@@ -79,7 +79,7 @@ class Hotkeys:
             (gui.KeyName.ENTER, True): {
                 "desc": "Repeat last function",
                 "callback": self._cb_repeat_last_function,
-                "modifier": True,
+                "modifier": False,
                 "menu": "Edit",
             },
             (gui.KeyName.Z, True): {
@@ -124,17 +124,17 @@ class Hotkeys:
 
         for key, extension in extension_key_mappings.items():
             # func = function_descriptor["function"]
-            _callback = (
-                lambda f=extension: self._app_instance._apply_function_to_elements(f)
-            )
+            # _callback = (
+            #     lambda f=extension: self._app_instance._apply_function_to_elements(f)
+            # )
 
-            self._bindings[(key, True)] = {
+            bindings[(key, True)] = {
                 "desc": extension.name,
-                "callback": _callback,
+                "callback": extension.run,
                 "modifier": False,
             }
 
-        for key, _ in self._bindings.keys():
+        for key, _ in bindings.keys():
             if key not in extension_key_mappings:
                 continue
 
@@ -146,20 +146,38 @@ class Hotkeys:
 
             extension._name += f" ({get_key_name(KEY_EXTRA_FUNCTIONS)} + {chr(hotkey)})"
 
+        for key, value in bindings.items():
+            line = "("
+            if key[1]:
+                line += f"{get_key_name(KEY_EXTRA_FUNCTIONS)} + "
+            if value["modifier"]:
+                line += f"[{get_key_name(KEY_MODIFIER)}] + "
+            line += f"{get_key_name(key[0])})"  #:\n- {value['desc']}"
+            value["key_instruction"] = line
+
+        self._bindings = bindings
+
     @property
     def bindings(self):
         return self._bindings
 
-    def get_instructions(self):
-        def get_action_line(key, values):
-            line = "("
-            if key[1]:
-                line += f"{get_key_name(KEY_EXTRA_FUNCTIONS)} + "
-            if values["modifier"]:
-                line += f"[{get_key_name(KEY_MODIFIER)}] + "
-            line += f"{get_key_name(key[0])}):\n- {values['desc']}"
-            return line
+    def find_binding(self, desc: str):
+        for binding in self.bindings.values():
+            if binding["desc"] == desc:
+                return binding
+        return None
 
+    # @staticmethod
+    # def _get_action_line(key, values):
+    #     line = "("
+    #     if key[1]:
+    #         line += f"{get_key_name(KEY_EXTRA_FUNCTIONS)} + "
+    #     if values["modifier"]:
+    #         line += f"[{get_key_name(KEY_MODIFIER)}] + "
+    #     line += f"{get_key_name(key[0])}):\n- {values['desc']}"
+    #     return line
+
+    def get_instructions(self):
         # function_key_mappings_info = [
         #     f"({get_key_name(KEY_EXTRA_FUNCTIONS)} + {chr(key)}: \n- {value['name']}"
         #     for key, value in self._app_instance.function_key_mappings.items()
@@ -168,7 +186,10 @@ class Hotkeys:
         return (
             # "******************** KEYS: ***********************\n"
             "\n\n".join(
-                [get_action_line(key, values) for key, values in self._bindings.items()]
+                [
+                    binding["key_instruction"] + f":\n- {binding['desc']}"
+                    for binding in self.bindings.values()
+                ]
             )
             + f"\n\n({get_key_name(KEY_EXTRA_FUNCTIONS)}):"
             + "\n- Enables mouse selection [and toggling]"
@@ -346,23 +367,6 @@ class Hotkeys:
 
     def _cb_toggle_settings_panel(self):
         self._app_instance._settings._on_menu_toggle()
-
-    # def _cb_functions_menu(self):
-    #     if self.functions is None or len(self.functions) == 0:
-    #         warnings.warn("No functions, cannot call menu.")
-    #         return
-
-    #     from ..helpers_visualization import select_function_with_gui
-
-    #     try:
-    #         func = select_function_with_gui(self.functions, self._last_used_function)
-    #     except KeyboardInterrupt:
-    #         return
-
-    #     self.print_debug(f"Chosen function from menu: {func}")
-
-    #     if func is not None:
-    #         self._apply_function_to_elements(func)
 
     def _cb_hide_unhide(self):
         """Hide selected elements or unhide all hidden elements."""

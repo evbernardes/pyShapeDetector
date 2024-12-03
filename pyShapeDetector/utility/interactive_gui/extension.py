@@ -352,8 +352,10 @@ class Extension:
 
         return gui.Widget.EventCallbackResult.HANDLED
 
-    def run(self):
-        if self.update_in_separate_window() is gui.Widget.EventCallbackResult.HANDLED:
-            return
+    def run(self, update_parameters=True):
+        if update_parameters:
+            event_result = self.update_in_separate_window()
+            if event_result is gui.Widget.EventCallbackResult.HANDLED:
+                return
 
         self._app_instance._apply_function_to_elements(self, update_parameters=False)
