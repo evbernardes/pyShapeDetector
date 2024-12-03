@@ -82,7 +82,9 @@ class Parameter:
                 if new_value is None:
                     new_value = self.limits[0]
                 elif not (self.limits[0] <= new_value <= self.limits[1]):
-                    warnings.warn("Default value not in limits, resetting it.")
+                    warnings.warn(
+                        f"Default value not in limits for parameter {self.name}, resetting it."
+                    )
                     new_value = self.limits[0]
 
         elif self.type is str:
@@ -102,8 +104,12 @@ class Parameter:
 
     @limit_setter.setter
     def limit_setter(self, new_setter):
-        if new_setter is None or callable(new_setter):
+        if new_setter is None:
+            self._limit_setter = None
+            return
+        elif callable(new_setter):
             if self.type not in (int, float):
+                self._limit_setter = None
                 raise TypeError(
                     "Limit setter only valid for parameters of type int and float."
                 )
@@ -113,6 +119,7 @@ class Parameter:
                 f"Input limit setter for {self.name} is invalid, "
                 f"expected function and got {type(new_setter)}."
             )
+            self._limit_setter = None
 
     def _gui_callback(self, value):
         if self.type is int and isinstance(value, str):
@@ -191,6 +198,8 @@ class Parameter:
                     f"Limit setter defined for parameter {self.name}, "
                     "ignoring default value and limits."
                 )
+            self._value = None
+            self._limits = None
 
 
 class Extension:
@@ -265,7 +274,9 @@ class Extension:
 
         for key, parameter in parameter_descriptors.items():
             if key not in signature.parameters.keys():
-                raise ValueError("Function does not take parameter {key}.")
+                raise ValueError(
+                    f"Function '{self.name}' does not take parameter {key}."
+                )
             parsed_parameters[key] = Parameter(key, parameter)
 
         self._parameters = parsed_parameters
