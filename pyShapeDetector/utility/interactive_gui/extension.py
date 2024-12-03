@@ -55,6 +55,14 @@ class Parameter:
             )
         self._value = new_value
 
+    @property
+    def value_setter(self):
+        return self._value_setter
+
+    @property
+    def limit_setter(self):
+        return self._limit_setter
+
     def _set_type(self, parameter_descriptor: dict):
         _type = parameter_descriptor["type"]
         if not isinstance(_type, type):
@@ -113,6 +121,25 @@ class Parameter:
 
         self.value = value
 
+    def _set_setters(self, parameter_descriptor: dict):
+        value_setter = parameter_descriptor.get("value_setter", None)
+        if value_setter is None or callable(value_setter):
+            self._value_setter = value_setter
+        else:
+            warnings.warn(
+                f"Input value setter for {self.name} is invalid, "
+                f"expected function and got {type(value_setter)}."
+            )
+
+        limit_setter = parameter_descriptor.get("limit_setter", None)
+        if limit_setter is None or callable(limit_setter):
+            self._limit_setter = limit_setter
+        else:
+            warnings.warn(
+                f"Input value setter for {self.name} is invalid, "
+                f"expected function and got {type(limit_setter)}."
+            )
+
     def _gui_callback(self, value):
         if self.type is int and isinstance(value, str):
             value = float(value)
@@ -166,6 +193,7 @@ class Parameter:
         self._set_type(parameter_descriptor)
         self._set_limits(parameter_descriptor)
         self._set_value(parameter_descriptor)
+        self._set_setters(parameter_descriptor)
 
 
 class Extension:
@@ -314,6 +342,7 @@ class Extension:
         previous_values = {}
         for key, param in self.parameters.items():
             previous_values[key] = copy.copy(param.value)
+            # param.reset()
             dlg_layout.add_child(param.get_gui_element(temp_window))
             dlg_layout.add_fixed(separation_height)
 
@@ -352,10 +381,9 @@ class Extension:
 
         return gui.Widget.EventCallbackResult.HANDLED
 
-    def run(self, update_parameters=True):
-        if update_parameters:
-            event_result = self.update_in_separate_window()
-            if event_result is gui.Widget.EventCallbackResult.HANDLED:
-                return
+    def run(self):
+        event_result = self.update_in_separate_window()
+        if event_result is gui.Widget.EventCallbackResult.HANDLED:
+            return
 
         self._app_instance._apply_function_to_elements(self, update_parameters=False)

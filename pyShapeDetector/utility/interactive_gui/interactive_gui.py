@@ -888,15 +888,12 @@ class AppWindow:
         from .extension import Extension
 
         if isinstance(extension_or_function, Extension):
-            extension = extension_or_function
-
-            function = extension.function
-
-            if update_parameters and len(extension.parameters) > 0:
-                extension.update_in_separate_window()
+            if update_parameters:
+                extension_or_function.run()
                 return
 
-            kwargs = extension.parameters_kwargs
+            function = extension_or_function.function
+            kwargs = extension_or_function.parameters_kwargs
 
         elif callable(extension_or_function):
             function = extension_or_function

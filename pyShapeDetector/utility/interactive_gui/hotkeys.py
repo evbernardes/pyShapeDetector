@@ -360,7 +360,7 @@ class Hotkeys:
 
         if func is not None:
             app_instance.print_debug(f"Re-applying last function: {func}")
-            app_instance._apply_function_to_elements(func)
+            app_instance._apply_function_to_elements(func, update_parameters=False)
 
     def _cb_toggle_help_panel(self):
         self._app_instance._menu_help._on_menu_toggle()
