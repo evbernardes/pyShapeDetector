@@ -170,9 +170,9 @@ class Hotkeys:
                 menu=None,
             ),
             (gui.KeyName.T, True): Binding(
-                description="[Un]select type",
+                description="[Un]select per type",
                 callback=self._cb_toggle_type,
-                uses_modifier=True,
+                uses_modifier=False,
                 menu=None,
             ),
         }
@@ -367,27 +367,64 @@ class Hotkeys:
         editor_instance._toggle_indices(slice(-num_outputs, None))
 
     def _cb_toggle_type(self):
-        from ..helpers_visualization import get_inputs
-
         editor_instance = self._editor_instance
+        window = editor_instance._window
+        em = window.theme.font_size
+        separation_height = int(round(0.5 * em))
         elems_raw = [elem["raw"] for elem in editor_instance.elements]
+
+        temp_window = editor_instance.app.create_window("Select type", 200, 400)
+        temp_window.show_menu(False)
+
+        def _callback(_type, value):
+            elems_raw = [elem["raw"] for elem in editor_instance.elements]
+            idx = np.where([isinstance(elem, _type) for elem in elems_raw])[0].tolist()
+            editor_instance._toggle_indices(idx, to_value=value)
+
+        dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
+        dlg_layout.add_child(gui.Label("Select types to select:"))
 
         types = set([t for elem in elems_raw for t in elem.__class__.mro()])
         types.discard(ABC)
         types.discard(object)
         types = list(types)
-        types_names = [type_.__name__ for type_ in types]
+        # type_names = [type_.__name__ for type_ in types]
 
-        try:
-            (selected_type_name,) = get_inputs(
-                {"type": [types_names, types_names[0]]}, window_name="Select type"
-            )
-        except KeyboardInterrupt:
-            return
+        for _type in types:
+            element = gui.Checkbox(_type.__name__)
+            element.checked = False
 
-        selected_type = types[types_names.index(selected_type_name)]
-        idx = np.where([isinstance(elem, selected_type) for elem in elems_raw])[0]
-        editor_instance._toggle_indices(idx)
+            element.set_on_checked(lambda value, t=_type: _callback(t, value))
+            dlg_layout.add_child(element)
+            dlg_layout.add_fixed(separation_height)
+            # elements.append(element)
+
+        def _on_ok():
+            window.close_dialog()
+
+        ok = gui.Button("Ok")
+        ok.set_on_clicked(_on_ok)
+
+        h = gui.Horiz()
+        h.add_stretch()
+        h.add_child(ok)
+        h.add_stretch()
+        dlg_layout.add_child(h)
+
+        temp_window.add_child(dlg_layout)
+
+        # window.show_dialog(dlg)
+
+        # try:
+        #     (selected_type_name,) = get_inputs(
+        #         {"type": [types_names, types_names[0]]}, window_name="Select type"
+        #     )
+        # except KeyboardInterrupt:
+        #     return
+
+        # selected_type = types[types_names.index(selected_type_name)]
+        # idx = np.where([isinstance(elem, selected_type) for elem in elems_raw])[0]
+        # editor_instance._toggle_indices(idx)
 
     # def _cb_finish_process(self, vis, action, mods):
     #     """Signal ending."""

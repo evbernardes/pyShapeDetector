@@ -895,13 +895,16 @@ class Editor:
 
         raise ValueError("Invalid input, expected index list/array, range or slice.")
 
-    def _toggle_indices(self, indices_or_slice):
+    def _toggle_indices(self, indices_or_slice, to_value=None):
         indices = self._get_range(indices_or_slice)
 
         for idx in indices:
             elem = self.elements[idx]
             is_selectable = self.select_filter(elem)
-            selected = (not self._hotkeys._is_modifier_pressed) and is_selectable
+            if to_value is None:
+                selected = (not self._hotkeys._is_modifier_pressed) and is_selectable
+            else:
+                selected = to_value and is_selectable
             elem["selected"] = selected
 
         self._update_elements(indices)
