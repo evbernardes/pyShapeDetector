@@ -3,8 +3,9 @@ from .interactive_gui import AppWindow
 
 
 class MenuHelp:
-    def __init__(self, name="Help"):
+    def __init__(self, app_instance: AppWindow, name="Help"):
         self._name = name
+        self._app_instance = app_instance
 
     def _create_panel(self):
         window = self._app_instance._window
@@ -23,19 +24,15 @@ class MenuHelp:
         self._panel = _panel_collapsable
         self._text = text
 
-    def _create_and_add(self, app_instance: AppWindow):
-        self._app_instance = app_instance
-        menubar = app_instance._menubar
+    def _create_menu(self):
+        app_instance = self._app_instance
 
         self._create_panel()
 
-        menu = gui.Menu()
-        menubar.add_menu(self._name, menu)
-
         self._help_id = app_instance._add_menu_item(
-            menu, "Help (H)", self._on_help_toggle
+            self._name, "Help (H)", self._on_help_toggle
         )
-        app_instance._add_menu_item(menu, "About", self._on_menu_about)
+        app_instance._add_menu_item(self._name, "About", self._on_menu_about)
 
     def _on_help_toggle(self):
         app_instance = self._app_instance

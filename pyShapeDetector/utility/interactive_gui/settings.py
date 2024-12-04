@@ -377,7 +377,8 @@ class Settings:
             # return self.color_selected_current
             return np.array(self.color_selected) / self.highlight_color_brightness
 
-    def _create_panel(self, window):
+    def _create_panel(self):
+        window = self._app_instance._window
         em = window.theme.font_size
         separation_height = int(round(0.5 * em))
 
@@ -436,35 +437,18 @@ class Settings:
         self._app_instance._main_panel.add_child(_panel_collapsable)
         self._panel = _panel_collapsable
 
-    def _create_menu(self, id):
-        self.menu_id = id
-        window = self._app_instance._window
-        menubar = self._app_instance._menubar
+    def _create_menu(self):
+        app_instance = self._app_instance
 
-        self._create_panel(window)
+        self._create_panel()
 
-        menu = gui.Menu()
-        menubar.add_menu(self._name, menu)
-
-        menu.add_item("Show Preferences (P)", id)
-        menu.set_checked(id, False)
-
-        window.set_on_menu_item_activated(id, self._on_menu_toggle)
+        self._on_menu_id = app_instance._add_menu_item(
+            self._name, "Show Preferences (P)", self._on_menu_toggle
+        )
 
     def _on_menu_toggle(self):
         window = self._app_instance._window
         menubar = self._app_instance._menubar
         self._panel.visible = not self._panel.visible
-        menubar.set_checked(self.menu_id, self._panel.visible)
+        menubar.set_checked(self._on_menu_id, self._panel.visible)
         window.set_needs_layout()
-
-    # def _on_layout(self, content_rect, layout_context):
-    #     r = content_rect
-    #     width = 17 * layout_context.theme.font_size
-    #     height = min(
-    #         r.height,
-    #         self._panel.calc_preferred_size(
-    #             layout_context, gui.Widget.Constraints()
-    #         ).height,
-    #     )
-    #     self._panel.frame = gui.Rect(r.get_right() - width, r.y, width, height)

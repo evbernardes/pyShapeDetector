@@ -15,14 +15,11 @@ import warnings
 import inspect
 import itertools
 import numpy as np
+from pathlib import Path
 from open3d.utility import Vector3dVector
 from open3d.visualization import gui, rendering
 
 
-# from .settings import Settings
-# from .menu_functions import MenuFunctions
-# from .menu_help import MenuHelp
-# from .hotkeys import Hotkeys
 from .helpers import (
     get_pretty_name,
     extract_element_colors,
@@ -117,12 +114,12 @@ class AppWindow:
         self._pre_selected = []
         self._current_bbox = None
         self._extensions = None
-        self._extension_submenu_names = []
         self._last_used_function = None
         self._select_filter = lambda x: True
-        self._id_generator = itertools.count(21, 1)
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
+        self._submenu_id_generator = itertools.count(1, 1)
+        self._submenus = {}
 
         # self._elements_distance = []
         self.i_old = 0
@@ -134,9 +131,37 @@ class AppWindow:
 
         self._settings = Settings(self, **kwargs)
 
-    def _add_menu_item(self, menu, name, on_activated, set_checked=False):
-        id = next(self._id_generator)
-        self.print_debug(f"Assigned id {id} to item {name} on menu {menu}.")
+    def _get_submenu_from_path(self, path):
+        if path in self._submenus:
+            return self._submenus[path]
+
+        fullpath = Path()
+
+        if not hasattr(self, "_menubar"):
+            self._menubar = self.app.menubar = gui.Menu()
+            self.print_debug("Created menubar.")
+
+        upper_menu = self._menubar
+
+        for part in path.parts:
+            fullpath /= part
+            if fullpath in self._submenus:
+                upper_menu = self._submenus[fullpath]
+            menu = gui.Menu()
+            upper_menu.add_menu(part, menu)
+            self._submenus[path] = menu
+
+        self.print_debug(f"Submenu '{path.as_posix()}' created.")
+        return self._submenus[path]
+
+    def _add_menu_item(self, menu_path, name, on_activated, set_checked=False):
+        id = next(self._submenu_id_generator)
+
+        menu = self._get_submenu_from_path(Path(menu_path))
+        self.print_debug(
+            f"Assigned id {id} to item '{name}' on menu '{menu_path}'.",
+            require_verbose=True,
+        )
         menu.add_item(name, id)
         menu.set_checked(id, set_checked)
         self._window.set_on_menu_item_activated(id, on_activated)
@@ -157,20 +182,18 @@ class AppWindow:
         return self._extensions
 
     def add_extension(self, function_or_descriptor):
-        # from .menu_functions import MenuFunctions
         from .extension import Extension
 
         try:
             extension = Extension(function_or_descriptor)
-            extension.add_to_application(self)
+            if self._extensions is None:
+                self._extensions = []
+
+            self._extensions.append(extension)
 
         except Exception:
-            warnings.warn(f"Could not load extension {function_or_descriptor}, got:")
+            warnings.warn(f"Could not create extension {function_or_descriptor}, got:")
             traceback.print_exc()
-
-    @property
-    def extension_submenu_names(self):
-        return self._extension_submenu_names
 
     @property
     def extension_key_mappings(self):
@@ -181,22 +204,19 @@ class AppWindow:
                     key_mappings[extension.hotkey] = extension
         return key_mappings
 
-    def create_extension_submenus(self):
-        from .menu_functions import MenuFunctions
+    def _create_extension_menu_items(self):
+        """Add menu items for each extension"""
+        if self.extensions is not None:
+            for extension in self.extensions:
+                try:
+                    extension.add_to_application(self)
 
-        submenu_names = self.extension_submenu_names
-
-        if len(submenu_names) >= AppWindow.NUMBER_SUBFUNCTIONS:
-            raise RuntimeError(
-                f"Only {AppWindow.NUMBER_SUBFUNCTIONS} function submenus allowed."
-            )
-
-        self._extension_submenus = {}
-
-        for name in submenu_names:
-            extensions = [ext for ext in self.extensions if ext.menu == name]
-
-            self._extension_submenus[name] = MenuFunctions(self, extensions, name=name)
+                except Exception:
+                    warnings.warn(
+                        f"Could not add extension {extension} to application, got:"
+                    )
+                    traceback.print_exc()
+                    self._extensions.pop(extension)
 
     @property
     def select_filter(self):
@@ -653,31 +673,26 @@ class AppWindow:
         self._window.add_child(self._info)
 
         self._menubar = self.app.menubar = gui.Menu()
+        self._submenus = {}
+
         em = self._window.theme.font_size
         self._main_panel = gui.Vert(em, gui.Margins(em, em, em, em))
         self._window.add_child(self._main_panel)
         self._main_panel.visible = True
 
-        # 1) create hotkeys
         self._hotkeys = Hotkeys(self)
         self._scene.set_on_key(self._hotkeys._on_key)
         self._scene.set_on_mouse(self._on_mouse)
 
-        # 2) create function menus
-        self.create_extension_submenus()
-        for i, submenu in enumerate(self._extension_submenus.values()):
-            submenu._create_menu(AppWindow.MENU_SUBFUNCTIONS[i])
+        # 1) First, extensions
+        self._create_extension_menu_items()
 
-        self._settings._create_menu(AppWindow.MENU_SHOW_SETTINGS)
+        # 2) Then Settings menu
+        self._settings._create_menu()
 
-        # # 2) create hotkeys
-        # self._hotkeys = Hotkeys(self, self.function_key_mappings)
-        # self._scene.set_on_key(self._hotkeys._on_key)
-        # self._scene.set_on_mouse(self._on_mouse)
-
-        # 4) create help menu with instructions
-        self._menu_help = MenuHelp()
-        self._menu_help._create_and_add(self)
+        # 3) And finally Help menu
+        self._menu_help = MenuHelp(self)
+        self._menu_help._create_menu()
 
     # def _signal_handler(self, sig, frame):
     #     self._vis.destroy_window()
