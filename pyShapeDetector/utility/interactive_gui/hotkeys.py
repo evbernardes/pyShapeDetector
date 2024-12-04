@@ -363,7 +363,7 @@ class Hotkeys:
             app_instance._apply_function_to_elements(func, update_parameters=False)
 
     def _cb_toggle_help_panel(self):
-        self._app_instance._menu_help._on_menu_toggle()
+        self._app_instance._menu_help._on_help_toggle()
 
     def _cb_toggle_settings_panel(self):
         self._app_instance._settings._on_menu_toggle()

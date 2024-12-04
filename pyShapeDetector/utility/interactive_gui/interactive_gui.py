@@ -13,6 +13,7 @@ import signal
 import sys
 import warnings
 import inspect
+import itertools
 import numpy as np
 from open3d.utility import Vector3dVector
 from open3d.visualization import gui, rendering
@@ -119,6 +120,7 @@ class AppWindow:
         self._extension_submenu_names = []
         self._last_used_function = None
         self._select_filter = lambda x: True
+        self._id_generator = itertools.count(21, 1)
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
 
@@ -131,6 +133,14 @@ class AppWindow:
         from .settings import Settings
 
         self._settings = Settings(self, **kwargs)
+
+    def _add_menu_item(self, menu, name, on_activated, set_checked=False):
+        id = next(self._id_generator)
+        self.print_debug(f"Assigned id {id} to item {name} on menu {menu}.")
+        menu.add_item(name, id)
+        menu.set_checked(id, set_checked)
+        self._window.set_on_menu_item_activated(id, on_activated)
+        return id
 
     def print_debug(self, text, require_verbose=False):
         is_debug_activated = self._settings.debug
@@ -665,12 +675,9 @@ class AppWindow:
         # self._scene.set_on_key(self._hotkeys._on_key)
         # self._scene.set_on_mouse(self._on_mouse)
 
-        # 3) create instructions
-        self._instructions = self._hotkeys.get_instructions()
-
         # 4) create help menu with instructions
-        self._menu_help = MenuHelp(self)
-        self._menu_help._create_menu(AppWindow.MENU_HELP)
+        self._menu_help = MenuHelp()
+        self._menu_help._create_and_add(self)
 
     # def _signal_handler(self, sig, frame):
     #     self._vis.destroy_window()
