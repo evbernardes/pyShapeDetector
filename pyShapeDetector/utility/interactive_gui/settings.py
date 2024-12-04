@@ -1,6 +1,6 @@
 import numpy as np
 from open3d.visualization import gui
-from .interactive_gui import AppWindow
+from .editor_app import Editor
 
 COLOR_BBOX_SELECTED_DEFAULT = np.array([0, 204.8, 0.0]) / 255
 COLOR_BBOX_UNSELECTED_DEFAULT = np.array([255.0, 0.0, 0.0]) / 255
@@ -50,8 +50,8 @@ class Settings:
         ("number_redo_states", int, (1, 10)),
     ]
 
-    def __init__(self, app_instance: AppWindow, name="Preferences", **kwargs):
-        self._app_instance = app_instance
+    def __init__(self, editor_instance: Editor, name="Preferences", **kwargs):
+        self._editor_instance = editor_instance
         self._name = name
 
         for key, value in kwargs.items():
@@ -83,7 +83,7 @@ class Settings:
 
     def _cb_draw_boundary_lines(self, value):
         self.draw_boundary_lines = value
-        self._app_instance._update_plane_boundaries()
+        self._editor_instance._update_plane_boundaries()
 
     @property
     def mesh_show_back_face(self):
@@ -97,7 +97,7 @@ class Settings:
 
     def _cb_mesh_show_back_face(self, value):
         self.mesh_show_back_face = value
-        self._app_instance._reset_elements_in_gui()
+        self._editor_instance._reset_elements_in_gui()
 
     @property
     def paint_selected(self):
@@ -111,7 +111,7 @@ class Settings:
 
     def _cb_paint_selected(self, value):
         self.paint_selected = value
-        self._app_instance._update_elements(None)
+        self._editor_instance._update_elements(None)
 
     @property
     def paint_random(self):
@@ -125,7 +125,7 @@ class Settings:
 
     def _cb_paint_random(self, value):
         self.paint_random = value
-        self._app_instance._reset_elements_in_gui()
+        self._editor_instance._reset_elements_in_gui()
 
     @property
     def debug(self):
@@ -165,7 +165,7 @@ class Settings:
 
     def _cb_bbox_expand(self, value):
         self.bbox_expand = value
-        self._app_instance._update_current_bounding_box()
+        self._editor_instance._update_current_bounding_box()
 
     @property
     def color_bbox_selected(self):
@@ -183,8 +183,8 @@ class Settings:
 
     def _cb_color_bbox_selected(self, values):
         self.color_bbox_selected = values
-        if self._app_instance.is_current_selected:
-            self._app_instance._update_current_bounding_box()
+        if self._editor_instance.is_current_selected:
+            self._editor_instance._update_current_bounding_box()
 
     @property
     def color_bbox_unselected(self):
@@ -202,8 +202,8 @@ class Settings:
 
     def _cb_color_bbox_unselected(self, values):
         self.color_bbox_unselected = values
-        if not self._app_instance.is_current_selected:
-            self._app_instance._update_current_bounding_box()
+        if not self._editor_instance.is_current_selected:
+            self._editor_instance._update_current_bounding_box()
 
     @property
     def number_points_distance(self):
@@ -217,8 +217,10 @@ class Settings:
 
     def _cb_number_points_distance(self, value):
         self.number_points_distance = value
-        for elem in self._app_instance.elements:
-            dist_checker = self._app_instance._get_element_distances([elem["raw"]])[0]
+        for elem in self._editor_instance.elements:
+            dist_checker = self._editor_instance._get_element_distances([elem["raw"]])[
+                0
+            ]
             elem["distance_checker"] = dist_checker
 
     @property
@@ -236,7 +238,7 @@ class Settings:
     def _cb_random_color_brightness(self, value):
         self.random_color_brightness = value
         if self.paint_random:
-            self._app_instance._reset_elements_in_gui()
+            self._editor_instance._reset_elements_in_gui()
 
     @property
     def highlight_color_brightness(self):
@@ -251,8 +253,8 @@ class Settings:
     def _cb_highlight_color_brightness(self, value):
         self.highlight_color_brightness = value
         if not self.paint_selected:
-            indices = np.where(self._app_instance.selected)[0].tolist()
-            self._app_instance._update_elements(indices)
+            indices = np.where(self._editor_instance.selected)[0].tolist()
+            self._editor_instance._update_elements(indices)
 
     @property
     def number_undo_states(self):
@@ -266,7 +268,7 @@ class Settings:
 
     def _cb_number_undo_states(self, value):
         self.number_undo_states = value
-        self._app_instance._past_states = self._app_instance._past_states[-value:]
+        self._editor_instance._past_states = self._editor_instance._past_states[-value:]
 
     @property
     def number_redo_states(self):
@@ -281,7 +283,9 @@ class Settings:
 
     def _cb_number_redo_states(self, value):
         self.number_redo_states = value
-        self._app_instance._future_states = self._app_instance._future_states[-value:]
+        self._editor_instance._future_states = self._editor_instance._future_states[
+            -value:
+        ]
 
     @property
     def color_selected(self):
@@ -299,8 +303,8 @@ class Settings:
 
     def _cb_color_selected(self, values):
         self.color_selected = values
-        indices = np.where(self._app_instance.selected)[0].tolist()
-        self._app_instance._update_elements(indices)
+        indices = np.where(self._editor_instance.selected)[0].tolist()
+        self._editor_instance._update_elements(indices)
 
     # @property
     # def color_selected_current(self):
@@ -320,7 +324,7 @@ class Settings:
 
     # def _cb_color_selected_current(self, values):
     #     self.color_selected_current = values
-    #     self._app_instance._update_elements(self._app_instance.i)
+    #     self._editor_instance._update_elements(self._editor_instance.i)
 
     @property
     def color_unselected(self):
@@ -338,9 +342,9 @@ class Settings:
 
     def _cb_color_unselected(self, values):
         self.color_unselected = values
-        unselected = ~np.array(self._app_instance.selected)
+        unselected = ~np.array(self._editor_instance.selected)
         indices = np.where(unselected)[0].tolist()
-        self._app_instance._update_elements(indices)
+        self._editor_instance._update_elements(indices)
 
     # @property
     # def color_unselected_current(self):
@@ -360,7 +364,7 @@ class Settings:
 
     # def _cb_color_unselected_current(self, values):
     #     self.color_unselected_current = values
-    #     self._app_instance._update_elements(self._app_instance.i)
+    #     self._editor_instance._update_elements(self._editor_instance.i)
 
     def get_element_color(self, is_selected, is_current, is_bbox=False):
         if not is_selected and not is_current:
@@ -378,7 +382,7 @@ class Settings:
             return np.array(self.color_selected) / self.highlight_color_brightness
 
     def _create_panel(self):
-        window = self._app_instance._window
+        window = self._editor_instance._window
         em = window.theme.font_size
         separation_height = int(round(0.5 * em))
 
@@ -434,25 +438,25 @@ class Settings:
             _panel_collapsable.add_fixed(separation_height)
 
         _panel_collapsable.visible = False
-        self._app_instance._right_side_panel.add_child(_panel_collapsable)
+        self._editor_instance._right_side_panel.add_child(_panel_collapsable)
         self._panel = _panel_collapsable
 
     def _create_menu(self):
-        app_instance = self._app_instance
+        editor_instance = self._editor_instance
 
         self._create_panel()
 
-        preferences_binding = app_instance._hotkeys.find_binding("Show Preferences")
+        preferences_binding = editor_instance._hotkeys.find_binding("Show Preferences")
 
-        self._on_menu_id = app_instance._add_menu_item(
+        self._on_menu_id = editor_instance._add_menu_item(
             self._name,
             preferences_binding.description_and_instruction,
             self._on_menu_toggle,
         )
 
     def _on_menu_toggle(self):
-        window = self._app_instance._window
-        menubar = self._app_instance._menubar
+        window = self._editor_instance._window
+        menubar = self._editor_instance._menubar
         self._panel.visible = not self._panel.visible
         menubar.set_checked(self._on_menu_id, self._panel.visible)
         window.set_needs_layout()

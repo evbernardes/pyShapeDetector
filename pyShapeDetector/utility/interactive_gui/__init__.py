@@ -1,1 +1,1 @@
-from .interactive_gui import AppWindow
+from .editor_app import Editor

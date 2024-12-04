@@ -3,7 +3,7 @@ import copy
 import time
 import numpy as np
 from open3d.visualization import gui
-from .interactive_gui import AppWindow
+from .editor_app import Editor
 from typing import Union, Callable
 
 KEY_EXTRA_FUNCTIONS = gui.KeyName.LEFT_CONTROL
@@ -74,8 +74,8 @@ class Binding:
 
 
 class Hotkeys:
-    def __init__(self, app_instance: AppWindow):
-        self._app_instance = app_instance
+    def __init__(self, editor_instance: Editor):
+        self._editor_instance = editor_instance
         self._is_extra_functions = False
         self._is_modifier_pressed = False
         bindings = {
@@ -181,13 +181,13 @@ class Hotkeys:
         for key, binding in bindings.items():
             binding._key = key
             if binding.menu is not None:
-                app_instance._add_menu_item(
+                editor_instance._add_menu_item(
                     binding.menu,
                     binding.description_and_instruction,
                     binding.callback,
                 )
 
-        extension_key_mappings = app_instance.extension_key_mappings
+        extension_key_mappings = editor_instance.extension_key_mappings
 
         for key, extension in extension_key_mappings.items():
             bindings[key, True] = Binding(
@@ -236,7 +236,7 @@ class Hotkeys:
         )
 
     def _on_key(self, event):
-        self._app_instance.print_debug(
+        self._editor_instance.print_debug(
             f"Key: {event.key}, type: {event.type}", require_verbose=True
         )
 
@@ -267,14 +267,14 @@ class Hotkeys:
         return gui.Widget.EventCallbackResult.IGNORED
 
     def _cb_quit_app(self):
-        window = self._app_instance._window
+        window = self._editor_instance._window
         em = window.theme.font_size
         button_separation_width = 2 * int(round(0.5 * em))
 
         dlg = gui.Dialog("Quit Dialog")
 
         def _on_close_yes():
-            self._app_instance._closing_app = True
+            self._editor_instance._closing_app = True
             window.close()
 
         def _on_close_no():
@@ -303,19 +303,19 @@ class Hotkeys:
 
     def _cb_toggle(self):
         """Toggle the current highlighted element between selected/unselected."""
-        app_instance = self._app_instance
-        if not app_instance.select_filter(app_instance.current_element):
+        editor_instance = self._editor_instance
+        if not editor_instance.select_filter(editor_instance.current_element):
             return
 
-        app_instance.is_current_selected = not app_instance.is_current_selected
-        app_instance._update_current_idx()
+        editor_instance.is_current_selected = not editor_instance.is_current_selected
+        editor_instance._update_current_idx()
 
     def _cb_next(self):
         """Highlight next element in list."""
         delta = 1 + 4 * self._is_modifier_pressed
-        app_instance = self._app_instance
-        app_instance._update_current_idx(
-            min(app_instance.i + delta, len(app_instance.elements) - 1)
+        editor_instance = self._editor_instance
+        editor_instance._update_current_idx(
+            min(editor_instance.i + delta, len(editor_instance.elements) - 1)
         )
 
     def _cb_delete(self):
@@ -324,53 +324,53 @@ class Hotkeys:
         def delete(elements):
             return []
 
-        self._app_instance._apply_function_to_elements(delete)
+        self._editor_instance._apply_function_to_elements(delete)
 
     def _cb_copy(self):
         """Save elements to be copied."""
-        app_instance = self._app_instance
+        editor_instance = self._editor_instance
         copied_elements = copy.deepcopy(
-            [elem["raw"] for elem in app_instance.elements if elem["selected"]]
+            [elem["raw"] for elem in editor_instance.elements if elem["selected"]]
         )
-        app_instance.print_debug(f"Copying {len(copied_elements)} elements.")
-        app_instance._copied_elements = copied_elements
+        editor_instance.print_debug(f"Copying {len(copied_elements)} elements.")
+        editor_instance._copied_elements = copied_elements
 
     def _cb_paste(self):
-        app_instance = self._app_instance
+        editor_instance = self._editor_instance
 
         def paste(elements):
-            return elements + app_instance._copied_elements
+            return elements + editor_instance._copied_elements
 
-        app_instance.print_debug(
-            f"Pasting {len(app_instance._copied_elements)} elements."
+        editor_instance.print_debug(
+            f"Pasting {len(editor_instance._copied_elements)} elements."
         )
-        self._app_instance._apply_function_to_elements(paste)
-        app_instance._copied_elements = []
+        self._editor_instance._apply_function_to_elements(paste)
+        editor_instance._copied_elements = []
 
     def _cb_previous(self):
         """Highlight previous element in list."""
         delta = 1 + 4 * self._is_modifier_pressed
-        app_instance = self._app_instance
-        app_instance._update_current_idx(max(app_instance.i - delta, 0))
+        editor_instance = self._editor_instance
+        editor_instance._update_current_idx(max(editor_instance.i - delta, 0))
 
     def _cb_toggle_all(self):
         """Toggle the all elements between all selected/all unselected."""
-        self._app_instance._toggle_indices(None)
+        self._editor_instance._toggle_indices(None)
 
     def _cb_toggle_last(self):
         """Toggle the elements from last output."""
-        app_instance = self._app_instance
-        if len(app_instance._past_states) == 0:
+        editor_instance = self._editor_instance
+        if len(editor_instance._past_states) == 0:
             return
 
-        num_outputs = app_instance._past_states[-1]["num_outputs"]
-        app_instance._toggle_indices(slice(-num_outputs, None))
+        num_outputs = editor_instance._past_states[-1]["num_outputs"]
+        editor_instance._toggle_indices(slice(-num_outputs, None))
 
     def _cb_toggle_type(self):
         from ..helpers_visualization import get_inputs
 
-        app_instance = self._app_instance
-        elems_raw = [elem["raw"] for elem in app_instance.elements]
+        editor_instance = self._editor_instance
+        elems_raw = [elem["raw"] for elem in editor_instance.elements]
 
         types = set([t for elem in elems_raw for t in elem.__class__.mro()])
         types.discard(ABC)
@@ -387,7 +387,7 @@ class Hotkeys:
 
         selected_type = types[types_names.index(selected_type_name)]
         idx = np.where([isinstance(elem, selected_type) for elem in elems_raw])[0]
-        app_instance._toggle_indices(idx)
+        editor_instance._toggle_indices(idx)
 
     # def _cb_finish_process(self, vis, action, mods):
     #     """Signal ending."""
@@ -407,112 +407,114 @@ class Hotkeys:
     #     ctr.set_zoom(0.1)  # Adjust zoom level if necessary
 
     def _cb_repeat_last_function(self):
-        app_instance = self._app_instance
-        func = app_instance._last_used_function
+        editor_instance = self._editor_instance
+        func = editor_instance._last_used_function
 
         if func is not None:
-            app_instance.print_debug(f"Re-applying last function: {func}")
-            app_instance._apply_function_to_elements(func, update_parameters=False)
+            editor_instance.print_debug(f"Re-applying last function: {func}")
+            editor_instance._apply_function_to_elements(func, update_parameters=False)
 
     def _cb_toggle_help_panel(self):
-        self._app_instance._menu_help._on_help_toggle()
+        self._editor_instance._menu_help._on_help_toggle()
 
     def _cb_toggle_info_panel(self):
-        self._app_instance._menu_help._on_info_toggle()
+        self._editor_instance._menu_help._on_info_toggle()
 
     def _cb_toggle_settings_panel(self):
-        self._app_instance._settings._on_menu_toggle()
+        self._editor_instance._settings._on_menu_toggle()
 
     def _cb_hide_unhide(self):
         """Hide selected elements or unhide all hidden elements."""
 
-        app_instance = self._app_instance
-        indices = app_instance.selected_indices
+        editor_instance = self._editor_instance
+        indices = editor_instance.selected_indices
 
         if self._is_modifier_pressed:
             # UNHIDE
-            app_instance._insert_elements(
-                app_instance._hidden_elements, selected=True, to_gui=True
+            editor_instance._insert_elements(
+                editor_instance._hidden_elements, selected=True, to_gui=True
             )
-            app_instance._hidden_elements = []
+            editor_instance._hidden_elements = []
 
         else:
             # HIDE SELECTED
-            app_instance._hidden_elements += app_instance._pop_elements(
+            editor_instance._hidden_elements += editor_instance._pop_elements(
                 indices, from_gui=True
             )
-            app_instance.selected = False
+            editor_instance.selected = False
 
         # TODO: find a way to make hiding work with undoing
-        app_instance._past_states = []
-        app_instance._future_states = []
-        app_instance._update_plane_boundaries()
+        editor_instance._past_states = []
+        editor_instance._future_states = []
+        editor_instance._update_plane_boundaries()
 
     def _cb_undo_redo(self):
-        app_instance = self._app_instance
+        editor_instance = self._editor_instance
         if self._is_modifier_pressed:
             # REDO
-            if len(app_instance._future_states) == 0:
+            if len(editor_instance._future_states) == 0:
                 return
 
-            future_state = app_instance._future_states.pop()
+            future_state = editor_instance._future_states.pop()
 
             modified_elements = future_state["modified_elements"]
             indices = future_state["indices"]
 
-            app_instance.print_debug(
+            editor_instance.print_debug(
                 f"Redoing last operation, removing {len(indices)} inputs and "
                 f"resetting {len(modified_elements)} inputs."
             )
 
-            input_elements = [app_instance.elements[i]["raw"] for i in indices]
-            app_instance._save_state(indices, input_elements, len(modified_elements))
+            input_elements = [editor_instance.elements[i]["raw"] for i in indices]
+            editor_instance._save_state(indices, input_elements, len(modified_elements))
 
-            app_instance.i = future_state["current_index"]
-            app_instance._pop_elements(indices, from_gui=True)
-            app_instance._insert_elements(modified_elements, to_gui=True)
+            editor_instance.i = future_state["current_index"]
+            editor_instance._pop_elements(indices, from_gui=True)
+            editor_instance._insert_elements(modified_elements, to_gui=True)
 
-            app_instance._update_current_idx(len(app_instance.elements) - 1)
+            editor_instance._update_current_idx(len(editor_instance.elements) - 1)
         else:
             # UNDO
-            if len(app_instance._past_states) == 0:
+            if len(editor_instance._past_states) == 0:
                 return
 
-            last_state = app_instance._past_states.pop()
+            last_state = editor_instance._past_states.pop()
             indices = last_state["indices"]
             elements = last_state["elements"]
             num_outputs = last_state["num_outputs"]
-            num_elems = len(app_instance.elements)
+            num_elems = len(editor_instance.elements)
 
-            app_instance.print_debug(
+            editor_instance.print_debug(
                 f"Undoing last operation, removing {num_outputs} outputs and "
                 f"resetting {len(elements)} inputs."
             )
 
             indices_to_pop = range(num_elems - num_outputs, num_elems)
-            modified_elements = app_instance._pop_elements(
+            modified_elements = editor_instance._pop_elements(
                 indices_to_pop, from_gui=True
             )
-            app_instance._insert_elements(elements, indices, selected=True, to_gui=True)
+            editor_instance._insert_elements(
+                elements, indices, selected=True, to_gui=True
+            )
 
-            app_instance._future_states.append(
+            editor_instance._future_states.append(
                 {
                     "modified_elements": modified_elements,
                     "indices": indices,
-                    "current_index": app_instance.i,
+                    "current_index": editor_instance.i,
                 }
             )
 
             while (
-                len(app_instance._future_states)
-                > app_instance._settings.number_redo_states
+                len(editor_instance._future_states)
+                > editor_instance._settings.number_redo_states
             ):
-                app_instance._future_states.pop(0)
+                editor_instance._future_states.pop(0)
 
             if len(indices) > 0:
-                app_instance._update_current_idx(indices[-1])
+                editor_instance._update_current_idx(indices[-1])
 
-        app_instance._update_plane_boundaries()
+        editor_instance._update_plane_boundaries()
 
     def _cb_quit(self):
         pass

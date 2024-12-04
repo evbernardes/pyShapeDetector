@@ -7,7 +7,7 @@ from typing import Union, Callable
 
 from open3d.visualization import gui
 
-from .interactive_gui import AppWindow
+from .editor_app import Editor
 from .parameter import PARAMETER_TYPE_DICTIONARY
 from .helpers import get_pretty_name
 
@@ -108,36 +108,36 @@ class Extension:
         self._set_hotkey(descriptor)
         self._set_parameters(descriptor)
 
-    def add_to_application(self, app_instance: AppWindow):
-        self._app_instance = app_instance
+    def add_to_application(self, editor_instance: Editor):
+        self._editor_instance = editor_instance
 
-        if app_instance._extensions is None:
-            app_instance._extensions = []
+        if editor_instance._extensions is None:
+            editor_instance._extensions = []
 
         # Check whether hotkey has already been assigned extension
-        if app_instance.extensions is not None and self.hotkey is not None:
-            current_hotkeys = [ext.hotkey for ext in app_instance.extensions]
+        if editor_instance.extensions is not None and self.hotkey is not None:
+            current_hotkeys = [ext.hotkey for ext in editor_instance.extensions]
 
             if self.hotkey in current_hotkeys:
                 idx = current_hotkeys.index(self.hotkey)
                 warnings.warn(
                     f"hotkey {self.hotkey_number} previously assigned to function "
-                    f"{app_instance.extensions[idx].name}, resetting it to {self.name}."
+                    f"{editor_instance.extensions[idx].name}, resetting it to {self.name}."
                 )
-                app_instance.extensions[idx]._hotkey = None
+                editor_instance.extensions[idx]._hotkey = None
 
-        app_instance._extensions.append(self)
+        editor_instance._extensions.append(self)
 
     def add_menu_item(self):
-        self._app_instance._add_menu_item(self.menu, self.name, self.run)
+        self._editor_instance._add_menu_item(self.menu, self.name, self.run)
 
     def update_in_separate_window(self):
-        app_instance = self._app_instance
+        editor_instance = self._editor_instance
 
         if len(self.parameters) == 0:
             return gui.Widget.EventCallbackResult.IGNORED
 
-        app = app_instance.app
+        app = editor_instance.app
 
         temp_window = app.create_window(
             f"Parameter selection for {self.name}", 400, 600
@@ -163,7 +163,7 @@ class Extension:
         previous_values = {}
         for key, param in self.parameters.items():
             previous_values[key] = copy.copy(param.value)
-            param._reset_values_and_limits(app_instance)
+            param._reset_values_and_limits(editor_instance)
             dlg_layout.add_child(param.get_gui_element(temp_window))
             dlg_layout.add_fixed(separation_height)
 
@@ -171,7 +171,7 @@ class Extension:
             self._accepted = True
             temp_window.close()
 
-            self._app_instance._apply_function_to_elements(
+            self._editor_instance._apply_function_to_elements(
                 self, update_parameters=False
             )
 
@@ -207,4 +207,4 @@ class Extension:
         if event_result is gui.Widget.EventCallbackResult.HANDLED:
             return
 
-        self._app_instance._apply_function_to_elements(self, update_parameters=False)
+        self._editor_instance._apply_function_to_elements(self, update_parameters=False)

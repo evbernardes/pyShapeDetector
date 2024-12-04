@@ -1,7 +1,7 @@
 import traceback
 import warnings
 from open3d.visualization import gui
-from .interactive_gui import AppWindow
+from .editor_app import Editor
 
 
 class Parameter:
@@ -37,7 +37,7 @@ class Parameter:
     def _callback(self, value):
         self._value = self.type(value)
 
-    def _reset_values_and_limits(self, app_instance: AppWindow):
+    def _reset_values_and_limits(self, editor_instance: Editor):
         pass
 
     def get_gui_element(self, window):
@@ -212,12 +212,12 @@ class ParameterInt(Parameter):
         new_limits = (min(new_limits), max(new_limits))
         self._limits = new_limits
 
-    def _reset_values_and_limits(self, app_instance: AppWindow):
+    def _reset_values_and_limits(self, editor_instance: Editor):
         if self.limit_setter is None:
             return
 
         try:
-            self.limits = self.limit_setter(app_instance.selected_raw_elements)
+            self.limits = self.limit_setter(editor_instance.selected_raw_elements)
         except Exception:
             warnings.warn(f"Could not reset limits of parameter {self.name}:")
             traceback.print_exc()
@@ -338,12 +338,12 @@ class ParameterFloat(Parameter):
         new_limits = (min(new_limits), max(new_limits))
         self._limits = new_limits
 
-    def _reset_values_and_limits(self, app_instance: AppWindow):
+    def _reset_values_and_limits(self, editor_instance: Editor):
         if self.limit_setter is None:
             return
 
         try:
-            self.limits = self.limit_setter(app_instance.selected_raw_elements)
+            self.limits = self.limit_setter(editor_instance.selected_raw_elements)
         except Exception:
             warnings.warn(f"Could not reset limits of parameter {self.name}:")
             traceback.print_exc()

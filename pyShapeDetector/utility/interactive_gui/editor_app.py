@@ -29,7 +29,7 @@ from .helpers import (
 )
 
 
-class AppWindow:
+class Editor:
     """
     Visualizer class used to manually select elements and apply functions to
     them.

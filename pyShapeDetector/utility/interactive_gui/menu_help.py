@@ -1,70 +1,70 @@
 from open3d.visualization import gui
-from .interactive_gui import AppWindow
+from .editor_app import Editor
 
 
 class MenuHelp:
-    def __init__(self, app_instance: AppWindow, name="Help"):
+    def __init__(self, editor_instance: Editor, name="Help"):
         self._name = name
-        self._app_instance = app_instance
+        self._editor_instance = editor_instance
 
     def _create_panel(self):
-        window = self._app_instance._window
+        window = self._editor_instance._window
         em = window.theme.font_size
 
         _panel_collapsable = gui.CollapsableVert("Help", em, gui.Margins(0, 0, 0, 0))
 
         dlg_layout = gui.Vert(em, gui.Margins(0, 0, 0, 0))
-        text = gui.Label(self._app_instance._hotkeys.get_instructions())
+        text = gui.Label(self._editor_instance._hotkeys.get_instructions())
         dlg_layout.add_child(text)
 
         _panel_collapsable.add_child(dlg_layout)
 
         _panel_collapsable.visible = False
-        self._app_instance._right_side_panel.add_child(_panel_collapsable)
+        self._editor_instance._right_side_panel.add_child(_panel_collapsable)
         self._panel = _panel_collapsable
         self._text = text
 
     def _create_menu(self):
-        app_instance = self._app_instance
+        editor_instance = self._editor_instance
 
         self._create_panel()
 
-        help_binding = app_instance._hotkeys.find_binding("Show Help")
-        self._help_id = app_instance._add_menu_item(
+        help_binding = editor_instance._hotkeys.find_binding("Show Help")
+        self._help_id = editor_instance._add_menu_item(
             self._name, help_binding.description_and_instruction, self._on_help_toggle
         )
 
-        info_binding = app_instance._hotkeys.find_binding("Show Info")
-        self._info_id = app_instance._add_menu_item(
+        info_binding = editor_instance._hotkeys.find_binding("Show Info")
+        self._info_id = editor_instance._add_menu_item(
             self._name, info_binding.description_and_instruction, self._on_info_toggle
         )
 
-        app_instance._add_menu_item(self._name, "About", self._on_menu_about)
+        editor_instance._add_menu_item(self._name, "About", self._on_menu_about)
 
     def _on_help_toggle(self):
-        app_instance = self._app_instance
-        window = app_instance._window
-        menubar = app_instance._menubar
+        editor_instance = self._editor_instance
+        window = editor_instance._window
+        menubar = editor_instance._menubar
         self._panel.visible = not self._panel.visible
 
         if self._panel.visible:
-            self._text.text = app_instance._hotkeys.get_instructions()
+            self._text.text = editor_instance._hotkeys.get_instructions()
 
         menubar.set_checked(self._help_id, self._panel.visible)
         window.set_needs_layout()
 
     def _on_info_toggle(self):
-        app_instance = self._app_instance
-        window = app_instance._window
-        menubar = app_instance._menubar
+        editor_instance = self._editor_instance
+        window = editor_instance._window
+        menubar = editor_instance._menubar
 
-        app_instance._info.visible = not app_instance._info.visible
+        editor_instance._info.visible = not editor_instance._info.visible
 
-        menubar.set_checked(self._info_id, app_instance._info.visible)
+        menubar.set_checked(self._info_id, editor_instance._info.visible)
         window.set_needs_layout()
 
     def _on_menu_about(self):
-        window = self._app_instance._window
+        window = self._editor_instance._window
         em = window.theme.font_size
         dlg = gui.Dialog("About")
 
@@ -95,4 +95,4 @@ class MenuHelp:
         window.show_dialog(dlg)
 
     def _on_about_ok(self):
-        self._app_instance._window.close_dialog()
+        self._editor_instance._window.close_dialog()

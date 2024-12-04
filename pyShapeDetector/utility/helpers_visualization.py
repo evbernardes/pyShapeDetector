@@ -25,7 +25,7 @@ import numpy as np
 from multiprocessing import Manager, Process
 from open3d import visualization
 
-from .interactive_gui.interactive_gui import AppWindow
+from .interactive_gui.editor_app import Editor
 
 # from .interactive_window import InteractiveWindow
 from .input_selector import InputSelector, SingleChoiceSelector
@@ -488,7 +488,7 @@ def select_manually(
     if "print_instructions" in kwargs:
         warnings.warn("print_instructions option not used anymore")
 
-    element_selector = AppWindow(**kwargs)
+    element_selector = Editor(**kwargs)
     element_selector.add_elements(elements, pre_selected=pre_selected)
     element_selector.add_elements(fixed_elements, fixed=True)
     element_selector.run()
@@ -575,7 +575,7 @@ def apply_function_manually(
     if "print_instructions" in kwargs:
         warnings.warn("print_instructions option not used anymore")
 
-    element_selector = AppWindow(**kwargs)
+    element_selector = Editor(**kwargs)
     element_selector.add_elements(elements, pre_selected=pre_selected)
 
     for function in functions:
