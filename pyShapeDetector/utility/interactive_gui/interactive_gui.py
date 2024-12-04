@@ -186,10 +186,7 @@ class AppWindow:
 
         try:
             extension = Extension(function_or_descriptor)
-            if self._extensions is None:
-                self._extensions = []
-
-            self._extensions.append(extension)
+            extension.add_to_application(self)
 
         except Exception:
             warnings.warn(f"Could not create extension {function_or_descriptor}, got:")
@@ -209,7 +206,7 @@ class AppWindow:
         if self.extensions is not None:
             for extension in self.extensions:
                 try:
-                    extension.add_to_application(self)
+                    extension.add_menu_item()
 
                 except Exception:
                     warnings.warn(
@@ -680,17 +677,16 @@ class AppWindow:
         self._window.add_child(self._main_panel)
         self._main_panel.visible = True
 
+        # 1) First, extensions
+        self._create_extension_menu_items()
+
+        # 2) Then hotkeys, to correctly handle extension hotkeys
         self._hotkeys = Hotkeys(self)
         self._scene.set_on_key(self._hotkeys._on_key)
         self._scene.set_on_mouse(self._on_mouse)
 
-        # 1) First, extensions
-        self._create_extension_menu_items()
-
-        # 2) Then Settings menu
+        # 3) Finally, other menus (so that they are at the end)
         self._settings._create_menu()
-
-        # 3) And finally Help menu
         self._menu_help = MenuHelp(self)
         self._menu_help._create_menu()
 

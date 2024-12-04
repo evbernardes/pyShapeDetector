@@ -123,11 +123,6 @@ class Hotkeys:
         extension_key_mappings = app_instance.extension_key_mappings
 
         for key, extension in extension_key_mappings.items():
-            # func = function_descriptor["function"]
-            # _callback = (
-            #     lambda f=extension: self._app_instance._apply_function_to_elements(f)
-            # )
-
             bindings[(key, True)] = {
                 "desc": extension.name,
                 "callback": extension.run,

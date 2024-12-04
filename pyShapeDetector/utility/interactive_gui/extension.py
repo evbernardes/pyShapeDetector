@@ -357,6 +357,9 @@ class Extension:
     def add_to_application(self, app_instance: AppWindow):
         self._app_instance = app_instance
 
+        if app_instance._extensions is None:
+            app_instance._extensions = []
+
         # Check whether hotkey has already been assigned extension
         if app_instance.extensions is not None and self.hotkey is not None:
             current_hotkeys = [ext.hotkey for ext in app_instance.extensions]
@@ -369,7 +372,10 @@ class Extension:
                 )
                 app_instance.extensions[idx]._hotkey = None
 
-        app_instance._add_menu_item(self.menu, self.name, self.run)
+        app_instance._extensions.append(self)
+
+    def add_menu_item(self):
+        self._app_instance._add_menu_item(self.menu, self.name, self.run)
 
     def update_in_separate_window(self):
         app_instance = self._app_instance
