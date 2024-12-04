@@ -129,13 +129,14 @@ class Settings:
         self._paint_random = value
 
     def _cb_paint_random(self, value):
-        if self.paint_random != value:
-            self._editor_instance.print_debug(
-                f"paint_random set from {self.paint_random} "
-                f"to {value}, resetting..."
-            )
-            self._editor_instance._reset_elements_in_gui()
+        if self.paint_random == value:
+            return
+
+        self._editor_instance.print_debug(
+            f"paint_random set from {self.paint_random} to {value}, resetting..."
+        )
         self.paint_random = value
+        self._editor_instance._reset_elements_in_gui()
 
     @property
     def debug(self):
