@@ -449,7 +449,8 @@ class Hotkeys:
             ):
                 app_instance._future_states.pop(0)
 
-            app_instance._update_current_idx(indices[-1])
+            if len(indices) > 0:
+                app_instance._update_current_idx(indices[-1])
 
         app_instance._update_plane_boundaries()
 
