@@ -79,6 +79,12 @@ class Hotkeys:
         self._is_extra_functions = False
         self._is_modifier_pressed = False
         bindings = {
+            (gui.KeyName.ESCAPE, False): Binding(
+                description="Quit",
+                callback=self._cb_quit_app,
+                uses_modifier=False,
+                menu="File",
+            ),
             (gui.KeyName.SPACE, False): Binding(
                 description="Selected/unselect current",
                 callback=self._cb_toggle,
@@ -167,12 +173,6 @@ class Hotkeys:
                 description="[Un]select type",
                 callback=self._cb_toggle_type,
                 uses_modifier=True,
-                menu=None,
-            ),
-            (gui.KeyName.ESCAPE, False): Binding(
-                description="Quit",
-                callback=self._cb_quit,
-                uses_modifier=False,
                 menu=None,
             ),
         }
@@ -281,6 +281,41 @@ class Hotkeys:
             return gui.Widget.EventCallbackResult.HANDLED
 
         return gui.Widget.EventCallbackResult.IGNORED
+
+    def _cb_quit_app(self):
+        window = self._app_instance._window
+        em = window.theme.font_size
+        button_separation_width = 2 * int(round(0.5 * em))
+
+        dlg = gui.Dialog("Quit Dialog")
+
+        def _on_close_yes():
+            self._app_instance._closing_app = True
+            window.close()
+
+        def _on_close_no():
+            window.close_dialog()
+
+        # Add the text
+        dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
+        dlg_layout.add_child(gui.Label("Close Shape Detector?"))
+
+        yes = gui.Button("Yes")
+        yes.set_on_clicked(_on_close_yes)
+
+        no = gui.Button("No")
+        no.set_on_clicked(_on_close_no)
+
+        h = gui.Horiz()
+        h.add_stretch()
+        h.add_child(yes)
+        h.add_fixed(button_separation_width)
+        h.add_child(no)
+        h.add_stretch()
+        dlg_layout.add_child(h)
+
+        dlg.add_child(dlg_layout)
+        window.show_dialog(dlg)
 
     def _cb_toggle(self):
         """Toggle the current highlighted element between selected/unselected."""

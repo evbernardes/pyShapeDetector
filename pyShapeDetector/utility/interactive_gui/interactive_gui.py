@@ -111,6 +111,7 @@ class AppWindow:
         self.return_finish_flag = return_finish_flag
         self._submenu_id_generator = itertools.count(1, 1)
         self._submenus = {}
+        self._closing_app = False
 
         # self._elements_distance = []
         self.i_old = 0
@@ -527,6 +528,13 @@ class AppWindow:
             r.get_right() - width, r.y, width, height
         )
 
+    def _on_close(self):
+        if not self._closing_app:
+            self._hotkeys.find_binding("Quit").callback()
+            return False
+
+        return True
+
     def _on_mouse(self, event):
         # We could override BUTTON_DOWN without a modifier, but that would
         # interfere with manipulating the scene.
@@ -640,6 +648,7 @@ class AppWindow:
         # Create a window
         self._window = self.app.create_window(self.window_name, 1024, 768)
         self._window.set_on_layout(self._on_layout)
+        self._window.set_on_close(self._on_close)
 
         # em = self.window.theme.font_size
         # separation_height = int(round(0.5 * em))
