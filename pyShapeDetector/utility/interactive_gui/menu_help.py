@@ -29,12 +29,20 @@ class MenuHelp:
 
         self._create_panel()
 
-        help_binding = editor_instance._hotkeys.find_binding("Show Help")
+        help_binding = (
+            editor_instance._internal_functions.find_binding_from_description(
+                "Show Help"
+            )
+        )
         self._help_id = editor_instance._add_menu_item(
             self._name, help_binding.description_and_instruction, self._on_help_toggle
         )
 
-        info_binding = editor_instance._hotkeys.find_binding("Show Info")
+        info_binding = (
+            editor_instance._internal_functions.find_binding_from_description(
+                "Show Info"
+            )
+        )
         self._info_id = editor_instance._add_menu_item(
             self._name, info_binding.description_and_instruction, self._on_info_toggle
         )

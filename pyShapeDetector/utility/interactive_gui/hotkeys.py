@@ -1,234 +1,52 @@
-from abc import ABC
-import copy
-import time
-import numpy as np
+import warnings
 from open3d.visualization import gui
 from .editor_app import Editor
-from typing import Union, Callable
-
-KEY_EXTRA_FUNCTIONS = gui.KeyName.LEFT_CONTROL
-KEY_MODIFIER = gui.KeyName.LEFT_SHIFT
-
-
-def _get_key_name(key):
-    if isinstance(key, gui.KeyName):
-        return str(key).split(".")[1]
-    elif isinstance(key, int):
-        return chr(key)
-
-
-class Binding:
-    @property
-    def key(self):
-        return self._key
-
-    @property
-    def description(self):
-        return self._description
-
-    @property
-    def callback(self):
-        return self._callback
-
-    @property
-    def uses_modifier(self):
-        return self._uses_modifier
-
-    @property
-    def menu(self):
-        return self._menu
-
-    @property
-    def key_instruction(self):
-        if self.key is None:
-            return ""
-        line = "("
-        if self.key[1]:
-            line += f"{_get_key_name(KEY_EXTRA_FUNCTIONS)} + "
-        if self.uses_modifier:
-            line += f"[{_get_key_name(KEY_MODIFIER)}] + "
-        line += f"{_get_key_name(self.key[0])})"
-        return line
-
-    @property
-    def description_and_instruction(self):
-        instruction = self.key_instruction
-        if instruction == "":
-            return self.description
-        else:
-            return self.description + " " + instruction
-
-    def __init__(
-        self,
-        description: str,
-        callback: Callable,
-        key: Union[None, tuple] = None,
-        uses_modifier: int = False,
-        menu: Union[str, None] = None,
-    ):
-        self._description = description
-        self._callback = callback
-        self._key = key
-        self._uses_modifier = uses_modifier
-        self._menu = menu
+from .binding import Binding, KEY_EXTRA_FUNCTIONS, KEY_MODIFIER, _get_key_name
 
 
 class Hotkeys:
+    def add_one_binding(self, binding: Binding):
+        key = (binding.key, binding.extra_functions)
+        if binding.key is None:
+            return
+
+        if key in self._bindings_map:
+            if binding.extra_functions:
+                extra_text = f"{_get_key_name(KEY_EXTRA_FUNCTIONS)} + "
+            else:
+                extra_text = ""
+            warnings.warn(
+                f"hotkey {extra_text}{binding} previously assigned to function "
+                f"{self._bindings_map[key].description}, resetting it to {binding.description}."
+            )
+            self._bindings_map[key]._key = None
+
+        self._bindings_map[key] = binding
+
     def __init__(self, editor_instance: Editor):
         self._editor_instance = editor_instance
         self._is_extra_functions = False
         self._is_modifier_pressed = False
-        bindings = {
-            (gui.KeyName.ESCAPE, False): Binding(
-                description="Quit",
-                callback=self._cb_quit_app,
-                uses_modifier=False,
-                menu="File",
-            ),
-            (gui.KeyName.SPACE, False): Binding(
-                description="Selected/unselect current",
-                callback=self._cb_toggle,
-                uses_modifier=True,
-                menu=None,
-            ),
-            (gui.KeyName.LEFT, False): Binding(
-                description="[Fast] Previous",
-                callback=self._cb_previous,
-                uses_modifier=True,
-                menu=None,
-            ),
-            (gui.KeyName.RIGHT, False): Binding(
-                description="[Fast] Next",
-                callback=self._cb_next,
-                uses_modifier=True,
-                menu=None,
-            ),
-            (gui.KeyName.DELETE, False): Binding(
-                description="Delete elements",
-                callback=self._cb_delete,
-                uses_modifier=False,
-                menu="Edit",
-            ),
-            (gui.KeyName.C, True): Binding(
-                description="Copy",
-                callback=self._cb_copy,
-                uses_modifier=False,
-                menu="Edit",
-            ),
-            (gui.KeyName.V, True): Binding(
-                description="Paste",
-                callback=self._cb_paste,
-                uses_modifier=False,
-                menu="Edit",
-            ),
-            (gui.KeyName.H, False): Binding(
-                description="Show Help",
-                callback=self._cb_toggle_help_panel,
-                uses_modifier=False,
-                menu=None,  # This is added later
-            ),
-            (gui.KeyName.I, False): Binding(
-                description="Show Info",
-                callback=self._cb_toggle_info_panel,
-                uses_modifier=False,
-                menu=None,  # This is added later
-            ),
-            (gui.KeyName.P, False): Binding(
-                description="Show Preferences",
-                callback=self._cb_toggle_settings_panel,
-                uses_modifier=False,
-                menu=None,  # This is added later
-            ),
-            (gui.KeyName.ENTER, True): Binding(
-                description="Repeat last function",
-                callback=self._cb_repeat_last_function,
-                uses_modifier=False,
-                menu="Edit",
-            ),
-            (gui.KeyName.Z, True): Binding(
-                description="Undo [Redo]",
-                callback=self._cb_undo_redo,
-                uses_modifier=True,
-                menu="Edit",
-            ),
-            (gui.KeyName.U, True): Binding(
-                description="[Un]Hide",
-                callback=self._cb_hide_unhide,
-                uses_modifier=True,
-                menu=None,
-            ),
-            (gui.KeyName.A, True): Binding(
-                description="[Un]select all",
-                callback=self._cb_toggle_all,
-                uses_modifier=True,
-                menu=None,
-            ),
-            (gui.KeyName.L, True): Binding(
-                description="[Un]select last",
-                callback=self._cb_toggle_last,
-                uses_modifier=True,
-                menu=None,
-            ),
-            (gui.KeyName.T, True): Binding(
-                description="[Un]select per type",
-                callback=self._cb_toggle_type,
-                uses_modifier=False,
-                menu=None,
-            ),
-        }
+        self._bindings_map = {}
 
-        # Create menu entries for all hotkeys that contain 'menu', except extensions:
-        for key, binding in bindings.items():
-            binding._key = key
-            if binding.menu is not None:
-                editor_instance._add_menu_item(
-                    binding.menu,
-                    binding.description_and_instruction,
-                    binding.callback,
-                )
+        # First, add internal bindings
+        for binding in editor_instance._internal_functions.bindings:
+            self.add_one_binding(binding)
 
-        extension_key_mappings = editor_instance.extension_key_mappings
-
-        for key, extension in extension_key_mappings.items():
-            bindings[key, True] = Binding(
-                key=(key, True),
-                description=extension.name,
-                callback=extension.run,
-                uses_modifier=False,
-            )
-
-        for key, _ in bindings.keys():
-            if key not in extension_key_mappings:
-                continue
-
-            extension = extension_key_mappings[key]
-
-            hotkey = extension.hotkey
-            if hotkey is None:
-                continue
-
-            extension._name += (
-                f" ({_get_key_name(KEY_EXTRA_FUNCTIONS)} + {chr(hotkey)})"
-            )
-
-        self._bindings = bindings
+        # Then, get extension bindings
+        for extension in editor_instance.extensions:
+            self.add_one_binding(extension.as_binding)
 
     @property
-    def bindings(self):
-        return self._bindings
-
-    def find_binding(self, desc: str):
-        for binding in self.bindings.values():
-            if binding.description == desc:
-                return binding
-        return None
+    def bindings_map(self):
+        return self._bindings_map
 
     def get_instructions(self):
         return (
             "\n\n".join(
                 [
                     f"{binding.key_instruction}:\n- {binding.description}"
-                    for binding in self.bindings.values()
+                    for binding in self.bindings_map.values()
                 ]
             )
             + f"\n\n({_get_key_name(KEY_EXTRA_FUNCTIONS)}):"
@@ -258,300 +76,10 @@ class Hotkeys:
             return gui.Widget.EventCallbackResult.IGNORED
 
         # If down key, check if it's one of the callbacks:
-        binding = self.bindings.get((event.key, self._is_extra_functions))
+        binding = self.bindings_map.get((event.key, self._is_extra_functions))
 
         if binding is not None:
             binding.callback()
             return gui.Widget.EventCallbackResult.HANDLED
 
         return gui.Widget.EventCallbackResult.IGNORED
-
-    def _cb_quit_app(self):
-        window = self._editor_instance._window
-        em = window.theme.font_size
-        button_separation_width = 2 * int(round(0.5 * em))
-
-        dlg = gui.Dialog("Quit Dialog")
-
-        def _on_close_yes():
-            self._editor_instance._closing_app = True
-            window.close()
-
-        def _on_close_no():
-            window.close_dialog()
-
-        # Add the text
-        dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
-        dlg_layout.add_child(gui.Label("Close Shape Detector?"))
-
-        yes = gui.Button("Yes")
-        yes.set_on_clicked(_on_close_yes)
-
-        no = gui.Button("No")
-        no.set_on_clicked(_on_close_no)
-
-        h = gui.Horiz()
-        h.add_stretch()
-        h.add_child(yes)
-        h.add_fixed(button_separation_width)
-        h.add_child(no)
-        h.add_stretch()
-        dlg_layout.add_child(h)
-
-        dlg.add_child(dlg_layout)
-        window.show_dialog(dlg)
-
-    def _cb_toggle(self):
-        """Toggle the current highlighted element between selected/unselected."""
-        editor_instance = self._editor_instance
-        if not editor_instance.select_filter(editor_instance.current_element):
-            return
-
-        editor_instance.is_current_selected = not editor_instance.is_current_selected
-        editor_instance._update_current_idx()
-
-    def _cb_next(self):
-        """Highlight next element in list."""
-        delta = 1 + 4 * self._is_modifier_pressed
-        editor_instance = self._editor_instance
-        editor_instance._update_current_idx(
-            min(editor_instance.i + delta, len(editor_instance.elements) - 1)
-        )
-
-    def _cb_delete(self):
-        """Delete current elements."""
-
-        def delete(elements):
-            return []
-
-        self._editor_instance._apply_function_to_elements(delete)
-
-    def _cb_copy(self):
-        """Save elements to be copied."""
-        editor_instance = self._editor_instance
-        copied_elements = copy.deepcopy(
-            [elem["raw"] for elem in editor_instance.elements if elem["selected"]]
-        )
-        editor_instance.print_debug(f"Copying {len(copied_elements)} elements.")
-        editor_instance._copied_elements = copied_elements
-
-    def _cb_paste(self):
-        editor_instance = self._editor_instance
-
-        def paste(elements):
-            return elements + editor_instance._copied_elements
-
-        editor_instance.print_debug(
-            f"Pasting {len(editor_instance._copied_elements)} elements."
-        )
-        self._editor_instance._apply_function_to_elements(paste)
-        editor_instance._copied_elements = []
-
-    def _cb_previous(self):
-        """Highlight previous element in list."""
-        delta = 1 + 4 * self._is_modifier_pressed
-        editor_instance = self._editor_instance
-        editor_instance._update_current_idx(max(editor_instance.i - delta, 0))
-
-    def _cb_toggle_all(self):
-        """Toggle the all elements between all selected/all unselected."""
-        self._editor_instance._toggle_indices(None)
-
-    def _cb_toggle_last(self):
-        """Toggle the elements from last output."""
-        editor_instance = self._editor_instance
-        if len(editor_instance._past_states) == 0:
-            return
-
-        num_outputs = editor_instance._past_states[-1]["num_outputs"]
-        editor_instance._toggle_indices(slice(-num_outputs, None))
-
-    def _cb_toggle_type(self):
-        editor_instance = self._editor_instance
-        window = editor_instance._window
-        em = window.theme.font_size
-        separation_height = int(round(0.5 * em))
-        elems_raw = [elem["raw"] for elem in editor_instance.elements]
-
-        temp_window = editor_instance.app.create_window("Select type", 200, 400)
-        temp_window.show_menu(False)
-
-        def _callback(_type, value):
-            elems_raw = [elem["raw"] for elem in editor_instance.elements]
-            idx = np.where([isinstance(elem, _type) for elem in elems_raw])[0].tolist()
-            editor_instance._toggle_indices(idx, to_value=value)
-
-        dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
-        dlg_layout.add_child(gui.Label("Select types to select:"))
-
-        types = set([t for elem in elems_raw for t in elem.__class__.mro()])
-        types.discard(ABC)
-        types.discard(object)
-        types = list(types)
-        # type_names = [type_.__name__ for type_ in types]
-
-        for _type in types:
-            element = gui.Checkbox(_type.__name__)
-            element.checked = False
-
-            element.set_on_checked(lambda value, t=_type: _callback(t, value))
-            dlg_layout.add_child(element)
-            dlg_layout.add_fixed(separation_height)
-            # elements.append(element)
-
-        def _on_ok():
-            window.close_dialog()
-
-        ok = gui.Button("Ok")
-        ok.set_on_clicked(_on_ok)
-
-        h = gui.Horiz()
-        h.add_stretch()
-        h.add_child(ok)
-        h.add_stretch()
-        dlg_layout.add_child(h)
-
-        temp_window.add_child(dlg_layout)
-
-        # window.show_dialog(dlg)
-
-        # try:
-        #     (selected_type_name,) = get_inputs(
-        #         {"type": [types_names, types_names[0]]}, window_name="Select type"
-        #     )
-        # except KeyboardInterrupt:
-        #     return
-
-        # selected_type = types[types_names.index(selected_type_name)]
-        # idx = np.where([isinstance(elem, selected_type) for elem in elems_raw])[0]
-        # editor_instance._toggle_indices(idx)
-
-    # def _cb_finish_process(self, vis, action, mods):
-    #     """Signal ending."""
-    #     if action == 1:
-    #         return
-    #     self.finish = True
-    #     vis.close()
-
-    # def _cb_center_current(self, vis, action, mods):
-    #     if not self._is_modifier_extra or action == 1:
-    #         return
-
-    #     ctr = self._vis.get_view_control()
-    #     ctr.set_lookat(self._current_bbox.get_center())
-    #     ctr.set_front([0, 0, -1])  # Define the camera front direction
-    #     ctr.set_up([0, 1, 0])  # Define the camera "up" direction
-    #     ctr.set_zoom(0.1)  # Adjust zoom level if necessary
-
-    def _cb_repeat_last_function(self):
-        editor_instance = self._editor_instance
-        func = editor_instance._last_used_function
-
-        if func is not None:
-            editor_instance.print_debug(f"Re-applying last function: {func}")
-            editor_instance._apply_function_to_elements(func, update_parameters=False)
-
-    def _cb_toggle_help_panel(self):
-        self._editor_instance._menu_help._on_help_toggle()
-
-    def _cb_toggle_info_panel(self):
-        self._editor_instance._menu_help._on_info_toggle()
-
-    def _cb_toggle_settings_panel(self):
-        self._editor_instance._settings._on_menu_toggle()
-
-    def _cb_hide_unhide(self):
-        """Hide selected elements or unhide all hidden elements."""
-
-        editor_instance = self._editor_instance
-        indices = editor_instance.selected_indices
-
-        if self._is_modifier_pressed:
-            # UNHIDE
-            editor_instance._insert_elements(
-                editor_instance._hidden_elements, selected=True, to_gui=True
-            )
-            editor_instance._hidden_elements = []
-
-        else:
-            # HIDE SELECTED
-            editor_instance._hidden_elements += editor_instance._pop_elements(
-                indices, from_gui=True
-            )
-            editor_instance.selected = False
-
-        # TODO: find a way to make hiding work with undoing
-        editor_instance._past_states = []
-        editor_instance._future_states = []
-        editor_instance._update_plane_boundaries()
-
-    def _cb_undo_redo(self):
-        editor_instance = self._editor_instance
-        if self._is_modifier_pressed:
-            # REDO
-            if len(editor_instance._future_states) == 0:
-                return
-
-            future_state = editor_instance._future_states.pop()
-
-            modified_elements = future_state["modified_elements"]
-            indices = future_state["indices"]
-
-            editor_instance.print_debug(
-                f"Redoing last operation, removing {len(indices)} inputs and "
-                f"resetting {len(modified_elements)} inputs."
-            )
-
-            input_elements = [editor_instance.elements[i]["raw"] for i in indices]
-            editor_instance._save_state(indices, input_elements, len(modified_elements))
-
-            editor_instance.i = future_state["current_index"]
-            editor_instance._pop_elements(indices, from_gui=True)
-            editor_instance._insert_elements(modified_elements, to_gui=True)
-
-            editor_instance._update_current_idx(len(editor_instance.elements) - 1)
-        else:
-            # UNDO
-            if len(editor_instance._past_states) == 0:
-                return
-
-            last_state = editor_instance._past_states.pop()
-            indices = last_state["indices"]
-            elements = last_state["elements"]
-            num_outputs = last_state["num_outputs"]
-            num_elems = len(editor_instance.elements)
-
-            editor_instance.print_debug(
-                f"Undoing last operation, removing {num_outputs} outputs and "
-                f"resetting {len(elements)} inputs."
-            )
-
-            indices_to_pop = range(num_elems - num_outputs, num_elems)
-            modified_elements = editor_instance._pop_elements(
-                indices_to_pop, from_gui=True
-            )
-            editor_instance._insert_elements(
-                elements, indices, selected=True, to_gui=True
-            )
-
-            editor_instance._future_states.append(
-                {
-                    "modified_elements": modified_elements,
-                    "indices": indices,
-                    "current_index": editor_instance.i,
-                }
-            )
-
-            while (
-                len(editor_instance._future_states)
-                > editor_instance._settings.number_redo_states
-            ):
-                editor_instance._future_states.pop(0)
-
-            if len(indices) > 0:
-                editor_instance._update_current_idx(indices[-1])
-
-        editor_instance._update_plane_boundaries()
-
-    def _cb_quit(self):
-        pass

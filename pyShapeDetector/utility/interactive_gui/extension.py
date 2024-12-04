@@ -10,10 +10,21 @@ from open3d.visualization import gui
 from .editor_app import Editor
 from .parameter import PARAMETER_TYPE_DICTIONARY
 from .helpers import get_pretty_name
+from .binding import Binding
 
 
 class Extension:
     DEFAULT_MENU_NAME = "Misc functions"
+
+    @property
+    def as_binding(self):
+        return Binding(
+            key=self.hotkey,
+            extra_functions=True,
+            modifier=False,
+            description=self.name,
+            callback=self.run,
+        )
 
     @property
     def function(self):
@@ -114,22 +125,11 @@ class Extension:
         if editor_instance._extensions is None:
             editor_instance._extensions = []
 
-        # Check whether hotkey has already been assigned extension
-        if editor_instance.extensions is not None and self.hotkey is not None:
-            current_hotkeys = [ext.hotkey for ext in editor_instance.extensions]
-
-            if self.hotkey in current_hotkeys:
-                idx = current_hotkeys.index(self.hotkey)
-                warnings.warn(
-                    f"hotkey {self.hotkey_number} previously assigned to function "
-                    f"{editor_instance.extensions[idx].name}, resetting it to {self.name}."
-                )
-                editor_instance.extensions[idx]._hotkey = None
-
         editor_instance._extensions.append(self)
 
     def add_menu_item(self):
-        self._editor_instance._add_menu_item(self.menu, self.name, self.run)
+        name = self.as_binding.description_and_instruction
+        self._editor_instance._add_menu_item(self.menu, name, self.run)
 
     def update_in_separate_window(self):
         editor_instance = self._editor_instance

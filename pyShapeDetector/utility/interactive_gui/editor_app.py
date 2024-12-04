@@ -531,7 +531,7 @@ class Editor:
 
     def _on_close(self):
         if not self._closing_app:
-            self._hotkeys.find_binding("Quit").callback()
+            self._internal_functions.find_binding_from_description("Quit").callback()
             return False
 
         self._insert_elements(self._hidden_elements, to_gui=False)
@@ -581,7 +581,7 @@ class Editor:
             self.i_old = self.i
             self.i = i_min_distance
             if event.is_modifier_down(gui.KeyModifier.SHIFT):
-                self._hotkeys._cb_toggle()
+                self._internal_functions._cb_toggle()
             self._update_current_idx()
 
         self._scene.scene.scene.render_to_depth_image(depth_callback)
@@ -642,6 +642,7 @@ class Editor:
     def _setup_window_and_scene(self):
         from .menu_help import MenuHelp
         from .hotkeys import Hotkeys
+        from .internal_functions import InternalFunctions
 
         # Set up the application
         self.app = gui.Application.instance
@@ -682,15 +683,19 @@ class Editor:
         self._window.add_child(self._right_side_panel)
         self._right_side_panel.visible = True
 
-        # 1) First hotkeys
+        # 1) Set internal functions and add menu items
+        self._internal_functions = InternalFunctions(self)
+        self._internal_functions.create_menu_items()
+
+        # 2) Add hotkeys for both internal functions and extensions
         self._hotkeys = Hotkeys(self)
         self._scene.set_on_key(self._hotkeys._on_key)
         self._scene.set_on_mouse(self._on_mouse)
 
-        # 2) Then, to correctly handle extension hotkeys
+        # 3) Add extension menu items
         self._create_extension_menu_items()
 
-        # 3) Finally, other menus (so that they are at the end)
+        # 4) Finally, other menus (so that they are at the end)
         self._settings._create_menu()
         self._menu_help = MenuHelp(self)
         self._menu_help._create_menu()
@@ -847,7 +852,9 @@ class Editor:
                 if len(params) > 0:
                     self._info.text += f", with :{params}"
 
-                repeat_binding = self._hotkeys.find_binding("Repeat last function")
+                repeat_binding = self._internal_functions.find_binding_from_description(
+                    "Repeat last function"
+                )
                 if repeat_binding is not None:
                     self._info.text += f"\n{repeat_binding.key_instruction} to repeat"
 
