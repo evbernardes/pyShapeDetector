@@ -434,7 +434,7 @@ class Settings:
             _panel_collapsable.add_fixed(separation_height)
 
         _panel_collapsable.visible = False
-        self._app_instance._main_panel.add_child(_panel_collapsable)
+        self._app_instance._right_side_panel.add_child(_panel_collapsable)
         self._panel = _panel_collapsable
 
     def _create_menu(self):

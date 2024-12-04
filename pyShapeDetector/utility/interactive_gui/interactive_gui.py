@@ -132,6 +132,10 @@ class AppWindow:
             self._menubar = self.app.menubar = gui.Menu()
             self.print_debug("Created menubar.")
 
+        if not hasattr(self, "_submenus"):
+            self._submenus = {}
+            self.print_debug("Initialized submenus dict.")
+
         upper_menu = self._menubar
 
         for part in path.parts:
@@ -515,11 +519,13 @@ class AppWindow:
         width = 17 * layout_context.theme.font_size
         height = min(
             r.height,
-            self._main_panel.calc_preferred_size(
+            self._right_side_panel.calc_preferred_size(
                 layout_context, gui.Widget.Constraints()
             ).height,
         )
-        self._main_panel.frame = gui.Rect(r.get_right() - width, r.y, width, height)
+        self._right_side_panel.frame = gui.Rect(
+            r.get_right() - width, r.y, width, height
+        )
 
     def _on_mouse(self, event):
         # We could override BUTTON_DOWN without a modifier, but that would
@@ -660,13 +666,10 @@ class AppWindow:
         self._window.add_child(self._scene)
         self._window.add_child(self._info)
 
-        self._menubar = self.app.menubar = gui.Menu()
-        self._submenus = {}
-
         em = self._window.theme.font_size
-        self._main_panel = gui.Vert(em, gui.Margins(em, em, em, em))
-        self._window.add_child(self._main_panel)
-        self._main_panel.visible = True
+        self._right_side_panel = gui.Vert(em, gui.Margins(em, em, em, em))
+        self._window.add_child(self._right_side_panel)
+        self._right_side_panel.visible = True
 
         # 1) First hotkeys
         self._hotkeys = Hotkeys(self)
