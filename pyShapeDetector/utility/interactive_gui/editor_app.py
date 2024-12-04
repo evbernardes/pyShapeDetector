@@ -379,7 +379,7 @@ class Editor:
 
         for idx in indices:
             # Updating vis explicitly in order not to remove it
-            self._update_elements(idx, update_vis=False)
+            self._update_elements(idx, update_gui=False)
             if to_gui:
                 self._add_geometry_to_scene(self.elements[idx]["drawable"])
 
@@ -533,6 +533,7 @@ class Editor:
             self._hotkeys.find_binding("Quit").callback()
             return False
 
+        self._insert_elements(self._hidden_elements, to_gui=False)
         return True
 
     def _on_mouse(self, event):
@@ -763,7 +764,7 @@ class Editor:
         if self._current_bbox is not None:
             self._add_geometry_to_scene(self._current_bbox)
 
-    def _update_elements(self, indices, update_vis=True):
+    def _update_elements(self, indices, update_gui=True):
         num_elems = len(self.elements)
 
         if indices is None:
@@ -786,7 +787,7 @@ class Editor:
             is_selected = elem["selected"] and self.select_filter(elem)
             is_current = self._started and (idx == self.i)
 
-            if update_vis:
+            if update_gui:
                 self._remove_geometry_from_scene(elem["drawable"])
 
             self.print_debug(
@@ -811,7 +812,7 @@ class Editor:
 
             set_element_colors(elem["drawable"], color)
 
-            if update_vis:
+            if update_gui:
                 self.print_debug(
                     "[_update_element] Updating geometry on gui.",
                     require_verbose=True,
@@ -1022,14 +1023,11 @@ class Editor:
         self._scene.look_at(center, center - [0, 0, 3], [0, 1, 0])
 
         self.app.run()
-        # self._insert_elements(self._hidden_elements, to_gui=False)
 
         # try:
         #     self.app.run()
-        #     # add hidden elements back to elements list
-        #     self._insert_elements(self._hidden_elements, to_gui=False)
         # except Exception as e:
-        #     raise e
+        #     # raise e
+        #     traceback.print_exc()
         # finally:
-        #     self.app.quit()
-        #     # self.app.destroy_window()
+        # self._insert_elements(self._hidden_elements, to_gui=False)
