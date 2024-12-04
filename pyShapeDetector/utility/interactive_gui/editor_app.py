@@ -31,7 +31,7 @@ from .helpers import (
 
 class Editor:
     """
-    Visualizer class used to manually select elements and apply functions to
+    Editor Graphical Interface to manually select elements and apply functions to
     them.
 
     Elements can be selected either with a keyboard or a mouse.
@@ -50,7 +50,8 @@ class Editor:
     Parameters
     ----------
     window_name : str, optional
-        Name of window. If empty, just gives the number of elements. Default: "".
+        Name of window. If empty, just gives the number of elements.
+        Default: "Shape Detector".
 
     Extra Parameters (these can also be set in real time)
     -----------------------------------------------------
@@ -89,7 +90,7 @@ class Editor:
 
     def __init__(
         self,
-        window_name="",
+        window_name="Shape Detector",
         return_finish_flag=False,
         **kwargs,
     ):
@@ -1005,7 +1006,7 @@ class Editor:
         self._started = True
 
     def run(self):
-        self.print_debug("Starting AppWindow instance.")
+        self.print_debug(f"Starting {type(self).__name__}.")
 
         if len(self._elements_input) == 0:
             raise RuntimeError("No elements added!")

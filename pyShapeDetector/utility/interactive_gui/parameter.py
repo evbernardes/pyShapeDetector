@@ -117,11 +117,13 @@ class ParameterOptions(Parameter):
 
     @Parameter.value.setter
     def value(self, new_value):
-        if new_value is None:
-            self._value = False
+        if new_value not in self.options:
+            raise ValueError(
+                f"Value '{new_value}' for parameter '{self.name}' is not in "
+                f"options list {self.options}."
+            )
 
-        else:
-            self._value = bool(new_value)
+        self._value = new_value
 
     def _callback(self, text, index):
         self._value = self.options[index]
@@ -254,17 +256,15 @@ class ParameterInt(Parameter):
         return element
 
     def _parse_descriptor_(self, parameter_descriptor: dict):
-        limit_setter = parameter_descriptor.pop("limit_setter", None)
+        self.limit_setter = limit_setter = parameter_descriptor.pop("limit_setter", None)
         limits = parameter_descriptor.pop("limits", None)
         value = parameter_descriptor.pop("default", None)
 
-        if limit_setter is None:
+        if self.limit_setter is None:
             self.limits = limits
             self.value = value
 
         else:
-            self.limit_setter = limit_setter
-
             if limits is not None:
                 warnings.warn(
                     f"Limit setter defined for parameter {self.name}, "
@@ -380,17 +380,15 @@ class ParameterFloat(Parameter):
         return element
 
     def _parse_descriptor_(self, parameter_descriptor: dict):
-        limit_setter = parameter_descriptor.pop("limit_setter", None)
+        self.limit_setter = limit_setter = parameter_descriptor.pop("limit_setter", None)
         limits = parameter_descriptor.pop("limits", None)
         value = parameter_descriptor.pop("default", None)
 
-        if limit_setter is None:
+        if self.limit_setter is None:
             self.limits = limits
             self.value = value
 
         else:
-            self.limit_setter = limit_setter
-
             if limits is not None:
                 warnings.warn(
                     f"Limit setter defined for parameter {self.name}, "

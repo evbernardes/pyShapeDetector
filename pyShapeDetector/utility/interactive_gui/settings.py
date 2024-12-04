@@ -96,8 +96,13 @@ class Settings:
         self._mesh_show_back_face = value
 
     def _cb_mesh_show_back_face(self, value):
+        if self.mesh_show_back_face != value:
+            self._editor_instance.print_debug(
+                f"mesh_show_back_face set from {self.mesh_show_back_face} "
+                f"to {value}, resetting..."
+            )
+            self._editor_instance._reset_elements_in_gui()
         self.mesh_show_back_face = value
-        self._editor_instance._reset_elements_in_gui()
 
     @property
     def paint_selected(self):
@@ -124,8 +129,13 @@ class Settings:
         self._paint_random = value
 
     def _cb_paint_random(self, value):
+        if self.paint_random != value:
+            self._editor_instance.print_debug(
+                f"paint_random set from {self.paint_random} "
+                f"to {value}, resetting..."
+            )
+            self._editor_instance._reset_elements_in_gui()
         self.paint_random = value
-        self._editor_instance._reset_elements_in_gui()
 
     @property
     def debug(self):
@@ -236,9 +246,17 @@ class Settings:
         self._random_color_brightness = float(value)
 
     def _cb_random_color_brightness(self, value):
-        self.random_color_brightness = value
+        if abs(self.random_color_brightness - value) < 1e-5:
+            return
+
         if self.paint_random:
+            self._editor_instance.print_debug(
+                f"random_color_brightness set from {self.random_color_brightness} "
+                f"to {value}, resetting..."
+            )
             self._editor_instance._reset_elements_in_gui()
+
+        self.random_color_brightness = value
 
     @property
     def highlight_color_brightness(self):
@@ -251,6 +269,9 @@ class Settings:
         self._highlight_color_brightness = max(float(value), 0)
 
     def _cb_highlight_color_brightness(self, value):
+        if abs(self.highlight_color_brightness - value) < 1e-5:
+            return
+
         self.highlight_color_brightness = value
         if not self.paint_selected:
             indices = np.where(self._editor_instance.selected)[0].tolist()

@@ -85,7 +85,7 @@ class Extension:
         for key, parameter in parameter_descriptors.items():
             if key not in signature.parameters.keys():
                 raise ValueError(
-                    f"Function '{self.name}' does not take parameter {key}."
+                    f"Function '{self.function.__name__}' from extension '{self.name}' does not take parameter '{key}'."
                 )
             parameter_type = PARAMETER_TYPE_DICTIONARY[parameter.get("type")]
             parsed_parameters[key] = parameter_type(key, parameter)
