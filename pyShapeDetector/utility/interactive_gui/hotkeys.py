@@ -10,7 +10,7 @@ KEY_EXTRA_FUNCTIONS = gui.KeyName.LEFT_CONTROL
 KEY_MODIFIER = gui.KeyName.LEFT_SHIFT
 
 
-def get_key_name(key):
+def _get_key_name(key):
     if isinstance(key, gui.KeyName):
         return str(key).split(".")[1]
     elif isinstance(key, int):
@@ -44,10 +44,10 @@ class Binding:
             return ""
         line = "("
         if self.key[1]:
-            line += f"{get_key_name(KEY_EXTRA_FUNCTIONS)} + "
+            line += f"{_get_key_name(KEY_EXTRA_FUNCTIONS)} + "
         if self.uses_modifier:
-            line += f"[{get_key_name(KEY_MODIFIER)}] + "
-        line += f"{get_key_name(self.key[0])})"
+            line += f"[{_get_key_name(KEY_MODIFIER)}] + "
+        line += f"{_get_key_name(self.key[0])})"
         return line
 
     @property
@@ -207,7 +207,9 @@ class Hotkeys:
             if hotkey is None:
                 continue
 
-            extension._name += f" ({get_key_name(KEY_EXTRA_FUNCTIONS)} + {chr(hotkey)})"
+            extension._name += (
+                f" ({_get_key_name(KEY_EXTRA_FUNCTIONS)} + {chr(hotkey)})"
+            )
 
         self._bindings = bindings
 
@@ -221,34 +223,16 @@ class Hotkeys:
                 return binding
         return None
 
-    # @staticmethod
-    # def _get_action_line(key, values):
-    #     line = "("
-    #     if key[1]:
-    #         line += f"{get_key_name(KEY_EXTRA_FUNCTIONS)} + "
-    #     if values["modifier"]:
-    #         line += f"[{get_key_name(KEY_MODIFIER)}] + "
-    #     line += f"{get_key_name(key[0])}):\n- {values['desc']}"
-    #     return line
-
     def get_instructions(self):
-        # function_key_mappings_info = [
-        #     f"({get_key_name(KEY_EXTRA_FUNCTIONS)} + {chr(key)}: \n- {value['name']}"
-        #     for key, value in self._app_instance.function_key_mappings.items()
-        # ]
-
         return (
-            # "******************** KEYS: ***********************\n"
             "\n\n".join(
                 [
                     f"{binding.key_instruction}:\n- {binding.description}"
                     for binding in self.bindings.values()
                 ]
             )
-            + f"\n\n({get_key_name(KEY_EXTRA_FUNCTIONS)}):"
+            + f"\n\n({_get_key_name(KEY_EXTRA_FUNCTIONS)}):"
             + "\n- Enables mouse selection [and toggling]"
-            # + "\n\n".join(function_key_mappings_info)
-            # + "\n**************************************************"
         )
 
     def _on_key(self, event):
