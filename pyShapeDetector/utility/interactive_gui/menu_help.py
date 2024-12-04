@@ -29,9 +29,16 @@ class MenuHelp:
 
         self._create_panel()
 
+        help_binding = app_instance._hotkeys.find_binding("Show Help")
         self._help_id = app_instance._add_menu_item(
-            self._name, "Help (H)", self._on_help_toggle
+            self._name, help_binding.description_and_instruction, self._on_help_toggle
         )
+
+        info_binding = app_instance._hotkeys.find_binding("Show Info")
+        self._info_id = app_instance._add_menu_item(
+            self._name, info_binding.description_and_instruction, self._on_info_toggle
+        )
+
         app_instance._add_menu_item(self._name, "About", self._on_menu_about)
 
     def _on_help_toggle(self):
@@ -44,6 +51,16 @@ class MenuHelp:
             self._text.text = app_instance._hotkeys.get_instructions()
 
         menubar.set_checked(self._help_id, self._panel.visible)
+        window.set_needs_layout()
+
+    def _on_info_toggle(self):
+        app_instance = self._app_instance
+        window = app_instance._window
+        menubar = app_instance._menubar
+
+        app_instance._info.visible = not app_instance._info.visible
+
+        menubar.set_checked(self._info_id, app_instance._info.visible)
         window.set_needs_layout()
 
     def _on_menu_about(self):

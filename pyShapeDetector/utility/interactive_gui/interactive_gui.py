@@ -668,13 +668,13 @@ class AppWindow:
         self._window.add_child(self._main_panel)
         self._main_panel.visible = True
 
-        # 1) First, extensions
-        self._create_extension_menu_items()
-
-        # 2) Then hotkeys, to correctly handle extension hotkeys
+        # 1) First hotkeys
         self._hotkeys = Hotkeys(self)
         self._scene.set_on_key(self._hotkeys._on_key)
         self._scene.set_on_mouse(self._on_mouse)
+
+        # 2) Then, to correctly handle extension hotkeys
+        self._create_extension_menu_items()
 
         # 3) Finally, other menus (so that they are at the end)
         self._settings._create_menu()
@@ -835,11 +835,9 @@ class AppWindow:
 
                 repeat_binding = self._hotkeys.find_binding("Repeat last function")
                 if repeat_binding is not None:
-                    self._info.text += (
-                        f"\n{repeat_binding['key_instruction']} to repeat"
-                    )
+                    self._info.text += f"\n{repeat_binding.key_instruction} to repeat"
 
-            self._info.visible = self._info.text != ""
+            # self._info.visible = self._info.text != ""
             # We are sizing the info label to be exactly the right size,
             # so since the text likely changed width, we need to
             # re-layout to set the new frame.

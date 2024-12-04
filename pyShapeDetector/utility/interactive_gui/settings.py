@@ -442,8 +442,12 @@ class Settings:
 
         self._create_panel()
 
+        preferences_binding = app_instance._hotkeys.find_binding("Show Preferences")
+
         self._on_menu_id = app_instance._add_menu_item(
-            self._name, "Show Preferences (P)", self._on_menu_toggle
+            self._name,
+            preferences_binding.description_and_instruction,
+            self._on_menu_toggle,
         )
 
     def _on_menu_toggle(self):

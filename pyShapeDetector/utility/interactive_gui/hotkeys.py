@@ -4,6 +4,7 @@ import time
 import numpy as np
 from open3d.visualization import gui
 from .interactive_gui import AppWindow
+from typing import Union, Callable
 
 KEY_EXTRA_FUNCTIONS = gui.KeyName.LEFT_CONTROL
 KEY_MODIFIER = gui.KeyName.LEFT_SHIFT
@@ -16,118 +17,185 @@ def get_key_name(key):
         return chr(key)
 
 
+class Binding:
+    @property
+    def key(self):
+        return self._key
+
+    @property
+    def description(self):
+        return self._description
+
+    @property
+    def callback(self):
+        return self._callback
+
+    @property
+    def uses_modifier(self):
+        return self._uses_modifier
+
+    @property
+    def menu(self):
+        return self._menu
+
+    @property
+    def key_instruction(self):
+        if self.key is None:
+            return ""
+        line = "("
+        if self.key[1]:
+            line += f"{get_key_name(KEY_EXTRA_FUNCTIONS)} + "
+        if self.uses_modifier:
+            line += f"[{get_key_name(KEY_MODIFIER)}] + "
+        line += f"{get_key_name(self.key[0])})"
+        return line
+
+    @property
+    def description_and_instruction(self):
+        instruction = self.key_instruction
+        if instruction == "":
+            return self.description
+        else:
+            return self.description + " " + instruction
+
+    def __init__(
+        self,
+        description: str,
+        callback: Callable,
+        key: Union[None, tuple] = None,
+        uses_modifier: int = False,
+        menu: Union[str, None] = None,
+    ):
+        self._description = description
+        self._callback = callback
+        self._key = key
+        self._uses_modifier = uses_modifier
+        self._menu = menu
+
+
 class Hotkeys:
     def __init__(self, app_instance: AppWindow):
         self._app_instance = app_instance
         self._is_extra_functions = False
         self._is_modifier_pressed = False
         bindings = {
-            (gui.KeyName.SPACE, False): {
-                "desc": "Selected/unselect current",
-                "callback": self._cb_toggle,
-                "modifier": True,
-                "menu": None,
-            },
-            (gui.KeyName.LEFT, False): {
-                "desc": "[Fast] Previous",
-                "callback": self._cb_previous,
-                "modifier": True,
-                "menu": None,
-            },
-            (gui.KeyName.RIGHT, False): {
-                "desc": "[Fast] Next",
-                "callback": self._cb_next,
-                "modifier": True,
-                "menu": None,
-            },
-            (gui.KeyName.DELETE, False): {
-                "desc": "Delete elements",
-                "callback": self._cb_delete,
-                "modifier": False,
-                "menu": "Edit",
-            },
-            (gui.KeyName.C, True): {
-                "desc": "Copy",
-                "callback": self._cb_copy,
-                "modifier": False,
-                "menu": "Edit",
-            },
-            (gui.KeyName.V, True): {
-                "desc": "Paste",
-                "callback": self._cb_paste,
-                "modifier": False,
-                "menu": "Edit",
-            },
-            (gui.KeyName.H, False): {
-                "desc": "Show help",
-                "callback": self._cb_toggle_help_panel,
-                "modifier": True,
-                "menu": None,
-            },
-            (gui.KeyName.I, False): {
-                "desc": "Print info",
-                "callback": self._cb_print_info,
-                "modifier": True,
-                "menu": "Show",
-            },
-            (gui.KeyName.P, False): {
-                "desc": "Show Preferences",
-                "callback": self._cb_toggle_settings_panel,
-                "modifier": True,
-                "menu": "Show",
-            },
-            (gui.KeyName.ENTER, True): {
-                "desc": "Repeat last function",
-                "callback": self._cb_repeat_last_function,
-                "modifier": False,
-                "menu": "Edit",
-            },
-            (gui.KeyName.Z, True): {
-                "desc": "Undo [Redo]",
-                "callback": self._cb_undo_redo,
-                "modifier": True,
-                "menu": "Edit",
-            },
-            (gui.KeyName.U, True): {
-                "desc": "[Un]Hide",
-                "callback": self._cb_hide_unhide,
-                "modifier": True,
-                "menu": None,
-            },
-            (gui.KeyName.A, True): {
-                "desc": "[Un]select all",
-                "callback": self._cb_toggle_all,
-                "modifier": True,
-                "menu": None,
-            },
-            (gui.KeyName.L, True): {
-                "desc": "[Un]select last",
-                "callback": self._cb_toggle_last,
-                "modifier": True,
-                "menu": None,
-            },
-            (gui.KeyName.T, True): {
-                "desc": "[Un]select type",
-                "callback": self._cb_toggle_type,
-                "modifier": True,
-                "menu": None,
-            },
-            (gui.KeyName.ESCAPE, False): {
-                "desc": "Quit",
-                "callback": self._cb_quit,
-                "modifier": False,
-                "menu": None,
-            },
+            (gui.KeyName.SPACE, False): Binding(
+                description="Selected/unselect current",
+                callback=self._cb_toggle,
+                uses_modifier=True,
+                menu=None,
+            ),
+            (gui.KeyName.LEFT, False): Binding(
+                description="[Fast] Previous",
+                callback=self._cb_previous,
+                uses_modifier=True,
+                menu=None,
+            ),
+            (gui.KeyName.RIGHT, False): Binding(
+                description="[Fast] Next",
+                callback=self._cb_next,
+                uses_modifier=True,
+                menu=None,
+            ),
+            (gui.KeyName.DELETE, False): Binding(
+                description="Delete elements",
+                callback=self._cb_delete,
+                uses_modifier=False,
+                menu="Edit",
+            ),
+            (gui.KeyName.C, True): Binding(
+                description="Copy",
+                callback=self._cb_copy,
+                uses_modifier=False,
+                menu="Edit",
+            ),
+            (gui.KeyName.V, True): Binding(
+                description="Paste",
+                callback=self._cb_paste,
+                uses_modifier=False,
+                menu="Edit",
+            ),
+            (gui.KeyName.H, False): Binding(
+                description="Show Help",
+                callback=self._cb_toggle_help_panel,
+                uses_modifier=False,
+                menu=None,  # This is added later
+            ),
+            (gui.KeyName.I, False): Binding(
+                description="Show Info",
+                callback=self._cb_toggle_info_panel,
+                uses_modifier=False,
+                menu=None,  # This is added later
+            ),
+            (gui.KeyName.P, False): Binding(
+                description="Show Preferences",
+                callback=self._cb_toggle_settings_panel,
+                uses_modifier=False,
+                menu=None,  # This is added later
+            ),
+            (gui.KeyName.ENTER, True): Binding(
+                description="Repeat last function",
+                callback=self._cb_repeat_last_function,
+                uses_modifier=False,
+                menu="Edit",
+            ),
+            (gui.KeyName.Z, True): Binding(
+                description="Undo [Redo]",
+                callback=self._cb_undo_redo,
+                uses_modifier=True,
+                menu="Edit",
+            ),
+            (gui.KeyName.U, True): Binding(
+                description="[Un]Hide",
+                callback=self._cb_hide_unhide,
+                uses_modifier=True,
+                menu=None,
+            ),
+            (gui.KeyName.A, True): Binding(
+                description="[Un]select all",
+                callback=self._cb_toggle_all,
+                uses_modifier=True,
+                menu=None,
+            ),
+            (gui.KeyName.L, True): Binding(
+                description="[Un]select last",
+                callback=self._cb_toggle_last,
+                uses_modifier=True,
+                menu=None,
+            ),
+            (gui.KeyName.T, True): Binding(
+                description="[Un]select type",
+                callback=self._cb_toggle_type,
+                uses_modifier=True,
+                menu=None,
+            ),
+            (gui.KeyName.ESCAPE, False): Binding(
+                description="Quit",
+                callback=self._cb_quit,
+                uses_modifier=False,
+                menu=None,
+            ),
         }
+
+        # Create menu entries for all hotkeys that contain 'menu', except extensions:
+        for key, binding in bindings.items():
+            binding._key = key
+            if binding.menu is not None:
+                app_instance._add_menu_item(
+                    binding.menu,
+                    binding.description_and_instruction,
+                    binding.callback,
+                )
 
         extension_key_mappings = app_instance.extension_key_mappings
 
         for key, extension in extension_key_mappings.items():
-            bindings[(key, True)] = {
-                "desc": extension.name,
-                "callback": extension.run,
-                "modifier": False,
-            }
+            bindings[key, True] = Binding(
+                key=(key, True),
+                description=extension.name,
+                callback=extension.run,
+                uses_modifier=False,
+            )
 
         for key, _ in bindings.keys():
             if key not in extension_key_mappings:
@@ -141,15 +209,6 @@ class Hotkeys:
 
             extension._name += f" ({get_key_name(KEY_EXTRA_FUNCTIONS)} + {chr(hotkey)})"
 
-        for key, value in bindings.items():
-            line = "("
-            if key[1]:
-                line += f"{get_key_name(KEY_EXTRA_FUNCTIONS)} + "
-            if value["modifier"]:
-                line += f"[{get_key_name(KEY_MODIFIER)}] + "
-            line += f"{get_key_name(key[0])})"  #:\n- {value['desc']}"
-            value["key_instruction"] = line
-
         self._bindings = bindings
 
     @property
@@ -158,7 +217,7 @@ class Hotkeys:
 
     def find_binding(self, desc: str):
         for binding in self.bindings.values():
-            if binding["desc"] == desc:
+            if binding.description == desc:
                 return binding
         return None
 
@@ -182,7 +241,7 @@ class Hotkeys:
             # "******************** KEYS: ***********************\n"
             "\n\n".join(
                 [
-                    binding["key_instruction"] + f":\n- {binding['desc']}"
+                    f"{binding.key_instruction}:\n- {binding.description}"
                     for binding in self.bindings.values()
                 ]
             )
@@ -218,7 +277,7 @@ class Hotkeys:
         binding = self.bindings.get((event.key, self._is_extra_functions))
 
         if binding is not None:
-            binding["callback"]()
+            binding.callback()
             return gui.Widget.EventCallbackResult.HANDLED
 
         return gui.Widget.EventCallbackResult.IGNORED
@@ -318,27 +377,6 @@ class Hotkeys:
     #     self.finish = True
     #     vis.close()
 
-    def _cb_print_info(self):
-        app_instance = self._app_instance
-        elem = app_instance.current_element
-
-        print()
-        print(
-            f"Current element: ({app_instance.i + 1}/{len(app_instance.elements)}): {elem['raw']}"
-        )
-        app_instance.print_debug(f"drawable: {elem['drawable']}")
-        app_instance.print_debug(
-            f"Current index: {app_instance.i}, old index: {app_instance.i_old}"
-        )
-        print(f"Current selected: {app_instance.is_current_selected}")
-        print(f"Current bbox: {app_instance._current_bbox}")
-        print(f"{len(app_instance.elements)} current elements")
-        print(f"{len(app_instance._fixed_elements)} fixed elements")
-        print(f"{len(app_instance._hidden_elements)} hidden elements")
-        print(f"{len(app_instance._past_states)} past states (for undoing)")
-        print(f"{len(app_instance._future_states)} future states (for redoing)")
-        time.sleep(0.5)
-
     # def _cb_center_current(self, vis, action, mods):
     #     if not self._is_modifier_extra or action == 1:
     #         return
@@ -359,6 +397,9 @@ class Hotkeys:
 
     def _cb_toggle_help_panel(self):
         self._app_instance._menu_help._on_help_toggle()
+
+    def _cb_toggle_info_panel(self):
+        self._app_instance._menu_help._on_info_toggle()
 
     def _cb_toggle_settings_panel(self):
         self._app_instance._settings._on_menu_toggle()
