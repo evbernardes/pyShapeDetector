@@ -87,15 +87,6 @@ class AppWindow:
         Should be deprecated.
     """
 
-    MENU_QUIT = 3
-    MENU_SHOW_FUNCTIONS = 2
-    NUMBER_SUBFUNCTIONS = 10
-    MENU_SUBFUNCTIONS = range(
-        MENU_SHOW_FUNCTIONS + 1, MENU_SHOW_FUNCTIONS + 1 + NUMBER_SUBFUNCTIONS
-    )
-    MENU_SHOW_SETTINGS = 20
-    MENU_HELP = 21
-
     def __init__(
         self,
         window_name="",
