@@ -256,7 +256,7 @@ class ParameterInt(Parameter):
         return element
 
     def _parse_descriptor_(self, parameter_descriptor: dict):
-        self.limit_setter = limit_setter = parameter_descriptor.pop("limit_setter", None)
+        self.limit_setter = parameter_descriptor.pop("limit_setter", None)
         limits = parameter_descriptor.pop("limits", None)
         value = parameter_descriptor.pop("default", None)
 
@@ -380,7 +380,7 @@ class ParameterFloat(Parameter):
         return element
 
     def _parse_descriptor_(self, parameter_descriptor: dict):
-        self.limit_setter = limit_setter = parameter_descriptor.pop("limit_setter", None)
+        self.limit_setter = parameter_descriptor.pop("limit_setter", None)
         limits = parameter_descriptor.pop("limits", None)
         value = parameter_descriptor.pop("default", None)
 
