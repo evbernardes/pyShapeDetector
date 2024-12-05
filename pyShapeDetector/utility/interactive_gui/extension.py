@@ -17,14 +17,8 @@ class Extension:
     DEFAULT_MENU_NAME = "Misc functions"
 
     @property
-    def as_binding(self):
-        return Binding(
-            key=self.hotkey,
-            lctrl=True,
-            lshift=False,
-            description=self.name,
-            callback=self.run,
-        )
+    def binding(self):
+        return self._binding
 
     @property
     def function(self):
@@ -51,6 +45,14 @@ class Extension:
         return self._hotkey
 
     @property
+    def lctrl(self):
+        return self._lctrl
+
+    @property
+    def lshift(self):
+        return self._lshift
+
+    @property
     def hotkey_number(self):
         if self.hotkey is None:
             return None
@@ -70,9 +72,25 @@ class Extension:
 
     def _set_hotkey(self, descriptor: dict):
         hotkey = descriptor.get("hotkey", None)
+        lctrl = descriptor.get("lctrl", None)
+        lshift = descriptor.get("lshift", None)
 
         if hotkey is None:
-            self._hotkey = hotkey
+            if lctrl is not None:
+                warnings.warn(
+                    "Hotkey for extension {self.name} set to 'None', "
+                    "ignoring 'lctrl' input."
+                )
+
+            if lshift is not None:
+                warnings.warn(
+                    "Hotkey for extension {self.name} set to 'None', "
+                    "ignoring 'lshift' input."
+                )
+
+            self._hotkey = None
+            self._lctrl = False
+            self._lshift = False
             return
 
         if not isinstance(hotkey, int) or not (0 <= hotkey <= 9):
@@ -81,9 +99,21 @@ class Extension:
                 "Ignoring hotkey"
             )
             self._hotkey = None
+            self._lctrl = False
+            self._lshift = False
             return
 
         self._hotkey = ord(str(hotkey))
+
+        if lctrl is None:
+            self._lctrl = False
+        else:
+            self._lctrl = bool(lctrl)
+
+        if lshift is None:
+            self._lshift = False
+        else:
+            self._lshift = bool(lshift)
 
     def _set_parameters(self, descriptor: dict):
         signature = inspect.signature(self.function)
@@ -119,6 +149,16 @@ class Extension:
         self._set_hotkey(descriptor)
         self._set_parameters(descriptor)
 
+        self._binding = Binding(
+            key=self.hotkey,
+            lctrl=self.lctrl,
+            lshift=self.lshift,
+            description=self.name,
+            menu=self.menu,
+            callback=self.run,
+            creates_window=len(self.parameters) > 0,
+        )
+
     def add_to_application(self, editor_instance: Editor):
         self._editor_instance = editor_instance
 
@@ -128,8 +168,7 @@ class Extension:
         editor_instance._extensions.append(self)
 
     def add_menu_item(self):
-        name = self.as_binding.description_and_instruction
-        self._editor_instance._add_menu_item(self.menu, name, self.run)
+        self.binding.add_to_menu(self._editor_instance)
 
     def update_in_separate_window(self):
         editor_instance = self._editor_instance

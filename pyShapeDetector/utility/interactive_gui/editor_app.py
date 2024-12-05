@@ -151,19 +151,6 @@ class Editor:
         self.print_debug(f"Submenu '{path.as_posix()}' created.")
         return self._submenus[path]
 
-    def _add_menu_item(self, menu_path, name, on_activated, set_checked=False):
-        id = next(self._submenu_id_generator)
-
-        menu = self._get_submenu_from_path(Path(menu_path))
-        self.print_debug(
-            f"Assigned id {id} to item '{name}' on menu '{menu_path}'.",
-            require_verbose=True,
-        )
-        menu.add_item(name, id)
-        menu.set_checked(id, set_checked)
-        self._window.set_on_menu_item_activated(id, on_activated)
-        return id
-
     def print_debug(self, text, require_verbose=False):
         is_debug_activated = self._settings.debug
         is_verbose_activated = self._settings.verbose
@@ -685,7 +672,6 @@ class Editor:
 
         # 1) Set internal functions and add menu items
         self._internal_functions = InternalFunctions(self)
-        self._internal_functions.create_menu_items()
 
         # 2) Add hotkeys for both internal functions and extensions
         self._hotkeys = Hotkeys(self)
@@ -693,7 +679,18 @@ class Editor:
         self._scene.set_on_mouse(self._on_mouse)
 
         # 3) Add extension menu items
-        self._create_extension_menu_items()
+        self.print_debug(
+            f"{len(self._internal_functions.bindings)} internal functions."
+        )
+        for binding in self._internal_functions.bindings:
+            binding.add_to_menu(self)
+
+        self.print_debug(
+            f"{len(self.extensions) if self.extensions else 0} extensions loaded."
+        )
+        for extension in self.extensions:
+            extension.binding.add_to_menu(self)
+        # self._create_extension_menu_items()
 
         # 4) Finally, other menus (so that they are at the end)
         self._settings._create_menu()

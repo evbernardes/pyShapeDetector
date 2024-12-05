@@ -1,17 +1,18 @@
 from open3d.visualization import gui
 from .editor_app import Editor
+from .binding import Binding
 
 
 class MenuHelp:
-    def __init__(self, editor_instance: Editor, name="Help"):
-        self._name = name
+    def __init__(self, editor_instance: Editor, menu="Help"):
+        self._menu = menu
         self._editor_instance = editor_instance
 
     def _create_panel(self):
         window = self._editor_instance._window
         em = window.theme.font_size
 
-        _panel_collapsable = gui.CollapsableVert("Help", em, gui.Margins(0, 0, 0, 0))
+        _panel_collapsable = gui.CollapsableVert(self.menu, em, gui.Margins(0, 0, 0, 0))
 
         dlg_layout = gui.Vert(em, gui.Margins(0, 0, 0, 0))
         text = gui.Label("")
@@ -29,17 +30,23 @@ class MenuHelp:
 
         self._create_panel()
 
-        help_binding = editor_instance._internal_functions._dict["Show Help"]
-        self._help_id = editor_instance._add_menu_item(
-            self._name, help_binding.description_and_instruction, self._on_help_toggle
-        )
+        self._hotkeys_binding = editor_instance._internal_functions._dict[
+            "Show Hotkeys"
+        ]
+        self._hotkeys_binding._menu = self._menu
+        self._hotkeys_binding.add_to_menu(self._editor_instance)
 
-        info_binding = editor_instance._internal_functions._dict["Show Info"]
-        self._info_id = editor_instance._add_menu_item(
-            self._name, info_binding.description_and_instruction, self._on_info_toggle
-        )
+        self._info_binding = editor_instance._internal_functions._dict["Show Info"]
+        self._info_binding._menu = self._menu
+        self._info_binding.add_to_menu(self._editor_instance)
 
-        editor_instance._add_menu_item(self._name, "About", self._on_menu_about)
+        self._about_binding = Binding(
+            description="About",
+            menu=self._menu,
+            callback=self._on_menu_about,
+            creates_window=True,
+        )
+        self._about_binding.add_to_menu(self._editor_instance)
 
     def _on_help_toggle(self):
         editor_instance = self._editor_instance
@@ -61,7 +68,7 @@ class MenuHelp:
                 + "\n- Set current with mouse and toggle"
             )
 
-        menubar.set_checked(self._help_id, self._panel.visible)
+        menubar.set_checked(self._hotkeys_binding.menu_id, self._panel.visible)
         window.set_needs_layout()
 
     def _on_info_toggle(self):
@@ -71,7 +78,7 @@ class MenuHelp:
 
         editor_instance._info.visible = not editor_instance._info.visible
 
-        menubar.set_checked(self._info_id, editor_instance._info.visible)
+        menubar.set_checked(self._info_binding.menu_id, editor_instance._info.visible)
         window.set_needs_layout()
 
     def _on_menu_about(self):
@@ -81,7 +88,13 @@ class MenuHelp:
 
         # Add the text
         dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
-        dlg_layout.add_child(gui.Label("Shape Detector"))
+
+        title = gui.Horiz()
+        title.add_stretch()
+        title.add_child(gui.Label("Shape Detector"))
+        title.add_stretch()
+
+        dlg_layout.add_child(title)
         dlg_layout.add_child(
             gui.Label(
                 "Developed by Evandro Bernardes\nVrije Universiteit Brussel (VUB)"
@@ -96,11 +109,11 @@ class MenuHelp:
         ok = gui.Button("OK")
         ok.set_on_clicked(self._on_about_ok)
 
-        h = gui.Horiz()
-        h.add_stretch()
-        h.add_child(ok)
-        h.add_stretch()
-        dlg_layout.add_child(h)
+        title = gui.Horiz()
+        title.add_stretch()
+        title.add_child(ok)
+        title.add_stretch()
+        dlg_layout.add_child(title)
 
         dlg.add_child(dlg_layout)
         window.show_dialog(dlg)

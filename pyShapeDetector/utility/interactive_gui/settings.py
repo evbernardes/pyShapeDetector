@@ -1,6 +1,7 @@
 import numpy as np
 from open3d.visualization import gui
 from .editor_app import Editor
+from .binding import Binding
 
 COLOR_BBOX_SELECTED_DEFAULT = np.array([0, 204.8, 0.0]) / 255
 COLOR_BBOX_UNSELECTED_DEFAULT = np.array([255.0, 0.0, 0.0]) / 255
@@ -50,9 +51,9 @@ class Settings:
         ("number_redo_states", int, (1, 10)),
     ]
 
-    def __init__(self, editor_instance: Editor, name="Preferences", **kwargs):
+    def __init__(self, editor_instance: Editor, menu="Preferences", **kwargs):
         self._editor_instance = editor_instance
-        self._name = name
+        self._menu = menu
 
         for key, value in kwargs.items():
             if hasattr(self, key):
@@ -468,19 +469,15 @@ class Settings:
 
         self._create_panel()
 
-        preferences_binding = editor_instance._internal_functions._dict[
+        self._preferences_binding = editor_instance._internal_functions._dict[
             "Show Preferences"
         ]
-
-        self._on_menu_id = editor_instance._add_menu_item(
-            self._name,
-            preferences_binding.description_and_instruction,
-            self._on_menu_toggle,
-        )
+        self._preferences_binding._menu = self._menu
+        self._preferences_binding.add_to_menu(editor_instance)
 
     def _on_menu_toggle(self):
         window = self._editor_instance._window
         menubar = self._editor_instance._menubar
         self._panel.visible = not self._panel.visible
-        menubar.set_checked(self._on_menu_id, self._panel.visible)
+        menubar.set_checked(self._preferences_binding._menu_id, self._panel.visible)
         window.set_needs_layout()

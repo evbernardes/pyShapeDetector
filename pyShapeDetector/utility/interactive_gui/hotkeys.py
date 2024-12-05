@@ -6,20 +6,19 @@ from .binding import Binding, KEY_LEFT_CONTROL, KEY_LEFT_SHIFT, _get_key_name
 
 class Hotkeys:
     def add_one_binding(self, binding: Binding):
-        key = (binding.key, binding.lctrl)
+        key = (binding.key, binding.lctrl, binding.lshift)
         if binding.key is None:
             return
 
         if key in self._bindings_map:
-            if binding.lctrl:
-                extra_text = f"{_get_key_name(KEY_LEFT_CONTROL)} + "
-            else:
-                extra_text = ""
             warnings.warn(
-                f"hotkey {extra_text}{binding} previously assigned to function "
-                f"{self._bindings_map[key].description}, resetting it to {binding.description}."
+                f"hotkey {binding.key_instruction} previously assigned to "
+                f"{self._bindings_map[key].description}, resetting it to "
+                "{binding.description}."
             )
             self._bindings_map[key]._key = None
+            self._bindings_map[key]._lctrl = False
+            self._bindings_map[key]._lshift = False
 
         self._bindings_map[key] = binding
 
@@ -35,7 +34,7 @@ class Hotkeys:
 
         # Then, get extension bindings
         for extension in editor_instance.extensions:
-            self.add_one_binding(extension.as_binding)
+            self.add_one_binding(extension.binding)
 
     @property
     def bindings_map(self):
@@ -64,7 +63,9 @@ class Hotkeys:
             return gui.Widget.EventCallbackResult.IGNORED
 
         # If down key, check if it's one of the callbacks:
-        binding = self.bindings_map.get((event.key, self._is_lctrl_pressed))
+        binding = self.bindings_map.get(
+            (event.key, self._is_lctrl_pressed, self._is_lshift_pressed)
+        )
 
         if binding is not None:
             binding.callback()

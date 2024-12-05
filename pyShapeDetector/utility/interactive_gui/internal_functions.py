@@ -38,16 +38,32 @@ class InternalFunctions:
                 key=gui.KeyName.LEFT,
                 lctrl=False,
                 lshift=False,
-                description="[Fast] Previous",
+                description="Previous",
                 callback=self._cb_previous,
+                menu=None,
+            ),
+            Binding(
+                key=gui.KeyName.LEFT,
+                lctrl=True,
+                lshift=False,
+                description="Fast Previous",
+                callback=self._cb_fast_previous,
                 menu=None,
             ),
             Binding(
                 key=gui.KeyName.RIGHT,
                 lctrl=False,
                 lshift=False,
-                description="[Fast] Next",
+                description="Next",
                 callback=self._cb_next,
+                menu=None,
+            ),
+            Binding(
+                key=gui.KeyName.RIGHT,
+                lctrl=False,
+                lshift=True,
+                description="Fast Next",
+                callback=self._cb_fast_next,
                 menu=None,
             ),
             Binding(
@@ -78,8 +94,8 @@ class InternalFunctions:
                 key=gui.KeyName.H,
                 lctrl=False,
                 lshift=False,
-                description="Show Help",
-                callback=self._cb_toggle_help_panel,
+                description="Show Hotkeys",
+                callback=self._cb_toggle_hotkeys_panel,
                 menu=None,  # This is added later
             ),
             Binding(
@@ -109,33 +125,65 @@ class InternalFunctions:
             Binding(
                 key=gui.KeyName.Z,
                 lctrl=True,
+                lshift=False,
+                description="Undo",
+                callback=self._cb_undo,
+                menu="Edit",
+            ),
+            Binding(
+                key=gui.KeyName.Z,
+                lctrl=True,
                 lshift=True,
-                description="Undo [Redo]",
-                callback=self._cb_undo_redo,
+                description="Redo",
+                callback=self._cb_redo,
                 menu="Edit",
             ),
             Binding(
                 key=gui.KeyName.U,
                 lctrl=True,
+                lshift=False,
+                description="Hide toggled elements",
+                callback=self._cb_hide,
+                menu=None,
+            ),
+            Binding(
+                key=gui.KeyName.U,
+                lctrl=True,
                 lshift=True,
-                description="[Un]Hide",
-                callback=self._cb_hide_unhide,
+                description="Unhide all hidden elements",
+                callback=self._cb_unhide,
+                menu=None,
+            ),
+            Binding(
+                key=gui.KeyName.A,
+                lctrl=True,
+                lshift=False,
+                description="Select all",
+                callback=self._cb_select_all,
                 menu=None,
             ),
             Binding(
                 key=gui.KeyName.A,
                 lctrl=True,
                 lshift=True,
-                description="[Un]select all",
-                callback=self._cb_toggle_all,
+                description="Unselect all",
+                callback=self._cb_unselect_all,
+                menu=None,
+            ),
+            Binding(
+                key=gui.KeyName.L,
+                lctrl=True,
+                lshift=False,
+                description="Select last",
+                callback=self._cb_select_last,
                 menu=None,
             ),
             Binding(
                 key=gui.KeyName.L,
                 lctrl=True,
                 lshift=True,
-                description="[Un]select last",
-                callback=self._cb_toggle_last,
+                description="Unselect last",
+                callback=self._cb_unselect_last,
                 menu=None,
             ),
             Binding(
@@ -144,20 +192,12 @@ class InternalFunctions:
                 lshift=False,
                 description="[Un]select per type",
                 callback=self._cb_toggle_type,
-                menu=None,
+                menu="Edit",
+                creates_window=True,
             ),
         ]
 
         self._dict = {binding.description: binding for binding in self._bindings}
-
-    def create_menu_items(self):
-        for binding in self.bindings:
-            if binding.menu is not None:
-                self._editor_instance._add_menu_item(
-                    binding.menu,
-                    binding.description_and_instruction,
-                    binding.callback,
-                )
 
     def _cb_quit_app(self):
         window = self._editor_instance._window
@@ -203,14 +243,6 @@ class InternalFunctions:
         editor_instance.is_current_selected = not editor_instance.is_current_selected
         editor_instance._update_current_idx()
 
-    def _cb_next(self):
-        """Highlight next element in list."""
-        delta = 1 + 4 * self.is_lshift_pressed
-        editor_instance = self._editor_instance
-        editor_instance._update_current_idx(
-            min(editor_instance.i + delta, len(editor_instance.elements) - 1)
-        )
-
     def _cb_delete(self):
         """Delete current elements."""
 
@@ -240,24 +272,51 @@ class InternalFunctions:
         self._editor_instance._apply_function_to_elements(paste)
         editor_instance._copied_elements = []
 
-    def _cb_previous(self):
-        """Highlight previous element in list."""
-        delta = 1 + 4 * self.is_lshift_pressed
+    def _shift_current(self, delta):
+        """Shifts 'current index' pointer checking if within limits"""
         editor_instance = self._editor_instance
-        editor_instance._update_current_idx(max(editor_instance.i - delta, 0))
+        new_idx = min(
+            max(editor_instance.i + delta, 0), len(editor_instance.elements) - 1
+        )
+        editor_instance._update_current_idx(new_idx)
 
-    def _cb_toggle_all(self):
-        """Toggle the all elements between all selected/all unselected."""
-        self._editor_instance._toggle_indices(None)
+    def _cb_next(self):
+        self._shift_current(+1)
 
-    def _cb_toggle_last(self):
-        """Toggle the elements from last output."""
+    def _cb_fast_next(self):
+        self._shift_current(+5)
+
+    def _cb_previous(self):
+        self._shift_current(-1)
+
+    def _cb_fast_previous(self):
+        self._shift_current(-5)
+
+    def _cb_select_all(self):
+        """Toggle the all elements to selected."""
+        self._editor_instance._toggle_indices(None, to_value=True)
+
+    def _cb_unselect_all(self):
+        """Toggle the all elements between to unselected."""
+        self._editor_instance._toggle_indices(None, to_value=False)
+
+    def _cb_select_last(self):
+        """Toggle the elements from last output to selected."""
         editor_instance = self._editor_instance
         if len(editor_instance._past_states) == 0:
             return
 
         num_outputs = editor_instance._past_states[-1]["num_outputs"]
-        editor_instance._toggle_indices(slice(-num_outputs, None))
+        editor_instance._toggle_indices(slice(-num_outputs, None), to_value=True)
+
+    def _cb_unselect_last(self):
+        """Toggle the elements from last output to unselected."""
+        editor_instance = self._editor_instance
+        if len(editor_instance._past_states) == 0:
+            return
+
+        num_outputs = editor_instance._past_states[-1]["num_outputs"]
+        editor_instance._toggle_indices(slice(-num_outputs, None), to_value=False)
 
     def _cb_toggle_type(self):
         editor_instance = self._editor_instance
@@ -314,7 +373,7 @@ class InternalFunctions:
             editor_instance.print_debug(f"Re-applying last function: {func}")
             editor_instance._apply_function_to_elements(func, update_parameters=False)
 
-    def _cb_toggle_help_panel(self):
+    def _cb_toggle_hotkeys_panel(self):
         self._editor_instance._menu_help._on_help_toggle()
 
     def _cb_toggle_info_panel(self):
@@ -323,95 +382,104 @@ class InternalFunctions:
     def _cb_toggle_settings_panel(self):
         self._editor_instance._settings._on_menu_toggle()
 
-    def _cb_hide_unhide(self):
-        """Hide selected elements or unhide all hidden elements."""
+    def _cb_hide(self):
+        """Hide selected elements."""
 
         editor_instance = self._editor_instance
         indices = editor_instance.selected_indices
+        if len(indices) == 0:
+            return
 
-        if self.is_lshift_pressed:
-            # UNHIDE
-            editor_instance._insert_elements(
-                editor_instance._hidden_elements, selected=True, to_gui=True
-            )
-            editor_instance._hidden_elements = []
-
-        else:
-            # HIDE SELECTED
-            editor_instance._hidden_elements += editor_instance._pop_elements(
-                indices, from_gui=True
-            )
-            editor_instance.selected = False
+        editor_instance._hidden_elements += editor_instance._pop_elements(
+            indices, from_gui=True
+        )
+        editor_instance.selected = False
 
         # TODO: find a way to make hiding work with undoing
         editor_instance._past_states = []
         editor_instance._future_states = []
         editor_instance._update_plane_boundaries()
 
-    def _cb_undo_redo(self):
+    def _cb_unhide(self):
+        """Unhide all hidden elements."""
+
         editor_instance = self._editor_instance
-        if self.is_lshift_pressed:
-            # REDO
-            if len(editor_instance._future_states) == 0:
-                return
+        if len(editor_instance._hidden_elements) == 0:
+            return
 
-            future_state = editor_instance._future_states.pop()
+        editor_instance._insert_elements(
+            editor_instance._hidden_elements, selected=True, to_gui=True
+        )
+        editor_instance._hidden_elements = []
 
-            modified_elements = future_state["modified_elements"]
-            indices = future_state["indices"]
+        # TODO: find a way to make hiding work with undoing
+        editor_instance._past_states = []
+        editor_instance._future_states = []
+        editor_instance._update_plane_boundaries()
 
-            editor_instance.print_debug(
-                f"Redoing last operation, removing {len(indices)} inputs and "
-                f"resetting {len(modified_elements)} inputs."
-            )
+    def _cb_undo(self):
+        editor_instance = self._editor_instance
 
-            input_elements = [editor_instance.elements[i]["raw"] for i in indices]
-            editor_instance._save_state(indices, input_elements, len(modified_elements))
+        if len(editor_instance._past_states) == 0:
+            return
 
-            editor_instance.i = future_state["current_index"]
-            editor_instance._pop_elements(indices, from_gui=True)
-            editor_instance._insert_elements(modified_elements, to_gui=True)
+        last_state = editor_instance._past_states.pop()
+        indices = last_state["indices"]
+        elements = last_state["elements"]
+        num_outputs = last_state["num_outputs"]
+        num_elems = len(editor_instance.elements)
 
-            editor_instance._update_current_idx(len(editor_instance.elements) - 1)
-        else:
-            # UNDO
-            if len(editor_instance._past_states) == 0:
-                return
+        editor_instance.print_debug(
+            f"Undoing last operation, removing {num_outputs} outputs and "
+            f"resetting {len(elements)} inputs."
+        )
 
-            last_state = editor_instance._past_states.pop()
-            indices = last_state["indices"]
-            elements = last_state["elements"]
-            num_outputs = last_state["num_outputs"]
-            num_elems = len(editor_instance.elements)
+        indices_to_pop = range(num_elems - num_outputs, num_elems)
+        modified_elements = editor_instance._pop_elements(indices_to_pop, from_gui=True)
+        editor_instance._insert_elements(elements, indices, selected=True, to_gui=True)
 
-            editor_instance.print_debug(
-                f"Undoing last operation, removing {num_outputs} outputs and "
-                f"resetting {len(elements)} inputs."
-            )
+        editor_instance._future_states.append(
+            {
+                "modified_elements": modified_elements,
+                "indices": indices,
+                "current_index": editor_instance.i,
+            }
+        )
 
-            indices_to_pop = range(num_elems - num_outputs, num_elems)
-            modified_elements = editor_instance._pop_elements(
-                indices_to_pop, from_gui=True
-            )
-            editor_instance._insert_elements(
-                elements, indices, selected=True, to_gui=True
-            )
+        while (
+            len(editor_instance._future_states)
+            > editor_instance._settings.number_redo_states
+        ):
+            editor_instance._future_states.pop(0)
 
-            editor_instance._future_states.append(
-                {
-                    "modified_elements": modified_elements,
-                    "indices": indices,
-                    "current_index": editor_instance.i,
-                }
-            )
+        if len(indices) > 0:
+            editor_instance._update_current_idx(indices[-1])
 
-            while (
-                len(editor_instance._future_states)
-                > editor_instance._settings.number_redo_states
-            ):
-                editor_instance._future_states.pop(0)
+        editor_instance._update_plane_boundaries()
 
-            if len(indices) > 0:
-                editor_instance._update_current_idx(indices[-1])
+    def _cb_redo(self):
+        editor_instance = self._editor_instance
+
+        if len(editor_instance._future_states) == 0:
+            return
+
+        future_state = editor_instance._future_states.pop()
+
+        modified_elements = future_state["modified_elements"]
+        indices = future_state["indices"]
+
+        editor_instance.print_debug(
+            f"Redoing last operation, removing {len(indices)} inputs and "
+            f"resetting {len(modified_elements)} inputs."
+        )
+
+        input_elements = [editor_instance.elements[i]["raw"] for i in indices]
+        editor_instance._save_state(indices, input_elements, len(modified_elements))
+
+        editor_instance.i = future_state["current_index"]
+        editor_instance._pop_elements(indices, from_gui=True)
+        editor_instance._insert_elements(modified_elements, to_gui=True)
+
+        editor_instance._update_current_idx(len(editor_instance.elements) - 1)
 
         editor_instance._update_plane_boundaries()
