@@ -121,8 +121,8 @@ class InternalFunctions:
                 key=gui.KeyName.R,
                 lctrl=True,
                 lshift=False,
-                description="Repeat last function",
-                callback=self._cb_repeat_last_function,
+                description="Repeat last extension",
+                callback=self._cb_repeat_last_extension,
                 menu="Edit",
             ),
             Binding(
@@ -389,13 +389,13 @@ class InternalFunctions:
 
         temp_window.add_child(dlg_layout)
 
-    def _cb_repeat_last_function(self):
+    def _cb_repeat_last_extension(self):
         editor_instance = self._editor_instance
-        func = editor_instance._last_used_function
+        ext = editor_instance._last_used_extension
 
-        if func is not None:
-            editor_instance.print_debug(f"Re-applying last function: {func}")
-            editor_instance._apply_function_to_elements(func, update_parameters=False)
+        if ext is not None:
+            editor_instance.print_debug(f"Re-applying last function: {ext.name}")
+            ext._apply_to_elements()
 
     def _cb_toggle_hotkeys_panel(self):
         self._editor_instance._menu_help._on_help_toggle()

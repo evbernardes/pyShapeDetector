@@ -3,6 +3,7 @@
 import copy
 import warnings
 import inspect
+import traceback
 from typing import Union, Callable
 
 from open3d.visualization import gui
@@ -206,7 +207,86 @@ class Extension:
     def add_menu_item(self):
         self.binding.add_to_menu(self._editor_instance)
 
-    def run_in_window(self):
+    def run(self):
+        event_result = self._create_extension_window()
+        if event_result is gui.Widget.EventCallbackResult.HANDLED:
+            return
+
+        self._apply_to_elements()
+
+    def _apply_to_elements(self):
+        editor_instance = self._editor_instance
+
+        if self.inputs == "current":
+            indices = [editor_instance.i]
+            input_elements = editor_instance.current_element["raw"]
+        elif self.inputs == "selected":
+            indices = editor_instance.selected_indices
+            input_elements = [editor_instance.elements[i]["raw"] for i in indices]
+        elif self.inputs == "current":
+            indices = list(range(len(editor_instance.elements)))
+            input_elements = [editor_instance.elements[i]["raw"] for i in indices]
+        else:
+            raise RuntimeError(
+                f"Invalid input instruction {self.inputs} "
+                f"found in extension {self.name}."
+            )
+
+        # Debug lines
+        editor_instance.print_debug(f"Applying {self.name} to {len(indices)} elements")
+        editor_instance.print_debug(f"Extension has input type {self.inputs}")
+        editor_instance.print_debug(f"Indices: {indices}.", require_verbose=True)
+        if len(self.parameters) > 0:
+            editor_instance.print_debug(f"Parameters: {self.parameters}.")
+
+        try:
+            output_elements = self.function(input_elements, **self.parameters_kwargs)
+        except KeyboardInterrupt:
+            return
+        except Exception as e:
+            warnings.warn(
+                f"Failed to apply {self.name} extension to "
+                f"elements in indices {indices}, got:"
+            )
+            traceback.print_exc()
+
+        # assures it's a list
+        if isinstance(output_elements, tuple):
+            output_elements = list(output_elements)
+        elif not isinstance(output_elements, list):
+            output_elements = [output_elements]
+
+        if self.inputs == "current" and len(output_elements) != 1:
+            warnings.warn(
+                "Only one output expected for extensions with "
+                f"'current' input type, got {len(output_elements)}."
+            )
+            return
+
+        editor_instance._save_state(indices, input_elements, len(output_elements))
+
+        if self.inputs == "current":
+            editor_instance._insert_elements(
+                output_elements,
+                to_gui=True,
+                selected=input_elements["selected"],
+            )
+            editor_instance._update_current_idx(len(self.elements) - 1)
+        else:
+            editor_instance._insert_elements(
+                output_elements, to_gui=True, selected=self.select_outputs
+            )
+
+        if not self.keep_inputs:
+            assert (
+                editor_instance._pop_elements(indices, from_gui=True) == input_elements
+            )
+
+        editor_instance._last_used_extension = self
+        editor_instance._future_states = []
+        editor_instance._update_plane_boundaries()
+
+    def _create_extension_window(self):
         editor_instance = self._editor_instance
 
         if len(self.parameters) == 0:
@@ -244,10 +324,7 @@ class Extension:
 
         def _on_apply():
             self._ran_at_least_once = True
-
-            self._editor_instance._apply_function_to_elements(
-                self, update_parameters=False
-            )
+            self._apply_to_elements()
 
         def _on_close():
             if not self._ran_at_least_once:
@@ -271,10 +348,3 @@ class Extension:
         temp_window.add_child(dlg_layout)
 
         return gui.Widget.EventCallbackResult.HANDLED
-
-    def run(self):
-        event_result = self.run_in_window()
-        if event_result is gui.Widget.EventCallbackResult.HANDLED:
-            return
-
-        self._editor_instance._apply_function_to_elements(self, update_parameters=False)

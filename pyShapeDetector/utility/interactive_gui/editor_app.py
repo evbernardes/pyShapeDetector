@@ -16,12 +16,10 @@ import inspect
 import itertools
 import numpy as np
 from pathlib import Path
-from open3d.utility import Vector3dVector
 from open3d.visualization import gui, rendering
 
 
 from .helpers import (
-    get_pretty_name,
     extract_element_colors,
     set_element_colors,
     get_painted_element,
@@ -106,7 +104,7 @@ class Editor:
         self._pre_selected = []
         self._current_bbox = None
         self._extensions = None
-        self._last_used_function = None
+        self._last_used_extension = None
         self._select_filter = lambda x: True
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
@@ -833,17 +831,9 @@ class Editor:
             if n := len(self._hidden_elements):
                 self._info.text += f" | {n} hidden elements"
 
-            if (func := self._last_used_function) is not None:
-                from .extension import Extension
-
-                if isinstance(func, Extension):
-                    name = func.name
-                    params = func.parameters_kwargs
-                elif callable(func):
-                    name = get_pretty_name(func)
-                    params = {}
-                else:
-                    assert False
+            if (ext := self._last_used_extension) is not None:
+                name = ext.name
+                params = ext.parameters_kwargs
 
                 self._info.text += f"\nLast used function: {name}"
                 if len(params) > 0:
@@ -910,100 +900,6 @@ class Editor:
             elem["selected"] = selected
 
         self._update_elements(indices)
-
-    def _apply_function_to_elements(
-        self, extension_or_function, update_parameters=True
-    ):
-        """Apply function to selected elements."""
-        from .extension import Extension
-
-        if isinstance(extension_or_function, Extension):
-            if update_parameters:
-                extension_or_function.run()
-                return
-
-            function = extension_or_function.function
-            kwargs = extension_or_function.parameters_kwargs
-            keep_inputs = extension_or_function.keep_inputs
-            select_outputs = extension_or_function.select_outputs
-            inputs = extension_or_function.inputs
-            if inputs == "current":
-                indices = [self.i]
-            elif inputs == "selected":
-                indices = self.selected_indices
-            elif inputs == "current":
-                indices = list(range(len(self.elements)))
-            else:
-                raise RuntimeError(
-                    f"Invalid input instruction {inputs} "
-                    f"found in extension {extension_or_function.name}."
-                )
-
-        elif callable(extension_or_function):
-            function = extension_or_function
-            kwargs = {}
-            keep_inputs = False
-            select_outputs = False
-            indices = self.selected_indices
-        else:
-            raise RuntimeError(
-                f"{extension_or_function} is neither a function nor an Extension!"
-            )
-
-        # indices = self.selected_indices
-        self.print_debug(
-            f"Applying {function.__name__} function to {len(indices)} elements, indices: "
-        )
-        self.print_debug(indices)
-        input_elements = [self.elements[i]["raw"] for i in indices]
-
-        try:
-            if inputs == "current":
-                output_elements = function(input_elements[0], **kwargs)
-            else:
-                output_elements = function(input_elements, **kwargs)
-        except KeyboardInterrupt:
-            return
-        except Exception as e:
-            warnings.warn(
-                f"Failed to apply {function.__name__} function to "
-                f"elements in indices {indices}, got following error: {str(e)}"
-            )
-            time.sleep(0.5)
-            return
-
-        # assures it's a list
-        if isinstance(output_elements, tuple):
-            output_elements = list(output_elements)
-        elif not isinstance(output_elements, list):
-            output_elements = [output_elements]
-
-        if inputs == "current" and len(output_elements) != 1:
-            warnings.warn(
-                "Only one output expected for extensions with "
-                f"'current' input type, got {len(output_elements)}."
-            )
-            return
-
-        self._save_state(indices, input_elements, len(output_elements))
-
-        if inputs == "current":
-            self._insert_elements(
-                output_elements, to_gui=True, selected=self.elements[indices[0]]["selected"]
-            )
-            self._update_current_idx(len(self.elements) - 1)
-        else:
-            self._insert_elements(output_elements, to_gui=True, selected=select_outputs)
-
-        if not keep_inputs:
-            assert self._pop_elements(indices, from_gui=True) == input_elements
-
-        # if select_outputs:
-        #     self._update_current_idx(len(self.elements) - 1)
-
-        self._last_used_function = extension_or_function
-        self._future_states = []
-        self._update_plane_boundaries()
 
     def _reset_elements_in_gui(self, startup=False, reset_fixed=False):
         """Prepare elements for visualization"""
