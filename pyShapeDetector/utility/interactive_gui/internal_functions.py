@@ -354,7 +354,7 @@ class InternalFunctions:
             # elements.append(element)
 
         def _on_ok():
-            window.close_dialog()
+            temp_window.close()
 
         ok = gui.Button("Ok")
         ok.set_on_clicked(_on_ok)
