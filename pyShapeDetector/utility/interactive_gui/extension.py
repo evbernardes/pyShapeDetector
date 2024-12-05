@@ -249,6 +249,7 @@ class Extension:
                 f"elements in indices {indices}, got:"
             )
             traceback.print_exc()
+            return
 
         # assures it's a list
         if isinstance(output_elements, tuple):

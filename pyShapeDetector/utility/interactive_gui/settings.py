@@ -1,462 +1,279 @@
+import warnings
 import numpy as np
 from open3d.visualization import gui
 from .editor_app import Editor
+from .parameter import (
+    ParameterBool,
+    ParameterInt,
+    ParameterFloat,
+    # ParameterNDArray,
+    # ParameterOptions,
+    ParameterColor,
+)
 
 COLOR_BBOX_SELECTED_DEFAULT = np.array([0, 204.8, 0.0]) / 255
 COLOR_BBOX_UNSELECTED_DEFAULT = np.array([255.0, 0.0, 0.0]) / 255
 COLOR_SELECTED_DEFAULT = np.array([178.5, 163.8, 0.0]) / 255
 COLOR_UNSELECTED_DEFAULT = np.array([76.5, 76.5, 76.5]) / 255
 
+# DEFAULT VALUES
+_draw_boundary_lines = True
+_mesh_show_back_face = True
+_paint_selected = True
+_color_selected = gui.Color(*COLOR_SELECTED_DEFAULT)
+# _color_selected_current = gui.Color(*COLOR_SELECTED_CURRENT)
+# _color_unselected = gui.Color(*COLOR_UNSELECTED_DEFAULT)
+# _color_unselected_current = gui.Color(*COLOR_UNSELECTED_CURRENT)
+_paint_random = False
+_debug = False
+_verbose = False
+_bbox_expand = 0.0
+_color_bbox_selected = gui.Color(*COLOR_BBOX_SELECTED_DEFAULT)
+_color_bbox_unselected = gui.Color(*COLOR_BBOX_UNSELECTED_DEFAULT)
+_number_points_distance = 30
+_random_color_brightness = 0.3
+_highlight_color_brightness = 0.3
+_number_undo_states = 10
+_number_redo_states = 5
+
 
 class Settings:
-    _draw_boundary_lines = True
-    _mesh_show_back_face = True
-    _paint_selected = True
-    _color_selected = gui.Color(*COLOR_SELECTED_DEFAULT)
-    # _color_selected_current = gui.Color(*COLOR_SELECTED_CURRENT)
-    # _color_unselected = gui.Color(*COLOR_UNSELECTED_DEFAULT)
-    # _color_unselected_current = gui.Color(*COLOR_UNSELECTED_CURRENT)
-    _paint_random = False
-    _debug = False
-    _verbose = False
-    _bbox_expand = 0.0
-    _color_bbox_selected = gui.Color(*COLOR_BBOX_SELECTED_DEFAULT)
-    _color_bbox_unselected = gui.Color(*COLOR_BBOX_UNSELECTED_DEFAULT)
-    _number_points_distance = 30
-    _random_color_brightness = 0.3
-    _highlight_color_brightness = 0.3
-    _number_undo_states = 10
-    _number_redo_states = 5
-
-    _options = [
-        # (name, type, limits)
-        ("draw_boundary_lines", bool, None),
-        ("mesh_show_back_face", bool, None),
-        ("paint_selected", bool, None),
-        ("color_selected", gui.Color, None),
-        # ("color_selected_current", gui.Color, None),
-        # ("color_unselected", gui.Color, None),
-        # ("color_unselected_current", gui.Color, None),
-        ("paint_random", bool, None),
-        ("debug", bool, None),
-        ("verbose", bool, None),
-        ("bbox_expand", float, (0, 2)),
-        ("color_bbox_selected", gui.Color, None),
-        ("color_bbox_unselected", gui.Color, None),
-        ("number_points_distance", int, (5, 50)),
-        ("random_color_brightness", float, (0.001, 1)),
-        ("highlight_color_brightness", float, (0.01, 1)),
-        ("number_undo_states", int, (1, 10)),
-        ("number_redo_states", int, (1, 10)),
-    ]
+    @property
+    def dict(self):
+        self._dict
 
     def __init__(self, editor_instance: Editor, menu="Preferences", **kwargs):
+        options = [
+            ParameterBool(
+                "draw_boundary_lines",
+                {
+                    "default": _draw_boundary_lines,
+                    "on_update": self._cb_draw_boundary_lines,
+                },
+            ),
+            ParameterBool(
+                "mesh_show_back_face",
+                {
+                    "default": _mesh_show_back_face,
+                    "on_update": self._cb_mesh_show_back_face,
+                },
+            ),
+            ParameterBool(
+                "paint_selected",
+                {
+                    "default": _paint_selected,
+                    "on_update": self._cb_paint_selected,
+                },
+            ),
+            # ParameterColor(
+            #     "_color_unselected",
+            #     {
+            #         "default": __color_unselected,
+            #         "on_update": self._cb__color_unselected,
+            #     },
+            # ),
+            # ParameterColor(
+            #     "color_selected_current",
+            #     {
+            #         "default": _color_selected_current,
+            #         "on_update": self._cb_color_selected_current,
+            #     },
+            # ),
+            # ParameterColor(
+            #     "color_unselected_current",
+            #     {
+            #         "default": _color_unselected_current,
+            #         "on_update": self._cb_color_unselected_current,
+            #     },
+            # ),
+            ParameterBool(
+                "paint_random",
+                {
+                    "default": _paint_random,
+                    "on_update": self._cb_paint_random,
+                },
+            ),
+            ParameterBool(
+                "debug",
+                {
+                    "default": _debug,
+                    "on_update": self._cb_debug,
+                },
+            ),
+            ParameterBool(
+                "verbose",
+                {
+                    "default": _verbose,
+                    "on_update": self._cb_verbose,
+                },
+            ),
+            ParameterFloat(
+                "bbox_expand",
+                {
+                    "default": _bbox_expand,
+                    "limits": (0, 2),
+                    "on_update": self._cb_bbox_expand,
+                },
+            ),
+            ParameterColor(
+                "color_bbox_selected",
+                {
+                    "default": _color_bbox_selected,
+                    "on_update": self._cb_color_bbox_selected,
+                },
+            ),
+            ParameterColor(
+                "color_bbox_unselected",
+                {
+                    "default": _color_bbox_unselected,
+                    "on_update": self._cb_color_bbox_unselected,
+                },
+            ),
+            ParameterInt(
+                "number_points_distance",
+                {
+                    "default": _number_points_distance,
+                    "on_update": self._cb_number_points_distance,
+                    "limits": (5, 50),
+                },
+            ),
+            ParameterFloat(
+                "random_color_brightness",
+                {
+                    "default": _random_color_brightness,
+                    "on_update": self._cb_random_color_brightness,
+                    "limits": (0.001, 1),
+                },
+            ),
+            ParameterFloat(
+                "highlight_color_brightness",
+                {
+                    "default": _highlight_color_brightness,
+                    "on_update": self._cb_highlight_color_brightness,
+                    "limits": (0.01, 1),
+                },
+            ),
+            ParameterInt(
+                "number_undo_states",
+                {
+                    "default": _number_undo_states,
+                    "on_update": self._cb_number_undo_states,
+                    "limits": (1, 10),
+                },
+            ),
+            ParameterInt(
+                "number_redo_states",
+                {
+                    "default": _number_redo_states,
+                    "on_update": self._cb_number_redo_states,
+                    "limits": (1, 10),
+                },
+            ),
+        ]
+
+        self._dict = {param.name: param for param in options}
         self._editor_instance = editor_instance
         self._menu = menu
 
         for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+            if key in self._dict:
+                try:
+                    self._dict[key].value = value
+                except Exception:
+                    warnings.warn(
+                        f"Could not initialize value of preference {key} to {value}."
+                    )
+                    setattr(self, key, value)
 
-    @property
-    def dict(self):
-        return {
-            name: self.__getattribute__(name)
-            for name, _, _ in self._options
-            if name[0] != "_"
-        }
-
-    def __repr__(self):
-        lines = "\n".join("{!r}: {!r},".format(k, v) for k, v in self.dict.items())
-        dict_str = "{\n" + lines + "}"
-        return type(self).__name__ + "(" + dict_str + ")"
-
-    @property
-    def draw_boundary_lines(self):
-        return self._draw_boundary_lines
-
-    @draw_boundary_lines.setter
-    def draw_boundary_lines(self, value):
-        if not isinstance(value, bool):
-            raise TypeError("draw_boundary_lines must be a boolean.")
-        self._draw_boundary_lines = value
-
-    def _cb_draw_boundary_lines(self, value):
-        self.draw_boundary_lines = value
+    def _cb_draw_boundary_lines(self):
         self._editor_instance._update_plane_boundaries()
 
-    @property
-    def mesh_show_back_face(self):
-        return self._mesh_show_back_face
-
-    @mesh_show_back_face.setter
-    def mesh_show_back_face(self, value):
-        if not isinstance(value, bool):
-            raise TypeError("mesh_show_back_face must be a boolean.")
-        self._mesh_show_back_face = value
-
-    def _cb_mesh_show_back_face(self, value):
-        if self.mesh_show_back_face != value:
-            self._editor_instance.print_debug(
-                f"mesh_show_back_face set from {self.mesh_show_back_face} "
-                f"to {value}, resetting..."
-            )
-            self._editor_instance._reset_elements_in_gui()
-        self.mesh_show_back_face = value
-
-    @property
-    def paint_selected(self):
-        return self._paint_selected
-
-    @paint_selected.setter
-    def paint_selected(self, value):
-        if not isinstance(value, bool):
-            raise TypeError("paint_selected must be a boolean.")
-        self._paint_selected = value
-
-    def _cb_paint_selected(self, value):
-        self.paint_selected = value
-        self._editor_instance._update_elements(None)
-
-    @property
-    def paint_random(self):
-        return self._paint_random
-
-    @paint_random.setter
-    def paint_random(self, value):
-        if not isinstance(value, bool):
-            raise TypeError("paint_random must be a boolean.")
-        self._paint_random = value
-
-    def _cb_paint_random(self, value):
-        if self.paint_random == value:
-            return
-
-        self._editor_instance.print_debug(
-            f"paint_random set from {self.paint_random} to {value}, resetting..."
-        )
-        self.paint_random = value
+    def _cb_mesh_show_back_face(self):
         self._editor_instance._reset_elements_in_gui()
 
-    @property
-    def debug(self):
-        return self._debug
+    def _cb_paint_selected(self):
+        self._editor_instance._update_elements(None)
 
-    @debug.setter
-    def debug(self, value):
-        if not isinstance(value, bool):
-            raise TypeError("debug must be a boolean.")
-        self._debug = value
+    def _cb_paint_random(self):
+        self._editor_instance._reset_elements_in_gui()
 
-    def _cb_debug(self, value):
-        self.debug = value
+    def _cb_debug(self):
+        pass
 
-    @property
-    def verbose(self):
-        return self._verbose
+    def _cb_verbose(self):
+        pass
 
-    @verbose.setter
-    def verbose(self, value):
-        if not isinstance(value, bool):
-            raise TypeError("verbose must be a boolean.")
-        self._verbose = value
-
-    def _cb_verbose(self, value):
-        self.verbose = value
-
-    @property
-    def bbox_expand(self):
-        return self._bbox_expand
-
-    @bbox_expand.setter
-    def bbox_expand(self, value):
-        if not isinstance(value, (float, int)):
-            raise TypeError("bbox_expand must be a float or an int.")
-        self._bbox_expand = float(value)
-
-    def _cb_bbox_expand(self, value):
-        self.bbox_expand = value
+    def _cb_bbox_expand(self):
         self._editor_instance._update_current_bounding_box()
 
-    @property
-    def color_bbox_selected(self):
-        color = self._color_bbox_selected
-        return (color.red, color.green, color.blue)
-
-    @color_bbox_selected.setter
-    def color_bbox_selected(self, values):
-        if isinstance(values, gui.Color):
-            self._color_bbox_selected = values
-        elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
-            self._color_bbox_selected = gui.Color(*np.clip(values, 0, 1))
-        else:
-            raise TypeError("color_selected should be a list or tuple of 3 values.")
-
-    def _cb_color_bbox_selected(self, values):
-        self.color_bbox_selected = values
+    def _cb_color_bbox_selected(self):
         if self._editor_instance.is_current_selected:
             self._editor_instance._update_current_bounding_box()
 
-    @property
-    def color_bbox_unselected(self):
-        color = self._color_bbox_unselected
-        return (color.red, color.green, color.blue)
-
-    @color_bbox_unselected.setter
-    def color_bbox_unselected(self, values):
-        if isinstance(values, gui.Color):
-            self._color_bbox_unselected = values
-        elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
-            self._color_bbox_unselected = gui.Color(*np.clip(values, 0, 1))
-        else:
-            raise TypeError("color_selected should be a list or tuple of 3 values.")
-
-    def _cb_color_bbox_unselected(self, values):
-        self.color_bbox_unselected = values
+    def _cb_color_bbox_unselected(self):
         if not self._editor_instance.is_current_selected:
             self._editor_instance._update_current_bounding_box()
 
-    @property
-    def number_points_distance(self):
-        return self._number_points_distance
-
-    @number_points_distance.setter
-    def number_points_distance(self, value):
-        if not isinstance(value, int):
-            raise TypeError("number_points_distance must be an integer.")
-        self._number_points_distance = value
-
-    def _cb_number_points_distance(self, value):
-        self.number_points_distance = value
+    def _cb_number_points_distance(self):
         for elem in self._editor_instance.elements:
             dist_checker = self._editor_instance._get_element_distances([elem["raw"]])[
                 0
             ]
             elem["distance_checker"] = dist_checker
 
-    @property
-    def random_color_brightness(self):
-        return self._random_color_brightness
-
-    @random_color_brightness.setter
-    def random_color_brightness(self, value):
-        if not isinstance(value, (float, int)) or not (0 <= value <= 1):
-            raise ValueError(
-                "random_color_brightness must be a float in the range [0, 1]."
-            )
-        self._random_color_brightness = float(value)
-
-    def _cb_random_color_brightness(self, value):
-        if abs(self.random_color_brightness - value) < 1e-5:
-            return
-
-        if self.paint_random:
-            self._editor_instance.print_debug(
-                f"random_color_brightness set from {self.random_color_brightness} "
-                f"to {value}, resetting..."
-            )
+    def _cb_random_color_brightness(self):
+        if self._dict["paint_random"]:
             self._editor_instance._reset_elements_in_gui()
 
-        self.random_color_brightness = value
-
-    @property
-    def highlight_color_brightness(self):
-        return self._highlight_color_brightness
-
-    @highlight_color_brightness.setter
-    def highlight_color_brightness(self, value):
-        if not isinstance(value, (float, int)):
-            raise TypeError("highlight_color_brightness must be a float or an int.")
-        self._highlight_color_brightness = max(float(value), 0)
-
-    def _cb_highlight_color_brightness(self, value):
-        if abs(self.highlight_color_brightness - value) < 1e-5:
-            return
-
-        self.highlight_color_brightness = value
-        if not self.paint_selected:
+    def _cb_highlight_color_brightness(self):
+        if not self._dict["paint_selected"]:
             indices = np.where(self._editor_instance.selected)[0].tolist()
             self._editor_instance._update_elements(indices)
 
-    @property
-    def number_undo_states(self):
-        return self._number_undo_states
-
-    @number_undo_states.setter
-    def number_undo_states(self, value):
-        if not isinstance(value, int):
-            raise TypeError("number_undo_states must be an integer.")
-        self._number_undo_states = value
-
-    def _cb_number_undo_states(self, value):
-        self.number_undo_states = value
+    def _cb_number_undo_states(self):
+        value = self._dict["number_undo_states"]
         self._editor_instance._past_states = self._editor_instance._past_states[-value:]
 
-    @property
-    def number_redo_states(self):
-        return self._number_redo_states
-
-    @number_redo_states.setter
-    def number_redo_states(self, value):
-        if not isinstance(value, int):
-            raise TypeError("number_redo_states must be an integer.")
-        self._number_redo_states = value
-        self._number_undo_states = value
-
-    def _cb_number_redo_states(self, value):
-        self.number_redo_states = value
+    def _cb_number_redo_states(self):
+        value = self._dict["number_redo_states"]
         self._editor_instance._future_states = self._editor_instance._future_states[
             -value:
         ]
 
-    @property
-    def color_selected(self):
-        color = self._color_selected
-        return (color.red, color.green, color.blue)
-
-    @color_selected.setter
-    def color_selected(self, values):
-        if isinstance(values, gui.Color):
-            self._color_selected = values
-        elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
-            self._color_selected = gui.Color(*np.clip(values, 0, 1))
-        else:
-            raise TypeError("color_selected should be a list or tuple of 3 values.")
-
-    def _cb_color_selected(self, values):
-        self.color_selected = values
+    def _cb_color_selected(self):
         indices = np.where(self._editor_instance.selected)[0].tolist()
         self._editor_instance._update_elements(indices)
 
-    # @property
-    # def color_selected_current(self):
-    #     color = self._color_selected_current
-    #     return (color.red, color.green, color.blue)
-
-    # @color_selected_current.setter
-    # def color_selected_current(self, values):
-    #     if isinstance(values, gui.Color):
-    #         self._color_selected_current = values
-    #     elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
-    #         self._color_selected_current = gui.Color(*np.clip(values, 0, 1))
-    #     else:
-    #         raise TypeError(
-    #             "color_selected_current should be a list or tuple of 3 values."
-    #         )
-
-    # def _cb_color_selected_current(self, values):
-    #     self.color_selected_current = values
-    #     self._editor_instance._update_elements(self._editor_instance.i)
-
-    @property
-    def color_unselected(self):
-        color = self._color_unselected
-        return (color.red, color.green, color.blue)
-
-    @color_unselected.setter
-    def color_unselected(self, values):
-        if isinstance(values, gui.Color):
-            self._color_unselected = values
-        elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
-            self._color_unselected = gui.Color(*np.clip(values, 0, 1))
-        else:
-            raise TypeError("color_unselected should be a list or tuple of 3 values.")
-
-    def _cb_color_unselected(self, values):
-        self.color_unselected = values
+    def _cb_color_unselected(self):
         unselected = ~np.array(self._editor_instance.selected)
         indices = np.where(unselected)[0].tolist()
         self._editor_instance._update_elements(indices)
 
-    # @property
-    # def color_unselected_current(self):
-    #     color = self._color_unselected_current
-    #     return (color.red, color.green, color.blue)
-
-    # @color_unselected_current.setter
-    # def color_unselected_current(self, values):
-    #     if isinstance(values, gui.Color):
-    #         self._color_unselected_current = values
-    #     elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
-    #         self._color_unselected_current = gui.Color(*np.clip(values, 0, 1))
-    #     else:
-    #         raise TypeError(
-    #             "color_unselected_current should be a list or tuple of 3 values."
-    #         )
-
-    # def _cb_color_unselected_current(self, values):
-    #     self.color_unselected_current = values
-    #     self._editor_instance._update_elements(self._editor_instance.i)
-
     def get_element_color(self, is_selected, is_current, is_bbox=False):
+        highlight = self._dict["highlight_color_brightness"].value
         if not is_selected and not is_current:
-            return np.array(self.color_unselected)
+            return self._dict["color_unselected"].value
 
         if not is_selected and is_current:
-            # return self.color_unselected_current
-            return np.array(self.color_unselected) / self.highlight_color_brightness
+            return self._dict["color_unselected"].value / highlight
 
         if is_selected and not is_current:
-            return np.array(self.color_selected)
+            return self._dict["color_selected"].value
 
         if is_selected and is_current:
-            # return self.color_selected_current
-            return np.array(self.color_selected) / self.highlight_color_brightness
+            return self._dict["color_selected"].value / highlight
 
     def _create_panel(self):
         window = self._editor_instance._window
         em = window.theme.font_size
         separation_height = int(round(0.5 * em))
 
-        # _panel = gui.Vert(0, gui.Margins(0.25 * em, 0.25 * em, 0.25 * em, 0.25 * em))
-
         _panel_collapsable = gui.CollapsableVert(
             "Preferences", 0.25 * em, gui.Margins(em, 0, 0, 0)
         )
 
-        for key, value_type, limits in self._options:
-            name_pretty = key.replace("_", " ").capitalize()
-            label = gui.Label(name_pretty)
-            value = getattr(self, key)
-            try:
-                cb = getattr(self, "_cb_" + key)  # callback function
-            except AttributeError:
-                continue
-
-            if value_type is bool:
-                element = gui.Checkbox(name_pretty + "?")
-                element.checked = value
-                element.set_on_checked(cb)
-            elif value_type is int:
-                slider = gui.Slider(gui.Slider.INT)
-                slider.set_limits(*limits)
-                slider.int_value = value
-                slider.set_on_value_changed(cb)
-
-                element = gui.VGrid(2, 0.25 * em)
-                element.add_child(label)
-                element.add_child(slider)
-            elif value_type is float:
-                slider = gui.Slider(gui.Slider.DOUBLE)
-                slider.set_limits(*limits)
-                slider.double_value = value
-                slider.set_on_value_changed(cb)
-
-                element = gui.VGrid(2, 0.25 * em)
-                element.add_child(label)
-                element.add_child(slider)
-            elif value_type is gui.Color:
-                color_selector = gui.ColorEdit()
-                color_selector.color_value = gui.Color(*value)
-                color_selector.set_on_value_changed(cb)
-
-                element = gui.VGrid(2, 0.25 * em)
-                element.add_child(label)
-                element.add_child(color_selector)
-            else:
-                continue
-
-            _panel_collapsable.add_child(element)
+        for preference in self._dict.values():
+            _panel_collapsable.add_child(preference.get_gui_element(window))
             _panel_collapsable.add_fixed(separation_height)
 
         _panel_collapsable.visible = False

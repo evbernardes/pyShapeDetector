@@ -150,8 +150,8 @@ class Editor:
         return self._submenus[path]
 
     def print_debug(self, text, require_verbose=False):
-        is_debug_activated = self._settings.debug
-        is_verbose_activated = self._settings.verbose
+        is_debug_activated = self._get_preference("debug")
+        is_verbose_activated = self._get_preference("verbose")
 
         if not is_debug_activated or (require_verbose and not is_verbose_activated):
             return
@@ -325,7 +325,7 @@ class Editor:
         if isinstance(selected, bool):
             selected = [selected] * len(indices)
 
-        number_points_distance = self._settings.number_points_distance
+        number_points_distance = self._get_preference("number_points_distance")
         idx_new = self.i
 
         self.print_debug(
@@ -349,22 +349,24 @@ class Editor:
             # save original colors
             elem["color"] = extract_element_colors(elem["drawable"])
 
-            if self._settings.paint_random:
+            if self._get_preference("paint_random"):
                 self.print_debug(
                     f"[_insert_elements] Randomly painting element at index {i}.",
                     require_verbose=True,
                 )
                 elem["drawable"] = get_painted_element(
-                    elem["drawable"], "random", self._settings.random_color_brightness
+                    elem["drawable"],
+                    "random",
+                    self._get_preference("random_color_brightness"),
                 )
 
-            elif self._settings.paint_selected and selected[i]:
+            elif self._get_preference("paint_selected") and selected[i]:
                 self.print_debug(
                     f"[_insert_elements] Painting and inserting element at index {i}.",
                     require_verbose=True,
                 )
                 is_current = self._started and (self.i == idx)
-                color = self._settings.get_element_color(True, is_current)
+                color = self._get_preference("get_element_color")(True, is_current)
                 elem["drawable"] = get_painted_element(elem["drawable"], color)
 
             self.print_debug(
@@ -440,7 +442,7 @@ class Editor:
             f"Saving state with {len(input_elements)} inputs and {num_outputs} outputs."
         )
 
-        while len(self._past_states) > self._settings.number_undo_states:
+        while len(self._past_states) > self._get_preference("number_undo_states"):
             self._past_states.pop(0)
 
     def _check_and_initialize_inputs(self):
@@ -485,7 +487,7 @@ class Editor:
         else:
             try:
                 elem_new = copy.deepcopy(elem.as_open3d)
-                mesh_show_back_face = self._settings.mesh_show_back_face
+                mesh_show_back_face = self._get_preference("mesh_show_back_face")
                 if mesh_show_back_face and TriangleMesh.is_instance_or_open3d(elem_new):
                     mesh = TriangleMesh(elem_new)
                     mesh.add_reverse_triangles()
@@ -495,9 +497,9 @@ class Editor:
                 warnings.warn(f"Could not convert element: {elem}, got: {str(e)}")
                 elem_new = elem
 
-        if self._settings.paint_random:
+        if self._get_preference("paint_random"):
             elem_new = get_painted_element(
-                elem_new, "random", self._settings.random_color_brightness
+                elem_new, "random", self._get_preference("random_color_brightness")
             )
 
         return elem_new
@@ -510,8 +512,6 @@ class Editor:
             r.x, r.get_bottom() - pref.height, pref.width, pref.height
         )
 
-        # self._menu_functions._on_layout(r, layout_context)
-        # self._settings._on_layout(r, layout_context)
         width = 17 * layout_context.theme.font_size
         height = min(
             r.height,
@@ -633,6 +633,12 @@ class Editor:
                 distances.append(_distance_to_point(elem["distance_checker"]))
         return distances
 
+    def _get_preference(self, key):
+        if key not in self._settings._dict:
+            warnings.warn(f"Tried getting non existing preference {key}")
+            return None
+        return self._settings._dict[key].value
+
     def _setup_window_and_scene(self):
         from .menu_help import MenuHelp
         from .hotkeys import Hotkeys
@@ -715,7 +721,7 @@ class Editor:
 
         plane_boundaries = []
 
-        if self._settings.draw_boundary_lines:
+        if self._get_preference("draw_boundary_lines"):
             for elem in self.elements:
                 try:
                     lineset = elem["raw"].vertices_LineSet.as_open3d
@@ -740,7 +746,7 @@ class Editor:
             AxisAlignedBoundingBox,
         )
 
-        bbox_expand = self._settings.bbox_expand
+        bbox_expand = self._get_preference("bbox_expand")
         self.print_debug("Updating bounding box...", require_verbose=True)
 
         if self._current_bbox is not None:
@@ -764,9 +770,9 @@ class Editor:
                 bbox = AxisAlignedBoundingBox(bbox_original).expanded(bbox_expand)
 
         if self.is_current_selected:
-            bbox.color = self._settings.color_bbox_selected
+            bbox.color = self._get_preference("color_bbox_selected")
         else:
-            bbox.color = self._settings.color_bbox_unselected
+            bbox.color = self._get_preference("color_bbox_unselected")
 
         self.print_debug(f"New bounding box: {bbox}", require_verbose=True)
         self._current_bbox = bbox.as_open3d
@@ -807,7 +813,7 @@ class Editor:
                 require_verbose=True,
             )
 
-            if self._settings.paint_selected and is_selected:
+            if self._get_preference("paint_selected") and is_selected:
                 color = self._settings.get_element_color(True, is_current)
                 self.print_debug(
                     f"[_update_element] Painting drawable to color: {color}.",
@@ -815,9 +821,9 @@ class Editor:
                 )
 
             else:
-                highlight_offset = self._settings.highlight_color_brightness * (
-                    int(is_selected) + int(is_current)
-                )
+                highlight_offset = self._get_preference(
+                    "highlight_color_brightness"
+                ) * (int(is_selected) + int(is_current))
                 color = elem["color"] + highlight_offset
 
             set_element_colors(elem["drawable"], color)

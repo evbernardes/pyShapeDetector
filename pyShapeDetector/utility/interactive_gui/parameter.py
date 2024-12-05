@@ -1,6 +1,7 @@
 import traceback
 import warnings
 import numpy as np
+import copy
 from open3d.visualization import gui
 from .editor_app import Editor
 
@@ -40,8 +41,11 @@ class Parameter:
         return self._value
 
     def _callback(self, value, text_edit=None):
+        old_value = self.value
         try:
             self._value = self.type(value)
+            if abs(self.value - old_value) > 1e-6:
+                self._on_update()
         except Exception:
             if text_edit is not None:
                 text_edit.text_value = str(self.value)
@@ -75,11 +79,18 @@ class Parameter:
         parameter_descriptor = parameter_descriptor.copy()
 
         input_type = parameter_descriptor.pop("type", None.__class__)
-
-        if input_type != self.type:
+        if input_type is not None.__class__ and input_type != self.type:
             raise TypeError(
-                f"Parameter of type '{self.type_name}' received descriptor of type '{input_type}'"
+                f"Parameter of type '{self.type_name}' received descriptor of type '{input_type.__name__}'"
             )
+
+        on_update = parameter_descriptor.pop("on_update", lambda: None)
+
+        if not callable(on_update):
+            raise TypeError(
+                f"Parameter of type '{self.type_name}' received invalid 'on_update'"
+            )
+        self._on_update = on_update
 
         self._parse_descriptor_(parameter_descriptor)
 
@@ -136,6 +147,7 @@ class ParameterOptions(Parameter):
 
     def _callback(self, text, index):
         self._value = self.options[index]
+        self._on_update()
 
     def get_gui_element(self, window):
         em = window.theme.font_size
@@ -418,6 +430,63 @@ class ParameterFloat(Parameter):
             self._value = None
 
 
+class ParameterColor(Parameter):
+    _type = gui.Color
+
+    @property
+    def red(self):
+        return self._value.red
+
+    @property
+    def green(self):
+        return self._value.green
+
+    @property
+    def blue(self):
+        return self._value.blue
+
+    @property
+    def value(self):
+        return np.array((self.red, self.green, self.blue))
+
+    @value.setter
+    def value(self, values):
+        if isinstance(values, gui.Color):
+            self._value = values
+        elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
+            self._value = gui.Color(*np.clip(values, 0, 1))
+        elif values is None:
+            self._value = gui.Color((0, 0, 0, 1))
+        else:
+            raise TypeError(
+                f"Value of parameter {self.name} of type {self.type_name} should "
+                f"be a gui.Color, a list or tuple of 3 values, got {values}."
+            )
+
+    def _callback(self, value):
+        old_value = self.value
+        self._value = value
+        if np.any(abs(self.value - old_value) > 1e-6):
+            self._on_update()
+
+    def get_gui_element(self, window):
+        em = window.theme.font_size
+        label = gui.Label(self.name)
+
+        color_selector = gui.ColorEdit()
+        color_selector.color_value = self._value
+        color_selector.set_on_value_changed(self._callback)
+
+        element = gui.VGrid(2, 0.25 * em)
+        element.add_child(label)
+        element.add_child(color_selector)
+
+        return element
+
+    def _parse_descriptor_(self, parameter_descriptor: dict):
+        self.value = parameter_descriptor.pop("default", None)
+
+
 class ParameterNDArray(Parameter):
     _type = np.ndarray
 
@@ -469,6 +538,7 @@ class ParameterNDArray(Parameter):
             self._value[line, col] = self.dtype(value)
         except Exception:
             text_edit.text_value = str(self._value[line, col])
+        self._on_update()
 
     def get_gui_element(self, window):
         em = window.theme.font_size
@@ -506,4 +576,5 @@ PARAMETER_TYPE_DICTIONARY = {
     float: ParameterFloat,
     list: ParameterOptions,
     np.ndarray: ParameterNDArray,
+    gui.Color: ParameterColor,
 }
