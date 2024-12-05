@@ -1,7 +1,6 @@
 import traceback
 import warnings
 import numpy as np
-import copy
 from open3d.visualization import gui
 from .editor_app import Editor
 
@@ -24,6 +23,18 @@ class Parameter:
                 f"Expected string as name for Parameter, got {type(new_name)}."
             )
         self._name = new_name
+
+    @property
+    def pretty_name(self):
+        words = self.name.replace("_", " ").split()
+        result = []
+        for word in words:
+            if word.isupper():  # Keep existing UPPERCASE values as is
+                result.append(word)
+            else:  # Capitalize other words
+                result.append(word.capitalize())
+
+        return " ".join(result)
 
     @property
     def type(self):
@@ -55,7 +66,7 @@ class Parameter:
 
     def get_gui_element(self, window):
         em = window.theme.font_size
-        label = gui.Label(self.name)
+        label = gui.Label(self.pretty_name)
 
         # Text field for general inputs
         text_edit = gui.TextEdit()
@@ -109,7 +120,7 @@ class ParameterBool(Parameter):
         self._value = bool(new_value)
 
     def get_gui_element(self, window):
-        element = gui.Checkbox(self.name + "?")
+        element = gui.Checkbox(self.pretty_name + "?")
         element.checked = self.value
         element.set_on_checked(self._callback)
         return element
@@ -151,7 +162,7 @@ class ParameterOptions(Parameter):
 
     def get_gui_element(self, window):
         em = window.theme.font_size
-        label = gui.Label(self.name)
+        label = gui.Label(self.pretty_name)
 
         combobox = gui.Combobox()
         options_strings = [str(option) for option in self.options]
@@ -252,7 +263,7 @@ class ParameterInt(Parameter):
 
     def get_gui_element(self, window):
         em = window.theme.font_size
-        label = gui.Label(self.name)
+        label = gui.Label(self.pretty_name)
 
         if self.limits is not None:
             slider = gui.Slider(gui.Slider.INT)
@@ -378,7 +389,7 @@ class ParameterFloat(Parameter):
 
     def get_gui_element(self, window):
         em = window.theme.font_size
-        label = gui.Label(self.name)
+        label = gui.Label(self.pretty_name)
 
         if self.limits is not None:
             slider = gui.Slider(gui.Slider.DOUBLE)
@@ -471,7 +482,7 @@ class ParameterColor(Parameter):
 
     def get_gui_element(self, window):
         em = window.theme.font_size
-        label = gui.Label(self.name)
+        label = gui.Label(self.pretty_name)
 
         color_selector = gui.ColorEdit()
         color_selector.color_value = self._value
@@ -542,7 +553,7 @@ class ParameterNDArray(Parameter):
 
     def get_gui_element(self, window):
         em = window.theme.font_size
-        label = gui.Label(self.name)
+        label = gui.Label(self.pretty_name)
 
         elements_array = gui.VGrid(self._value.shape[0], 0.25 * em)
         for i in range(self._value.shape[0]):

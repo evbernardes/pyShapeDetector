@@ -57,7 +57,7 @@ class Editor:
         If True, draws the boundaries of planes as LineSets. Default: False.
     mesh_show_back_face : optional, boolean
         If True, shows back faces of surfaces and meshes. Default: True.
-    bbox_expand : float, optional
+    BBOX_expand : float, optional
         Expands bounding boxes in all directions with this value. Default: 0.0.
     paint_selected : boolean, optional
         If True, paint selected elements, and not only their bounding boxes.
@@ -746,7 +746,7 @@ class Editor:
             AxisAlignedBoundingBox,
         )
 
-        bbox_expand = self._get_preference("bbox_expand")
+        BBOX_expand = self._get_preference("BBOX_expand")
         self.print_debug("Updating bounding box...", require_verbose=True)
 
         if self._current_bbox is not None:
@@ -764,15 +764,15 @@ class Editor:
             warnings.simplefilter("ignore")
             try:
                 bbox_original = element["raw"].get_oriented_bounding_box()
-                bbox = OrientedBoundingBox(bbox_original).expanded(bbox_expand)
+                bbox = OrientedBoundingBox(bbox_original).expanded(BBOX_expand)
             except Exception:
                 bbox_original = element["raw"].get_axis_aligned_bounding_box()
-                bbox = AxisAlignedBoundingBox(bbox_original).expanded(bbox_expand)
+                bbox = AxisAlignedBoundingBox(bbox_original).expanded(BBOX_expand)
 
         if self.is_current_selected:
-            bbox.color = self._get_preference("color_bbox_selected")
+            bbox.color = self._get_preference("color_BBOX_selected")
         else:
-            bbox.color = self._get_preference("color_bbox_unselected")
+            bbox.color = self._get_preference("color_BBOX_unselected")
 
         self.print_debug(f"New bounding box: {bbox}", require_verbose=True)
         self._current_bbox = bbox.as_open3d

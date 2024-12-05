@@ -11,8 +11,8 @@ from .parameter import (
     ParameterColor,
 )
 
-COLOR_BBOX_SELECTED_DEFAULT = np.array([0, 204.8, 0.0]) / 255
-COLOR_BBOX_UNSELECTED_DEFAULT = np.array([255.0, 0.0, 0.0]) / 255
+color_BBOX_selected_DEFAULT = np.array([0, 204.8, 0.0]) / 255
+color_BBOX_unselected_DEFAULT = np.array([255.0, 0.0, 0.0]) / 255
 COLOR_SELECTED_DEFAULT = np.array([178.5, 163.8, 0.0]) / 255
 COLOR_UNSELECTED_DEFAULT = np.array([76.5, 76.5, 76.5]) / 255
 
@@ -27,9 +27,9 @@ _color_selected = gui.Color(*COLOR_SELECTED_DEFAULT)
 _paint_random = False
 _debug = False
 _verbose = False
-_bbox_expand = 0.0
-_color_bbox_selected = gui.Color(*COLOR_BBOX_SELECTED_DEFAULT)
-_color_bbox_unselected = gui.Color(*COLOR_BBOX_UNSELECTED_DEFAULT)
+_BBOX_expand = 0.0
+_color_BBOX_selected = gui.Color(*color_BBOX_selected_DEFAULT)
+_color_BBOX_unselected = gui.Color(*color_BBOX_unselected_DEFAULT)
 _number_points_distance = 30
 _random_color_brightness = 0.3
 _highlight_color_brightness = 0.3
@@ -115,25 +115,25 @@ class Settings:
                 },
             ),
             ParameterFloat(
-                "bbox_expand",
+                "BBOX_expand",
                 {
-                    "default": _bbox_expand,
+                    "default": _BBOX_expand,
                     "limits": (0, 2),
-                    "on_update": self._cb_bbox_expand,
+                    "on_update": self._cb_BBOX_expand,
                 },
             ),
             ParameterColor(
-                "color_bbox_selected",
+                "color_BBOX_selected",
                 {
-                    "default": _color_bbox_selected,
-                    "on_update": self._cb_color_bbox_selected,
+                    "default": _color_BBOX_selected,
+                    "on_update": self._cb_color_BBOX_selected,
                 },
             ),
             ParameterColor(
-                "color_bbox_unselected",
+                "color_BBOX_unselected",
                 {
-                    "default": _color_bbox_unselected,
-                    "on_update": self._cb_color_bbox_unselected,
+                    "default": _color_BBOX_unselected,
+                    "on_update": self._cb_color_BBOX_unselected,
                 },
             ),
             ParameterInt(
@@ -210,14 +210,14 @@ class Settings:
     def _cb_verbose(self):
         pass
 
-    def _cb_bbox_expand(self):
+    def _cb_BBOX_expand(self):
         self._editor_instance._update_current_bounding_box()
 
-    def _cb_color_bbox_selected(self):
+    def _cb_color_BBOX_selected(self):
         if self._editor_instance.is_current_selected:
             self._editor_instance._update_current_bounding_box()
 
-    def _cb_color_bbox_unselected(self):
+    def _cb_color_BBOX_unselected(self):
         if not self._editor_instance.is_current_selected:
             self._editor_instance._update_current_bounding_box()
 
