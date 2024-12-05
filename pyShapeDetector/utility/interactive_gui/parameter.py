@@ -441,9 +441,9 @@ class ParameterNDArray(Parameter):
 
         new_value = np.asarray(new_value)
         if new_value.dtype.type in (float, np.float_):
-            self._dtype = int
-        elif new_value.dtype.type in (int, np.int_):
             self._dtype = float
+        elif new_value.dtype.type in (int, np.int_):
+            self._dtype = int
         else:
             raise TypeError("Supported values for dtype are 'int' and 'float'.")
 
