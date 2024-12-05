@@ -12,7 +12,7 @@ class MenuHelp:
         window = self._editor_instance._window
         em = window.theme.font_size
 
-        _panel_collapsable = gui.CollapsableVert(self.menu, em, gui.Margins(0, 0, 0, 0))
+        _panel_collapsable = gui.CollapsableVert(self._menu, em, gui.Margins(0, 0, 0, 0))
 
         dlg_layout = gui.Vert(em, gui.Margins(0, 0, 0, 0))
         text = gui.Label("")
