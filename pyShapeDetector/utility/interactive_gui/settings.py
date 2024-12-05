@@ -24,7 +24,7 @@ class Settings:
     _color_bbox_selected = gui.Color(*COLOR_BBOX_SELECTED_DEFAULT)
     _color_bbox_unselected = gui.Color(*COLOR_BBOX_UNSELECTED_DEFAULT)
     _number_points_distance = 30
-    _random_color_brightness = 2 / 3
+    _random_color_brightness = 0.3
     _highlight_color_brightness = 0.3
     _number_undo_states = 10
     _number_redo_states = 5
@@ -45,7 +45,7 @@ class Settings:
         ("color_bbox_selected", gui.Color, None),
         ("color_bbox_unselected", gui.Color, None),
         ("number_points_distance", int, (5, 50)),
-        ("random_color_brightness", float, (0.01, 1)),
+        ("random_color_brightness", float, (0.001, 1)),
         ("highlight_color_brightness", float, (0.01, 1)),
         ("number_undo_states", int, (1, 10)),
         ("number_redo_states", int, (1, 10)),
