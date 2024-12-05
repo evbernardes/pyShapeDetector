@@ -14,7 +14,8 @@ class MenuHelp:
         _panel_collapsable = gui.CollapsableVert("Help", em, gui.Margins(0, 0, 0, 0))
 
         dlg_layout = gui.Vert(em, gui.Margins(0, 0, 0, 0))
-        text = gui.Label(self._editor_instance._hotkeys.get_instructions())
+        # text = gui.Label(self._editor_instance._hotkeys.get_instructions())
+        text = gui.Label("")
         dlg_layout.add_child(text)
 
         _panel_collapsable.add_child(dlg_layout)
@@ -56,7 +57,18 @@ class MenuHelp:
         self._panel.visible = not self._panel.visible
 
         if self._panel.visible:
-            self._text.text = editor_instance._hotkeys.get_instructions()
+            self._text.text = (
+                "\n\n".join(
+                    [
+                        f"({binding.key_instruction}):\n- {binding.description}"
+                        for binding in self._editor_instance._hotkeys._bindings_map.values()
+                    ]
+                )
+                + f"\n\n(Ctrl):"
+                + "\n- Set current with mouse"
+                + f"\n\n(Ctrl + Shift):"
+                + "\n- Set current with mouse and toggle"
+            )
 
         menubar.set_checked(self._help_id, self._panel.visible)
         window.set_needs_layout()

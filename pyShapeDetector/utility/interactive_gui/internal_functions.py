@@ -8,8 +8,8 @@ from .binding import Binding
 
 class InternalFunctions:
     @property
-    def is_modifier_pressed(self):
-        return self._editor_instance._hotkeys._is_modifier_pressed
+    def is_lshift_pressed(self):
+        return self._editor_instance._hotkeys._is_lshift_pressed
 
     @property
     def bindings(self):
@@ -26,128 +26,128 @@ class InternalFunctions:
         self._bindings = [
             Binding(
                 key=gui.KeyName.ESCAPE,
-                extra_functions=False,
-                modifier=False,
+                lctrl=False,
+                lshift=False,
                 description="Quit",
                 callback=self._cb_quit_app,
                 menu="File",
             ),
             Binding(
                 key=gui.KeyName.SPACE,
-                extra_functions=False,
-                modifier=False,
+                lctrl=False,
+                lshift=False,
                 description="Selected/unselect current",
                 callback=self._cb_toggle,
                 menu=None,
             ),
             Binding(
                 key=gui.KeyName.LEFT,
-                extra_functions=False,
-                modifier=False,
+                lctrl=False,
+                lshift=False,
                 description="[Fast] Previous",
                 callback=self._cb_previous,
                 menu=None,
             ),
             Binding(
                 key=gui.KeyName.RIGHT,
-                extra_functions=False,
-                modifier=False,
+                lctrl=False,
+                lshift=False,
                 description="[Fast] Next",
                 callback=self._cb_next,
                 menu=None,
             ),
             Binding(
                 key=gui.KeyName.DELETE,
-                extra_functions=False,
-                modifier=False,
+                lctrl=False,
+                lshift=False,
                 description="Delete elements",
                 callback=self._cb_delete,
                 menu="Edit",
             ),
             Binding(
                 key=gui.KeyName.C,
-                extra_functions=True,
-                modifier=False,
+                lctrl=True,
+                lshift=False,
                 description="Copy",
                 callback=self._cb_copy,
                 menu="Edit",
             ),
             Binding(
                 key=gui.KeyName.V,
-                extra_functions=True,
-                modifier=False,
+                lctrl=True,
+                lshift=False,
                 description="Paste",
                 callback=self._cb_paste,
                 menu="Edit",
             ),
             Binding(
                 key=gui.KeyName.H,
-                extra_functions=False,
-                modifier=False,
+                lctrl=False,
+                lshift=False,
                 description="Show Help",
                 callback=self._cb_toggle_help_panel,
                 menu=None,  # This is added later
             ),
             Binding(
                 key=gui.KeyName.I,
-                extra_functions=False,
-                modifier=False,
+                lctrl=False,
+                lshift=False,
                 description="Show Info",
                 callback=self._cb_toggle_info_panel,
                 menu=None,  # This is added later
             ),
             Binding(
                 key=gui.KeyName.P,
-                extra_functions=False,
-                modifier=False,
+                lctrl=False,
+                lshift=False,
                 description="Show Preferences",
                 callback=self._cb_toggle_settings_panel,
                 menu=None,  # This is added later
             ),
             Binding(
                 key=gui.KeyName.R,
-                extra_functions=True,
-                modifier=False,
+                lctrl=True,
+                lshift=False,
                 description="Repeat last function",
                 callback=self._cb_repeat_last_function,
                 menu="Edit",
             ),
             Binding(
                 key=gui.KeyName.Z,
-                extra_functions=True,
-                modifier=True,
+                lctrl=True,
+                lshift=True,
                 description="Undo [Redo]",
                 callback=self._cb_undo_redo,
                 menu="Edit",
             ),
             Binding(
                 key=gui.KeyName.U,
-                extra_functions=True,
-                modifier=True,
+                lctrl=True,
+                lshift=True,
                 description="[Un]Hide",
                 callback=self._cb_hide_unhide,
                 menu=None,
             ),
             Binding(
                 key=gui.KeyName.A,
-                extra_functions=True,
-                modifier=True,
+                lctrl=True,
+                lshift=True,
                 description="[Un]select all",
                 callback=self._cb_toggle_all,
                 menu=None,
             ),
             Binding(
                 key=gui.KeyName.L,
-                extra_functions=True,
-                modifier=True,
+                lctrl=True,
+                lshift=True,
                 description="[Un]select last",
                 callback=self._cb_toggle_last,
                 menu=None,
             ),
             Binding(
                 key=gui.KeyName.T,
-                extra_functions=True,
-                modifier=False,
+                lctrl=True,
+                lshift=False,
                 description="[Un]select per type",
                 callback=self._cb_toggle_type,
                 menu=None,
@@ -209,7 +209,7 @@ class InternalFunctions:
 
     def _cb_next(self):
         """Highlight next element in list."""
-        delta = 1 + 4 * self.is_modifier_pressed
+        delta = 1 + 4 * self.is_lshift_pressed
         editor_instance = self._editor_instance
         editor_instance._update_current_idx(
             min(editor_instance.i + delta, len(editor_instance.elements) - 1)
@@ -246,7 +246,7 @@ class InternalFunctions:
 
     def _cb_previous(self):
         """Highlight previous element in list."""
-        delta = 1 + 4 * self.is_modifier_pressed
+        delta = 1 + 4 * self.is_lshift_pressed
         editor_instance = self._editor_instance
         editor_instance._update_current_idx(max(editor_instance.i - delta, 0))
 
@@ -333,7 +333,7 @@ class InternalFunctions:
         editor_instance = self._editor_instance
         indices = editor_instance.selected_indices
 
-        if self.is_modifier_pressed:
+        if self.is_lshift_pressed:
             # UNHIDE
             editor_instance._insert_elements(
                 editor_instance._hidden_elements, selected=True, to_gui=True
@@ -354,7 +354,7 @@ class InternalFunctions:
 
     def _cb_undo_redo(self):
         editor_instance = self._editor_instance
-        if self.is_modifier_pressed:
+        if self.is_lshift_pressed:
             # REDO
             if len(editor_instance._future_states) == 0:
                 return

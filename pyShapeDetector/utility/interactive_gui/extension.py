@@ -20,8 +20,8 @@ class Extension:
     def as_binding(self):
         return Binding(
             key=self.hotkey,
-            extra_functions=True,
-            modifier=False,
+            lctrl=True,
+            lshift=False,
             description=self.name,
             callback=self.run,
         )

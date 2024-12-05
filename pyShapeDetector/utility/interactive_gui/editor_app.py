@@ -909,7 +909,7 @@ class Editor:
             elem = self.elements[idx]
             is_selectable = self.select_filter(elem)
             if to_value is None:
-                selected = (not self._hotkeys._is_modifier_pressed) and is_selectable
+                selected = (not self._hotkeys._is_lshift_pressed) and is_selectable
             else:
                 selected = to_value and is_selectable
             elem["selected"] = selected
