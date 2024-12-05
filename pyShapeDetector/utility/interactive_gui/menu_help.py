@@ -99,9 +99,9 @@ class MenuHelp:
         dlg_layout.add_child(title)
         dlg_layout.add_child(
             gui.Label(
-                "Developed by:\n\tEvandro Bernardes"
-                "\n\nAt:\n\tVrije Universiteit Brussel (VUB)"
-                "\n\nFunding:\n\tFlanders Make"
+                "Developed by:\n\n\tEvandro Bernardes"
+                "\n\nAt:\n\n\tVrije Universiteit Brussel (VUB)"
+                "\n\nFunding:\n\n\tFlanders Make"
                 "\n\n\n\nMore information at:\n\thttps://github.com/evbernardes/pyShapeDetector"
             )
         )
@@ -118,5 +118,13 @@ class MenuHelp:
         dlg.add_child(dlg_layout)
         window.show_dialog(dlg)
 
+        def _on_key_event(event):
+            if event.type == gui.KeyEvent.DOWN and event.key == gui.KeyName.ENTER:
+                self._on_about_ok()
+                return True
+            return False
+
+        window.set_on_key(_on_key_event)
+
     def _on_about_ok(self):
-        self._editor_instance._window.close_dialog()
+        self._editor_instance._close_dialog()

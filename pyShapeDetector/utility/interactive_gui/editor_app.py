@@ -271,6 +271,15 @@ class Editor:
             self._elements_input += new_raw_elements
             self._pre_selected += pre_selected
 
+    def _reset_on_key(self):
+        self._scene.set_on_key(self._hotkeys._on_key)
+
+    def _close_dialog(self):
+        """Closes dialog, if any, then resets keys to original hotkeys."""
+        self._window.set_on_key(None)
+        self._window.close_dialog()
+        self._reset_on_key()
+
     def _add_geometry_to_scene(self, elem):
         from open3d.geometry import LineSet, AxisAlignedBoundingBox, OrientedBoundingBox
 
@@ -673,7 +682,7 @@ class Editor:
 
         # 2) Add hotkeys for both internal functions and extensions
         self._hotkeys = Hotkeys(self)
-        self._scene.set_on_key(self._hotkeys._on_key)
+        self._reset_on_key()
         self._scene.set_on_mouse(self._on_mouse)
 
         # 3) Add extension menu items

@@ -214,13 +214,13 @@ class InternalFunctions:
             window.close()
 
         def _on_close_no():
-            window.close_dialog()
+            self._editor_instance._close_dialog()
 
         # Add the text
         dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
         dlg_layout.add_child(gui.Label("Close Shape Detector?"))
 
-        yes = gui.Button("Yes")
+        yes = gui.Button("Yes [Enter]")
         yes.set_on_clicked(_on_close_yes)
 
         no = gui.Button("No")
@@ -236,6 +236,14 @@ class InternalFunctions:
 
         dlg.add_child(dlg_layout)
         window.show_dialog(dlg)
+
+        def _on_key_event(event):
+            if event.type == gui.KeyEvent.DOWN and event.key == gui.KeyName.ENTER:
+                _on_close_yes()
+                return True
+            return False
+
+        window.set_on_key(_on_key_event)
 
     def _cb_toggle(self):
         """Toggle the current highlighted element between selected/unselected."""
