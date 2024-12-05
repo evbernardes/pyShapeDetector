@@ -329,9 +329,11 @@ class InternalFunctions:
         temp_window.show_menu(False)
 
         def _callback(_type, value):
-            elems_raw = [elem["raw"] for elem in editor_instance.elements]
-            idx = np.where([isinstance(elem, _type) for elem in elems_raw])[0].tolist()
-            editor_instance._toggle_indices(idx, to_value=value)
+            is_type = [
+                isinstance(elem["raw"], _type) for elem in editor_instance.elements
+            ]
+            indices = np.where(is_type)[0].tolist()
+            editor_instance._toggle_indices(indices, to_value=value)
 
         dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
         dlg_layout.add_child(gui.Label("Select types to select:"))
