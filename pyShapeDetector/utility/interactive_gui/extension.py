@@ -170,7 +170,7 @@ class Extension:
     def add_menu_item(self):
         self.binding.add_to_menu(self._editor_instance)
 
-    def update_in_separate_window(self):
+    def run_in_window(self):
         editor_instance = self._editor_instance
 
         if len(self.parameters) == 0:
@@ -184,7 +184,7 @@ class Extension:
         temp_window.show_menu(False)
         em = temp_window.theme.font_size
 
-        self._accepted = False
+        self._ran_at_least_once = False
 
         separation_height = int(round(0.5 * em))
         button_separation_width = 2 * separation_height
@@ -206,35 +206,30 @@ class Extension:
             dlg_layout.add_child(param.get_gui_element(temp_window))
             dlg_layout.add_fixed(separation_height)
 
-        def _on_accept():
-            self._accepted = True
-            temp_window.close()
+        def _on_apply():
+            self._ran_at_least_once = True
 
             self._editor_instance._apply_function_to_elements(
                 self, update_parameters=False
             )
 
-        def _on_cancel():
-            temp_window.close()
-
         def _on_close():
-            if not self._accepted:
+            if not self._ran_at_least_once:
                 for key, param in self.parameters.items():
                     param.value = previous_values[key]
 
-            return True
+            temp_window.close()
 
-        accept = gui.Button("Accept")
-        accept.set_on_clicked(_on_accept)
-        cancel = gui.Button("Cancel")
-        cancel.set_on_clicked(_on_cancel)
-        temp_window.set_on_close(_on_close)
+        apply = gui.Button("Apply")
+        apply.set_on_clicked(_on_apply)
+        close = gui.Button("Close")
+        close.set_on_clicked(_on_close)
 
         h = gui.Horiz()
         h.add_stretch()
-        h.add_child(accept)
+        h.add_child(apply)
         h.add_fixed(button_separation_width)
-        h.add_child(cancel)
+        h.add_child(close)
         h.add_stretch()
         dlg_layout.add_child(h)
         temp_window.add_child(dlg_layout)
@@ -242,7 +237,7 @@ class Extension:
         return gui.Widget.EventCallbackResult.HANDLED
 
     def run(self):
-        event_result = self.update_in_separate_window()
+        event_result = self.run_in_window()
         if event_result is gui.Widget.EventCallbackResult.HANDLED:
             return
 

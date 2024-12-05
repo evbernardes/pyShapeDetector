@@ -1,11 +1,16 @@
 import traceback
 import warnings
+import numpy as np
 from open3d.visualization import gui
 from .editor_app import Editor
 
 
 class Parameter:
     _type = None.__class__
+
+    @property
+    def type_name(self):
+        return self._type.__name__
 
     @property
     def name(self):
@@ -69,7 +74,7 @@ class Parameter:
 
         if input_type != self.type:
             raise TypeError(
-                f"Parameter of type '{self.type.__name__}' received descriptor of type '{input_type}'"
+                f"Parameter of type '{self.type_name}' received descriptor of type '{input_type}'"
             )
 
         self._parse_descriptor_(parameter_descriptor)
@@ -77,7 +82,7 @@ class Parameter:
         for key in parameter_descriptor:
             warnings.warn(
                 f"Ignoring unexpected '{key}' descriptor in parameter "
-                f"'{self.name}' of type '{self.type.__name__}'."
+                f"'{self.name}' of type '{self.type_name}'."
             )
 
 
@@ -405,10 +410,88 @@ class ParameterFloat(Parameter):
             self._value = None
 
 
+class ParameterNDArray(Parameter):
+    _type = np.ndarray
+
+    @property
+    def shape(self):
+        return self._shape
+
+    @property
+    def dtype(self):
+        return self._dtype
+
+    @property
+    def ndim(self):
+        return self._ndim
+
+    @property
+    def value(self):
+        if self.ndim == 1:
+            return self._value[0]
+        else:
+            return self._value
+
+    @value.setter
+    def value(self, new_value):
+        if new_value is None:
+            raise TypeError(
+                f"Parameter {self.name} of type {self.type_name} requires default value."
+            )
+
+        new_value = np.asarray(new_value)
+        if new_value.dtype.type in (float, np.float_):
+            self._dtype = int
+        elif new_value.dtype.type in (int, np.int_):
+            self._dtype = float
+        else:
+            raise TypeError("Supported values for dtype are 'int' and 'float'.")
+
+        if new_value.ndim > 2:
+            raise ValueError(
+                "Only shapes up to 2 dimentions are accepted, got "
+                f"{new_value.shape} for parameter {self.name}"
+            )
+        self._ndim = new_value.ndim
+        self._shape = new_value.shape
+        self._value = np.atleast_2d(new_value)
+
+    def _callback(self, line, col, value):
+        self._value[line, col] = self.dtype(value)
+        print(self._value)
+
+    def get_gui_element(self, window):
+        em = window.theme.font_size
+        label = gui.Label(self.name)
+
+        elements_array = gui.VGrid(self._value.shape[0], 0.25 * em)
+        for i in range(self._value.shape[0]):
+            elements_line = gui.Horiz(0.25 * em)
+            for j in range(self._value.shape[1]):
+                text_edit = gui.TextEdit()
+                text_edit.placeholder_text = str(self._value[i, j])
+                text_edit.set_on_value_changed(
+                    lambda value, line=i, col=j: self._callback(line, col, value)
+                )
+                elements_line.add_child(text_edit)
+
+            elements_array.add_child(elements_line)
+
+        element = gui.VGrid(2, 0.25 * em)
+        element.add_child(label)
+        element.add_child(elements_array)
+
+        return element
+
+    def _parse_descriptor_(self, parameter_descriptor: dict):
+        self.value = parameter_descriptor.pop("default", None)
+
+
 PARAMETER_TYPE_DICTIONARY = {
     None: Parameter,
     bool: ParameterBool,
     int: ParameterInt,
     float: ParameterFloat,
     list: ParameterOptions,
+    np.ndarray: ParameterNDArray,
 }
