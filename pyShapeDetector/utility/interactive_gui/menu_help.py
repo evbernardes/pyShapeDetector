@@ -12,7 +12,9 @@ class MenuHelp:
         window = self._editor_instance._window
         em = window.theme.font_size
 
-        _panel_collapsable = gui.CollapsableVert(self._menu, em, gui.Margins(0, 0, 0, 0))
+        _panel_collapsable = gui.CollapsableVert(
+            self._menu, em, gui.Margins(0, 0, 0, 0)
+        )
 
         dlg_layout = gui.Vert(em, gui.Margins(0, 0, 0, 0))
         text = gui.Label("")
@@ -97,12 +99,10 @@ class MenuHelp:
         dlg_layout.add_child(title)
         dlg_layout.add_child(
             gui.Label(
-                "Developed by Evandro Bernardes\nVrije Universiteit Brussel (VUB)"
-            )
-        )
-        dlg_layout.add_child(
-            gui.Label(
-                "More information at\nhttps://github.com/evbernardes/pyShapeDetector"
+                "Developed by:\n\tEvandro Bernardes"
+                "\n\nAt:\n\tVrije Universiteit Brussel (VUB)"
+                "\n\nFunding:\n\tFlanders Make"
+                "\n\n\n\nMore information at:\n\thttps://github.com/evbernardes/pyShapeDetector"
             )
         )
 
