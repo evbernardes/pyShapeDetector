@@ -477,9 +477,8 @@ class InternalFunctions:
             }
         )
 
-        while (
-            len(editor_instance._future_states)
-            > editor_instance._settings.number_redo_states
+        while len(editor_instance._future_states) > editor_instance._get_preference(
+            "number_redo_states"
         ):
             editor_instance._future_states.pop(0)
 

@@ -65,11 +65,18 @@ class Settings:
                     "on_update": self._cb_paint_selected,
                 },
             ),
+            ParameterColor(
+                "color_selected",
+                {
+                    "default": _color_selected,
+                    "on_update": self._cb_color_selected,
+                },
+            ),
             # ParameterColor(
             #     "_color_unselected",
             #     {
-            #         "default": __color_unselected,
-            #         "on_update": self._cb__color_unselected,
+            #         "default": _color_unselected,
+            #         "on_update": self._cb_color_unselected,
             #     },
             # ),
             # ParameterColor(

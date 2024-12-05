@@ -366,7 +366,7 @@ class Editor:
                     require_verbose=True,
                 )
                 is_current = self._started and (self.i == idx)
-                color = self._get_preference("get_element_color")(True, is_current)
+                color = self._settings.get_element_color(True, is_current)
                 elem["drawable"] = get_painted_element(elem["drawable"], color)
 
             self.print_debug(
