@@ -854,7 +854,7 @@ class Editor:
                 if len(params) > 0:
                     self._info.text += f", with :{params}"
 
-                repeat_binding = self._internal_functions._dict["Repeat last function"]
+                repeat_binding = self._internal_functions._dict["Repeat last extension"]
                 if repeat_binding is not None:
                     self._info.text += f"\n{repeat_binding.key_instruction} to repeat"
 

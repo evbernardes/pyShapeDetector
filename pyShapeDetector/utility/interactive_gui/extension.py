@@ -219,7 +219,7 @@ class Extension:
 
         if self.inputs == "current":
             indices = [editor_instance.i]
-            input_elements = editor_instance.current_element["raw"]
+            input_elements = [editor_instance.current_element["raw"]]
         elif self.inputs == "selected":
             indices = editor_instance.selected_indices
             input_elements = [editor_instance.elements[i]["raw"] for i in indices]
@@ -270,9 +270,9 @@ class Extension:
             editor_instance._insert_elements(
                 output_elements,
                 to_gui=True,
-                selected=input_elements["selected"],
+                selected=editor_instance.current_element["selected"],
             )
-            editor_instance._update_current_idx(len(self.elements) - 1)
+            editor_instance._update_current_idx(len(editor_instance.elements) - 1)
         else:
             editor_instance._insert_elements(
                 output_elements, to_gui=True, selected=self.select_outputs
