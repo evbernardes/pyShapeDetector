@@ -1,9 +1,12 @@
 from abc import ABC
 import copy
 import numpy as np
+import warnings
+import traceback
 from open3d.visualization import gui
 from .editor_app import Editor
 from .binding import Binding
+from .extension import Extension
 
 
 class InternalFunctions:
@@ -244,12 +247,23 @@ class InternalFunctions:
         editor_instance._update_current_idx()
 
     def _cb_delete(self):
-        """Delete current elements."""
+        """Delete selected elements."""
+        # Implementing as an extension to save state
+        editor_instance = self._editor_instance
+        indices = editor_instance.selected_indices
+        input_elements = [editor_instance.elements[i]["raw"] for i in indices]
 
-        def delete(elements):
-            return []
+        try:
+            editor_instance.print_debug(f"Deleting elements at indices {indices}.")
+            editor_instance._pop_elements(indices, from_gui=True)
+        except Exception:
+            warnings.warn(f"Could not delete elements at indices {indices}.")
+            traceback.print_exc()
+            return
 
-        self._editor_instance._apply_function_to_elements(delete)
+        editor_instance._save_state(indices, input_elements, 0)
+        editor_instance._future_states = []
+        editor_instance._update_plane_boundaries()
 
     def _cb_copy(self):
         """Save elements to be copied."""
@@ -263,14 +277,22 @@ class InternalFunctions:
     def _cb_paste(self):
         editor_instance = self._editor_instance
 
-        def paste(elements):
-            return elements + editor_instance._copied_elements
+        try:
+            editor_instance.print_debug(
+                f"Pasting {len(editor_instance._copied_elements)} elements."
+            )
+            editor_instance._insert_elements(
+                editor_instance._copied_elements, to_gui=True
+            )
+        except Exception:
+            warnings.warn(
+                f"Could not paste {len(editor_instance._copied_elements)} elements."
+            )
+            traceback.print_exc()
 
-        editor_instance.print_debug(
-            f"Pasting {len(editor_instance._copied_elements)} elements."
-        )
-        self._editor_instance._apply_function_to_elements(paste)
-        editor_instance._copied_elements = []
+        editor_instance._save_state([], [], len(editor_instance._copied_elements))
+        editor_instance._future_states = []
+        editor_instance._update_plane_boundaries()
 
     def _shift_current(self, delta):
         """Shifts 'current index' pointer checking if within limits"""
