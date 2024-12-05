@@ -39,8 +39,12 @@ class Parameter:
     def value(self):
         return self._value
 
-    def _callback(self, value):
-        self._value = self.type(value)
+    def _callback(self, value, text_edit=None):
+        try:
+            self._value = self.type(value)
+        except Exception:
+            if text_edit is not None:
+                text_edit.text_value = str(self.value)
 
     def _reset_values_and_limits(self, editor_instance: Editor):
         pass
@@ -52,7 +56,7 @@ class Parameter:
         # Text field for general inputs
         text_edit = gui.TextEdit()
         text_edit.placeholder_text = str(self.value)
-        text_edit.set_on_value_changed(self._callback)
+        text_edit.set_on_value_changed(lambda value: self._callback(value, text_edit))
 
         element = gui.VGrid(2, 0.25 * em)
         element.add_child(label)
@@ -252,7 +256,9 @@ class ParameterInt(Parameter):
             # Text field for general inputs
             text_edit = gui.TextEdit()
             text_edit.placeholder_text = str(self.value)
-            text_edit.set_on_value_changed(self._callback)
+            text_edit.set_on_value_changed(
+                lambda value: self._callback(value, text_edit)
+            )
 
             element = gui.VGrid(2, 0.25 * em)
             element.add_child(label)
@@ -376,7 +382,9 @@ class ParameterFloat(Parameter):
             # Text field for general inputs
             text_edit = gui.TextEdit()
             text_edit.placeholder_text = str(self.value)
-            text_edit.set_on_value_changed(self._callback)
+            text_edit.set_on_value_changed(
+                lambda value: self._callback(value, text_edit)
+            )
 
             element = gui.VGrid(2, 0.25 * em)
             element.add_child(label)
@@ -456,9 +464,11 @@ class ParameterNDArray(Parameter):
         self._shape = new_value.shape
         self._value = np.atleast_2d(new_value)
 
-    def _callback(self, line, col, value):
-        self._value[line, col] = self.dtype(value)
-        print(self._value)
+    def _callback(self, line, col, value, text_edit):
+        try:
+            self._value[line, col] = self.dtype(value)
+        except Exception:
+            text_edit.text_value = str(self._value[line, col])
 
     def get_gui_element(self, window):
         em = window.theme.font_size
@@ -471,7 +481,9 @@ class ParameterNDArray(Parameter):
                 text_edit = gui.TextEdit()
                 text_edit.placeholder_text = str(self._value[i, j])
                 text_edit.set_on_value_changed(
-                    lambda value, line=i, col=j: self._callback(line, col, value)
+                    lambda value, line=i, col=j, t=text_edit: self._callback(
+                        line, col, value, t
+                    )
                 )
                 elements_line.add_child(text_edit)
 
