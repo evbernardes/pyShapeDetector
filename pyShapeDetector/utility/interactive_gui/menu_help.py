@@ -14,7 +14,6 @@ class MenuHelp:
         _panel_collapsable = gui.CollapsableVert("Help", em, gui.Margins(0, 0, 0, 0))
 
         dlg_layout = gui.Vert(em, gui.Margins(0, 0, 0, 0))
-        # text = gui.Label(self._editor_instance._hotkeys.get_instructions())
         text = gui.Label("")
         dlg_layout.add_child(text)
 
@@ -30,20 +29,12 @@ class MenuHelp:
 
         self._create_panel()
 
-        help_binding = (
-            editor_instance._internal_functions.find_binding_from_description(
-                "Show Help"
-            )
-        )
+        help_binding = editor_instance._internal_functions._dict["Show Help"]
         self._help_id = editor_instance._add_menu_item(
             self._name, help_binding.description_and_instruction, self._on_help_toggle
         )
 
-        info_binding = (
-            editor_instance._internal_functions.find_binding_from_description(
-                "Show Info"
-            )
-        )
+        info_binding = editor_instance._internal_functions._dict["Show Info"]
         self._info_id = editor_instance._add_menu_item(
             self._name, info_binding.description_and_instruction, self._on_info_toggle
         )
@@ -64,9 +55,9 @@ class MenuHelp:
                         for binding in self._editor_instance._hotkeys._bindings_map.values()
                     ]
                 )
-                + f"\n\n(Ctrl):"
+                + "\n\n(Ctrl):"
                 + "\n- Set current with mouse"
-                + f"\n\n(Ctrl + Shift):"
+                + "\n\n(Ctrl + Shift):"
                 + "\n- Set current with mouse and toggle"
             )
 

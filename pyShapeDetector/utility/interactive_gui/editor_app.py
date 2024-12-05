@@ -531,7 +531,7 @@ class Editor:
 
     def _on_close(self):
         if not self._closing_app:
-            self._internal_functions.find_binding_from_description("Quit").callback()
+            self._internal_functions._dict["Quit"].callback()
             return False
 
         self._insert_elements(self._hidden_elements, to_gui=False)
@@ -852,9 +852,7 @@ class Editor:
                 if len(params) > 0:
                     self._info.text += f", with :{params}"
 
-                repeat_binding = self._internal_functions.find_binding_from_description(
-                    "Repeat last function"
-                )
+                repeat_binding = self._internal_functions._dict["Repeat last function"]
                 if repeat_binding is not None:
                     self._info.text += f"\n{repeat_binding.key_instruction} to repeat"
 

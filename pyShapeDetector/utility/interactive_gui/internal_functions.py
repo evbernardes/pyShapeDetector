@@ -15,12 +15,6 @@ class InternalFunctions:
     def bindings(self):
         return self._bindings
 
-    def find_binding_from_description(self, description: str):
-        for binding in self.bindings:
-            if binding.description == description:
-                return binding
-        return None
-
     def __init__(self, editor_instance: Editor):
         self._editor_instance = editor_instance
         self._bindings = [
@@ -153,6 +147,8 @@ class InternalFunctions:
                 menu=None,
             ),
         ]
+
+        self._dict = {binding.description: binding for binding in self._bindings}
 
     def create_menu_items(self):
         for binding in self.bindings:

@@ -468,11 +468,9 @@ class Settings:
 
         self._create_panel()
 
-        preferences_binding = (
-            editor_instance._internal_functions.find_binding_from_description(
-                "Show Preferences"
-            )
-        )
+        preferences_binding = editor_instance._internal_functions._dict[
+            "Show Preferences"
+        ]
 
         self._on_menu_id = editor_instance._add_menu_item(
             self._name,
