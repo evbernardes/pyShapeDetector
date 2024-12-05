@@ -924,24 +924,44 @@ class Editor:
 
             function = extension_or_function.function
             kwargs = extension_or_function.parameters_kwargs
+            keep_inputs = extension_or_function.keep_inputs
+            select_outputs = extension_or_function.select_outputs
+            inputs = extension_or_function.inputs
+            if inputs == "current":
+                indices = [self.i]
+            elif inputs == "selected":
+                indices = self.selected_indices
+            elif inputs == "current":
+                indices = list(range(len(self.elements)))
+            else:
+                raise RuntimeError(
+                    f"Invalid input instruction {inputs} "
+                    f"found in extension {extension_or_function.name}."
+                )
 
         elif callable(extension_or_function):
             function = extension_or_function
             kwargs = {}
+            keep_inputs = False
+            select_outputs = False
+            indices = self.selected_indices
         else:
             raise RuntimeError(
                 f"{extension_or_function} is neither a function nor an Extension!"
             )
 
-        indices = self.selected_indices
+        # indices = self.selected_indices
         self.print_debug(
             f"Applying {function.__name__} function to {len(indices)} elements, indices: "
         )
         self.print_debug(indices)
-        input_elements = self.selected_raw_elements
+        input_elements = [self.elements[i]["raw"] for i in indices]
 
         try:
-            output_elements = function(input_elements, **kwargs)
+            if inputs == "current":
+                output_elements = function(input_elements[0], **kwargs)
+            else:
+                output_elements = function(input_elements, **kwargs)
         except KeyboardInterrupt:
             return
         except Exception as e:
@@ -958,9 +978,28 @@ class Editor:
         elif not isinstance(output_elements, list):
             output_elements = [output_elements]
 
+        if inputs == "current" and len(output_elements) != 1:
+            warnings.warn(
+                "Only one output expected for extensions with "
+                f"'current' input type, got {len(output_elements)}."
+            )
+            return
+
         self._save_state(indices, input_elements, len(output_elements))
-        assert self._pop_elements(indices, from_gui=True) == input_elements
-        self._insert_elements(output_elements, to_gui=True)
+
+        if inputs == "current":
+            self._insert_elements(
+                output_elements, to_gui=True, selected=self.elements[indices[0]]["selected"]
+            )
+            self._update_current_idx(len(self.elements) - 1)
+        else:
+            self._insert_elements(output_elements, to_gui=True, selected=select_outputs)
+
+        if not keep_inputs:
+            assert self._pop_elements(indices, from_gui=True) == input_elements
+
+        # if select_outputs:
+        #     self._update_current_idx(len(self.elements) - 1)
 
         self._last_used_function = extension_or_function
         self._future_states = []

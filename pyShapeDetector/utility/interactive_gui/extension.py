@@ -12,6 +12,8 @@ from .parameter import PARAMETER_TYPE_DICTIONARY
 from .helpers import get_pretty_name
 from .binding import Binding
 
+VALID_INPUTS = ("current", "selected", "global")
+
 
 class Extension:
     DEFAULT_MENU_NAME = "Misc functions"
@@ -35,6 +37,18 @@ class Extension:
     @property
     def parameters(self):
         return self._parameters
+
+    @property
+    def inputs(self):
+        return self._inputs
+
+    @property
+    def keep_inputs(self):
+        return self._keep_inputs
+
+    @property
+    def select_outputs(self):
+        return self._select_outputs
 
     @property
     def parameters_kwargs(self):
@@ -93,17 +107,22 @@ class Extension:
             self._lshift = False
             return
 
-        if not isinstance(hotkey, int) or not (0 <= hotkey <= 9):
+        if isinstance(hotkey, str) and str.isnumeric(hotkey):
+            hotkey = int(hotkey)
+
+        if isinstance(hotkey, int) and (0 <= hotkey <= 9):
+            self._hotkey = ord(str(hotkey))
+        elif isinstance(hotkey, str) and str.isalpha(hotkey):
+            self._hotkey = getattr(gui.KeyName, hotkey.upper())
+        else:
             warnings.warn(
-                f"Expected integer hotkey between 0 and 9, got {hotkey}. "
-                "Ignoring hotkey"
+                f"Hotkey expected to be either letter or integer between 0 and 9"
+                f", got {hotkey}. Ignoring hotkey"
             )
             self._hotkey = None
             self._lctrl = False
             self._lshift = False
             return
-
-        self._hotkey = ord(str(hotkey))
 
         if lctrl is None:
             self._lctrl = False
@@ -133,6 +152,22 @@ class Extension:
 
         self._parameters = parsed_parameters
 
+    def _set_misc(self, descriptor: dict):
+        inputs = descriptor.get("inputs", "selected")
+        if inputs not in VALID_INPUTS:
+            raise ValueError(
+                f"Possible values for 'inputs' are {VALID_INPUTS}, got {inputs}."
+            )
+        self._inputs = inputs
+        self._keep_inputs = bool(descriptor.get("keep_inputs", False))
+        select_outputs = bool(descriptor.get("select_outputs", False))
+
+        if select_outputs and inputs == "current":
+            raise ValueError(
+                "'select_outputs' should not be True for inputs of type 'current'."
+            )
+        self._select_outputs = select_outputs
+
     def __init__(self, function_or_descriptor: Union[Callable, dict]):
         if isinstance(function_or_descriptor, dict):
             if "function" not in function_or_descriptor:
@@ -148,6 +183,7 @@ class Extension:
         self._set_menu(descriptor)
         self._set_hotkey(descriptor)
         self._set_parameters(descriptor)
+        self._set_misc(descriptor)
 
         self._binding = Binding(
             key=self.hotkey,
