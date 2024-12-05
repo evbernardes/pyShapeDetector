@@ -1,7 +1,6 @@
 import numpy as np
 from open3d.visualization import gui
 from .editor_app import Editor
-from .binding import Binding
 
 COLOR_BBOX_SELECTED_DEFAULT = np.array([0, 204.8, 0.0]) / 255
 COLOR_BBOX_UNSELECTED_DEFAULT = np.array([255.0, 0.0, 0.0]) / 255
