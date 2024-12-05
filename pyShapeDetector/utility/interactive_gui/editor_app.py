@@ -710,8 +710,8 @@ class Editor:
     #     sys.exit(0)
 
     def _update_plane_boundaries(self):
-        for plane in self._plane_boundaries:
-            self._remove_geometry_from_scene(plane)
+        for plane_boundary in self._plane_boundaries:
+            self._remove_geometry_from_scene(plane_boundary)
 
         plane_boundaries = []
 

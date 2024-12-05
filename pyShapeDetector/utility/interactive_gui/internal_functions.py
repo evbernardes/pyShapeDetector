@@ -6,7 +6,6 @@ import traceback
 from open3d.visualization import gui
 from .editor_app import Editor
 from .binding import Binding
-from .extension import Extension
 
 
 class InternalFunctions:
