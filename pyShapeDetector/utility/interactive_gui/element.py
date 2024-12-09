@@ -255,7 +255,7 @@ class ElementPrimitive(Element):
             raise ValueError("Expected Primitive instance, got {raw}.")
 
     def _get_drawable(self):
-        self._drawable = self.raw.copy().mesh
+        self._drawable = self.raw.copy().mesh.as_open3d
 
     def _get_distance_checker(self):
         self._distance_checker = self.raw
@@ -286,7 +286,10 @@ class ElementPointCloud(ElementGeometry):
     @staticmethod
     def _parse_raw(raw: PointCloud):
         if PointCloud.is_instance_or_open3d(raw):
-            return PointCloud(raw)
+            pcd = PointCloud(raw)
+            if not pcd.has_normals():
+                pcd.estimate_normals()
+            return pcd
         else:
             raise ValueError(f"Expected PointCloud instance, got {raw}.")
 

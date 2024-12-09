@@ -260,83 +260,6 @@ class Editor:
         self._window.close_dialog()
         self._reset_on_key()
 
-    def _add_geometry_to_scene(self, elem):
-        from open3d.geometry import LineSet, AxisAlignedBoundingBox, OrientedBoundingBox
-
-        if isinstance(elem, (LineSet, AxisAlignedBoundingBox, OrientedBoundingBox)):
-            mat = self.material_line
-        else:
-            mat = self.material_regular
-        self._scene.scene.add_geometry(str(id(elem)), elem, mat)
-
-    def _remove_geometry_from_scene(self, elem):
-        self._scene.scene.remove_geometry(str(id(elem)))
-
-    # def _pop_elements(self, indices, from_gui=False):
-    #     # update_old = self.i in indices
-    #     # idx_new = self.i
-    #     elements_popped = []
-    #     for n, i in enumerate(indices):
-    #         elem = self._elements.pop(i - n)
-    #         if from_gui:
-    #             elem.remove_from_scene()
-    #         elements_popped.append(elem.raw)
-
-    #     idx_new = self.i - sum([idx < self.i for idx in indices])
-    #     self.print_debug(
-    #         f"popped: {indices}",
-    #     )
-    #     self.print_debug(f"old index: {self.i}, new index: {idx_new}")
-
-    #     if len(self.elements) == 0:
-    #         warnings.warn("No elements left after popping, not updating.")
-    #         self.i = 0
-    #         self.i_old = 0
-    #     else:
-    #         idx_new = max(min(idx_new, len(self.elements) - 1), 0)
-    #         self._update_current_idx(idx_new, update_old=False)
-    #         self.i_old = self.i
-    #     return elements_popped
-
-    def _insert_elements(self, elems_raw, indices=None, selected=False, to_gui=False):
-        from .element import Element
-
-        if indices is None:
-            indices = range(len(self.elements), len(self.elements) + len(elems_raw))
-
-        if isinstance(selected, bool):
-            selected = [selected] * len(indices)
-
-        idx_new = self.i
-
-        self.print_debug(
-            f"Adding {len(elems_raw)} elements to the existing {len(self.elements)}",
-            require_verbose=True,
-        )
-
-        for i, idx in enumerate(indices):
-            if idx_new > idx:
-                idx_new += 1
-
-            is_current = self._started and (self.i == idx)
-
-            elem = Element.get_from_type(self, elems_raw[i], selected[i], is_current)
-
-            self.print_debug(f"Added {elem.raw} at index {idx}.", require_verbose=True)
-            self._elements.insert_multiple(idx, elem)
-
-        for idx in indices:
-            # Updating vis explicitly in order not to remove it
-            self._update_elements(idx, update_gui=False)
-            if to_gui:
-                self.elements[idx].add_to_scene()
-
-        self.print_debug(f"{len(self.elements)} now.", require_verbose=True)
-
-        idx_new = max(min(idx_new, len(self.elements) - 1), 0)
-        self._update_current_idx(idx_new, update_old=self._started)
-        self.i_old = self.i
-
     def _save_state(self, indices, input_elements, num_outputs):
         """Save state for undoing."""
         current_state = {
@@ -676,35 +599,9 @@ class Editor:
         else:
             self.elements.update_all()
 
-        # if startup:
-        #     current_idx = 0
-        #     elems_raw = self._elements_input
-        #     pre_selected = self._pre_selected
-
-        # else:
-        #     # pre_selected = [False] * len(elems_raw)
-        #     current_idx = copy.copy(self.i)
-        #     pre_selected = self.elements.selected
-        #     with warnings.catch_warnings():
-        #         warnings.filterwarnings("ignore", message="No elements left")
-        #         elems_raw = self.elements.pop_multiple(
-        #             range(len(self.elements)), from_gui=True
-        #         )
-        #     assert len(self.elements) == 0
-
-        # self.print_debug(
-        #     f"\ninserting elements at startup, there are {len(elems_raw)}.",
-        #     require_verbose=True,
-        # )
-        # # self._insert_elements(elems_raw, selected=pre_selected, to_gui=True)
-        # self.elements.insert_multiple(elems_raw, selected=pre_selected, to_gui=True)
-        # self.print_debug(f"Finished inserting {len(self.elements)} elements.")
-
         self._update_plane_boundaries()
         self._update_current_bounding_box()
-
         self._update_current_idx(current_idx)
-        # self._started = True
 
     def run(self):
         self.print_debug(f"Starting {type(self).__name__}.")

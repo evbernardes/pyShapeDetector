@@ -270,20 +270,26 @@ class Extension:
         editor_instance._save_state(indices, input_elements, len(output_elements))
 
         if self.inputs == "current":
-            editor_instance._insert_elements(
+            # editor_instance._insert_elements(
+            editor_instance.elements.insert_multiple(
                 output_elements,
                 to_gui=True,
                 selected=editor_instance.current_element.selected,
             )
             editor_instance._update_current_idx(len(editor_instance.elements) - 1)
         else:
-            editor_instance._insert_elements(
+            # editor_instance._insert_elements(
+            editor_instance.elements.insert_multiple(
                 output_elements, to_gui=True, selected=self.select_outputs
             )
 
         if not self.keep_inputs:
+            # assert (
+            #     editor_instance._pop_elements(indices, from_gui=True) == input_elements
+            # )
             assert (
-                editor_instance._pop_elements(indices, from_gui=True) == input_elements
+                editor_instance.elements.pop_multiple(indices, from_gui=True).raw
+                == input_elements
             )
 
         editor_instance._last_used_extension = self
