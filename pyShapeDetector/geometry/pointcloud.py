@@ -33,11 +33,11 @@ from pyShapeDetector.utility import (
     midrange,
     accept_one_or_multiple_elements,
 )
-from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
+from .numpy_geometry import link_to_open3d_geometry, Numpy_Geometry
 
 
 @link_to_open3d_geometry(open3d_PointCloud)
-class PointCloud(Open3D_Geometry):
+class PointCloud(Numpy_Geometry):
     """
     PointCloud class that uses Open3D.geometry.PointCloud internally.
 

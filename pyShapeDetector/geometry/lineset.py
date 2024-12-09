@@ -8,11 +8,11 @@ Created on Wed Oct 23 15:53:00 2024
 import numpy as np
 from open3d.geometry import LineSet as open3d_LineSet
 
-from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
+from .numpy_geometry import link_to_open3d_geometry, Numpy_Geometry
 
 
 @link_to_open3d_geometry(open3d_LineSet)
-class LineSet(Open3D_Geometry):
+class LineSet(Numpy_Geometry):
     """
     LineSet class that uses Open3D.geometry.LineSet internally.
 

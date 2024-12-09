@@ -11,12 +11,12 @@ import numpy as np
 from open3d.geometry import TriangleMesh as open3d_TriangleMesh
 
 from pyShapeDetector.utility import mesh_to_obj_description
-from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
+from .numpy_geometry import link_to_open3d_geometry, Numpy_Geometry
 from .lineset import LineSet
 
 
 @link_to_open3d_geometry(open3d_TriangleMesh)
-class TriangleMesh(Open3D_Geometry):
+class TriangleMesh(Numpy_Geometry):
     """
     TriangleMesh class that uses Open3D.geometry.TriangleMesh internally.
 
