@@ -18,6 +18,7 @@ COLOR_UNSELECTED_DEFAULT = np.array([76.5, 76.5, 76.5]) / 255
 
 # DEFAULT VALUES
 _draw_boundary_lines = True
+_pointcloud_size = 3
 _mesh_show_back_face = True
 _paint_selected = True
 _color_selected = gui.Color(*COLOR_SELECTED_DEFAULT)
@@ -46,6 +47,12 @@ class Settings:
                 name="draw_boundary_lines",
                 default=_draw_boundary_lines,
                 on_update=self._cb_draw_boundary_lines,
+            ),
+            ParameterFloat(
+                name="pointcloud_size",
+                default=_pointcloud_size,
+                on_update=self._cb_pointcloud_size,
+                limits=(3, 15),
             ),
             ParameterBool(
                 name="mesh_show_back_face",
@@ -147,6 +154,21 @@ class Settings:
 
     def _cb_draw_boundary_lines(self):
         self._editor_instance._update_plane_boundaries()
+
+    def _cb_pointcloud_size(self):
+        from pyShapeDetector.geometry import PointCloud
+
+        point_size = self._dict["pointcloud_size"].value
+        self._editor_instance.material_regular.point_size = point_size
+        indices = np.where(
+            [
+                PointCloud.is_instance_or_open3d(element["raw"])
+                for element in self._editor_instance.elements
+            ]
+        )[0].tolist()
+        print(indices)
+        self._editor_instance._update_elements(indices)
+        # self._editor_instance._update_elements(None)
 
     def _cb_mesh_show_back_face(self):
         # self._editor_instance._reset_elements_in_gui()
