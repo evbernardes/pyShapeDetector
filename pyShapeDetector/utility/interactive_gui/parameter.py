@@ -1,5 +1,6 @@
 import traceback
 import warnings
+from typing import Callable, Union
 import numpy as np
 from open3d.visualization import gui
 from .editor_app import Editor
@@ -37,6 +38,23 @@ class Parameter:
         return " ".join(result)
 
     @property
+    def on_update(self):
+        if self._on_update is None:
+            return lambda: None
+        return self._on_update
+
+    @on_update.setter
+    def on_update(self, func: Callable):
+        if func is None:
+            self._on_update = None
+        elif callable(func):
+            self._on_update = func
+        else:
+            raise TypeError(
+                f"Parameter of type '{self.type_name}' received invalid 'on_update'"
+            )
+
+    @property
     def type(self):
         return self._type
 
@@ -50,6 +68,13 @@ class Parameter:
     @property
     def value(self):
         return self._value
+
+    def _warn_unused_parameters(self, other_kwargs: dict):
+        for key in other_kwargs:
+            warnings.warn(
+                f"Ignoring unexpected '{key}' descriptor in parameter "
+                f"'{self.name}' of type '{self.type_name}'."
+            )
 
     def _callback(self, value, text_edit=None):
         old_value = self.value
@@ -79,37 +104,22 @@ class Parameter:
 
         return element
 
-    def _parse_descriptor_(self, parameter_descriptor: dict):
-        pass
-
-    def __init__(self, key: str, parameter_descriptor: dict):
-        if not isinstance(parameter_descriptor, dict):
-            raise TypeError("parameter descriptor should be a dictionary")
-
-        self.name = key
+    @staticmethod
+    def create_from_dict(key: str, parameter_descriptor: dict):
         parameter_descriptor = parameter_descriptor.copy()
+        if "name" not in parameter_descriptor:
+            parameter_descriptor["name"] = key
+        _type = parameter_descriptor.pop("type", None)
+        if _type not in PARAMETER_TYPE_DICTIONARY:
+            raise ValueError("{_type} does not correspond to valid Parameter type.")
 
-        input_type = parameter_descriptor.pop("type", None.__class__)
-        if input_type is not None.__class__ and input_type != self.type:
-            raise TypeError(
-                f"Parameter of type '{self.type_name}' received descriptor of type '{input_type.__name__}'"
-            )
+        parameter = PARAMETER_TYPE_DICTIONARY[_type](**parameter_descriptor)
 
-        on_update = parameter_descriptor.pop("on_update", lambda: None)
+        return parameter
 
-        if not callable(on_update):
-            raise TypeError(
-                f"Parameter of type '{self.type_name}' received invalid 'on_update'"
-            )
-        self._on_update = on_update
-
-        self._parse_descriptor_(parameter_descriptor)
-
-        for key in parameter_descriptor:
-            warnings.warn(
-                f"Ignoring unexpected '{key}' descriptor in parameter "
-                f"'{self.name}' of type '{self.type_name}'."
-            )
+    def __init__(self, name: str, on_update: Callable = None):
+        self.name = name
+        self.on_update = on_update
 
 
 class ParameterBool(Parameter):
@@ -125,8 +135,16 @@ class ParameterBool(Parameter):
         element.set_on_checked(self._callback)
         return element
 
-    def _parse_descriptor_(self, parameter_descriptor: dict):
-        self.value = parameter_descriptor.pop("default", False)
+    def __init__(
+        self,
+        name: str,
+        default: bool = False,
+        on_update: Callable = None,
+        **other_kwargs,
+    ):
+        super().__init__(name=name, on_update=on_update)
+        self.value = default
+        self._warn_unused_parameters(other_kwargs)
 
 
 class ParameterOptions(Parameter):
@@ -177,15 +195,22 @@ class ParameterOptions(Parameter):
 
         return element
 
-    def _parse_descriptor_(self, parameter_descriptor: dict):
-        if "options" not in parameter_descriptor:
-            raise TypeError(
-                f"Parameter {self.name} is of type 'list' and requires 'options'."
-            )
-        else:
-            self.options = parameter_descriptor.pop("options")
+    def __init__(
+        self,
+        name: str,
+        options: list,
+        default=None,
+        on_update: Callable = None,
+        **other_kwargs,
+    ):
+        super().__init__(name=name, on_update=on_update)
+        self.options = options
 
-        self.value = parameter_descriptor.pop("default", self.options[0])
+        if default is None:
+            default = options[0]
+        self.value = default
+
+        self._warn_unused_parameters(other_kwargs)
 
 
 class ParameterInt(Parameter):
@@ -289,14 +314,21 @@ class ParameterInt(Parameter):
 
         return element
 
-    def _parse_descriptor_(self, parameter_descriptor: dict):
-        self.limit_setter = parameter_descriptor.pop("limit_setter", None)
-        limits = parameter_descriptor.pop("limits", None)
-        value = parameter_descriptor.pop("default", None)
+    def __init__(
+        self,
+        name: str,
+        limit_setter: Callable = None,
+        limits: Union[list, tuple] = None,
+        default: int = None,
+        on_update: Callable = None,
+        **other_kwargs,
+    ):
+        super().__init__(name=name, on_update=on_update)
+        self.limit_setter = limit_setter
 
         if self.limit_setter is None:
             self.limits = limits
-            self.value = value
+            self.value = default
 
         else:
             if limits is not None:
@@ -307,12 +339,14 @@ class ParameterInt(Parameter):
 
             self._limits = None
 
-            if value is not None:
+            if default is not None:
                 warnings.warn(
                     f"Limit setter defined for parameter {self.name}, "
                     "ignoring input default value."
                 )
             self._value = None
+
+        self._warn_unused_parameters(other_kwargs)
 
 
 class ParameterFloat(Parameter):
@@ -415,14 +449,21 @@ class ParameterFloat(Parameter):
 
         return element
 
-    def _parse_descriptor_(self, parameter_descriptor: dict):
-        self.limit_setter = parameter_descriptor.pop("limit_setter", None)
-        limits = parameter_descriptor.pop("limits", None)
-        value = parameter_descriptor.pop("default", None)
+    def __init__(
+        self,
+        name: str,
+        limit_setter: Callable = None,
+        limits: Union[list, tuple] = None,
+        default: int = None,
+        on_update: Callable = None,
+        **other_kwargs,
+    ):
+        super().__init__(name=name, on_update=on_update)
+        self.limit_setter = limit_setter
 
         if self.limit_setter is None:
             self.limits = limits
-            self.value = value
+            self.value = default
 
         else:
             if limits is not None:
@@ -433,12 +474,14 @@ class ParameterFloat(Parameter):
 
             self._limits = None
 
-            if value is not None:
+            if default is not None:
                 warnings.warn(
                     f"Limit setter defined for parameter {self.name}, "
                     "ignoring input default value."
                 )
             self._value = None
+
+        self._warn_unused_parameters(other_kwargs)
 
 
 class ParameterColor(Parameter):
@@ -494,8 +537,17 @@ class ParameterColor(Parameter):
 
         return element
 
-    def _parse_descriptor_(self, parameter_descriptor: dict):
-        self.value = parameter_descriptor.pop("default", None)
+    def __init__(
+        self,
+        name: str,
+        default: Union[list, tuple, np.ndarray] = None,
+        on_update: Callable = None,
+        **other_kwargs,
+    ):
+        super().__init__(name=name, on_update=on_update)
+        self.value = default
+
+        self._warn_unused_parameters(other_kwargs)
 
 
 class ParameterNDArray(Parameter):
@@ -576,8 +628,17 @@ class ParameterNDArray(Parameter):
 
         return element
 
-    def _parse_descriptor_(self, parameter_descriptor: dict):
-        self.value = parameter_descriptor.pop("default", None)
+    def __init__(
+        self,
+        name: str,
+        default: Union[list, tuple, np.ndarray] = None,
+        on_update: Callable = None,
+        **other_kwargs,
+    ):
+        super().__init__(name=name, on_update=on_update)
+        self.value = default
+
+        self._warn_unused_parameters(other_kwargs)
 
 
 PARAMETER_TYPE_DICTIONARY = {

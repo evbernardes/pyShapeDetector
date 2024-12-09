@@ -45,32 +45,24 @@ class Settings:
     def __init__(self, editor_instance: Editor, menu="Preferences", **kwargs):
         options = [
             ParameterBool(
-                "draw_boundary_lines",
-                {
-                    "default": _draw_boundary_lines,
-                    "on_update": self._cb_draw_boundary_lines,
-                },
+                name="draw_boundary_lines",
+                default=_draw_boundary_lines,
+                on_update=self._cb_draw_boundary_lines,
             ),
             ParameterBool(
-                "mesh_show_back_face",
-                {
-                    "default": _mesh_show_back_face,
-                    "on_update": self._cb_mesh_show_back_face,
-                },
+                name="mesh_show_back_face",
+                default=_mesh_show_back_face,
+                on_update=self._cb_mesh_show_back_face,
             ),
             ParameterBool(
-                "paint_selected",
-                {
-                    "default": _paint_selected,
-                    "on_update": self._cb_paint_selected,
-                },
+                name="paint_selected",
+                default=_paint_selected,
+                on_update=self._cb_paint_selected,
             ),
             ParameterColor(
-                "color_selected",
-                {
-                    "default": _color_selected,
-                    "on_update": self._cb_color_selected,
-                },
+                name="color_selected",
+                default=_color_selected,
+                on_update=self._cb_color_selected,
             ),
             # ParameterColor(
             #     "_color_unselected",
@@ -94,87 +86,65 @@ class Settings:
             #     },
             # ),
             ParameterBool(
-                "paint_random",
-                {
-                    "default": _paint_random,
-                    "on_update": self._cb_paint_random,
-                },
+                name="paint_random",
+                default=_paint_random,
+                on_update=self._cb_paint_random,
             ),
             ParameterBool(
-                "debug",
-                {
-                    "default": _debug,
-                    "on_update": self._cb_debug,
-                },
+                name="debug",
+                default=_debug,
+                on_update=self._cb_debug,
             ),
             ParameterBool(
-                "verbose",
-                {
-                    "default": _verbose,
-                    "on_update": self._cb_verbose,
-                },
+                name="verbose",
+                default=_verbose,
+                on_update=self._cb_verbose,
             ),
             ParameterFloat(
-                "BBOX_expand",
-                {
-                    "default": _BBOX_expand,
-                    "limits": (0, 2),
-                    "on_update": self._cb_BBOX_expand,
-                },
+                name="BBOX_expand",
+                default=_BBOX_expand,
+                limits=(0, 2),
+                on_update=self._cb_BBOX_expand,
             ),
             ParameterColor(
-                "color_BBOX_selected",
-                {
-                    "default": _color_BBOX_selected,
-                    "on_update": self._cb_color_BBOX_selected,
-                },
+                name="color_BBOX_selected",
+                default=_color_BBOX_selected,
+                on_update=self._cb_color_BBOX_selected,
             ),
             ParameterColor(
-                "color_BBOX_unselected",
-                {
-                    "default": _color_BBOX_unselected,
-                    "on_update": self._cb_color_BBOX_unselected,
-                },
+                name="color_BBOX_unselected",
+                default=_color_BBOX_unselected,
+                on_update=self._cb_color_BBOX_unselected,
             ),
             ParameterInt(
-                "number_points_distance",
-                {
-                    "default": _number_points_distance,
-                    "on_update": self._cb_number_points_distance,
-                    "limits": (5, 50),
-                },
+                name="number_points_distance",
+                default=_number_points_distance,
+                on_update=self._cb_number_points_distance,
+                limits=(5, 50),
             ),
             ParameterFloat(
-                "random_color_brightness",
-                {
-                    "default": _random_color_brightness,
-                    "on_update": self._cb_random_color_brightness,
-                    "limits": (0.001, 1),
-                },
+                name="random_color_brightness",
+                default=_random_color_brightness,
+                on_update=self._cb_random_color_brightness,
+                limits=(0.001, 1),
             ),
             ParameterFloat(
-                "highlight_color_brightness",
-                {
-                    "default": _highlight_color_brightness,
-                    "on_update": self._cb_highlight_color_brightness,
-                    "limits": (0.01, 1),
-                },
+                name="highlight_color_brightness",
+                default=_highlight_color_brightness,
+                on_update=self._cb_highlight_color_brightness,
+                limits=(0.01, 1),
             ),
             ParameterInt(
-                "number_undo_states",
-                {
-                    "default": _number_undo_states,
-                    "on_update": self._cb_number_undo_states,
-                    "limits": (1, 10),
-                },
+                name="number_undo_states",
+                default=_number_undo_states,
+                on_update=self._cb_number_undo_states,
+                limits=(1, 10),
             ),
             ParameterInt(
-                "number_redo_states",
-                {
-                    "default": _number_redo_states,
-                    "on_update": self._cb_number_redo_states,
-                    "limits": (1, 10),
-                },
+                name="number_redo_states",
+                default=_number_redo_states,
+                on_update=self._cb_number_redo_states,
+                limits=(1, 10),
             ),
         ]
 

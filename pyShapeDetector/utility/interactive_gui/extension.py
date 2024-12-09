@@ -9,7 +9,7 @@ from typing import Union, Callable
 from open3d.visualization import gui
 
 from .editor_app import Editor
-from .parameter import PARAMETER_TYPE_DICTIONARY
+from .parameter import Parameter
 from .helpers import get_pretty_name
 from .binding import Binding
 
@@ -143,13 +143,16 @@ class Extension:
         if not isinstance(parameter_descriptors, dict):
             raise TypeError("parameters expected to be dict.")
 
-        for key, parameter in parameter_descriptors.items():
+        for key, parameter_descriptor in parameter_descriptors.items():
             if key not in signature.parameters.keys():
                 raise ValueError(
                     f"Function '{self.function.__name__}' from extension '{self.name}' does not take parameter '{key}'."
                 )
-            parameter_type = PARAMETER_TYPE_DICTIONARY[parameter.get("type")]
-            parsed_parameters[key] = parameter_type(key, parameter)
+            # parameter_type = PARAMETER_TYPE_DICTIONARY[parameter.get("type")]
+            # parsed_parameters[key] = parameter_type(key, parameter)
+            parsed_parameters[key] = Parameter.create_from_dict(
+                key, parameter_descriptor
+            )
 
         self._parameters = parsed_parameters
 
