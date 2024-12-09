@@ -1,7 +1,10 @@
 import warnings
+import copy
 from typing import Union
 from abc import ABC, abstractmethod
 import numpy as np
+
+from .editor_app import Editor
 
 from open3d.geometry import Geometry as Open3d_Geometry
 
@@ -18,17 +21,6 @@ from pyShapeDetector.geometry import (
 )
 
 line_elements = (LineSet, AxisAlignedBoundingBox, OrientedBoundingBox)
-
-from .editor_app import Editor
-from .settings import Settings
-
-
-from .helpers import (
-    # extract_element_colors,
-    # set_element_colors,
-    get_painted_element,
-    # get_distance_checker,
-)
 
 
 class Element(ABC):
@@ -63,8 +55,12 @@ class Element(ABC):
         return self._distance_checker
 
     @property
-    def color(self):
-        return self._color
+    def color_original(self):
+        return self._color_original
+
+    @property
+    def is_color_fixed(self):
+        return self._is_color_fixed
 
     @staticmethod
     @abstractmethod
@@ -101,18 +97,19 @@ class Element(ABC):
 
         return bbox
 
-    def _extract_color(self):
+    def _extract_drawable_color(self):
         drawable = self.drawable
         if hasattr(drawable, "vertex_colors"):
-            self._color = np.asarray(drawable.vertex_colors).copy()
+            return np.asarray(drawable.vertex_colors).copy()
         elif hasattr(drawable, "mesh"):
-            self._color = np.asarray(drawable.mesh.vertex_colors).copy()
+            return np.asarray(drawable.mesh.vertex_colors).copy()
         elif hasattr(drawable, "color"):
-            self._color = np.asarray(drawable.color).copy()
+            return np.asarray(drawable.color).copy()
         elif hasattr(drawable, "colors"):
-            self._color = np.asarray(drawable.colors).copy()
-        else:
-            warnings.warn("Could not get color from element {self}.")
+            return np.asarray(drawable.colors).copy()
+        # else:
+        warnings.warn("Could not get color from element {self}.")
+        return self._color_original
         # self._color = np.array([0, 0, 0])
 
     def _set_drawable_color(self, input_color):
@@ -138,23 +135,19 @@ class Element(ABC):
         elif hasattr(self.drawable, "color"):
             self._drawable.color = color
 
-    def paint_element(self):
-        paint_random = self._editor_instance._get_preference("paint_random")
-        paint_selected = self._editor_instance._get_preference("paint_random")
-        brightness = self._editor_instance._get_preference("random_color_brightness")
-
-        if paint_random:
-            self._drawable = get_painted_element(
-                self._drawable,
-                "random",
-                brightness,
+    def _paint(self):
+        if self.is_color_fixed:
+            return
+        if self._editor_instance._get_preference("paint_random"):
+            random_color_brightness = self._editor_instance._get_preference(
+                "random_color_brightness"
             )
+            color = np.random.random(3) * random_color_brightness
+        else:
+            color = self.color_original
 
-        elif paint_selected and self.selected:
-            color = self._editor_instance._settings.get_element_color(
-                True, self.current
-            )
-            self._drawable = get_painted_element(self._drawable, color)
+        self._color = color
+        self._set_drawable_color(color)
 
     def add_to_scene(self):
         # drawable = self.drawable
@@ -174,11 +167,14 @@ class Element(ABC):
         self.add_to_scene()
 
     def update(self, is_current: bool, update_scene: bool = True):
+        if self.is_color_fixed:
+            return
+
         paint_random = self._editor_instance._get_preference("paint_random")
         paint_selected = self._editor_instance._get_preference("paint_random")
         brightness = self._editor_instance._get_preference("random_color_brightness")
 
-        if paint_selected and self.selected:
+        if not paint_random and paint_selected and self.selected:
             color = self._editor_instance._settings.get_element_color(True, is_current)
             self._editor_instance.print_debug(
                 f"[Element.update] Painting drawable to color: {color}.",
@@ -187,7 +183,7 @@ class Element(ABC):
 
         else:
             highlight_offset = brightness * (int(self.selected) + int(is_current))
-            color = self.color + highlight_offset
+            color = self._color + highlight_offset
 
         self._set_drawable_color(color)
 
@@ -204,20 +200,22 @@ class Element(ABC):
         raw,
         selected: bool = False,
         current: bool = False,
+        is_color_fixed: bool = False,
     ):
         self._editor_instance = editor_instance
         self._raw = self._parse_raw(raw)
         self._selected = selected
         self._current = current
+        self._is_color_fixed = is_color_fixed
         # self._drawable = self._get_open3d(raw)
         # self._distance_checker = self._get_distance_checker(raw)
         # self._color = self._extract_color(self._drawable)
 
         self._get_drawable()
         self._get_distance_checker()
-        self._extract_color()
+        self._color_original = self._extract_drawable_color()  # saving original color
 
-        self.paint_element()
+        self._paint()
 
         # if self._editor_instance._get_preference("paint_random"):
         #     self.print_debug(
@@ -252,7 +250,7 @@ class ElementPrimitive(Element):
             raise ValueError("Expected Primitive instance, got {raw}.")
 
     def _get_drawable(self):
-        self._drawable = self.raw.mesh
+        self._drawable = self.raw.copy().mesh
 
     def _get_distance_checker(self):
         self._distance_checker = self.raw
@@ -273,7 +271,7 @@ class ElementGeometry(Element):
             raise TypeError("Expected Numpy Geometry or Open3D geometry, got {raw}.")
 
     def _get_drawable(self):
-        self._drawable = self.raw.as_open3d
+        self._drawable = copy.copy(self.raw).as_open3d
 
     def _get_distance_checker(self):
         self._distance_checker = None
@@ -311,9 +309,8 @@ class ElementTriangleMesh(ElementGeometry):
         mesh_show_back_face = self._editor_instance._get_preference(
             "mesh_show_back_face"
         )
-        mesh = self.raw
+        mesh = copy.copy(self.raw)
         if mesh_show_back_face:
-            mesh = mesh.copy()
             mesh.add_reverse_triangles()
         return mesh.as_open3d
 

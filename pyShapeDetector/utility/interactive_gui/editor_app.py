@@ -300,7 +300,7 @@ class Editor:
         for n, i in enumerate(indices):
             elem = self._element_dicts.pop(i - n)
             if from_gui:
-                self._remove_geometry_from_scene(elem.drawable)
+                elem.remove_from_scene()
             elements_popped.append(elem.raw)
 
         idx_new = self.i - sum([idx < self.i for idx in indices])

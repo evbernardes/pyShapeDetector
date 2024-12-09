@@ -81,7 +81,7 @@ class Parameter:
         try:
             self._value = self.type(value)
             if abs(self.value - old_value) > 1e-6:
-                self._on_update()
+                self.on_update()
         except Exception:
             if text_edit is not None:
                 text_edit.text_value = str(self.value)
@@ -176,7 +176,7 @@ class ParameterOptions(Parameter):
 
     def _callback(self, text, index):
         self._value = self.options[index]
-        self._on_update()
+        self.on_update()
 
     def get_gui_element(self, window):
         em = window.theme.font_size
@@ -521,7 +521,7 @@ class ParameterColor(Parameter):
         old_value = self.value
         self._value = value
         if np.any(abs(self.value - old_value) > 1e-6):
-            self._on_update()
+            self.on_update()
 
     def get_gui_element(self, window):
         em = window.theme.font_size
@@ -601,7 +601,7 @@ class ParameterNDArray(Parameter):
             self._value[line, col] = self.dtype(value)
         except Exception:
             text_edit.text_value = str(self._value[line, col])
-        self._on_update()
+        self.on_update()
 
     def get_gui_element(self, window):
         em = window.theme.font_size

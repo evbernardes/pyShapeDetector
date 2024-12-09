@@ -258,7 +258,7 @@ class InternalFunctions:
         # Implementing as an extension to save state
         editor_instance = self._editor_instance
         indices = editor_instance.selected_indices
-        input_elements = [editor_instance.elements[i]["raw"] for i in indices]
+        input_elements = [editor_instance.elements[i].raw for i in indices]
 
         try:
             editor_instance.print_debug(f"Deleting elements at indices {indices}.")
@@ -276,7 +276,7 @@ class InternalFunctions:
         """Save elements to be copied."""
         editor_instance = self._editor_instance
         copied_elements = copy.deepcopy(
-            [elem["raw"] for elem in editor_instance.elements if elem["selected"]]
+            [elem.raw for elem in editor_instance.elements if elem["selected"]]
         )
         editor_instance.print_debug(f"Copying {len(copied_elements)} elements.")
         editor_instance._copied_elements = copied_elements
@@ -352,15 +352,13 @@ class InternalFunctions:
         window = editor_instance._window
         em = window.theme.font_size
         separation_height = int(round(0.5 * em))
-        elems_raw = [elem["raw"] for elem in editor_instance.elements]
+        elems_raw = [elem.raw for elem in editor_instance.elements]
 
         temp_window = editor_instance.app.create_window("Select type", 200, 400)
         temp_window.show_menu(False)
 
         def _callback(_type, value):
-            is_type = [
-                isinstance(elem["raw"], _type) for elem in editor_instance.elements
-            ]
+            is_type = [isinstance(elem.raw, _type) for elem in editor_instance.elements]
             indices = np.where(is_type)[0].tolist()
             editor_instance._toggle_indices(indices, to_value=value)
 
@@ -503,7 +501,7 @@ class InternalFunctions:
             f"resetting {len(modified_elements)} inputs."
         )
 
-        input_elements = [editor_instance.elements[i]["raw"] for i in indices]
+        input_elements = [editor_instance.elements[i].raw for i in indices]
         editor_instance._save_state(indices, input_elements, len(modified_elements))
 
         editor_instance.i = future_state["current_index"]

@@ -222,13 +222,13 @@ class Extension:
 
         if self.inputs == "current":
             indices = [editor_instance.i]
-            input_elements = [editor_instance.current_element["raw"]]
+            input_elements = [editor_instance.current_element.raw]
         elif self.inputs == "selected":
             indices = editor_instance.selected_indices
-            input_elements = [editor_instance.elements[i]["raw"] for i in indices]
+            input_elements = [editor_instance.elements[i].raw for i in indices]
         elif self.inputs == "current":
             indices = list(range(len(editor_instance.elements)))
-            input_elements = [editor_instance.elements[i]["raw"] for i in indices]
+            input_elements = [editor_instance.elements[i].raw for i in indices]
         else:
             raise RuntimeError(
                 f"Invalid input instruction {self.inputs} "
@@ -273,7 +273,7 @@ class Extension:
             editor_instance._insert_elements(
                 output_elements,
                 to_gui=True,
-                selected=editor_instance.current_element["selected"],
+                selected=editor_instance.current_element.selected,
             )
             editor_instance._update_current_idx(len(editor_instance.elements) - 1)
         else:

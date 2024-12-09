@@ -21,9 +21,6 @@ _draw_boundary_lines = True
 _mesh_show_back_face = True
 _paint_selected = True
 _color_selected = gui.Color(*COLOR_SELECTED_DEFAULT)
-# _color_selected_current = gui.Color(*COLOR_SELECTED_CURRENT)
-# _color_unselected = gui.Color(*COLOR_UNSELECTED_DEFAULT)
-# _color_unselected_current = gui.Color(*COLOR_UNSELECTED_CURRENT)
 _paint_random = False
 _debug = False
 _verbose = False
@@ -64,27 +61,6 @@ class Settings:
                 default=_color_selected,
                 on_update=self._cb_color_selected,
             ),
-            # ParameterColor(
-            #     "_color_unselected",
-            #     {
-            #         "default": _color_unselected,
-            #         "on_update": self._cb_color_unselected,
-            #     },
-            # ),
-            # ParameterColor(
-            #     "color_selected_current",
-            #     {
-            #         "default": _color_selected_current,
-            #         "on_update": self._cb_color_selected_current,
-            #     },
-            # ),
-            # ParameterColor(
-            #     "color_unselected_current",
-            #     {
-            #         "default": _color_unselected_current,
-            #         "on_update": self._cb_color_unselected_current,
-            #     },
-            # ),
             ParameterBool(
                 name="paint_random",
                 default=_paint_random,
@@ -193,10 +169,9 @@ class Settings:
 
     def _cb_number_points_distance(self):
         for elem in self._editor_instance.elements:
-            dist_checker = self._editor_instance._get_element_distances([elem["raw"]])[
-                0
-            ]
-            elem["distance_checker"] = dist_checker
+            elem._get_distance_checker(0)
+            # dist_checker = self._editor_instance._get_element_distances([elem.raw])[0]
+            # elem.distance_checker = dist_checker
 
     def _cb_random_color_brightness(self):
         if self._dict["paint_random"]:
