@@ -156,19 +156,17 @@ class Settings:
         self._editor_instance._update_plane_boundaries()
 
     def _cb_pointcloud_size(self):
-        from pyShapeDetector.geometry import PointCloud
+        from .element import ElementPointCloud
 
         point_size = self._dict["pointcloud_size"].value
         self._editor_instance.material_regular.point_size = point_size
         indices = np.where(
             [
-                PointCloud.is_instance_or_open3d(element["raw"])
+                isinstance(element, ElementPointCloud)
                 for element in self._editor_instance.elements
             ]
         )[0].tolist()
-        print(indices)
         self._editor_instance._update_elements(indices)
-        # self._editor_instance._update_elements(None)
 
     def _cb_mesh_show_back_face(self):
         # self._editor_instance._reset_elements_in_gui()
