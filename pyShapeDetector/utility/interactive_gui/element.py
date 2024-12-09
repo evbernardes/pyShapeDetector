@@ -137,17 +137,14 @@ class Element(ABC):
 
     def _paint(self):
         if self.is_color_fixed:
-            return
-        if self._editor_instance._get_preference("paint_random"):
-            random_color_brightness = self._editor_instance._get_preference(
-                "random_color_brightness"
-            )
-            color = np.random.random(3) * random_color_brightness
+            color = self._color_original
+        elif self._editor_instance._get_preference("paint_random"):
+            color = np.random.random(3)
         else:
             color = self.color_original
 
         self._color = color
-        self._set_drawable_color(color)
+        # self._set_drawable_color(color)
 
     def add_to_scene(self):
         # drawable = self.drawable
@@ -170,9 +167,14 @@ class Element(ABC):
         if self.is_color_fixed:
             return
 
-        paint_selected = self._editor_instance._get_preference("paint_random")
+        paint_random = self._editor_instance._get_preference("paint_random")
+        paint_selected = self._editor_instance._get_preference("paint_selected")
         highlight_color_brightness = self._editor_instance._get_preference(
             "highlight_color_brightness"
+        )
+
+        random_color_brightness = self._editor_instance._get_preference(
+            "random_color_brightness"
         )
 
         if paint_selected and self.selected:
@@ -188,7 +190,11 @@ class Element(ABC):
                 int(self.selected) + int(is_current)
             )
 
-            color = self._color + highlight_offset
+            color = self._color
+            if paint_random:
+                color *= random_color_brightness
+
+            color += highlight_offset
 
         self._set_drawable_color(color)
 
@@ -221,6 +227,7 @@ class Element(ABC):
         self._color_original = self._extract_drawable_color()  # saving original color
 
         self._paint()
+        self._set_drawable_color(self._color)
 
         # if self._editor_instance._get_preference("paint_random"):
         #     self.print_debug(
