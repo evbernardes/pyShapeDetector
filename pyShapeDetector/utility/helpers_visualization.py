@@ -576,7 +576,10 @@ def apply_function_manually(
         warnings.warn("print_instructions option not used anymore")
 
     element_selector = Editor(**kwargs)
-    element_selector.add_elements(elements, pre_selected=pre_selected)
+    # element_selector.add_elements(elements, pre_selected=pre_selected)
+    # for element, selected in zip(elements, pre_selected):
+    element_selector.elements.insert_multiple(elements, selected=pre_selected, to_gui=False)
+
 
     for function in functions:
         element_selector.add_extension(function)
@@ -589,7 +592,7 @@ def apply_function_manually(
     # for name, functions in function_submenus.items():
     #     element_selector.add_function_submenu(name, functions)
     element_selector.select_filter = select_filter
-    element_selector.add_elements(fixed_elements, fixed=True)
+    # element_selector.add_elements(fixed_elements, fixed=True)
 
     element_selector.run()
 

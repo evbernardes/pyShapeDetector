@@ -19,6 +19,8 @@ from pathlib import Path
 from open3d.visualization import gui, rendering
 # from .element import Element, ElementGeometry
 
+from .element_container import ElementContainer
+
 
 from .helpers import (
     extract_element_colors,
@@ -96,8 +98,8 @@ class Editor:
         self._copied_elements = []
         self._past_states = []
         self._future_states = []
-        self._element_dicts = []
-        self._elements_input = []
+        self._elements = ElementContainer(self)
+        # self._elements_input = []
         self._plane_boundaries = []
         self._hidden_elements = []
         self._fixed_elements = []
@@ -218,7 +220,7 @@ class Editor:
 
     @property
     def elements(self):
-        return self._element_dicts
+        return self._elements
 
     @property
     def current_element(self):
@@ -247,31 +249,6 @@ class Editor:
             )
         self.current_element.selected = boolean_value
 
-    def add_elements(self, elems_raw, pre_selected=None, fixed=False):
-        if fixed and pre_selected is not None:
-            raise ValueError("Cannot select fixed elements.")
-
-        if isinstance(elems_raw, (list, tuple)):
-            new_raw_elements = copy.deepcopy(list(elems_raw))
-        else:
-            new_raw_elements = [copy.deepcopy(elems_raw)]
-
-        if pre_selected is None:
-            pre_selected = [False] * len(new_raw_elements)
-        elif isinstance(pre_selected, bool):
-            pre_selected = [pre_selected]
-        elif len(pre_selected) != len(new_raw_elements):
-            raise ValueError(
-                f"Got {len(new_raw_elements)} elements but {len(pre_selected)} "
-                " pre-selections."
-            )
-
-        if fixed:
-            self._fixed_elements += new_raw_elements
-        else:
-            self._elements_input += new_raw_elements
-            self._pre_selected += pre_selected
-
     def _reset_on_key(self):
         self._scene.set_on_key(self._hotkeys._on_key)
 
@@ -293,31 +270,31 @@ class Editor:
     def _remove_geometry_from_scene(self, elem):
         self._scene.scene.remove_geometry(str(id(elem)))
 
-    def _pop_elements(self, indices, from_gui=False):
-        # update_old = self.i in indices
-        # idx_new = self.i
-        elements_popped = []
-        for n, i in enumerate(indices):
-            elem = self._element_dicts.pop(i - n)
-            if from_gui:
-                elem.remove_from_scene()
-            elements_popped.append(elem.raw)
+    # def _pop_elements(self, indices, from_gui=False):
+    #     # update_old = self.i in indices
+    #     # idx_new = self.i
+    #     elements_popped = []
+    #     for n, i in enumerate(indices):
+    #         elem = self._elements.pop(i - n)
+    #         if from_gui:
+    #             elem.remove_from_scene()
+    #         elements_popped.append(elem.raw)
 
-        idx_new = self.i - sum([idx < self.i for idx in indices])
-        self.print_debug(
-            f"popped: {indices}",
-        )
-        self.print_debug(f"old index: {self.i}, new index: {idx_new}")
+    #     idx_new = self.i - sum([idx < self.i for idx in indices])
+    #     self.print_debug(
+    #         f"popped: {indices}",
+    #     )
+    #     self.print_debug(f"old index: {self.i}, new index: {idx_new}")
 
-        if len(self.elements) == 0:
-            warnings.warn("No elements left after popping, not updating.")
-            self.i = 0
-            self.i_old = 0
-        else:
-            idx_new = max(min(idx_new, len(self.elements) - 1), 0)
-            self._update_current_idx(idx_new, update_old=False)
-            self.i_old = self.i
-        return elements_popped
+    #     if len(self.elements) == 0:
+    #         warnings.warn("No elements left after popping, not updating.")
+    #         self.i = 0
+    #         self.i_old = 0
+    #     else:
+    #         idx_new = max(min(idx_new, len(self.elements) - 1), 0)
+    #         self._update_current_idx(idx_new, update_old=False)
+    #         self.i_old = self.i
+    #     return elements_popped
 
     def _insert_elements(self, elems_raw, indices=None, selected=False, to_gui=False):
         from .element import Element
@@ -344,7 +321,7 @@ class Editor:
             elem = Element.get_from_type(self, elems_raw[i], selected[i], is_current)
 
             self.print_debug(f"Added {elem.raw} at index {idx}.", require_verbose=True)
-            self._element_dicts.insert(idx, elem)
+            self._elements.insert_multiple(idx, elem)
 
         for idx in indices:
             # Updating vis explicitly in order not to remove it
@@ -418,34 +395,37 @@ class Editor:
     def _check_and_initialize_inputs(self):
         from pyShapeDetector.geometry import PointCloud
 
-        if len(self._elements_input) != len(self._pre_selected):
-            raise RuntimeError(
-                f"{len(self._elements_input)} elements but "
-                f"{len(self._pre_selected)} selected values fouund."
-            )
+        # for elem in self.elements:
+        #     elem.add_to_scene()
 
-        # check correct input of elements and fixed elements
-        if isinstance(self._elements_input, tuple):
-            self._elements_input = list(self._elements_input)
-        elif not isinstance(self._elements_input, list):
-            self._elements_input = [self._elements_input]
+        # if len(self._elements_input) != len(self._pre_selected):
+        #     raise RuntimeError(
+        #         f"{len(self._elements_input)} elements but "
+        #         f"{len(self._pre_selected)} selected values fouund."
+        #     )
 
-        for elem in self._elements_input:
-            if PointCloud.is_instance_or_open3d(elem) and not elem.has_normals():
-                elem.estimate_normals()
+        # # check correct input of elements and fixed elements
+        # if isinstance(self._elements_input, tuple):
+        #     self._elements_input = list(self._elements_input)
+        # elif not isinstance(self._elements_input, list):
+        #     self._elements_input = [self._elements_input]
+
+        # for elem in self._elements_input:
+        #     if PointCloud.is_instance_or_open3d(elem) and not elem.has_normals():
+        #         elem.estimate_normals()
 
         if self._fixed_elements is None:
             self._fixed_elements = []
         elif isinstance(self._fixed_elements, tuple):
-            self._fixed_elements = list(self._elements_input)
+            self._fixed_elements = list(self._fixed_elements)
         elif not isinstance(self._fixed_elements, list):
             self._fixed_elements = [self._fixed_elements]
 
-        if len(self._elements_input) == 0:
-            raise ValueError("Elements cannot be an empty list.")
+        # if len(self._elements_input) == 0:
+        #     raise ValueError("Elements cannot be an empty list.")
 
-        if len(self.selected) != len(self.elements):
-            raise ValueError("Pre-select and input elements must have same length.")
+        # if len(self.selected) != len(self.elements):
+        #     raise ValueError("Pre-select and input elements must have same length.")
 
     def _get_open3d(self, elem):
         from pyShapeDetector.geometry import TriangleMesh
@@ -498,7 +478,8 @@ class Editor:
             self._internal_functions._dict["Quit"].callback()
             return False
 
-        self._insert_elements(self._hidden_elements, to_gui=False)
+        self.elements.insert_multiple(self._hidden_elements, to_gui=False)
+        # self._insert_elements(self._hidden_elements, to_gui=False)
         return True
 
     def _on_mouse(self, event):
@@ -721,6 +702,10 @@ class Editor:
         if self._current_bbox is not None:
             self._scene.scene.remove_geometry(name)
 
+        if self.current_element is None:
+            self._current_bbox = None
+            return
+
         self._current_bbox = self.current_element._get_bbox().as_open3d
 
         if self._current_bbox is not None:
@@ -755,7 +740,7 @@ class Editor:
         # post to the main thread to safely access UI items.
         def update_label():
             self._info.text = (
-                f"Current: {self.i + 1} / {len(self._element_dicts)} | "
+                f"Current: {self.i + 1} / {len(self._elements)} | "
                 f"selected: {'YES' if self.is_current_selected else 'NO'}"
             )
 
@@ -860,14 +845,17 @@ class Editor:
             pre_selected = self.selected
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", message="No elements left")
-                elems_raw = self._pop_elements(range(len(self.elements)), from_gui=True)
+                elems_raw = self.elements.pop_multiple(
+                    range(len(self.elements)), from_gui=True
+                )
             assert len(self.elements) == 0
 
         self.print_debug(
             f"\ninserting elements at startup, there are {len(elems_raw)}.",
             require_verbose=True,
         )
-        self._insert_elements(elems_raw, selected=pre_selected, to_gui=True)
+        # self._insert_elements(elems_raw, selected=pre_selected, to_gui=True)
+        self.elements.insert_multiple(elems_raw, selected=pre_selected, to_gui=True)
         self.print_debug(f"Finished inserting {len(self.elements)} elements.")
 
         self._update_plane_boundaries()
@@ -879,15 +867,15 @@ class Editor:
     def run(self):
         self.print_debug(f"Starting {type(self).__name__}.")
 
-        if len(self._elements_input) == 0:
-            raise RuntimeError("No elements added!")
-
         # Ensure proper format of inputs, check elements and raise warnings
         self._check_and_initialize_inputs()
 
         # Set up the gui
         self._setup_window_and_scene()
         self._reset_elements_in_gui(startup=True)
+
+        for elem in self.elements:
+            elem.add_to_scene()
 
         bounds = self._scene.scene.bounding_box
         center = bounds.get_center()
@@ -903,3 +891,4 @@ class Editor:
         #     traceback.print_exc()
         # finally:
         # self._insert_elements(self._hidden_elements, to_gui=False)
+        # self.elements.insert_multiple(self._hidden_elements, to_gui=False)
