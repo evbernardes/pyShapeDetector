@@ -14,3 +14,4 @@ from .trianglemesh import TriangleMesh
 from .axis_aligned_bounding_box import AxisAlignedBoundingBox
 from .oriented_bounding_box import OrientedBoundingBox
 from .lineset import LineSet
+from .equivalent_classes import equivalent_classes_dict

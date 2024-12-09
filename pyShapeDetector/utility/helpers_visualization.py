@@ -193,7 +193,7 @@ def get_painted(elements, color="random"):
 
         if hasattr(element, "paint_uniform_color"):
             element.paint_uniform_color(color)
-        elif hasattr(element, color):
+        elif hasattr(element, "color"):
             element.color = color
         else:
             warnings.warn("Could not paint element {element}.")

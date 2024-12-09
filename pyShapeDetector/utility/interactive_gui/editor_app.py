@@ -17,6 +17,7 @@ import itertools
 import numpy as np
 from pathlib import Path
 from open3d.visualization import gui, rendering
+# from .element import Element, ElementGeometry
 
 
 from .helpers import (
@@ -210,10 +211,10 @@ class Editor:
             raise ValueError(
                 f"Expected filter function with 1 parameter (element), got {N}."
             )
-        self._select_filter = lambda elem: new_function(elem["raw"])
+        self._select_filter = lambda elem: new_function(elem.raw)
 
     def get_elements(self):
-        return [elem["raw"] for elem in self.elements]
+        return [elem.raw for elem in self.elements]
 
     @property
     def elements(self):
@@ -234,7 +235,7 @@ class Editor:
     def is_current_selected(self):
         if self.current_element is None:
             return None
-        return self.current_element["selected"]
+        return self.current_element.selected
 
     @is_current_selected.setter
     def is_current_selected(self, boolean_value):
@@ -244,7 +245,7 @@ class Editor:
             raise RuntimeError(
                 f"Error setting selected, current element does not exist."
             )
-        self.current_element["selected"] = boolean_value
+        self.current_element.selected = boolean_value
 
     def add_elements(self, elems_raw, pre_selected=None, fixed=False):
         if fixed and pre_selected is not None:
@@ -299,8 +300,8 @@ class Editor:
         for n, i in enumerate(indices):
             elem = self._element_dicts.pop(i - n)
             if from_gui:
-                self._remove_geometry_from_scene(elem["drawable"])
-            elements_popped.append(elem["raw"])
+                self._remove_geometry_from_scene(elem.drawable)
+            elements_popped.append(elem.raw)
 
         idx_new = self.i - sum([idx < self.i for idx in indices])
         self.print_debug(
@@ -319,13 +320,14 @@ class Editor:
         return elements_popped
 
     def _insert_elements(self, elems_raw, indices=None, selected=False, to_gui=False):
+        from .element import Element
+
         if indices is None:
             indices = range(len(self.elements), len(self.elements) + len(elems_raw))
 
         if isinstance(selected, bool):
             selected = [selected] * len(indices)
 
-        number_points_distance = self._get_preference("number_points_distance")
         idx_new = self.i
 
         self.print_debug(
@@ -337,53 +339,21 @@ class Editor:
             if idx_new > idx:
                 idx_new += 1
 
-            elem = {
-                "raw": elems_raw[i],
-                "selected": selected[i],
-                "drawable": self._get_open3d(elems_raw[i]),
-                "distance_checker": get_distance_checker(
-                    elems_raw[i], number_points_distance
-                ),
-            }
+            is_current = self._started and (self.i == idx)
 
-            # save original colors
-            elem["color"] = extract_element_colors(elem["drawable"])
+            elem = Element.get_from_type(self, elems_raw[i], selected[i], is_current)
 
-            if self._get_preference("paint_random"):
-                self.print_debug(
-                    f"[_insert_elements] Randomly painting element at index {i}.",
-                    require_verbose=True,
-                )
-                elem["drawable"] = get_painted_element(
-                    elem["drawable"],
-                    "random",
-                    self._get_preference("random_color_brightness"),
-                )
-
-            elif self._get_preference("paint_selected") and selected[i]:
-                self.print_debug(
-                    f"[_insert_elements] Painting and inserting element at index {i}.",
-                    require_verbose=True,
-                )
-                is_current = self._started and (self.i == idx)
-                color = self._settings.get_element_color(True, is_current)
-                elem["drawable"] = get_painted_element(elem["drawable"], color)
-
-            self.print_debug(
-                f"Added {elem['raw']} at index {idx}.", require_verbose=True
-            )
+            self.print_debug(f"Added {elem.raw} at index {idx}.", require_verbose=True)
             self._element_dicts.insert(idx, elem)
 
         for idx in indices:
             # Updating vis explicitly in order not to remove it
             self._update_elements(idx, update_gui=False)
             if to_gui:
-                self._add_geometry_to_scene(self.elements[idx]["drawable"])
+                self.elements[idx].add_to_scene()
 
         self.print_debug(f"{len(self.elements)} now.", require_verbose=True)
 
-        # self.i += sum([idx <= self.i for idx in indices])
-        # if self._started:
         idx_new = max(min(idx_new, len(self.elements) - 1), 0)
         self._update_current_idx(idx_new, update_old=self._started)
         self.i_old = self.i
@@ -394,7 +364,7 @@ class Editor:
 
     @property
     def selected_raw_elements(self):
-        return [self.elements[i]["raw"] for i in self.selected_indices]
+        return [self.elements[i].raw for i in self.selected_indices]
 
     @property
     def selected_indices(self):
@@ -402,11 +372,11 @@ class Editor:
 
     @property
     def elements_drawable(self):
-        return [elem["drawable"] for elem in self.elements]
+        return [elem.drawable for elem in self.elements]
 
     @property
     def selected(self):
-        return [elem["selected"] for elem in self.elements]
+        return [elem.selected for elem in self.elements]
 
     @selected.setter
     def selected(self, values):
@@ -426,7 +396,7 @@ class Editor:
             if not isinstance(value, (bool, np.bool_)):
                 raise ValueError(f"Expected boolean, got {type(value)}")
 
-            elem["selected"] = value and self.select_filter(elem)
+            elem.selected = value and self.select_filter(elem)
 
     def _save_state(self, indices, input_elements, num_outputs):
         """Save state for undoing."""
@@ -630,7 +600,7 @@ class Editor:
                 # ignores currently selected one
                 distances.append(np.inf)
             else:
-                distances.append(_distance_to_point(elem["distance_checker"]))
+                distances.append(_distance_to_point(elem.distance_checker))
         return distances
 
     def _get_preference(self, key):
@@ -716,69 +686,45 @@ class Editor:
     #     sys.exit(0)
 
     def _update_plane_boundaries(self):
+        from .element import ElementGeometry
+
         for plane_boundary in self._plane_boundaries:
-            self._remove_geometry_from_scene(plane_boundary)
+            plane_boundary.remove_from_scene()
+            # self._remove_geometry_from_scene(plane_boundary)
 
         plane_boundaries = []
 
         if self._get_preference("draw_boundary_lines"):
             for elem in self.elements:
                 try:
-                    lineset = elem["raw"].vertices_LineSet.as_open3d
-                    if hasattr(elem["raw"], "holes"):
-                        for hole in elem["raw"].holes:
+                    lineset = elem.raw.vertices_LineSet.as_open3d
+                    if hasattr(elem.raw, "holes"):
+                        for hole in elem.raw.holes:
                             lineset += hole.vertices_LineSet.as_open3d
+
+                    plane_boundary = ElementGeometry(self, lineset)
+                    plane_boundary.add_to_scene()
+                    plane_boundaries.append(plane_boundary)
+
                 except AttributeError:
                     continue
-                lineset.paint_uniform_color((0.0, 0.0, 0.0))
-                plane_boundaries.append(lineset)
 
         self._plane_boundaries = plane_boundaries
 
-        for boundary in self._plane_boundaries:
-            self._add_geometry_to_scene(boundary)
-
     def _update_current_bounding_box(self):
         """Remove bounding box and get new one for current element."""
-        from pyShapeDetector.geometry import (
-            LineSet,
-            OrientedBoundingBox,
-            AxisAlignedBoundingBox,
-        )
 
-        BBOX_expand = self._get_preference("BBOX_expand")
         self.print_debug("Updating bounding box...", require_verbose=True)
 
-        if self._current_bbox is not None:
-            self._remove_geometry_from_scene(self._current_bbox)
-
-        with warnings.catch_warnings():
-            if self._started:
-                warnings.simplefilter("ignore")
-            element = self.current_element
-
-        if element is None or isinstance(element, LineSet):
-            return
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            try:
-                bbox_original = element["raw"].get_oriented_bounding_box()
-                bbox = OrientedBoundingBox(bbox_original).expanded(BBOX_expand)
-            except Exception:
-                bbox_original = element["raw"].get_axis_aligned_bounding_box()
-                bbox = AxisAlignedBoundingBox(bbox_original).expanded(BBOX_expand)
-
-        if self.is_current_selected:
-            bbox.color = self._get_preference("color_BBOX_selected")
-        else:
-            bbox.color = self._get_preference("color_BBOX_unselected")
-
-        self.print_debug(f"New bounding box: {bbox}", require_verbose=True)
-        self._current_bbox = bbox.as_open3d
+        name = "CurrentBoundingBox"
 
         if self._current_bbox is not None:
-            self._add_geometry_to_scene(self._current_bbox)
+            self._scene.scene.remove_geometry(name)
+
+        self._current_bbox = self.current_element._get_bbox().as_open3d
+
+        if self._current_bbox is not None:
+            self._scene.scene.add_geometry(name, self._current_bbox, self.material_line)
 
     def _update_elements(self, indices, update_gui=True):
         num_elems = len(self.elements)
@@ -794,46 +740,16 @@ class Editor:
 
         if num_elems == 0 or max(indices) >= num_elems:
             warnings.warn(
-                "Tried to update index {indices}, but {num_elems} elements present."
+                f"Tried to update index {indices}, but {num_elems} elements present."
             )
             return
 
         for idx in indices:
             elem = self.elements[idx]
-            is_selected = elem["selected"] and self.select_filter(elem)
+            elem._selected = elem.selected and self.select_filter(elem)
             is_current = self._started and (idx == self.i)
 
-            if update_gui:
-                self._remove_geometry_from_scene(elem["drawable"])
-
-            self.print_debug(
-                "[_update_element] "
-                f"Updating element at index: {idx}.\n"
-                f"Selected = {is_selected}, current = {is_current}.",
-                require_verbose=True,
-            )
-
-            if self._get_preference("paint_selected") and is_selected:
-                color = self._settings.get_element_color(True, is_current)
-                self.print_debug(
-                    f"[_update_element] Painting drawable to color: {color}.",
-                    require_verbose=True,
-                )
-
-            else:
-                highlight_offset = self._get_preference(
-                    "highlight_color_brightness"
-                ) * (int(is_selected) + int(is_current))
-                color = elem["color"] + highlight_offset
-
-            set_element_colors(elem["drawable"], color)
-
-            if update_gui:
-                self.print_debug(
-                    "[_update_element] Updating geometry on gui.",
-                    require_verbose=True,
-                )
-                self._add_geometry_to_scene(elem["drawable"])
+            elem.update(is_current, update_gui)
 
         # This is not called on the main thread, so we need to
         # post to the main thread to safely access UI items.
@@ -912,7 +828,7 @@ class Editor:
                 selected = (not self._hotkeys._is_lshift_pressed) and is_selectable
             else:
                 selected = to_value and is_selectable
-            elem["selected"] = selected
+            elem.selected = selected
 
         self._update_elements(indices)
 
