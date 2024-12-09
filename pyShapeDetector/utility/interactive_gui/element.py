@@ -25,6 +25,10 @@ line_elements = (LineSet, AxisAlignedBoundingBox, OrientedBoundingBox)
 
 class Element(ABC):
     @property
+    def brightness(self):
+        return self._brightness
+
+    @property
     def name(self):
         return str(id(self))
 
@@ -57,6 +61,10 @@ class Element(ABC):
     @property
     def color_original(self):
         return self._color_original
+
+    @property
+    def color(self):
+        return self._color
 
     @property
     def is_color_fixed(self):
@@ -112,13 +120,10 @@ class Element(ABC):
         return self._color_original
         # self._color = np.array([0, 0, 0])
 
-    def _set_drawable_color(self, input_color):
-        if input_color is None:
-            return
-
+    def _update_drawable_color(self, color_input):
         from open3d.utility import Vector3dVector
 
-        color = np.clip(input_color, 0, 1)
+        color = self._get_dimmed_color(color_input)
 
         if hasattr(self.drawable, "vertex_colors"):
             if color.ndim == 2:
@@ -134,17 +139,6 @@ class Element(ABC):
 
         elif hasattr(self.drawable, "color"):
             self._drawable.color = color
-
-    def _paint(self):
-        if self.is_color_fixed:
-            color = self._color_original
-        elif self._editor_instance._get_preference("paint_random"):
-            color = np.random.random(3)
-        else:
-            color = self.color_original
-
-        self._color = color
-        # self._set_drawable_color(color)
 
     def add_to_scene(self):
         # drawable = self.drawable
@@ -167,36 +161,15 @@ class Element(ABC):
         if self.is_color_fixed:
             return
 
-        paint_random = self._editor_instance._get_preference("paint_random")
         paint_selected = self._editor_instance._get_preference("paint_selected")
-        highlight_color_brightness = self._editor_instance._get_preference(
-            "highlight_color_brightness"
-        )
-
-        random_color_brightness = self._editor_instance._get_preference(
-            "random_color_brightness"
-        )
+        self._current = is_current
 
         if paint_selected and self.selected:
             color = self._editor_instance._settings.get_element_color(True, is_current)
-
-            self._editor_instance.print_debug(
-                f"[Element.update] Painting drawable to color: {color}.",
-                require_verbose=True,
-            )
-
         else:
-            highlight_offset = highlight_color_brightness * (
-                int(self.selected) + int(is_current)
-            )
-
             color = self._color
-            if paint_random:
-                color *= random_color_brightness
 
-            color += highlight_offset
-
-        self._set_drawable_color(color)
+        self._update_drawable_color(color)
 
         if update_scene:
             self._editor_instance.print_debug(
@@ -205,6 +178,19 @@ class Element(ABC):
             )
             self.update_on_scene()
 
+    def _get_dimmed_color(self, color):
+        highlight_ratio = (
+            self._editor_instance._get_preference("highlight_ratio") * self._brightness
+        )
+
+        brightness = self._brightness
+        if self.current:
+            brightness += highlight_ratio
+        if self.selected:
+            brightness += highlight_ratio
+
+        return np.clip(color * brightness, 0, 1)
+
     def __init__(
         self,
         editor_instance: Editor,
@@ -212,28 +198,31 @@ class Element(ABC):
         selected: bool = False,
         current: bool = False,
         is_color_fixed: bool = False,
+        brightness: float = 1,
     ):
         self._editor_instance = editor_instance
         self._raw = self._parse_raw(raw)
         self._selected = selected
         self._current = current
         self._is_color_fixed = is_color_fixed
-        # self._drawable = self._get_open3d(raw)
-        # self._distance_checker = self._get_distance_checker(raw)
-        # self._color = self._extract_color(self._drawable)
+        self._brightness = brightness
 
         self._get_drawable()
         self._get_distance_checker()
         self._color_original = self._extract_drawable_color()  # saving original color
 
-        self._paint()
-        self._set_drawable_color(self._color)
+        if editor_instance._get_preference("paint_random"):
+            self._color = np.random.random(3)
+            self._brightness = editor_instance._get_preference(
+                "random_color_brightness"
+            )
+        else:
+            self._color = self.color_original
+            self._brightness = editor_instance._get_preference(
+                "original_color_brightness"
+            )
 
-        # if self._editor_instance._get_preference("paint_random"):
-        #     self.print_debug(
-        #         f"[_insert_elements] Randomly painting element.",
-        #         require_verbose=True,
-        #     )
+        self._update_drawable_color(self._color)
 
     @staticmethod
     def get_from_type(

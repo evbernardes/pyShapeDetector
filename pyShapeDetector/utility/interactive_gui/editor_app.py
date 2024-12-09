@@ -76,7 +76,7 @@ class Editor:
     random_color_brightness : float, optional
         Random colors are multiplied by this value to reduce their brightness,
         creating bigger contrast with selected objects. Default: 2/3.
-    highlight_color_brightness : float, optional
+    highlight_ratio : float, optional
         Multiplier for color to show selected and current elements. Default: 0.3.
     debug : boolean, optional
         If True, prints debug information. Default: False.

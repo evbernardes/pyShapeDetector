@@ -28,8 +28,9 @@ _BBOX_expand = 0.0
 _color_BBOX_selected = gui.Color(*color_BBOX_selected_DEFAULT)
 _color_BBOX_unselected = gui.Color(*color_BBOX_unselected_DEFAULT)
 _number_points_distance = 30
-_random_color_brightness = 0.3
-_highlight_color_brightness = 0.3
+_random_color_brightness = 0.5
+_original_color_brightness = 0.5
+_highlight_ratio = 1.0
 _number_undo_states = 10
 _number_redo_states = 5
 
@@ -105,9 +106,15 @@ class Settings:
                 limits=(0.001, 1),
             ),
             ParameterFloat(
-                name="highlight_color_brightness",
-                default=_highlight_color_brightness,
-                on_update=self._cb_highlight_color_brightness,
+                name="original_color_brightness",
+                default=_original_color_brightness,
+                on_update=self._cb_original_color_brightness,
+                limits=(0.001, 1),
+            ),
+            ParameterFloat(
+                name="highlight_ratio",
+                default=_highlight_ratio,
+                on_update=self._cb_highlight_ratio,
                 limits=(0.01, 1),
             ),
             ParameterInt(
@@ -144,21 +151,23 @@ class Settings:
     def _cb_mesh_show_back_face(self):
         # self._editor_instance._reset_elements_in_gui()
         elements = self._editor_instance.elements
-        for elem in self._editor_instance.elements:
-            elem._paint()
-
         elements.update_all()
 
     def _cb_paint_selected(self):
         self._editor_instance._update_elements(None)
 
     def _cb_paint_random(self):
-        # self._editor_instance._reset_elements_in_gui()
         elements = self._editor_instance.elements
-        for elem in self._editor_instance.elements:
-            elem._paint()
+        for elem in elements:
+            if self._dict["paint_random"].value:
+                # print("printing new random colors")
+                elem._color = np.random.random(3)
+                elem._brightness = self._dict["random_color_brightness"].value
+            else:
+                elem._color = elem.color_original
+                elem._brightness = self._dict["original_color_brightness"].value
 
-        elements.update_all()
+        self._editor_instance._update_elements(None)
 
     def _cb_debug(self):
         pass
@@ -184,25 +193,37 @@ class Settings:
             # elem.distance_checker = dist_checker
 
     def _cb_random_color_brightness(self):
-        if self._dict["paint_random"]:
+        if self._dict["paint_random"].value:
             elements = self._editor_instance.elements
+
             for elem in elements:
-                elem._color = elem._color * self._dict["random_color_brightness"]
-                elem._set_drawable_color(elem._color)
+                elem._brightness = self._dict["random_color_brightness"].value
 
-            elements.update_all()
+        self._editor_instance._update_elements(None)
 
-    def _cb_highlight_color_brightness(self):
-        if not self._dict["paint_selected"]:
-            indices = np.where(self._editor_instance.elements.selected)[0].tolist()
-            self._editor_instance._update_elements(indices)
+    def _cb_original_color_brightness(self):
+        if not self._dict["paint_random"].value:
+            elements = self._editor_instance.elements
+
+            for elem in elements:
+                elem._brightness = self._dict["original_color_brightness"].value
+
+        self._editor_instance._update_elements(None)
+        # elements.update_all()
+
+    def _cb_highlight_ratio(self):
+        # if not self._dict["paint_selected"]:
+        self._editor_instance._update_elements(None)
+        # self._editor_instance.elements.update_all()
+        # indices = self._editor_instance.selected_indices
+        # self._editor_instance._update_elements(indices)
 
     def _cb_number_undo_states(self):
-        value = self._dict["number_undo_states"]
+        value = self._dict["number_undo_states"].value
         self._editor_instance._past_states = self._editor_instance._past_states[-value:]
 
     def _cb_number_redo_states(self):
-        value = self._dict["number_redo_states"]
+        value = self._dict["number_redo_states"].value
         self._editor_instance._future_states = self._editor_instance._future_states[
             -value:
         ]
@@ -217,18 +238,18 @@ class Settings:
         self._editor_instance._update_elements(indices)
 
     def get_element_color(self, is_selected, is_current, is_bbox=False):
-        highlight = self._dict["highlight_color_brightness"].value
+        # highlight = self._dict["highlight_ratio"].value
         if not is_selected and not is_current:
             return self._dict["color_unselected"].value
 
         if not is_selected and is_current:
-            return self._dict["color_unselected"].value / highlight
+            return self._dict["color_unselected"].value  # / highlight
 
         if is_selected and not is_current:
             return self._dict["color_selected"].value
 
         if is_selected and is_current:
-            return self._dict["color_selected"].value / highlight
+            return self._dict["color_selected"].value  # / highlight
 
     def _create_panel(self):
         window = self._editor_instance._window

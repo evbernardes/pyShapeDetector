@@ -214,4 +214,5 @@ class ElementContainer(list):
 
     def update_all(self):
         for i, elem in enumerate(self):
-            elem.update(is_current=self._editor_instance.i)
+            elem._current = self._editor_instance.i == 0
+            elem.update()
