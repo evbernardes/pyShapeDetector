@@ -60,19 +60,7 @@ def _convert_args_to_open3d(*args, **kwargs):
 
 def _convert_args_to_numpy(args):
     # Convert every argument back from Eigen instances, recursively
-    from .pointcloud import PointCloud
-    from .trianglemesh import TriangleMesh
-    from .axis_aligned_bounding_box import AxisAlignedBoundingBox
-    from .oriented_bounding_box import OrientedBoundingBox
-    from .lineset import LineSet
-
-    converters_classes = {
-        geometry.PointCloud: PointCloud,
-        geometry.TriangleMesh: TriangleMesh,
-        geometry.AxisAlignedBoundingBox: AxisAlignedBoundingBox,
-        geometry.OrientedBoundingBox: OrientedBoundingBox,
-        geometry.LineSet: LineSet,
-    }
+    from .equivalent_classes import equivalent_classes_dict
 
     if isinstance(args, (list, tuple)):
         for i, value in enumerate(args):
@@ -81,8 +69,8 @@ def _convert_args_to_numpy(args):
     elif type(args) in converters_vector.values():
         return np.asarray(args)
 
-    elif type(args) in converters_classes:
-        return converters_classes[type(args)](args)
+    elif type(args) in equivalent_classes_dict:
+        return equivalent_classes_dict[type(args)](args)
 
     return args
 
