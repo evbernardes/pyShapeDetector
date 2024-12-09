@@ -276,7 +276,9 @@ class ParameterInt(Parameter):
             return
 
         try:
-            self.limits = self.limit_setter(editor_instance.selected_raw_elements)
+            self.limits = self.limit_setter(
+                editor_instance.elements.selected_raw_elements
+            )
         except Exception:
             warnings.warn(f"Could not reset limits of parameter {self.name}:")
             traceback.print_exc()
@@ -411,7 +413,9 @@ class ParameterFloat(Parameter):
             return
 
         try:
-            self.limits = self.limit_setter(editor_instance.selected_raw_elements)
+            self.limits = self.limit_setter(
+                editor_instance.elements.selected_raw_elements
+            )
         except Exception:
             warnings.warn(f"Could not reset limits of parameter {self.name}:")
             traceback.print_exc()

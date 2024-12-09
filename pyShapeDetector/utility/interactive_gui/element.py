@@ -170,19 +170,24 @@ class Element(ABC):
         if self.is_color_fixed:
             return
 
-        paint_random = self._editor_instance._get_preference("paint_random")
         paint_selected = self._editor_instance._get_preference("paint_random")
-        brightness = self._editor_instance._get_preference("random_color_brightness")
+        highlight_color_brightness = self._editor_instance._get_preference(
+            "highlight_color_brightness"
+        )
 
-        if not paint_random and paint_selected and self.selected:
+        if paint_selected and self.selected:
             color = self._editor_instance._settings.get_element_color(True, is_current)
+
             self._editor_instance.print_debug(
                 f"[Element.update] Painting drawable to color: {color}.",
                 require_verbose=True,
             )
 
         else:
-            highlight_offset = brightness * (int(self.selected) + int(is_current))
+            highlight_offset = highlight_color_brightness * (
+                int(self.selected) + int(is_current)
+            )
+
             color = self._color + highlight_offset
 
         self._set_drawable_color(color)
@@ -225,7 +230,11 @@ class Element(ABC):
 
     @staticmethod
     def get_from_type(
-        editor_instance: Editor, raw, selected: bool = False, current: bool = False
+        editor_instance: Editor,
+        raw,
+        selected: bool = False,
+        current: bool = False,
+        is_color_fixed: bool = False,
     ):
         if isinstance(raw, Primitive):
             element_class = ElementPrimitive
@@ -233,12 +242,12 @@ class Element(ABC):
             element_class = ElementTriangleMesh
         elif PointCloud.is_instance_or_open3d(raw):
             element_class = ElementPointCloud
-        elif isinstance(raw, [Numpy_Geometry, Open3d_Geometry]):
+        elif isinstance(raw, (Numpy_Geometry, Open3d_Geometry)):
             element_class = ElementGeometry
         else:
             raise TypeError("Expected primitive or geometry, got {type(raw)}.")
 
-        return element_class(editor_instance, raw, selected, current)
+        return element_class(editor_instance, raw, selected, current, is_color_fixed)
 
 
 class ElementPrimitive(Element):

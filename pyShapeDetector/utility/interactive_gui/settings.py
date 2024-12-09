@@ -142,13 +142,23 @@ class Settings:
         self._editor_instance._update_plane_boundaries()
 
     def _cb_mesh_show_back_face(self):
-        self._editor_instance._reset_elements_in_gui()
+        # self._editor_instance._reset_elements_in_gui()
+        elements = self._editor_instance.elements
+        for elem in self._editor_instance.elements:
+            elem._paint()
+
+        elements.update_all()
 
     def _cb_paint_selected(self):
         self._editor_instance._update_elements(None)
 
     def _cb_paint_random(self):
-        self._editor_instance._reset_elements_in_gui()
+        # self._editor_instance._reset_elements_in_gui()
+        elements = self._editor_instance.elements
+        for elem in self._editor_instance.elements:
+            elem._paint()
+
+        elements.update_all()
 
     def _cb_debug(self):
         pass
@@ -175,11 +185,16 @@ class Settings:
 
     def _cb_random_color_brightness(self):
         if self._dict["paint_random"]:
-            self._editor_instance._reset_elements_in_gui()
+            elements = self._editor_instance.elements
+            for elem in elements:
+                elem._color = elem._color * self._dict["random_color_brightness"]
+                elem._set_drawable_color(elem._color)
+
+            elements.update_all()
 
     def _cb_highlight_color_brightness(self):
         if not self._dict["paint_selected"]:
-            indices = np.where(self._editor_instance.selected)[0].tolist()
+            indices = np.where(self._editor_instance.elements.selected)[0].tolist()
             self._editor_instance._update_elements(indices)
 
     def _cb_number_undo_states(self):
@@ -193,11 +208,11 @@ class Settings:
         ]
 
     def _cb_color_selected(self):
-        indices = np.where(self._editor_instance.selected)[0].tolist()
+        indices = np.where(self._editor_instance.elements.selected)[0].tolist()
         self._editor_instance._update_elements(indices)
 
     def _cb_color_unselected(self):
-        unselected = ~np.array(self._editor_instance.selected)
+        unselected = ~np.array(self._editor_instance.elements.selected)
         indices = np.where(unselected)[0].tolist()
         self._editor_instance._update_elements(indices)
 

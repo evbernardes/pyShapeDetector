@@ -99,11 +99,9 @@ class Editor:
         self._past_states = []
         self._future_states = []
         self._elements = ElementContainer(self)
-        # self._elements_input = []
-        self._plane_boundaries = []
-        self._hidden_elements = []
-        self._fixed_elements = []
-        self._fixed_elements_drawable = []
+        self._plane_boundaries = ElementContainer(self, is_color_fixed=True)
+        self._hidden_elements = ElementContainer(self)
+        self._elements_fixed = ElementContainer(self, is_color_fixed=True)
         self._pre_selected = []
         self._current_bbox = None
         self._extensions = None
@@ -223,6 +221,10 @@ class Editor:
         return self._elements
 
     @property
+    def elements_fixed(self):
+        return self._elements_fixed
+
+    @property
     def current_element(self):
         num_elems = len(self.elements)
         if self.i in range(num_elems):
@@ -335,46 +337,6 @@ class Editor:
         self._update_current_idx(idx_new, update_old=self._started)
         self.i_old = self.i
 
-    @property
-    def fixed_elements(self):
-        return self._fixed_elements
-
-    @property
-    def selected_raw_elements(self):
-        return [self.elements[i].raw for i in self.selected_indices]
-
-    @property
-    def selected_indices(self):
-        return np.where(self.selected)[0].tolist()
-
-    @property
-    def elements_drawable(self):
-        return [elem.drawable for elem in self.elements]
-
-    @property
-    def selected(self):
-        return [elem.selected for elem in self.elements]
-
-    @selected.setter
-    def selected(self, values):
-        if isinstance(values, bool):
-            values = [values] * len(self.elements)
-
-        elif len(values) != len(self.elements):
-            raise ValueError(
-                "Length of input expected to be the same as the "
-                f"current number of elements ({len(self.elements)}), "
-                f"got {len(values)}."
-            )
-
-        values = copy.deepcopy(values)
-
-        for elem, value in zip(self.elements, values):
-            if not isinstance(value, (bool, np.bool_)):
-                raise ValueError(f"Expected boolean, got {type(value)}")
-
-            elem.selected = value and self.select_filter(elem)
-
     def _save_state(self, indices, input_elements, num_outputs):
         """Save state for undoing."""
         current_state = {
@@ -391,68 +353,6 @@ class Editor:
 
         while len(self._past_states) > self._get_preference("number_undo_states"):
             self._past_states.pop(0)
-
-    def _check_and_initialize_inputs(self):
-        from pyShapeDetector.geometry import PointCloud
-
-        # for elem in self.elements:
-        #     elem.add_to_scene()
-
-        # if len(self._elements_input) != len(self._pre_selected):
-        #     raise RuntimeError(
-        #         f"{len(self._elements_input)} elements but "
-        #         f"{len(self._pre_selected)} selected values fouund."
-        #     )
-
-        # # check correct input of elements and fixed elements
-        # if isinstance(self._elements_input, tuple):
-        #     self._elements_input = list(self._elements_input)
-        # elif not isinstance(self._elements_input, list):
-        #     self._elements_input = [self._elements_input]
-
-        # for elem in self._elements_input:
-        #     if PointCloud.is_instance_or_open3d(elem) and not elem.has_normals():
-        #         elem.estimate_normals()
-
-        if self._fixed_elements is None:
-            self._fixed_elements = []
-        elif isinstance(self._fixed_elements, tuple):
-            self._fixed_elements = list(self._fixed_elements)
-        elif not isinstance(self._fixed_elements, list):
-            self._fixed_elements = [self._fixed_elements]
-
-        # if len(self._elements_input) == 0:
-        #     raise ValueError("Elements cannot be an empty list.")
-
-        # if len(self.selected) != len(self.elements):
-        #     raise ValueError("Pre-select and input elements must have same length.")
-
-    def _get_open3d(self, elem):
-        from pyShapeDetector.geometry import TriangleMesh
-        from open3d.geometry import Geometry as Open3D_Geometry
-
-        if isinstance(elem, Open3D_Geometry):
-            elem_new = copy.deepcopy(elem)
-
-        else:
-            try:
-                elem_new = copy.deepcopy(elem.as_open3d)
-                mesh_show_back_face = self._get_preference("mesh_show_back_face")
-                if mesh_show_back_face and TriangleMesh.is_instance_or_open3d(elem_new):
-                    mesh = TriangleMesh(elem_new)
-                    mesh.add_reverse_triangles()
-                    elem_new = mesh.as_open3d
-
-            except Exception as e:
-                warnings.warn(f"Could not convert element: {elem}, got: {str(e)}")
-                elem_new = elem
-
-        if self._get_preference("paint_random"):
-            elem_new = get_painted_element(
-                elem_new, "random", self._get_preference("random_color_brightness")
-            )
-
-        return elem_new
 
     def _on_layout(self, layout_context):
         r = self._window.content_rect
@@ -478,8 +378,7 @@ class Editor:
             self._internal_functions._dict["Quit"].callback()
             return False
 
-        self.elements.insert_multiple(self._hidden_elements, to_gui=False)
-        # self._insert_elements(self._hidden_elements, to_gui=False)
+        self.elements.insert_multiple(self._hidden_elements.raw, to_gui=False)
         return True
 
     def _on_mouse(self, event):
@@ -517,7 +416,9 @@ class Editor:
             view_matrix = self._scene.scene.camera.get_view_matrix()
             camera_direction = -view_matrix[:3, 2]
 
-            distances = self._get_distances_to_point(click_position, camera_direction)
+            distances = self.elements.get_distances_to_point(
+                click_position, camera_direction
+            )
 
             i_min_distance = np.argmin(distances)
             if distances[i_min_distance] is np.inf:
@@ -532,57 +433,6 @@ class Editor:
         self._scene.scene.scene.render_to_depth_image(depth_callback)
 
         return gui.Widget.EventCallbackResult.HANDLED
-
-    def _get_distances_to_point(self, screen_point, screen_vector):
-        """Called by Mouse callback to get distances to point when clicked."""
-        from pyShapeDetector.geometry import PointCloud
-        from pyShapeDetector.primitives import Primitive, Plane, Sphere
-
-        screen_plane = Plane.from_normal_point(screen_vector, screen_point)
-
-        def _is_point_in_convex_region(elem, point=screen_point, plane=screen_plane):
-            """Check if mouse-click was done inside of the element actual region."""
-
-            if hasattr(elem, "points"):
-                boundary_points = elem.points
-            elif hasattr(elem, "vertices"):
-                boundary_points = elem.vertices
-            elif hasattr(elem, "mesh"):
-                boundary_points = elem.mesh.vertices
-            else:
-                return False
-
-            boundary_points = np.asarray(boundary_points)
-            if len(boundary_points) < 3:
-                return False
-
-            plane_bounded = plane.get_bounded_plane(boundary_points, convex=True)
-            return plane_bounded.contains_projections(point)
-
-        def _distance_to_point(elem, point=screen_point, plane=screen_plane):
-            """Check if mouse-click was done inside of the element actual region."""
-
-            if not _is_point_in_convex_region(elem, point, plane):
-                return np.inf
-
-            try:
-                return elem.get_distances(point)
-            except AttributeError:
-                warnings.warn(
-                    f"Element of type {type(elem)} "
-                    "found in distance elements, should not happen."
-                )
-                return np.inf
-
-        distances = []
-        for i, elem in enumerate(self.elements):
-            if i == self.i:
-                # for selecting smaller objects closer to bigger ones,
-                # ignores currently selected one
-                distances.append(np.inf)
-            else:
-                distances.append(_distance_to_point(elem.distance_checker))
-        return distances
 
     def _get_preference(self, key):
         if key not in self._settings._dict:
@@ -817,70 +667,60 @@ class Editor:
 
         self._update_elements(indices)
 
-    def _reset_elements_in_gui(self, startup=False, reset_fixed=False):
+    def _reset_elements_in_gui(self, reset_fixed=False):
         """Prepare elements for visualization"""
 
-        if not startup:
-            self.i = min(self.i, len(self.elements) - 1)
-
-        if startup or reset_fixed:
-            for elem in self._fixed_elements_drawable:
-                self._remove_geometry_from_scene(elem)
-
-            self._fixed_elements_drawable = [
-                self._get_open3d(elem) for elem in self._fixed_elements
-            ]
-
-            for elem in self._fixed_elements_drawable:
-                self._add_geometry_to_scene(elem)
-
-        if startup:
-            current_idx = 0
-            elems_raw = self._elements_input
-            pre_selected = self._pre_selected
-
+        current_idx = copy.copy(min(self.i, len(self.elements) - 1))
+        if reset_fixed:
+            self.elements_fixed.update_all()
         else:
-            # pre_selected = [False] * len(elems_raw)
-            current_idx = copy.copy(self.i)
-            pre_selected = self.selected
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", message="No elements left")
-                elems_raw = self.elements.pop_multiple(
-                    range(len(self.elements)), from_gui=True
-                )
-            assert len(self.elements) == 0
+            self.elements.update_all()
 
-        self.print_debug(
-            f"\ninserting elements at startup, there are {len(elems_raw)}.",
-            require_verbose=True,
-        )
-        # self._insert_elements(elems_raw, selected=pre_selected, to_gui=True)
-        self.elements.insert_multiple(elems_raw, selected=pre_selected, to_gui=True)
-        self.print_debug(f"Finished inserting {len(self.elements)} elements.")
+        # if startup:
+        #     current_idx = 0
+        #     elems_raw = self._elements_input
+        #     pre_selected = self._pre_selected
+
+        # else:
+        #     # pre_selected = [False] * len(elems_raw)
+        #     current_idx = copy.copy(self.i)
+        #     pre_selected = self.elements.selected
+        #     with warnings.catch_warnings():
+        #         warnings.filterwarnings("ignore", message="No elements left")
+        #         elems_raw = self.elements.pop_multiple(
+        #             range(len(self.elements)), from_gui=True
+        #         )
+        #     assert len(self.elements) == 0
+
+        # self.print_debug(
+        #     f"\ninserting elements at startup, there are {len(elems_raw)}.",
+        #     require_verbose=True,
+        # )
+        # # self._insert_elements(elems_raw, selected=pre_selected, to_gui=True)
+        # self.elements.insert_multiple(elems_raw, selected=pre_selected, to_gui=True)
+        # self.print_debug(f"Finished inserting {len(self.elements)} elements.")
 
         self._update_plane_boundaries()
         self._update_current_bounding_box()
 
         self._update_current_idx(current_idx)
-        self._started = True
+        # self._started = True
 
     def run(self):
         self.print_debug(f"Starting {type(self).__name__}.")
 
-        # Ensure proper format of inputs, check elements and raise warnings
-        self._check_and_initialize_inputs()
-
         # Set up the gui
         self._setup_window_and_scene()
-        self._reset_elements_in_gui(startup=True)
 
-        for elem in self.elements:
+        for elem in self.elements + self.elements_fixed:
             elem.add_to_scene()
 
         bounds = self._scene.scene.bounding_box
         center = bounds.get_center()
         self._scene.setup_camera(60, bounds, center)
         self._scene.look_at(center, center - [0, 0, 3], [0, 1, 0])
+
+        self._started = True
 
         self.app.run()
 

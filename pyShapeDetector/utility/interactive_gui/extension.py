@@ -224,7 +224,7 @@ class Extension:
             indices = [editor_instance.i]
             input_elements = [editor_instance.current_element.raw]
         elif self.inputs == "selected":
-            indices = editor_instance.selected_indices
+            indices = editor_instance.elements.selected_indices
             input_elements = [editor_instance.elements[i].raw for i in indices]
         elif self.inputs == "current":
             indices = list(range(len(editor_instance.elements)))

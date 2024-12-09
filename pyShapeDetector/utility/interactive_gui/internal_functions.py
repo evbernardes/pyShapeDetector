@@ -257,12 +257,12 @@ class InternalFunctions:
         """Delete selected elements."""
         # Implementing as an extension to save state
         editor_instance = self._editor_instance
-        indices = editor_instance.selected_indices
+        indices = editor_instance.elements.selected_indices
         input_elements = [editor_instance.elements[i].raw for i in indices]
 
         try:
             editor_instance.print_debug(f"Deleting elements at indices {indices}.")
-            editor_instance._pop_elements(indices, from_gui=True)
+            editor_instance.elements.pop_multiple(indices, from_gui=True)
         except Exception:
             warnings.warn(f"Could not delete elements at indices {indices}.")
             traceback.print_exc()
@@ -288,7 +288,7 @@ class InternalFunctions:
             editor_instance.print_debug(
                 f"Pasting {len(editor_instance._copied_elements)} elements."
             )
-            editor_instance._insert_elements(
+            editor_instance.elements.insert_multiple(
                 editor_instance._copied_elements, to_gui=True
             )
         except Exception:
@@ -415,14 +415,14 @@ class InternalFunctions:
         """Hide selected elements."""
 
         editor_instance = self._editor_instance
-        indices = editor_instance.selected_indices
+        indices = editor_instance.elements.selected_indices
         if len(indices) == 0:
             return
 
-        editor_instance._hidden_elements += editor_instance._pop_elements(
+        editor_instance._hidden_elements += editor_instance.elements.pop_multiple(
             indices, from_gui=True
         )
-        editor_instance.selected = False
+        editor_instance.elements.selected = False
 
         # TODO: find a way to make hiding work with undoing
         editor_instance._past_states = []
@@ -433,13 +433,16 @@ class InternalFunctions:
         """Unhide all hidden elements."""
 
         editor_instance = self._editor_instance
-        if len(editor_instance._hidden_elements) == 0:
+        hidden_elements = editor_instance._hidden_elements
+
+        if len(hidden_elements) == 0:
             return
 
-        editor_instance._insert_elements(
-            editor_instance._hidden_elements, selected=True, to_gui=True
+        editor_instance.elements.insert_multiple(
+            hidden_elements.pop_multiple(range(len(hidden_elements))),
+            selected=True,
+            to_gui=True,
         )
-        editor_instance._hidden_elements = []
 
         # TODO: find a way to make hiding work with undoing
         editor_instance._past_states = []
@@ -464,8 +467,14 @@ class InternalFunctions:
         )
 
         indices_to_pop = range(num_elems - num_outputs, num_elems)
-        modified_elements = editor_instance._pop_elements(indices_to_pop, from_gui=True)
-        editor_instance._insert_elements(elements, indices, selected=True, to_gui=True)
+
+        modified_elements = editor_instance.elements.pop_multiple(
+            indices_to_pop, from_gui=True
+        )
+
+        editor_instance.elements.insert_multiple(
+            elements, indices, selected=True, to_gui=True
+        )
 
         editor_instance._future_states.append(
             {
@@ -505,8 +514,8 @@ class InternalFunctions:
         editor_instance._save_state(indices, input_elements, len(modified_elements))
 
         editor_instance.i = future_state["current_index"]
-        editor_instance._pop_elements(indices, from_gui=True)
-        editor_instance._insert_elements(modified_elements, to_gui=True)
+        editor_instance.elements.pop_multiple(indices, from_gui=True)
+        editor_instance.elements.insert_multiple(modified_elements, to_gui=True)
 
         editor_instance._update_current_idx(len(editor_instance.elements) - 1)
 

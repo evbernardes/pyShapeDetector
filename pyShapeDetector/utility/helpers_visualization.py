@@ -579,6 +579,7 @@ def apply_function_manually(
     # element_selector.add_elements(elements, pre_selected=pre_selected)
     # for element, selected in zip(elements, pre_selected):
     element_selector.elements.insert_multiple(elements, selected=pre_selected, to_gui=False)
+    element_selector.elements_fixed.insert_multiple(fixed_elements, to_gui=False)
 
 
     for function in functions:

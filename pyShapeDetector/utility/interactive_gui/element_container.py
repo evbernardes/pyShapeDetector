@@ -1,4 +1,5 @@
 import warnings
+import copy
 from typing import List
 import numpy as np
 # from .element import Element
@@ -23,22 +24,51 @@ class ElementContainer(list):
     def __repr__(self):
         return f"ElementContainer({len(self)} elements)"
 
-    def __init__(self, editor_instance, elements=[]):
+    def __init__(self, editor_instance, elements=[], is_color_fixed=False):
         super().__init__(elements)
         self._editor_instance = editor_instance
+        self._is_color_fixed = is_color_fixed
         # self._elements = []
 
+    @property
     def raw(self):
         return [element.raw for element in self]
 
+    @property
     def selected(self):
         return [element.selected for element in self]
 
+    @selected.setter
+    def selected(self, values):
+        if isinstance(values, bool):
+            values = [values] * len(self)
+
+        elif len(values) != len(self):
+            raise ValueError(
+                "Length of input expected to be the same as the "
+                f"current number of elements ({len(self.elements)}), "
+                f"got {len(values)}."
+            )
+
+        values = copy.deepcopy(values)
+
+        for elem, value in zip(self, values):
+            if not isinstance(value, (bool, np.bool_)):
+                raise ValueError(f"Expected boolean, got {type(value)}")
+
+            elem._selected = value and self.select_filter(elem)
+
+    @property
     def selected_indices(self):
         return np.where(self.selected)[0].tolist()
 
     def insert_multiple(self, elements_new, indices=None, selected=False, to_gui=False):
         from .element import Element
+
+        if not isinstance(elements_new, (tuple, list)):
+            elements_new = [elements_new]
+        if isinstance(elements_new, tuple):
+            elements_new = list(elements_new)
 
         if indices is None:
             indices = range(len(self), len(self) + len(elements_new))
@@ -63,9 +93,18 @@ class ElementContainer(list):
 
             if isinstance(elements_new[i], Element):
                 elem = elements_new[i]
+                if elem.is_color_fixed != self._is_color_fixed:
+                    warnings.warn(
+                        "Changing element to a container with a different color type."
+                    )
+                    elem._is_color_fixed = self._is_color_fixed
             else:
                 elem = Element.get_from_type(
-                    self._editor_instance, elements_new[i], selected[i], is_current
+                    self._editor_instance,
+                    elements_new[i],
+                    selected[i],
+                    is_current,
+                    self._is_color_fixed,
                 )
 
             self._editor_instance.print_debug(
@@ -91,12 +130,15 @@ class ElementContainer(list):
     def pop_multiple(self, indices, from_gui=False):
         # update_old = self.i in indices
         # idx_new = self.i
-        elements_popped = []
+        elements_popped = ElementContainer(
+            self._editor_instance, is_color_fixed=self._is_color_fixed
+        )
+
         for n, i in enumerate(indices):
             elem = self.pop(i - n)
             if from_gui:
                 elem.remove_from_scene()
-            elements_popped.append(elem.raw)
+            elements_popped.append(elem)
 
         idx_new = self._editor_instance.i - sum(
             [idx < self._editor_instance.i for idx in indices]
@@ -116,4 +158,60 @@ class ElementContainer(list):
             idx_new = max(min(idx_new, len(self) - 1), 0)
             self._editor_instance._update_current_idx(idx_new, update_old=False)
             self._editor_instance.i_old = self._editor_instance.i
+
         return elements_popped
+
+    def get_distances_to_point(self, screen_point, screen_vector):
+        """Called by Mouse callback to get distances to point when clicked."""
+        from pyShapeDetector.geometry import PointCloud
+        from pyShapeDetector.primitives import Primitive, Plane, Sphere
+
+        screen_plane = Plane.from_normal_point(screen_vector, screen_point)
+
+        def _is_point_in_convex_region(elem, point=screen_point, plane=screen_plane):
+            """Check if mouse-click was done inside of the element actual region."""
+
+            if hasattr(elem, "points"):
+                boundary_points = elem.points
+            elif hasattr(elem, "vertices"):
+                boundary_points = elem.vertices
+            elif hasattr(elem, "mesh"):
+                boundary_points = elem.mesh.vertices
+            else:
+                return False
+
+            boundary_points = np.asarray(boundary_points)
+            if len(boundary_points) < 3:
+                return False
+
+            plane_bounded = plane.get_bounded_plane(boundary_points, convex=True)
+            return plane_bounded.contains_projections(point)
+
+        def _distance_to_point(elem, point=screen_point, plane=screen_plane):
+            """Check if mouse-click was done inside of the element actual region."""
+
+            if not _is_point_in_convex_region(elem, point, plane):
+                return np.inf
+
+            try:
+                return elem.get_distances(point)
+            except AttributeError:
+                warnings.warn(
+                    f"Element of type {type(elem)} "
+                    "found in distance elements, should not happen."
+                )
+                return np.inf
+
+        distances = []
+        for i, elem in enumerate(self):
+            if i == self._editor_instance.i:
+                # for selecting smaller objects closer to bigger ones,
+                # ignores currently selected one
+                distances.append(np.inf)
+            else:
+                distances.append(_distance_to_point(elem.distance_checker))
+        return distances
+
+    def update_all(self):
+        for i, elem in enumerate(self):
+            elem.update(is_current=self._editor_instance.i)
