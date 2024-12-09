@@ -53,7 +53,7 @@ def link_to_open3d_geometry(original_class):
     return decorator
 
 
-class Open3D_Geometry:
+class Numpy_Geometry:
     __open3d_class__ = None
 
     @property

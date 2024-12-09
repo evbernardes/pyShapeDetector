@@ -4,11 +4,11 @@
 Created on Thu May 23 11:32:03 2024
 
 This sub-module contains heavily decorated and modified versions of the classes
-in Open3D.geometry, so that they can work directly with Numpy arrays.  
+in Open3D.geometry, so that they can work directly with Numpy arrays.
 
 @author: ebernardes
 """
-from .open3d_geometry import Open3D_Geometry
+from .numpy_geometry import Numpy_Geometry
 from .pointcloud import PointCloud
 from .trianglemesh import TriangleMesh
 from .axis_aligned_bounding_box import AxisAlignedBoundingBox

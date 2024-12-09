@@ -10,12 +10,12 @@ import numpy as np
 from open3d.geometry import OrientedBoundingBox as open3d_OrientedBoundingBox
 
 from pyShapeDetector.utility import _set_and_check_3d_array
-from .open3d_geometry import link_to_open3d_geometry, Open3D_Geometry
+from .numpy_geometry import link_to_open3d_geometry, Numpy_Geometry
 from .axis_aligned_bounding_box import AxisAlignedBoundingBox
 
 
 @link_to_open3d_geometry(open3d_OrientedBoundingBox)
-class OrientedBoundingBox(Open3D_Geometry):
+class OrientedBoundingBox(Numpy_Geometry):
     """
     OrientedBoundingBox class that uses Open3D.geometry.OrientedBoundingBox internally.
 
