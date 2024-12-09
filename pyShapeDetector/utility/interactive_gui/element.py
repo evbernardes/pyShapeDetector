@@ -12,11 +12,10 @@ import numpy as np
 from pathlib import Path
 from open3d.visualization import gui, rendering
 
-from open3d import geometry as 
-from pyShapeDetector.geometry import PointCloud, Open3D_Geometry
+from open3d import geometry as Open3d_Geometry
+from pyShapeDetector.geometry import PointCloud, Numpy_Geometry
 from pyShapeDetector.primitives import Primitive
 
-# from open3d import geometry as Open3d_Geometry
 
 # from .editor_app import Editor
 from .settings import Settings
