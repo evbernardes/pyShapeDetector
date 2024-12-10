@@ -26,6 +26,18 @@ class Parameter:
         self._name = new_name
 
     @property
+    def subpanel(self):
+        return self._subpanel
+
+    @subpanel.setter
+    def subpanel(self, new_subpanel):
+        if new_subpanel is not None and not isinstance(new_subpanel, str):
+            raise TypeError(
+                f"Expected string as subpanel for Parameter, got {type(new_subpanel)}."
+            )
+        self._subpanel = new_subpanel
+
+    @property
     def pretty_name(self):
         words = self.name.replace("_", " ").split()
         result = []
@@ -117,9 +129,15 @@ class Parameter:
 
         return parameter
 
-    def __init__(self, name: str, on_update: Callable = None):
+    def __init__(
+        self,
+        name: str,
+        on_update: Callable = None,
+        subpanel: Union[str, None] = None,
+    ):
         self.name = name
         self.on_update = on_update
+        self.subpanel = subpanel
 
 
 class ParameterBool(Parameter):
@@ -140,9 +158,10 @@ class ParameterBool(Parameter):
         name: str,
         default: bool = False,
         on_update: Callable = None,
+        subpanel: Union[str, None] = None,
         **other_kwargs,
     ):
-        super().__init__(name=name, on_update=on_update)
+        super().__init__(name=name, on_update=on_update, subpanel=subpanel)
         self.value = default
         self._warn_unused_parameters(other_kwargs)
 
@@ -201,9 +220,10 @@ class ParameterOptions(Parameter):
         options: list,
         default=None,
         on_update: Callable = None,
+        subpanel: Union[str, None] = None,
         **other_kwargs,
     ):
-        super().__init__(name=name, on_update=on_update)
+        super().__init__(name=name, on_update=on_update, subpanel=subpanel)
         self.options = options
 
         if default is None:
@@ -323,9 +343,10 @@ class ParameterInt(Parameter):
         limits: Union[list, tuple] = None,
         default: int = None,
         on_update: Callable = None,
+        subpanel: Union[str, None] = None,
         **other_kwargs,
     ):
-        super().__init__(name=name, on_update=on_update)
+        super().__init__(name=name, on_update=on_update, subpanel=subpanel)
         self.limit_setter = limit_setter
 
         if self.limit_setter is None:
@@ -460,9 +481,10 @@ class ParameterFloat(Parameter):
         limits: Union[list, tuple] = None,
         default: int = None,
         on_update: Callable = None,
+        subpanel: Union[str, None] = None,
         **other_kwargs,
     ):
-        super().__init__(name=name, on_update=on_update)
+        super().__init__(name=name, on_update=on_update, subpanel=subpanel)
         self.limit_setter = limit_setter
 
         if self.limit_setter is None:
@@ -546,9 +568,10 @@ class ParameterColor(Parameter):
         name: str,
         default: Union[list, tuple, np.ndarray] = None,
         on_update: Callable = None,
+        subpanel: Union[str, None] = None,
         **other_kwargs,
     ):
-        super().__init__(name=name, on_update=on_update)
+        super().__init__(name=name, on_update=on_update, subpanel=subpanel)
         self.value = default
 
         self._warn_unused_parameters(other_kwargs)
@@ -637,9 +660,10 @@ class ParameterNDArray(Parameter):
         name: str,
         default: Union[list, tuple, np.ndarray] = None,
         on_update: Callable = None,
+        subpanel: Union[str, None] = None,
         **other_kwargs,
     ):
-        super().__init__(name=name, on_update=on_update)
+        super().__init__(name=name, on_update=on_update, subpanel=subpanel)
         self.value = default
 
         self._warn_unused_parameters(other_kwargs)

@@ -310,7 +310,7 @@ class Extension:
         temp_window = app.create_window(
             f"Parameter selection for {self.name}",
             500,
-            100 * (5 + len(self.parameters)),
+            100 * (len(self.parameters)),
         )
         temp_window.show_menu(False)
         self._editor_instance._temp_windows.append(temp_window)
@@ -331,12 +331,30 @@ class Extension:
         h.add_stretch()
         dlg_layout.add_child(h)
 
+        subpanels = {}
+
         previous_values = {}
         for key, param in self.parameters.items():
             previous_values[key] = copy.copy(param.value)
             param._reset_values_and_limits(editor_instance)
-            dlg_layout.add_child(param.get_gui_element(temp_window))
+
+            # dlg_layout.add_child(param.get_gui_element(temp_window))
+            # dlg_layout.add_fixed(separation_height)
             dlg_layout.add_fixed(separation_height)
+            element = param.get_gui_element(temp_window)
+            if param.subpanel is None:
+                dlg_layout.add_child(element)
+                continue
+
+            if param.subpanel not in subpanels:
+                subpanel = gui.CollapsableVert(
+                    param.subpanel, 0.25 * em, gui.Margins(em, 0, 0, 0)
+                )
+                subpanels[param.subpanel] = subpanel
+                dlg_layout.add_child(subpanel)
+                subpanel.set_is_open(False)
+
+            subpanels[param.subpanel].add_child(element)
 
         def _on_apply():
             self._ran_at_least_once = True

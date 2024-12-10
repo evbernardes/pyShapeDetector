@@ -96,16 +96,19 @@ class Settings:
                 default=_BBOX_expand,
                 limits=(0, 2),
                 on_update=self._cb_BBOX_expand,
+                subpanel="Bounding Box",
             ),
             ParameterColor(
                 name="color_BBOX_selected",
                 default=_color_BBOX_selected,
                 on_update=self._cb_color_BBOX_selected,
+                subpanel="Bounding Box",
             ),
             ParameterColor(
                 name="color_BBOX_unselected",
                 default=_color_BBOX_unselected,
                 on_update=self._cb_color_BBOX_unselected,
+                subpanel="Bounding Box",
             ),
             ParameterInt(
                 name="number_points_distance",
@@ -295,9 +298,24 @@ class Settings:
             "Preferences", 0.25 * em, gui.Margins(em, 0, 0, 0)
         )
 
+        subpanels = {}
+
         for preference in self._dict.values():
-            _panel_collapsable.add_child(preference.get_gui_element(window))
             _panel_collapsable.add_fixed(separation_height)
+            element = preference.get_gui_element(window)
+            if preference.subpanel is None:
+                _panel_collapsable.add_child(element)
+                continue
+
+            if preference.subpanel not in subpanels:
+                subpanel = gui.CollapsableVert(
+                    preference.subpanel, 0.25 * em, gui.Margins(em, 0, 0, 0)
+                )
+                subpanels[preference.subpanel] = subpanel
+                _panel_collapsable.add_child(subpanel)
+                subpanel.set_is_open(False)
+
+            subpanels[preference.subpanel].add_child(element)
 
         _panel_collapsable.visible = False
         self._editor_instance._right_side_panel.add_child(_panel_collapsable)
