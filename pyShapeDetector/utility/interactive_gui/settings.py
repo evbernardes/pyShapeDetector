@@ -159,23 +159,23 @@ class Settings:
                     )
                     setattr(self, key, value)
 
-    def _cb_draw_boundary_lines(self):
+    def _cb_draw_boundary_lines(self, value):
         self._editor_instance._update_plane_boundaries()
 
-    def _cb_line_width(self):
-        line_width = self._dict["line_width"].value
+    def _cb_line_width(self, value):
+        # line_width = self._dict["line_width"].value
         self._editor_instance.material_line.line_width = (
-            line_width * self._editor_instance._window.scaling
+            value * self._editor_instance._window.scaling
         )
         self._editor_instance._update_plane_boundaries()
         self._editor_instance._update_current_bounding_box()
 
-    def _cb_PointCloud_point_size(self):
+    def _cb_PointCloud_point_size(self, value):
         from .element import ElementPointCloud
 
-        point_size = self._dict["PointCloud_point_size"].value
+        # point_size = self._dict["PointCloud_point_size"].value
         self._editor_instance.material_regular.point_size = (
-            point_size * self._editor_instance._window.scaling
+            value * self._editor_instance._window.scaling
         )
         indices = np.where(
             [
@@ -185,18 +185,18 @@ class Settings:
         )[0].tolist()
         self._editor_instance._update_elements(indices)
 
-    def _cb_mesh_show_back_face(self):
+    def _cb_mesh_show_back_face(self, value):
         # self._editor_instance._reset_elements_in_gui()
         elements = self._editor_instance.elements
         elements.update_all()
 
-    def _cb_paint_selected(self):
+    def _cb_paint_selected(self, value):
         self._editor_instance._update_elements(None)
 
-    def _cb_paint_random(self):
+    def _cb_paint_random(self, value):
         elements = self._editor_instance.elements
         for elem in elements:
-            if self._dict["paint_random"].value:
+            if value:
                 # print("printing new random colors")
                 elem._color = np.random.random(3)
                 elem._brightness = self._dict["random_color_brightness"].value
@@ -206,70 +206,68 @@ class Settings:
 
         self._editor_instance._update_elements(None)
 
-    def _cb_debug(self):
+    def _cb_debug(self, value):
         pass
 
-    def _cb_verbose(self):
+    def _cb_verbose(self, value):
         pass
 
-    def _cb_BBOX_expand(self):
+    def _cb_BBOX_expand(self, value):
         self._editor_instance._update_current_bounding_box()
 
-    def _cb_color_BBOX_selected(self):
+    def _cb_color_BBOX_selected(self, value):
         if self._editor_instance.is_current_selected:
             self._editor_instance._update_current_bounding_box()
 
-    def _cb_color_BBOX_unselected(self):
+    def _cb_color_BBOX_unselected(self, value):
         if not self._editor_instance.is_current_selected:
             self._editor_instance._update_current_bounding_box()
 
-    def _cb_number_points_distance(self):
+    def _cb_number_points_distance(self, value):
         for elem in self._editor_instance.elements:
             elem._get_distance_checker(0)
             # dist_checker = self._editor_instance._get_element_distances([elem.raw])[0]
             # elem.distance_checker = dist_checker
 
-    def _cb_random_color_brightness(self):
+    def _cb_random_color_brightness(self, value):
         if self._dict["paint_random"].value:
             elements = self._editor_instance.elements
 
             for elem in elements:
-                elem._brightness = self._dict["random_color_brightness"].value
+                elem._brightness = value
 
         self._editor_instance._update_elements(None)
 
-    def _cb_original_color_brightness(self):
+    def _cb_original_color_brightness(self, value):
         if not self._dict["paint_random"].value:
             elements = self._editor_instance.elements
 
             for elem in elements:
-                elem._brightness = self._dict["original_color_brightness"].value
+                elem._brightness = value
 
         self._editor_instance._update_elements(None)
         # elements.update_all()
 
-    def _cb_highlight_ratio(self):
+    def _cb_highlight_ratio(self, value):
         # if not self._dict["paint_selected"]:
         self._editor_instance._update_elements(None)
         # self._editor_instance.elements.update_all()
         # indices = self._editor_instance.selected_indices
         # self._editor_instance._update_elements(indices)
 
-    def _cb_number_undo_states(self):
-        value = self._dict["number_undo_states"].value
+    def _cb_number_undo_states(self, value):
         self._editor_instance._past_states = self._editor_instance._past_states[-value:]
 
-    def _cb_number_redo_states(self):
-        value = self._dict["number_redo_states"].value
+    def _cb_number_redo_states(self, value):
         self._editor_instance._future_states = self._editor_instance._future_states[
             -value:
         ]
 
-    def _cb_color_selected(self):
+    def _cb_color_selected(self, value):
         indices = np.where(self._editor_instance.elements.selected)[0].tolist()
         self._editor_instance._update_elements(indices)
 
-    def _cb_color_unselected(self):
+    def _cb_color_unselected(self, value):
         unselected = ~np.array(self._editor_instance.elements.selected)
         indices = np.where(unselected)[0].tolist()
         self._editor_instance._update_elements(indices)
