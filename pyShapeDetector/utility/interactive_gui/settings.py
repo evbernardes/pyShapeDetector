@@ -85,6 +85,18 @@ class Settings:
                 on_update=self._cb_BBOX_expand,
                 subpanel="Bounding Box",
             ),
+            ParameterColor(
+                name="color_BBOX_selected",
+                default=_color_BBOX_selected,
+                on_update=self._cb_color_BBOX_selected,
+                subpanel="Bounding Box",
+            ),
+            ParameterColor(
+                name="color_BBOX_unselected",
+                default=_color_BBOX_unselected,
+                on_update=self._cb_color_BBOX_unselected,
+                subpanel="Bounding Box",
+            ),
             ParameterBool(
                 name="paint_selected",
                 default=_paint_selected,
@@ -102,24 +114,6 @@ class Settings:
                 default=_paint_random,
                 on_update=self._cb_paint_random,
                 subpanel="Color",
-            ),
-            ParameterColor(
-                name="color_BBOX_selected",
-                default=_color_BBOX_selected,
-                on_update=self._cb_color_BBOX_selected,
-                subpanel="Bounding Box",
-            ),
-            ParameterColor(
-                name="color_BBOX_unselected",
-                default=_color_BBOX_unselected,
-                on_update=self._cb_color_BBOX_unselected,
-                subpanel="Bounding Box",
-            ),
-            ParameterInt(
-                name="number_points_distance",
-                default=_number_points_distance,
-                on_update=self._cb_number_points_distance,
-                limits=(5, 50),
             ),
             ParameterFloat(
                 name="random_color_brightness",
@@ -141,6 +135,12 @@ class Settings:
                 on_update=self._cb_highlight_ratio,
                 limits=(0.01, 1),
                 subpanel="Color",
+            ),
+            ParameterInt(
+                name="number_points_distance",
+                default=_number_points_distance,
+                on_update=self._cb_number_points_distance,
+                limits=(5, 50),
             ),
             ParameterInt(
                 name="number_undo_states",
@@ -210,6 +210,14 @@ class Settings:
     def _cb_BBOX_expand(self, value):
         self._editor_instance._update_current_bounding_box()
 
+    def _cb_color_BBOX_selected(self, value):
+        if self._editor_instance.is_current_selected:
+            self._editor_instance._update_current_bounding_box()
+
+    def _cb_color_BBOX_unselected(self, value):
+        if not self._editor_instance.is_current_selected:
+            self._editor_instance._update_current_bounding_box()
+
     def _cb_paint_selected(self, value):
         self._editor_instance._update_elements(None)
 
@@ -229,20 +237,6 @@ class Settings:
                 elem._brightness = self._dict["original_color_brightness"].value
 
         self._editor_instance._update_elements(None)
-
-    def _cb_color_BBOX_selected(self, value):
-        if self._editor_instance.is_current_selected:
-            self._editor_instance._update_current_bounding_box()
-
-    def _cb_color_BBOX_unselected(self, value):
-        if not self._editor_instance.is_current_selected:
-            self._editor_instance._update_current_bounding_box()
-
-    def _cb_number_points_distance(self, value):
-        for elem in self._editor_instance.elements:
-            elem._get_distance_checker(0)
-            # dist_checker = self._editor_instance._get_element_distances([elem.raw])[0]
-            # elem.distance_checker = dist_checker
 
     def _cb_random_color_brightness(self, value):
         if self._dict["paint_random"].value:
@@ -283,6 +277,12 @@ class Settings:
         indices = np.where(unselected)[0].tolist()
         self._editor_instance._update_elements(indices)
 
+    def _cb_number_points_distance(self, value):
+        for elem in self._editor_instance.elements:
+            elem._get_distance_checker(0)
+            # dist_checker = self._editor_instance._get_element_distances([elem.raw])[0]
+            # elem.distance_checker = dist_checker
+
     def get_element_color(self, is_selected, is_current, is_bbox=False):
         # highlight = self._dict["highlight_ratio"].value
         if not is_selected and not is_current:
@@ -309,10 +309,10 @@ class Settings:
         subpanels = {}
 
         for preference in self._dict.values():
-            _panel_collapsable.add_fixed(separation_height)
             element = preference.get_gui_element(window)
             if preference.subpanel is None:
                 _panel_collapsable.add_child(element)
+                _panel_collapsable.add_fixed(separation_height)
                 continue
 
             if preference.subpanel not in subpanels:
@@ -322,6 +322,7 @@ class Settings:
                 subpanels[preference.subpanel] = subpanel
                 _panel_collapsable.add_child(subpanel)
                 subpanel.set_is_open(False)
+                _panel_collapsable.add_fixed(separation_height)
 
             subpanels[preference.subpanel].add_child(element)
 

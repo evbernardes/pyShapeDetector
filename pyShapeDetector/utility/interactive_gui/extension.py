@@ -338,12 +338,10 @@ class Extension:
             previous_values[key] = copy.copy(param.value)
             param._reset_values_and_limits(editor_instance)
 
-            # dlg_layout.add_child(param.get_gui_element(temp_window))
-            # dlg_layout.add_fixed(separation_height)
-            dlg_layout.add_fixed(separation_height)
             element = param.get_gui_element(temp_window)
             if param.subpanel is None:
                 dlg_layout.add_child(element)
+                dlg_layout.add_fixed(separation_height)
                 continue
 
             if param.subpanel not in subpanels:
@@ -353,6 +351,7 @@ class Extension:
                 subpanels[param.subpanel] = subpanel
                 dlg_layout.add_child(subpanel)
                 subpanel.set_is_open(False)
+                dlg_layout.add_fixed(separation_height)
 
             subpanels[param.subpanel].add_child(element)
 
