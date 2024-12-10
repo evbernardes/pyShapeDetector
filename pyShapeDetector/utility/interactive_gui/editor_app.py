@@ -168,15 +168,6 @@ class Editor:
             traceback.print_exc()
 
     @property
-    def extension_key_mappings(self):
-        key_mappings = dict()
-        if self.extensions is not None:
-            for extension in self.extensions:
-                if extension.hotkey is not None:
-                    key_mappings[extension.hotkey] = extension
-        return key_mappings
-
-    @property
     def select_filter(self):
         return self._select_filter
 
@@ -191,8 +182,13 @@ class Editor:
             )
         self._select_filter = lambda elem: new_function(elem.raw)
 
-    def get_elements(self):
-        return [elem.raw for elem in self.elements]
+    def get_elements(self, add_hidden: bool = True, add_fixed: bool = False):
+        elements = self.elements
+        if add_hidden:
+            elements += self._hidden_elements
+        if add_fixed:
+            elements += self._elements_fixed
+        return elements.raw
 
     @property
     def elements(self):
@@ -230,6 +226,7 @@ class Editor:
         self.current_element.selected = boolean_value
 
     def _reset_on_key(self):
+        """Reset keys to original hotkeys."""
         self._scene.set_on_key(self._hotkeys._on_key)
 
     def _close_dialog(self):
@@ -279,7 +276,7 @@ class Editor:
             self._internal_functions._dict["Quit"].callback()
             return False
 
-        self.elements.insert_multiple(self._hidden_elements.raw, to_gui=False)
+        # self.elements.insert_multiple(self._hidden_elements.raw, to_gui=False)
         return True
 
     def _on_mouse(self, event):
