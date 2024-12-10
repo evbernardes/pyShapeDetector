@@ -336,6 +336,7 @@ class Editor:
         self._scene.scene.set_lighting(
             rendering.Open3DScene.LightingProfile.NO_SHADOWS, (0, 0, 0)
         )
+        self._scene.scene.show_axes(False)
 
         self.material_regular = rendering.MaterialRecord()
         self.material_regular.base_color = [1.0, 1.0, 1.0, 1.0]  # White color
