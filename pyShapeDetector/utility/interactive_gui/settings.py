@@ -67,29 +67,16 @@ class Settings:
                 on_update=self._cb_mesh_show_back_face,
             ),
             ParameterBool(
-                name="paint_selected",
-                default=_paint_selected,
-                on_update=self._cb_paint_selected,
-            ),
-            ParameterColor(
-                name="color_selected",
-                default=_color_selected,
-                on_update=self._cb_color_selected,
-            ),
-            ParameterBool(
-                name="paint_random",
-                default=_paint_random,
-                on_update=self._cb_paint_random,
-            ),
-            ParameterBool(
                 name="debug",
                 default=_debug,
                 on_update=self._cb_debug,
+                subpanel="Debug",
             ),
             ParameterBool(
                 name="verbose",
                 default=_verbose,
                 on_update=self._cb_verbose,
+                subpanel="Debug",
             ),
             ParameterFloat(
                 name="BBOX_expand",
@@ -97,6 +84,24 @@ class Settings:
                 limits=(0, 2),
                 on_update=self._cb_BBOX_expand,
                 subpanel="Bounding Box",
+            ),
+            ParameterBool(
+                name="paint_selected",
+                default=_paint_selected,
+                on_update=self._cb_paint_selected,
+                subpanel="Color",
+            ),
+            ParameterColor(
+                name="color_selected",
+                default=_color_selected,
+                on_update=self._cb_color_selected,
+                subpanel="Color",
+            ),
+            ParameterBool(
+                name="paint_random",
+                default=_paint_random,
+                on_update=self._cb_paint_random,
+                subpanel="Color",
             ),
             ParameterColor(
                 name="color_BBOX_selected",
@@ -121,18 +126,21 @@ class Settings:
                 default=_random_color_brightness,
                 on_update=self._cb_random_color_brightness,
                 limits=(0.001, 1),
+                subpanel="Color",
             ),
             ParameterFloat(
                 name="original_color_brightness",
                 default=_original_color_brightness,
                 on_update=self._cb_original_color_brightness,
                 limits=(0.001, 1),
+                subpanel="Color",
             ),
             ParameterFloat(
                 name="highlight_ratio",
                 default=_highlight_ratio,
                 on_update=self._cb_highlight_ratio,
                 limits=(0.01, 1),
+                subpanel="Color",
             ),
             ParameterInt(
                 name="number_undo_states",
@@ -193,8 +201,21 @@ class Settings:
         elements = self._editor_instance.elements
         elements.update_all()
 
+    def _cb_debug(self, value):
+        pass
+
+    def _cb_verbose(self, value):
+        pass
+
+    def _cb_BBOX_expand(self, value):
+        self._editor_instance._update_current_bounding_box()
+
     def _cb_paint_selected(self, value):
         self._editor_instance._update_elements(None)
+
+    def _cb_color_selected(self, value):
+        indices = np.where(self._editor_instance.elements.selected)[0].tolist()
+        self._editor_instance._update_elements(indices)
 
     def _cb_paint_random(self, value):
         elements = self._editor_instance.elements
@@ -208,15 +229,6 @@ class Settings:
                 elem._brightness = self._dict["original_color_brightness"].value
 
         self._editor_instance._update_elements(None)
-
-    def _cb_debug(self, value):
-        pass
-
-    def _cb_verbose(self, value):
-        pass
-
-    def _cb_BBOX_expand(self, value):
-        self._editor_instance._update_current_bounding_box()
 
     def _cb_color_BBOX_selected(self, value):
         if self._editor_instance.is_current_selected:
@@ -265,10 +277,6 @@ class Settings:
         self._editor_instance._future_states = self._editor_instance._future_states[
             -value:
         ]
-
-    def _cb_color_selected(self, value):
-        indices = np.where(self._editor_instance.elements.selected)[0].tolist()
-        self._editor_instance._update_elements(indices)
 
     def _cb_color_unselected(self, value):
         unselected = ~np.array(self._editor_instance.elements.selected)

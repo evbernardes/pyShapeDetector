@@ -308,7 +308,7 @@ class Extension:
         app = editor_instance.app
 
         temp_window = app.create_window(
-            f"Parameter selection for {self.name}",
+            f"{self.name}",
             500,
             100 * (len(self.parameters)),
         )
