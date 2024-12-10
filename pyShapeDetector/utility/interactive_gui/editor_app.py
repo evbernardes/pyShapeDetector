@@ -22,14 +22,6 @@ from open3d.visualization import gui, rendering
 from .element_container import ElementContainer
 
 
-from .helpers import (
-    extract_element_colors,
-    set_element_colors,
-    get_painted_element,
-    get_distance_checker,
-)
-
-
 class Editor:
     """
     Editor Graphical Interface to manually select elements and apply functions to
@@ -183,20 +175,6 @@ class Editor:
                 if extension.hotkey is not None:
                     key_mappings[extension.hotkey] = extension
         return key_mappings
-
-    def _create_extension_menu_items(self):
-        """Add menu items for each extension"""
-        if self.extensions is not None:
-            for extension in self.extensions:
-                try:
-                    extension.add_menu_item()
-
-                except Exception:
-                    warnings.warn(
-                        f"Could not add extension {extension} to application, got:"
-                    )
-                    traceback.print_exc()
-                    self._extensions.pop(extension)
 
     @property
     def select_filter(self):
@@ -427,7 +405,6 @@ class Editor:
         )
         for extension in self.extensions:
             extension.binding.add_to_menu(self)
-        # self._create_extension_menu_items()
 
         # 4) Finally, other menus (so that they are at the end)
         self._settings._create_menu()
