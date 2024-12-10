@@ -10,10 +10,13 @@ from open3d.visualization import gui
 
 from .editor_app import Editor
 from .parameter import Parameter
-from .helpers import get_pretty_name
 from .binding import Binding
 
 VALID_INPUTS = ("current", "selected", "global")
+
+
+def get_pretty_name(func):
+    return func.__name__.replace("_", " ").title()
 
 
 class Extension:
