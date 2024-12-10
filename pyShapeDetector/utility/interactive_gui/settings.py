@@ -18,7 +18,8 @@ COLOR_UNSELECTED_DEFAULT = np.array([76.5, 76.5, 76.5]) / 255
 
 # DEFAULT VALUES
 _draw_boundary_lines = True
-_PointCloud_point_size = 3
+_line_width = 7
+_PointCloud_point_size = 5
 _mesh_show_back_face = True
 _paint_selected = True
 _color_selected = gui.Color(*COLOR_SELECTED_DEFAULT)
@@ -47,6 +48,12 @@ class Settings:
                 name="draw_boundary_lines",
                 default=_draw_boundary_lines,
                 on_update=self._cb_draw_boundary_lines,
+            ),
+            ParameterFloat(
+                name="line_width",
+                default=_line_width,
+                on_update=self._cb_line_width,
+                limits=(1.5, 15),
             ),
             ParameterFloat(
                 name="PointCloud_point_size",
@@ -155,11 +162,21 @@ class Settings:
     def _cb_draw_boundary_lines(self):
         self._editor_instance._update_plane_boundaries()
 
+    def _cb_line_width(self):
+        line_width = self._dict["line_width"].value
+        self._editor_instance.material_line.line_width = (
+            line_width * self._editor_instance._window.scaling
+        )
+        self._editor_instance._update_plane_boundaries()
+        self._editor_instance._update_current_bounding_box()
+
     def _cb_PointCloud_point_size(self):
         from .element import ElementPointCloud
 
         point_size = self._dict["PointCloud_point_size"].value
-        self._editor_instance.material_regular.point_size = point_size
+        self._editor_instance.material_regular.point_size = (
+            point_size * self._editor_instance._window.scaling
+        )
         indices = np.where(
             [
                 isinstance(element, ElementPointCloud)

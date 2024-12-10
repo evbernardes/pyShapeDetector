@@ -1,25 +1,31 @@
 import warnings
 import copy
-from typing import List
+
+# from typing import List
 import numpy as np
 # from .element import Element
 
 
 class ElementContainer(list):
-    # class ElementContainer:
-    # @property
-    # def elements(self):
-    #     return self._elements
+    """
 
-    # def __getitem__(self, index):
-    #     return self.elements[index]
+    Class implementing a specialized list for containing Element instances.
 
-    # def __setitem__(self, index, value):
-    #     from .element import Element
+    Attributes
+    ----------
+    raw
+    drawable
+    selected
+    selected_indices
 
-    #     if not isinstance(value, Element):
-    #         raise TypeError("Can only directly add instances of Element to container.")
-    #     self.elements[index] = value
+    Methods
+    -------
+    insert_multiple
+    pop_multiple
+    get_distances_to_point
+    update_all
+
+    """
 
     def __repr__(self):
         return f"ElementContainer({len(self)} elements)"
@@ -28,11 +34,14 @@ class ElementContainer(list):
         super().__init__(elements)
         self._editor_instance = editor_instance
         self._is_color_fixed = is_color_fixed
-        # self._elements = []
 
     @property
     def raw(self):
         return [element.raw for element in self]
+
+    @property
+    def drawable(self):
+        return [element.drawable for element in self]
 
     @property
     def selected(self):
@@ -163,8 +172,7 @@ class ElementContainer(list):
 
     def get_distances_to_point(self, screen_point, screen_vector):
         """Called by Mouse callback to get distances to point when clicked."""
-        from pyShapeDetector.geometry import PointCloud
-        from pyShapeDetector.primitives import Primitive, Plane, Sphere
+        from pyShapeDetector.primitives import Plane
 
         screen_plane = Plane.from_normal_point(screen_vector, screen_point)
 

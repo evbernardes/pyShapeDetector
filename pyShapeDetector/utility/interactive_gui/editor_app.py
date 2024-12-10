@@ -46,35 +46,10 @@ class Editor:
         Name of window. If empty, just gives the number of elements.
         Default: "Shape Detector".
 
-    Extra Parameters (these can also be set in real time)
-    -----------------------------------------------------
-    draw_boundary_lines : boolean, optional
-        If True, draws the boundaries of planes as LineSets. Default: False.
-    mesh_show_back_face : optional, boolean
-        If True, shows back faces of surfaces and meshes. Default: True.
-    BBOX_expand : float, optional
-        Expands bounding boxes in all directions with this value. Default: 0.0.
-    paint_selected : boolean, optional
-        If True, paint selected elements, and not only their bounding boxes.
-        Default: True
-    paint_random : boolean, optional
-        If True, paint all elements with a random color. Default: False
-    number_points_distance : int, optional
-        Number of points in element distance calculator. Default: 30.
-    number_undo_states : int, optional
-        Number of states to save for undoing. Default: 10.
-    number_redo_states : int, optional
-        Number of states to save for redoing. Default: 5.
-    random_color_brightness : float, optional
-        Random colors are multiplied by this value to reduce their brightness,
-        creating bigger contrast with selected objects. Default: 2/3.
-    highlight_ratio : float, optional
-        Multiplier for color to show selected and current elements. Default: 0.3.
-    debug : boolean, optional
-        If True, prints debug information. Default: False.
-    verbose : boolean, optional
-        If both this and 'debug' are True, prints extra debug information.
-        Default: False.
+    Preferences
+    -----------
+        See: settings.Settings
+
 
 
     return_finish_flag : boolean, optional
@@ -216,12 +191,12 @@ class Editor:
         return self.current_element.selected
 
     @is_current_selected.setter
-    def is_current_selected(self, boolean_value):
+    def is_current_selected(self, boolean_value: bool):
         if not isinstance(boolean_value, bool):
             raise RuntimeError(f"Expected boolean, got {type(boolean_value)}.")
         if self.current_element is None:
             raise RuntimeError(
-                f"Error setting selected, current element does not exist."
+                "Error setting selected, current element does not exist."
             )
         self.current_element.selected = boolean_value
 
@@ -365,11 +340,15 @@ class Editor:
         self.material_regular = rendering.MaterialRecord()
         self.material_regular.base_color = [1.0, 1.0, 1.0, 1.0]  # White color
         self.material_regular.shader = "defaultUnlit"
-        self.material_regular.point_size = 3 * self._window.scaling
+        self.material_regular.point_size = (
+            self._get_preference("PointCloud_point_size") * self._window.scaling
+        )
 
         self.material_line = rendering.MaterialRecord()
         self.material_line.shader = "unlitLine"
-        self.material_line.line_width = 1.5 * self._window.scaling
+        self.material_line.line_width = (
+            self._get_preference("line_width") * self._window.scaling
+        )
 
         self._info = gui.Label("")
         self._info.visible = False
@@ -462,7 +441,7 @@ class Editor:
         num_elems = len(self.elements)
 
         if indices is None:
-            indices = range(len(self.elements))
+            indices = range(num_elems)
 
         if not isinstance(indices, (list, range)):
             indices = [indices]
@@ -564,18 +543,18 @@ class Editor:
 
         self._update_elements(indices)
 
-    def _reset_elements_in_gui(self, reset_fixed=False):
-        """Prepare elements for visualization"""
+    # def _reset_elements_in_gui(self, reset_fixed=False):
+    #     """Prepare elements for visualization"""
 
-        current_idx = copy.copy(min(self.i, len(self.elements) - 1))
-        if reset_fixed:
-            self.elements_fixed.update_all()
-        else:
-            self.elements.update_all()
+    #     current_idx = copy.copy(min(self.i, len(self.elements) - 1))
+    #     if reset_fixed:
+    #         self.elements_fixed.update_all()
+    #     else:
+    #         self.elements.update_all()
 
-        self._update_plane_boundaries()
-        self._update_current_bounding_box()
-        self._update_current_idx(current_idx)
+    #     self._update_plane_boundaries()
+    #     self._update_current_bounding_box()
+    #     self._update_current_idx(current_idx)
 
     def run(self):
         self.print_debug(f"Starting {type(self).__name__}.")

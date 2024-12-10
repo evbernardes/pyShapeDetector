@@ -24,9 +24,57 @@ line_elements = (LineSet, AxisAlignedBoundingBox, OrientedBoundingBox)
 
 
 class Element(ABC):
-    @property
-    def brightness(self):
-        return self._brightness
+    """
+
+    Abstract class for encapsulation of elements.
+
+    The inherited classes are:
+
+        ElementPrimitive:
+        - For instances of pyShapeDetector.primitive.Primitive
+
+        ElementGeometry:
+        - For instances of pyShapeDetector.geometry.Numpy_Geometry
+
+        ElementPointCloud
+        - For instances of pyShapeDetector.geometry.Numpy_Geometry.PointCloud
+
+        ElementTriangleMesh
+        - For instances of pyShapeDetector.geometry.Numpy_Geometry.TriangleMesh
+
+    Attributes
+    ----------
+       `name`: Strind ID of object, to add to 3DScene
+       `raw`: Either a Primitive instance or a Numpy Geometry
+       `drawable`: An instance of Open3D Geometry that can be added to the 3DScene
+       `selected`: A flag indicating whether the element is selected or not
+       `current`: A flag indicating whether the element is the current one
+       `distance_checker`: Either a simplified PointCloud or a Primitive, to
+       detect distances to the screen when clicking.
+       `brightness`: Color brightness
+       `color_original`: The original color when created
+       `color`: The current color, either equal to original or a random one
+       `is_color_fixed`: Flag indicating whether the color and brightness can be updated
+
+    Methods
+    -------
+       `_parse_raw`: check if raw element is compatible
+       `_get_drawable`: set Open3D geometry
+       `_get_distance_checker`: gets element for distance checking
+       `_get_bbox`: gets element's bounding box
+       `_extract_drawable_color`: return current color of drawable, used at init
+       `_update_drawable_color`: sets drawable for new color
+       `_get_dimmed_color`: get dimmed version of desired color
+       `add_to_scene`: adds element to 3DScene
+       `remove_from_scene`: removes elemnt from 3DScene
+       `update_on_scene`: updates element on 3DScene
+       `update`: updates element
+
+    Static Methods
+    --------------
+       `get_from_type`: gets an instance of appropriate type
+
+    """
 
     @property
     def name(self):
@@ -57,6 +105,10 @@ class Element(ABC):
     @property
     def distance_checker(self):
         return self._distance_checker
+
+    @property
+    def brightness(self):
+        return self._brightness
 
     @property
     def color_original(self):
@@ -140,6 +192,19 @@ class Element(ABC):
         elif hasattr(self.drawable, "color"):
             self._drawable.color = color
 
+    def _get_dimmed_color(self, color):
+        highlight_ratio = (
+            self._editor_instance._get_preference("highlight_ratio") * self._brightness
+        )
+
+        brightness = self._brightness
+        if self.current:
+            brightness += highlight_ratio
+        if self.selected:
+            brightness += highlight_ratio
+
+        return np.clip(color * brightness, 0, 1)
+
     def add_to_scene(self):
         # drawable = self.drawable
         if isinstance(self.raw, line_elements):
@@ -177,19 +242,6 @@ class Element(ABC):
                 require_verbose=True,
             )
             self.update_on_scene()
-
-    def _get_dimmed_color(self, color):
-        highlight_ratio = (
-            self._editor_instance._get_preference("highlight_ratio") * self._brightness
-        )
-
-        brightness = self._brightness
-        if self.current:
-            brightness += highlight_ratio
-        if self.selected:
-            brightness += highlight_ratio
-
-        return np.clip(color * brightness, 0, 1)
 
     def __init__(
         self,
