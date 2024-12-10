@@ -11,8 +11,9 @@ from .parameter import (
     ParameterColor,
 )
 
-color_BBOX_selected_DEFAULT = np.array([0, 204.8, 0.0]) / 255
-color_BBOX_unselected_DEFAULT = np.array([255.0, 0.0, 0.0]) / 255
+COLOR_BBOX_SELECTED_DEFAULT = np.array([0, 204.8, 0.0]) / 255
+# color_BBOX_unselected_DEFAULT = np.array([255.0, 0.0, 0.0]) / 255
+COLOR_BBOX_UNSELECTED_DEFAULT = np.array([146.0, 3.0, 3.0]) / 255
 COLOR_SELECTED_DEFAULT = np.array([178.5, 163.8, 0.0]) / 255
 COLOR_UNSELECTED_DEFAULT = np.array([76.5, 76.5, 76.5]) / 255
 
@@ -26,9 +27,12 @@ _color_selected = gui.Color(*COLOR_SELECTED_DEFAULT)
 _paint_random = False
 _debug = False
 _verbose = False
-_BBOX_expand = 0.1
-_color_BBOX_selected = gui.Color(*color_BBOX_selected_DEFAULT)
-_color_BBOX_unselected = gui.Color(*color_BBOX_unselected_DEFAULT)
+_BBOX_expand = 0.01
+_color_BBOX_selected = gui.Color(*COLOR_BBOX_SELECTED_DEFAULT)
+_color_BBOX_unselected = gui.Color(*COLOR_BBOX_UNSELECTED_DEFAULT)
+_show_BBOX = True
+_show_BBOX_axes = False
+_BBOX_axes_width = 0.01
 _number_points_distance = 30
 _random_color_brightness = 0.5
 _original_color_brightness = 0.5
@@ -83,19 +87,38 @@ class Settings:
                 default=_BBOX_expand,
                 limits=(0, 2),
                 on_update=self._cb_BBOX_expand,
-                subpanel="Bounding Box",
+                subpanel="Bounding Box and axes",
             ),
             ParameterColor(
                 name="color_BBOX_selected",
                 default=_color_BBOX_selected,
                 on_update=self._cb_color_BBOX_selected,
-                subpanel="Bounding Box",
+                subpanel="Bounding Box and axes",
             ),
             ParameterColor(
                 name="color_BBOX_unselected",
                 default=_color_BBOX_unselected,
                 on_update=self._cb_color_BBOX_unselected,
-                subpanel="Bounding Box",
+                subpanel="Bounding Box and axes",
+            ),
+            ParameterBool(
+                name="show_BBOX",
+                default=_show_BBOX,
+                on_update=self._cb_show_BBOX,
+                subpanel="Bounding Box and axes",
+            ),
+            ParameterBool(
+                name="show_BBOX_axes",
+                default=_show_BBOX_axes,
+                on_update=self._cb_show_BBOX_axes,
+                subpanel="Bounding Box and axes",
+            ),
+            ParameterFloat(
+                name="BBOX_axes_width",
+                default=_BBOX_axes_width,
+                on_update=self._cb_BBOX_axes_width,
+                subpanel="Bounding Box and axes",
+                limits=(0.01, 0.5),
             ),
             ParameterBool(
                 name="paint_selected",
@@ -179,7 +202,7 @@ class Settings:
             value * self._editor_instance._window.scaling
         )
         self._editor_instance._update_plane_boundaries()
-        self._editor_instance._update_current_bounding_box()
+        self._editor_instance._update_BBOX_and_axes()
 
     def _cb_PointCloud_point_size(self, value):
         from .element import ElementPointCloud
@@ -208,15 +231,24 @@ class Settings:
         pass
 
     def _cb_BBOX_expand(self, value):
-        self._editor_instance._update_current_bounding_box()
+        self._editor_instance._update_BBOX_and_axes()
 
     def _cb_color_BBOX_selected(self, value):
         if self._editor_instance.is_current_selected:
-            self._editor_instance._update_current_bounding_box()
+            self._editor_instance._update_BBOX_and_axes()
 
     def _cb_color_BBOX_unselected(self, value):
         if not self._editor_instance.is_current_selected:
-            self._editor_instance._update_current_bounding_box()
+            self._editor_instance._update_BBOX_and_axes()
+
+    def _cb_show_BBOX(self, value):
+        self._editor_instance._update_BBOX_and_axes()
+
+    def _cb_show_BBOX_axes(self, value):
+        self._editor_instance._update_BBOX_and_axes()
+
+    def _cb_BBOX_axes_width(self, value):
+        self._editor_instance._update_BBOX_and_axes()
 
     def _cb_paint_selected(self, value):
         self._editor_instance._update_elements(None)

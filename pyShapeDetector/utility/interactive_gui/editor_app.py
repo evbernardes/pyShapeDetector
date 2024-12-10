@@ -71,6 +71,7 @@ class Editor:
         self._elements_fixed = ElementContainer(self, is_color_fixed=True)
         self._pre_selected = []
         self._current_bbox = None
+        self._current_bbox_axes = None
         self._extensions = []
         self._last_used_extension = None
         self._select_filter = lambda x: True
@@ -422,24 +423,62 @@ class Editor:
 
         self._plane_boundaries = plane_boundaries
 
-    def _update_current_bounding_box(self):
+    def _update_BBOX_and_axes(self):
         """Remove bounding box and get new one for current element."""
+        from pyShapeDetector.geometry import TriangleMesh
 
         self.print_debug("Updating bounding box...", require_verbose=True)
 
-        name = "CurrentBoundingBox"
-
         if self._current_bbox is not None:
-            self._scene.scene.remove_geometry(name)
+            self._scene.scene.remove_geometry("CurrentBoundingBox")
+            self._current_bbox = None
 
-        if self.current_element is None:
+        if self._current_bbox_axes is not None:
+            self._scene.scene.remove_geometry("BBOXAxisX")
+            self._scene.scene.remove_geometry("BBOXAxisY")
+            self._scene.scene.remove_geometry("BBOXAxisZ")
+            self._current_bbox_axes
+
+        if self.current_element is None or not self._get_preference("show_BBOX"):
             self._current_bbox = None
             return
 
         self._current_bbox = self.current_element._get_bbox().as_open3d
 
         if self._current_bbox is not None:
-            self._scene.scene.add_geometry(name, self._current_bbox, self.material_line)
+            self._scene.scene.add_geometry(
+                "CurrentBoundingBox", self._current_bbox, self.material_line
+            )
+
+        if self._current_bbox is not None and self._get_preference("show_BBOX_axes"):
+            center = self._current_bbox.center
+            extent = self._current_bbox.extent
+            R = self._current_bbox.R
+            radius = self._get_preference("BBOX_axes_width") * self._window.scaling
+
+            min_bound = center - extent.dot(R.T) / 2
+            vx = TriangleMesh.create_arrow_from_points(
+                min_bound, min_bound + extent[0] * R.dot([1, 0, 0]), radius=radius
+            )
+            vx.paint_uniform_color([1, 0, 0])
+            vy = TriangleMesh.create_arrow_from_points(
+                min_bound, min_bound + extent[1] * R.dot([0, 1, 0]), radius=radius
+            )
+            vy.paint_uniform_color([0, 1, 0])
+            vz = TriangleMesh.create_arrow_from_points(
+                min_bound, min_bound + extent[2] * R.dot([0, 0, 1]), radius=radius
+            )
+            vz.paint_uniform_color([0, 0, 1])
+            self._scene.scene.add_geometry(
+                "BBOXAxisX", vx.as_open3d, self.material_regular
+            )
+            self._scene.scene.add_geometry(
+                "BBOXAxisY", vy.as_open3d, self.material_regular
+            )
+            self._scene.scene.add_geometry(
+                "BBOXAxisZ", vz.as_open3d, self.material_regular
+            )
+            self._current_bbox_axes = (vx, vy, vz)
 
     def _update_elements(self, indices, update_gui=True):
         num_elems = len(self.elements)
@@ -517,7 +556,7 @@ class Editor:
         self._update_elements(self.i)
         if update_old:
             self._update_elements(self.i_old)
-        self._update_current_bounding_box()
+        self._update_BBOX_and_axes()
 
     def _get_range(self, indices_or_slice):
         if isinstance(indices_or_slice, (range, list, np.ndarray)):
