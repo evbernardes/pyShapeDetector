@@ -64,7 +64,3 @@ For more examples, see the `examples` directory.
 
 `TODO`
 
-## License
-
-`TODO`
-
