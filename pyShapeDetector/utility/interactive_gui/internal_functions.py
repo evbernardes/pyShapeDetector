@@ -356,6 +356,7 @@ class InternalFunctions:
 
         temp_window = editor_instance.app.create_window("Select type", 200, 400)
         temp_window.show_menu(False)
+        self._editor_instance._temp_windows.append(temp_window)
 
         def _callback(_type, value):
             is_type = [isinstance(elem.raw, _type) for elem in editor_instance.elements]
@@ -382,6 +383,7 @@ class InternalFunctions:
 
         def _on_ok():
             temp_window.close()
+            self._editor_instance._temp_windows.remove(temp_window)
 
         ok = gui.Button("Ok")
         ok.set_on_clicked(_on_ok)

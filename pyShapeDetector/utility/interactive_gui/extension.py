@@ -313,6 +313,7 @@ class Extension:
             100 * (5 + len(self.parameters)),
         )
         temp_window.show_menu(False)
+        self._editor_instance._temp_windows.append(temp_window)
         em = temp_window.theme.font_size
 
         self._ran_at_least_once = False
@@ -347,6 +348,7 @@ class Extension:
                     param.value = previous_values[key]
 
             temp_window.close()
+            self._editor_instance._temp_windows.remove(temp_window)
 
         apply = gui.Button("Apply")
         apply.set_on_clicked(_on_apply)

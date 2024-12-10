@@ -79,6 +79,7 @@ class Editor:
         self._submenu_id_generator = itertools.count(1, 1)
         self._submenus = {}
         self._closing_app = False
+        self._temp_windows = []
 
         # self._elements_distance = []
         self.i_old = 0
@@ -252,6 +253,8 @@ class Editor:
             return False
 
         # self.elements.insert_multiple(self._hidden_elements.raw, to_gui=False)
+        for window in self._temp_windows:
+            window.close()
         return True
 
     def _on_mouse(self, event):
