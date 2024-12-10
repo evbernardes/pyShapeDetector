@@ -12,7 +12,7 @@ from .editor_app import Editor
 from .parameter import Parameter
 from .binding import Binding
 
-VALID_INPUTS = ("current", "selected", "global")
+VALID_INPUTS = ("none", "current", "selected", "global")
 
 
 def get_pretty_name(func):
@@ -146,13 +146,27 @@ class Extension:
         if not isinstance(parameter_descriptors, dict):
             raise TypeError("parameters expected to be dict.")
 
+        expected_args_len = len(parameter_descriptors) + int(self.inputs != "none")
+
+        if len(signature.parameters) != expected_args_len:
+            if self.inputs == "none":
+                raise ValueError(
+                    f"Invalid number of arguments for function in Extension '{self.name}', with "
+                    f"input type '{self.inputs}'. Expected {len(parameter_descriptors)} "
+                    f"parameters, got '{len(signature.parameters)}'."
+                )
+            else:
+                raise ValueError(
+                    f"Invalid number of arguments for function in Extension '{self.name}', with "
+                    f"input type '{self.inputs}'. Expected main input + {len(parameter_descriptors)-1} "
+                    f"parameters, got '{len(signature.parameters)}'."
+                )
+
         for key, parameter_descriptor in parameter_descriptors.items():
             if key not in signature.parameters.keys():
                 raise ValueError(
                     f"Function '{self.function.__name__}' from extension '{self.name}' does not take parameter '{key}'."
                 )
-            # parameter_type = PARAMETER_TYPE_DICTIONARY[parameter.get("type")]
-            # parsed_parameters[key] = parameter_type(key, parameter)
             parsed_parameters[key] = Parameter.create_from_dict(
                 key, parameter_descriptor
             )
@@ -161,10 +175,15 @@ class Extension:
 
     def _set_misc(self, descriptor: dict):
         inputs = descriptor.get("inputs", "selected")
+
+        if inputs is None:
+            inputs = "none"
+
         if inputs not in VALID_INPUTS:
             raise ValueError(
                 f"Possible values for 'inputs' are {VALID_INPUTS}, got {inputs}."
             )
+
         self._inputs = inputs
         self._keep_inputs = bool(descriptor.get("keep_inputs", False))
         select_outputs = bool(descriptor.get("select_outputs", False))
@@ -189,8 +208,8 @@ class Extension:
         self._set_name(descriptor)
         self._set_menu(descriptor)
         self._set_hotkey(descriptor)
-        self._set_parameters(descriptor)
         self._set_misc(descriptor)
+        self._set_parameters(descriptor)
 
         self._binding = Binding(
             key=self.hotkey,
@@ -223,7 +242,10 @@ class Extension:
     def _apply_to_elements(self):
         editor_instance = self._editor_instance
 
-        if self.inputs == "current":
+        if self.inputs == "none":
+            indices = []
+            input_elements = []
+        elif self.inputs == "current":
             indices = [editor_instance.i]
             input_elements = [editor_instance.current_element.raw]
         elif self.inputs == "selected":
@@ -246,7 +268,11 @@ class Extension:
             editor_instance.print_debug(f"Parameters: {self.parameters}.")
 
         try:
-            output_elements = self.function(input_elements, **self.parameters_kwargs)
+            kwargs = self.parameters_kwargs
+            if self.inputs == "none":
+                output_elements = self.function(**kwargs)
+            else:
+                output_elements = self.function(input_elements, **kwargs)
         except KeyboardInterrupt:
             return
         except Exception as e:

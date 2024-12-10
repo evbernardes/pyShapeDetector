@@ -71,7 +71,7 @@ class Editor:
         self._elements_fixed = ElementContainer(self, is_color_fixed=True)
         self._pre_selected = []
         self._current_bbox = None
-        self._extensions = None
+        self._extensions = []
         self._last_used_extension = None
         self._select_filter = lambda x: True
         self.window_name = window_name
