@@ -308,14 +308,16 @@ class Extension:
         app = editor_instance.app
 
         temp_window = app.create_window(
-            f"Parameter selection for {self.name}", 400, 600
+            f"Parameter selection for {self.name}",
+            500,
+            100 * (5 + len(self.parameters)),
         )
         temp_window.show_menu(False)
         em = temp_window.theme.font_size
 
         self._ran_at_least_once = False
 
-        separation_height = int(round(0.5 * em))
+        separation_height = int(round(0.1 * em))
         button_separation_width = 2 * separation_height
 
         # dlg = gui.Dialog("Parameter selection")
