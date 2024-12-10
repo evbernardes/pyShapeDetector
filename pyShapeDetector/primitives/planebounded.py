@@ -23,9 +23,14 @@ from importlib.util import find_spec
 
 if has_mapbox_earcut := find_spec("mapbox_earcut") is not None:
     from mapbox_earcut import triangulate_float32
+if not has_mapbox_earcut:
+    warnings.warn(
+        "Optional dependency 'mapbox_earcut' not found, "
+        "PlaneBounded triangulation will not work well."
+    )
 
 if has_shapely := find_spec("shapely") is not None:
-    from shapely.geometry import Polygon, MultiPolygon
+    from shapely.geometry import Polygon
     from shapely.ops import unary_union
 
 
@@ -1070,7 +1075,7 @@ class PlaneBounded(Plane):
             self.remove_repeated_vertices()
 
         if use_shapely and not has_shapely:
-            raise RuntimeError(
+            raise ImportError(
                 "use_shapely option cannot be used because shapely is not installed."
             )
 

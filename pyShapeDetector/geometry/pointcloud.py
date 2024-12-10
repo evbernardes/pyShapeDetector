@@ -11,6 +11,7 @@ import numpy as np
 import multiprocessing
 import time
 import warnings
+from importlib.util import find_spec
 
 from open3d.geometry import PointCloud as open3d_PointCloud
 from open3d.geometry import KDTreeFlann
@@ -21,7 +22,10 @@ from .oriented_bounding_box import OrientedBoundingBox
 
 from scipy.spatial.distance import cdist
 
-import h5py
+if has_h5py := find_spec("h5py") is not None:
+    import h5py
+
+
 from sklearn.neighbors import KDTree
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
@@ -349,6 +353,8 @@ class PointCloud(Numpy_Geometry):
         # print(filename)
 
         if filepath.suffix == ".h5":
+            if not has_h5py:
+                raise ImportError("h5py library is necessary to read h5 files.")
             f = h5py.File(filepath, "r")
             labels = np.asarray(f["gt_labels"])
             points = f["gt_points"]

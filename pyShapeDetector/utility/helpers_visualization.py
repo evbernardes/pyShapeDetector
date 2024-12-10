@@ -18,14 +18,19 @@ Created on Wed Feb 28 10:59:02 2024
 """
 import copy
 import warnings
-import signal
-import sys
-import matplotlib.pyplot as plt
+from importlib.util import find_spec
 import numpy as np
 from multiprocessing import Manager, Process
 from open3d import visualization
 
 from .interactive_gui.editor_app import Editor
+
+if has_matplotlib := find_spec("matplotlib") is not None:
+    import matplotlib.pyplot as plt
+if not has_matplotlib:
+    warnings.warn(
+        "Optional dependency 'Matplotlib' not found",
+    )
 
 # from .interactive_window import InteractiveWindow
 from .input_selector import InputSelector, SingleChoiceSelector
@@ -182,6 +187,10 @@ def get_painted(elements, color="random"):
         if color == "random":
             colors = np.random.random((len(elements), 3))
         else:
+            if not has_matplotlib:
+                raise ImportError(
+                    "Calling get_painted called with cmap string requires matplotlib."
+                )
             color_map = plt.get_cmap(color)
             colors = [color_map(i)[:3] for i in range(len(elements))]
 
@@ -578,9 +587,10 @@ def apply_function_manually(
     element_selector = Editor(**kwargs)
     # element_selector.add_elements(elements, pre_selected=pre_selected)
     # for element, selected in zip(elements, pre_selected):
-    element_selector.elements.insert_multiple(elements, selected=pre_selected, to_gui=False)
+    element_selector.elements.insert_multiple(
+        elements, selected=pre_selected, to_gui=False
+    )
     element_selector.elements_fixed.insert_multiple(fixed_elements, to_gui=False)
-
 
     for function in functions:
         element_selector.add_extension(function)
