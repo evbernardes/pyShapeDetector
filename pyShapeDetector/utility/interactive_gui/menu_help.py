@@ -101,8 +101,6 @@ class MenuHelp:
             gui.Label(
                 "Developed by:\n\n\tEvandro Bernardes"
                 "\n\nAt:\n\n\tVrije Universiteit Brussel (VUB)"
-                "\n\nFunding:\n\n\tFlanders Make"
-                "\n\n\n\nMore information at:\n\thttps://github.com/evbernardes/pyShapeDetector"
             )
         )
 
