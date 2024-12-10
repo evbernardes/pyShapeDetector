@@ -356,6 +356,12 @@ class ElementPointCloud(ElementGeometry):
             pcd = self.raw
         self._distance_checker = PointCloud(pcd)
 
+    # TODO: check if this can be implemented, maybe with Tensor geometries
+    # def update_on_scene(self):
+    #     self._editor_instance._scene.scene.scene.update_geometry(
+    #         self.name, self.drawable
+    #     )
+
 
 class ElementTriangleMesh(ElementGeometry):
     @staticmethod
