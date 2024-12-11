@@ -10,6 +10,10 @@ class Parameter:
     _type = None.__class__
 
     @property
+    def internal_element(self):
+        return self._internal_element
+
+    @property
     def type_name(self):
         return self._type.__name__
 
@@ -106,7 +110,7 @@ class Parameter:
 
         # Text field for general inputs
         text_edit = gui.TextEdit()
-        text_edit.placeholder_text = str(self.value)
+        # text_edit.placeholder_text = str(self.value)
         text_edit.set_on_value_changed(lambda value: self._callback(value, text_edit))
 
         element = gui.VGrid(2, 0.25 * font_size)
@@ -145,12 +149,12 @@ class ParameterBool(Parameter):
     @Parameter.value.setter
     def value(self, new_value):
         self._value = bool(new_value)
+        self.internal_element.checked = self.value
 
     def get_gui_element(self, font_size):
-        element = gui.Checkbox(self.pretty_name + "?")
-        element.checked = self.value
-        element.set_on_checked(self._callback)
-        return element
+        checkbox = self.internal_element
+        checkbox.set_on_checked(self._callback)
+        return checkbox
 
     def __init__(
         self,
@@ -161,6 +165,7 @@ class ParameterBool(Parameter):
         **other_kwargs,
     ):
         super().__init__(name=name, on_update=on_update, subpanel=subpanel)
+        self._internal_element = gui.Checkbox(self.pretty_name + "?")
         self.value = default
         self._warn_unused_parameters(other_kwargs)
 
@@ -192,6 +197,9 @@ class ParameterOptions(Parameter):
 
         self._value = new_value
 
+        options_strings = [str(option) for option in self.options]
+        self.internal_element.selected_index = options_strings.index(str(self.value))
+
     def _callback(self, text, index):
         self._value = self.options[index]
         self.on_update(self.value)
@@ -199,11 +207,7 @@ class ParameterOptions(Parameter):
     def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
 
-        combobox = gui.Combobox()
-        options_strings = [str(option) for option in self.options]
-        for option_string in self.options:
-            combobox.add_item(option_string)
-        combobox.selected_index = options_strings.index(str(self.value))
+        combobox = self.internal_element
         combobox.set_on_selection_changed(self._callback)
 
         element = gui.VGrid(2, 0.25 * font_size)
@@ -226,6 +230,11 @@ class ParameterOptions(Parameter):
 
         if default is None:
             default = options[0]
+
+        self._internal_element = gui.Combobox()
+        for option in self.options:
+            self._internal_element.add_item(str(option))
+
         self.value = default
 
         self._warn_unused_parameters(other_kwargs)
@@ -271,6 +280,11 @@ class ParameterInt(Parameter):
 
         self._value = new_value
 
+        if isinstance(self.internal_element, gui.Slider):
+            self.internal_element.int_value = self.value
+        else:
+            self.internal_element.text_value = str(self.value)
+
     @property
     def limits(self):
         return self._limits
@@ -288,6 +302,7 @@ class ParameterInt(Parameter):
 
         new_limits = (min(new_limits), max(new_limits))
         self._limits = new_limits
+        self.internal_element.set_limits(*self.limits)
 
     def _reset_values_and_limits(self, editor_instance: Editor):
         if self.limit_setter is None:
@@ -309,20 +324,16 @@ class ParameterInt(Parameter):
     def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
 
-        if self.limits is not None:
-            slider = gui.Slider(gui.Slider.INT)
-            slider.set_limits(*self.limits)
-            slider.int_value = self.value
+        if isinstance(self.internal_element, gui.Slider):
+            slider = self.internal_element
             slider.set_on_value_changed(self._callback)
 
             element = gui.VGrid(2, 0.25 * font_size)
             element.add_child(label)
             element.add_child(slider)
 
-        else:
-            # Text field for general inputs
-            text_edit = gui.TextEdit()
-            text_edit.placeholder_text = str(self.value)
+        elif isinstance(self.internal_element, gui.TextEdit):
+            text_edit = self.internal_element
             text_edit.set_on_value_changed(
                 lambda value: self._callback(value, text_edit)
             )
@@ -330,6 +341,11 @@ class ParameterInt(Parameter):
             element = gui.VGrid(2, 0.25 * font_size)
             element.add_child(label)
             element.add_child(text_edit)
+        else:
+            raise RuntimeError(
+                "ParameterInt internal element is neither a gui.Glider "
+                "nor a gui.TextEdit. This should never happen."
+            )
 
         return element
 
@@ -345,6 +361,12 @@ class ParameterInt(Parameter):
     ):
         super().__init__(name=name, on_update=on_update, subpanel=subpanel)
         self.limit_setter = limit_setter
+
+        if limits is not None and self.limit_setter is None:
+            self._internal_element = gui.Slider(gui.Slider.INT)
+        else:
+            # Text field for general inputs
+            self._internal_element = gui.TextEdit()
 
         if self.limit_setter is None:
             self.limits = limits
@@ -408,6 +430,11 @@ class ParameterFloat(Parameter):
 
         self._value = new_value
 
+        if isinstance(self.internal_element, gui.Slider):
+            self.internal_element.double_value = self.value
+        else:
+            self.internal_element.text_value = str(self.value)
+
     @property
     def limits(self):
         return self._limits
@@ -425,6 +452,7 @@ class ParameterFloat(Parameter):
 
         new_limits = (min(new_limits), max(new_limits))
         self._limits = new_limits
+        self.internal_element.set_limits(*self.limits)
 
     def _reset_values_and_limits(self, editor_instance: Editor):
         if self.limit_setter is None:
@@ -446,20 +474,18 @@ class ParameterFloat(Parameter):
     def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
 
-        if self.limits is not None:
-            slider = gui.Slider(gui.Slider.DOUBLE)
-            slider.set_limits(*self.limits)
-            slider.double_value = self.value
+        if isinstance(self.internal_element, gui.Slider):
+            slider = self.internal_element
             slider.set_on_value_changed(self._callback)
 
             element = gui.VGrid(2, 0.25 * font_size)
             element.add_child(label)
             element.add_child(slider)
 
-        else:
+        elif isinstance(self.internal_element, gui.TextEdit):
             # Text field for general inputs
-            text_edit = gui.TextEdit()
-            text_edit.placeholder_text = str(self.value)
+            text_edit = self.internal_element
+            # text_edit.placeholder_text = str(self.value)
             text_edit.set_on_value_changed(
                 lambda value: self._callback(value, text_edit)
             )
@@ -467,6 +493,12 @@ class ParameterFloat(Parameter):
             element = gui.VGrid(2, 0.25 * font_size)
             element.add_child(label)
             element.add_child(text_edit)
+
+        else:
+            raise RuntimeError(
+                "ParameterInt internal element is neither a gui.Glider "
+                "nor a gui.TextEdit. This should never happen."
+            )
 
         return element
 
@@ -482,6 +514,12 @@ class ParameterFloat(Parameter):
     ):
         super().__init__(name=name, on_update=on_update, subpanel=subpanel)
         self.limit_setter = limit_setter
+
+        if limits is not None and limit_setter is None:
+            self._internal_element = gui.Slider(gui.Slider.DOUBLE)
+        else:
+            # Text field for general inputs
+            self._internal_element = gui.TextEdit()
 
         if self.limit_setter is None:
             self.limits = limits
@@ -538,6 +576,7 @@ class ParameterColor(Parameter):
                 f"Value of parameter {self.name} of type {self.type_name} should "
                 f"be a gui.Color, a list or tuple of 3 values, got {values}."
             )
+        self.internal_element.color_value = self._value
 
     def _callback(self, value):
         old_value = self.value
@@ -548,8 +587,7 @@ class ParameterColor(Parameter):
     def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
 
-        color_selector = gui.ColorEdit()
-        color_selector.color_value = self._value
+        color_selector = self.internal_element
         color_selector.set_on_value_changed(self._callback)
 
         element = gui.VGrid(2, 0.25 * font_size)
@@ -567,6 +605,7 @@ class ParameterColor(Parameter):
         **other_kwargs,
     ):
         super().__init__(name=name, on_update=on_update, subpanel=subpanel)
+        self._internal_element = gui.ColorEdit()
         self.value = default
 
         self._warn_unused_parameters(other_kwargs)
@@ -618,6 +657,14 @@ class ParameterNDArray(Parameter):
         self._shape = new_value.shape
         self._value = np.atleast_2d(new_value)
 
+        if not hasattr(self, "_internal_element"):
+            return
+
+        for i in range(self._value.shape[0]):
+            for j in range(self._value.shape[1]):
+                text_edit = self.internal_element[i][j]
+                text_edit.text_value = str(self._value[i, j])
+
     def _callback(self, line, col, value, text_edit):
         try:
             self._value[line, col] = self.dtype(value)
@@ -628,12 +675,13 @@ class ParameterNDArray(Parameter):
     def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
 
+        text_edits = self.internal_element
+
         elements_array = gui.VGrid(self._value.shape[0], 0.25 * font_size)
         for i in range(self._value.shape[0]):
             elements_line = gui.Horiz(0.25 * font_size)
             for j in range(self._value.shape[1]):
-                text_edit = gui.TextEdit()
-                text_edit.placeholder_text = str(self._value[i, j])
+                text_edit = text_edits[i][j]
                 text_edit.set_on_value_changed(
                     lambda value, line=i, col=j, t=text_edit: self._callback(
                         line, col, value, t
@@ -658,7 +706,14 @@ class ParameterNDArray(Parameter):
         **other_kwargs,
     ):
         super().__init__(name=name, on_update=on_update, subpanel=subpanel)
+
         self.value = default
+        shape = self._value.shape
+        self._internal_element = [
+            [gui.TextEdit() for col in range(shape[1])] for line in range(shape[0])
+        ]
+        # Setting value on internal element
+        self.value = self.value
 
         self._warn_unused_parameters(other_kwargs)
 
