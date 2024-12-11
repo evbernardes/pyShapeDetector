@@ -11,6 +11,7 @@ from open3d.visualization import gui
 from .editor_app import Editor
 from .parameter import Parameter, ParameterPanel
 from .binding import Binding
+from .settings import Settings
 
 VALID_INPUTS = ("none", "current", "selected", "global")
 
@@ -138,7 +139,7 @@ class Extension:
         else:
             self._lshift = bool(lshift)
 
-    def _set_parameters(self, descriptor: dict):
+    def _set_parameters(self, descriptor: dict, settings: Settings):
         signature = inspect.signature(self.function)
         parsed_parameters = {}
         parameter_descriptors = descriptor.get("parameters", {})
@@ -163,10 +164,24 @@ class Extension:
                 )
 
         for key, parameter_descriptor in parameter_descriptors.items():
+            if parameter_descriptor["type"] == "preference":
+                if key not in settings._dict:
+                    raise KeyError(
+                        f"Parameter '{key}' of type 'settings' in extension "
+                        f"'{self.name}' could not found in internal setting "
+                        "options."
+                    )
+                parsed_parameters[key] = settings._dict[key].create_reference()
+                parsed_parameters[key]._subpanel = parameter_descriptor.get(
+                    "subpanel", None
+                )
+                continue
+
             if key not in signature.parameters.keys():
                 raise ValueError(
                     f"Function '{self.function.__name__}' from extension '{self.name}' does not take parameter '{key}'."
                 )
+
             parsed_parameters[key] = Parameter.create_from_dict(
                 key, parameter_descriptor
             )
@@ -194,7 +209,9 @@ class Extension:
             )
         self._select_outputs = select_outputs
 
-    def __init__(self, function_or_descriptor: Union[Callable, dict]):
+    def __init__(
+        self, function_or_descriptor: Union[Callable, dict], settings: Settings
+    ):
         if isinstance(function_or_descriptor, dict):
             if "function" not in function_or_descriptor:
                 raise ValueError("Dict descriptor does not contain 'function'.")
@@ -209,7 +226,7 @@ class Extension:
         self._set_menu(descriptor)
         self._set_hotkey(descriptor)
         self._set_misc(descriptor)
-        self._set_parameters(descriptor)
+        self._set_parameters(descriptor, settings)
 
         self._binding = Binding(
             key=self.hotkey,

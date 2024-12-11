@@ -137,7 +137,7 @@ class Editor:
         from .extension import Extension
 
         try:
-            extension = Extension(function_or_descriptor)
+            extension = Extension(function_or_descriptor, self._settings)
             extension.add_to_application(self)
 
         except Exception:

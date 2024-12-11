@@ -19,6 +19,7 @@ COLOR_SELECTED_DEFAULT = np.array([178.5, 163.8, 0.0]) / 255
 COLOR_UNSELECTED_DEFAULT = np.array([76.5, 76.5, 76.5]) / 255
 
 # DEFAULT VALUES
+_PointCloud_density = 0.00224
 _draw_boundary_lines = True
 _line_width = 7
 _PointCloud_point_size = 5
@@ -49,6 +50,11 @@ class Settings:
 
     def __init__(self, editor_instance: Editor, menu="Preferences", **kwargs):
         options = [
+            ParameterFloat(
+                name="PointCloud_density",
+                default=_PointCloud_density,
+                on_update=self._cb_PointCloud_density,
+            ),
             ParameterBool(
                 name="draw_boundary_lines",
                 default=_draw_boundary_lines,
@@ -193,6 +199,9 @@ class Settings:
                         f"Could not initialize value of preference {key} to {value}."
                     )
                     setattr(self, key, value)
+
+    def _cb_PointCloud_density(self, value):
+        pass
 
     def _cb_draw_boundary_lines(self, value):
         self._editor_instance._update_plane_boundaries()

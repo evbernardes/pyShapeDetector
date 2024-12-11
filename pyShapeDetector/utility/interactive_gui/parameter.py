@@ -101,9 +101,14 @@ class Parameter:
         except Exception:
             if text_edit is not None:
                 text_edit.text_value = str(self.value)
+        self._update_references()
 
     def _reset_values_and_limits(self, editor_instance: Editor):
         pass
+
+    def _update_references(self):
+        for reference in self._references:
+            reference.value = self.value
 
     def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
@@ -138,9 +143,33 @@ class Parameter:
         on_update: Callable = None,
         subpanel: Union[str, None] = None,
     ):
+        self._references = []
         self.name = name
         self.on_update = on_update
         self.subpanel = subpanel
+
+    def create_reference(self):
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*Ignoring unexpected.*")
+            new_parameter = Parameter.create_from_dict(
+                self.name,
+                {
+                    "type": self.type,
+                    "default": self.value,
+                    "limits": getattr(self, "limits", None),
+                    "limit_setter": getattr(self, "limit_setter", None),
+                    "options": getattr(self, "options", None),
+                },
+            )
+
+        if isinstance(self.internal_element, list):
+            for elem in np.array(new_parameter.internal_element).flatten():
+                elem.enabled = False
+        else:
+            new_parameter.internal_element.enabled = False
+
+        self._references.append(new_parameter)
+        return new_parameter
 
 
 class ParameterBool(Parameter):
@@ -203,6 +232,7 @@ class ParameterOptions(Parameter):
     def _callback(self, text, index):
         self._value = self.options[index]
         self.on_update(self.value)
+        self._update_references()
 
     def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
@@ -583,6 +613,7 @@ class ParameterColor(Parameter):
         self._value = value
         if np.any(abs(self.value - old_value) > 1e-6):
             self.on_update(self.value)
+        self._update_references()
 
     def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
@@ -671,6 +702,7 @@ class ParameterNDArray(Parameter):
         except Exception:
             text_edit.text_value = str(self._value[line, col])
         self.on_update(self.value)
+        self._update_references()
 
     def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
@@ -716,6 +748,27 @@ class ParameterNDArray(Parameter):
         self.value = self.value
 
         self._warn_unused_parameters(other_kwargs)
+
+
+# class ParameterReference(Parameter):
+#     @property
+#     def referenced_parameter(self):
+#         return self._referenced_parameter
+
+#     @property
+#     def name(self):
+#         return self._referenced_parameter.name
+
+#     @property
+#     def type(self):
+#         return self._referenced_parameter.type
+
+#     @property
+#     def value(self):
+#         return self._referenced_parameter.value
+
+#     def __init__(self, referenced_parameter: Parameter):
+#         self._referenced_parameter = referenced_parameter
 
 
 PARAMETER_TYPE_DICTIONARY = {
