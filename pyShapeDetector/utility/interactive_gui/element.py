@@ -6,7 +6,10 @@ import numpy as np
 
 from .editor_app import Editor
 
+from open3d.visualization.rendering import Scene
 from open3d.geometry import Geometry as Open3d_Geometry
+from open3d.core import Tensor
+from open3d.t.geometry import PointCloud as TensorPointCloud
 
 from pyShapeDetector.primitives import Primitive
 
@@ -345,6 +348,25 @@ class ElementPointCloud(ElementGeometry):
         else:
             raise ValueError(f"Expected PointCloud instance, got {raw}.")
 
+    def _extract_drawable_color(self):
+        drawable = self.drawable
+        return drawable.point.colors.numpy()
+
+    def _update_drawable_color(self, color_input):
+        drawable = self.drawable
+        color = self._get_dimmed_color(color_input)
+
+        # drawable.point.colors = color
+        if color.shape == (3,):
+            drawable.paint_uniform_color(color.astype("float32"))
+        elif color.shape == drawable.point.colors.shape:
+            drawable.point.colors = Tensor(color.astype("float32"))
+        else:
+            warnings.warn("Could not paint Tensor-based drawable PointCloud.")
+
+    def _get_drawable(self):
+        self._drawable = TensorPointCloud.from_legacy(self.raw.as_open3d)
+
     def _get_distance_checker(self):
         number_points_distance = self._editor_instance._get_preference(
             "number_points_distance"
@@ -357,10 +379,13 @@ class ElementPointCloud(ElementGeometry):
         self._distance_checker = PointCloud(pcd)
 
     # TODO: check if this can be implemented, maybe with Tensor geometries
-    # def update_on_scene(self):
-    #     self._editor_instance._scene.scene.scene.update_geometry(
-    #         self.name, self.drawable
-    #     )
+    def update_on_scene(self):
+        self._editor_instance._scene.scene.scene.update_geometry(
+            self.name, self.drawable, Scene.UPDATE_COLORS_FLAG
+        )
+        self._editor_instance._scene.scene.scene.update_geometry(
+            self.name, self.drawable, Scene.UPDATE_POINTS_FLAG
+        )
 
 
 class ElementTriangleMesh(ElementGeometry):
