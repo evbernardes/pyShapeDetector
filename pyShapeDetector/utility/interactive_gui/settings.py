@@ -9,6 +9,7 @@ from .parameter import (
     # ParameterNDArray,
     # ParameterOptions,
     ParameterColor,
+    ParameterPanel,
 )
 
 COLOR_BBOX_SELECTED_DEFAULT = np.array([0, 204.8, 0.0]) / 255
@@ -338,25 +339,9 @@ class Settings:
             "Preferences", 0.25 * em, gui.Margins(em, 0, 0, 0)
         )
 
-        subpanels = {}
-
-        for preference in self._dict.values():
-            element = preference.get_gui_element(window)
-            if preference.subpanel is None:
-                _panel_collapsable.add_child(element)
-                _panel_collapsable.add_fixed(separation_height)
-                continue
-
-            if preference.subpanel not in subpanels:
-                subpanel = gui.CollapsableVert(
-                    preference.subpanel, 0.25 * em, gui.Margins(em, 0, 0, 0)
-                )
-                subpanels[preference.subpanel] = subpanel
-                _panel_collapsable.add_child(subpanel)
-                subpanel.set_is_open(False)
-                _panel_collapsable.add_fixed(separation_height)
-
-            subpanels[preference.subpanel].add_child(element)
+        _panel_collapsable.add_child(
+            ParameterPanel(self._dict, 0.25 * em, separation_height).panel
+        )
 
         _panel_collapsable.visible = False
         self._editor_instance._right_side_panel.add_child(_panel_collapsable)

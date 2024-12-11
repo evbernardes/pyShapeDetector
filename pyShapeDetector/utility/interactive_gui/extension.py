@@ -9,7 +9,7 @@ from typing import Union, Callable
 from open3d.visualization import gui
 
 from .editor_app import Editor
-from .parameter import Parameter
+from .parameter import Parameter, ParameterPanel
 from .binding import Binding
 
 VALID_INPUTS = ("none", "current", "selected", "global")
@@ -344,42 +344,23 @@ class Extension:
 
         self._ran_at_least_once = False
 
-        separation_height = int(round(0.1 * em))
-        button_separation_width = 2 * separation_height
-
-        # dlg = gui.Dialog("Parameter selection")
-        dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
-
-        label = gui.Label("Enter parameters:")
-        h = gui.Horiz()
-        h.add_stretch()
-        h.add_child(label)
-        h.add_stretch()
-        dlg_layout.add_child(h)
-
-        subpanels = {}
-
         previous_values = {}
         for key, param in self.parameters.items():
             previous_values[key] = copy.copy(param.value)
             param._reset_values_and_limits(editor_instance)
 
-            element = param.get_gui_element(temp_window)
-            if param.subpanel is None:
-                dlg_layout.add_child(element)
-                dlg_layout.add_fixed(separation_height)
-                continue
+        separation_width = em
+        separation_height = int(round(0.1 * em))
+        panel = ParameterPanel(
+            self.parameters, separation_width, separation_height, "Enter parameters:"
+        ).panel
 
-            if param.subpanel not in subpanels:
-                subpanel = gui.CollapsableVert(
-                    param.subpanel, 0.25 * em, gui.Margins(em, 0, 0, 0)
-                )
-                subpanels[param.subpanel] = subpanel
-                dlg_layout.add_child(subpanel)
-                subpanel.set_is_open(False)
-                dlg_layout.add_fixed(separation_height)
-
-            subpanels[param.subpanel].add_child(element)
+        # label = gui.Label("Enter parameters:")
+        # h = gui.Horiz()
+        # h.add_stretch()
+        # h.add_child(label)
+        # h.add_stretch()
+        # panel.add_child(h)
 
         def _on_apply():
             self._ran_at_least_once = True
@@ -401,10 +382,12 @@ class Extension:
         h = gui.Horiz()
         h.add_stretch()
         h.add_child(apply)
-        h.add_fixed(button_separation_width)
+        # h.add_fixed(separation_width)
+
+        h.add_stretch()
         h.add_child(close)
         h.add_stretch()
-        dlg_layout.add_child(h)
-        temp_window.add_child(dlg_layout)
+        panel.add_child(h)
+        temp_window.add_child(panel)
 
         return gui.Widget.EventCallbackResult.HANDLED

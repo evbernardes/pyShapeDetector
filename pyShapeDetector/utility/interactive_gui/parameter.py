@@ -101,8 +101,7 @@ class Parameter:
     def _reset_values_and_limits(self, editor_instance: Editor):
         pass
 
-    def get_gui_element(self, window):
-        em = window.theme.font_size
+    def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
 
         # Text field for general inputs
@@ -110,7 +109,7 @@ class Parameter:
         text_edit.placeholder_text = str(self.value)
         text_edit.set_on_value_changed(lambda value: self._callback(value, text_edit))
 
-        element = gui.VGrid(2, 0.25 * em)
+        element = gui.VGrid(2, 0.25 * font_size)
         element.add_child(label)
         element.add_child(text_edit)
 
@@ -147,7 +146,7 @@ class ParameterBool(Parameter):
     def value(self, new_value):
         self._value = bool(new_value)
 
-    def get_gui_element(self, window):
+    def get_gui_element(self, font_size):
         element = gui.Checkbox(self.pretty_name + "?")
         element.checked = self.value
         element.set_on_checked(self._callback)
@@ -197,8 +196,7 @@ class ParameterOptions(Parameter):
         self._value = self.options[index]
         self.on_update(self.value)
 
-    def get_gui_element(self, window):
-        em = window.theme.font_size
+    def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
 
         combobox = gui.Combobox()
@@ -208,7 +206,7 @@ class ParameterOptions(Parameter):
         combobox.selected_index = options_strings.index(str(self.value))
         combobox.set_on_selection_changed(self._callback)
 
-        element = gui.VGrid(2, 0.25 * em)
+        element = gui.VGrid(2, 0.25 * font_size)
         element.add_child(label)
         element.add_child(combobox)
 
@@ -308,8 +306,7 @@ class ParameterInt(Parameter):
                 warnings.simplefilter("ignore")
             self.value = self.value
 
-    def get_gui_element(self, window):
-        em = window.theme.font_size
+    def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
 
         if self.limits is not None:
@@ -318,7 +315,7 @@ class ParameterInt(Parameter):
             slider.int_value = self.value
             slider.set_on_value_changed(self._callback)
 
-            element = gui.VGrid(2, 0.25 * em)
+            element = gui.VGrid(2, 0.25 * font_size)
             element.add_child(label)
             element.add_child(slider)
 
@@ -330,7 +327,7 @@ class ParameterInt(Parameter):
                 lambda value: self._callback(value, text_edit)
             )
 
-            element = gui.VGrid(2, 0.25 * em)
+            element = gui.VGrid(2, 0.25 * font_size)
             element.add_child(label)
             element.add_child(text_edit)
 
@@ -446,8 +443,7 @@ class ParameterFloat(Parameter):
                 warnings.simplefilter("ignore")
             self.value = self.value
 
-    def get_gui_element(self, window):
-        em = window.theme.font_size
+    def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
 
         if self.limits is not None:
@@ -456,7 +452,7 @@ class ParameterFloat(Parameter):
             slider.double_value = self.value
             slider.set_on_value_changed(self._callback)
 
-            element = gui.VGrid(2, 0.25 * em)
+            element = gui.VGrid(2, 0.25 * font_size)
             element.add_child(label)
             element.add_child(slider)
 
@@ -468,7 +464,7 @@ class ParameterFloat(Parameter):
                 lambda value: self._callback(value, text_edit)
             )
 
-            element = gui.VGrid(2, 0.25 * em)
+            element = gui.VGrid(2, 0.25 * font_size)
             element.add_child(label)
             element.add_child(text_edit)
 
@@ -549,15 +545,14 @@ class ParameterColor(Parameter):
         if np.any(abs(self.value - old_value) > 1e-6):
             self.on_update(self.value)
 
-    def get_gui_element(self, window):
-        em = window.theme.font_size
+    def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
 
         color_selector = gui.ColorEdit()
         color_selector.color_value = self._value
         color_selector.set_on_value_changed(self._callback)
 
-        element = gui.VGrid(2, 0.25 * em)
+        element = gui.VGrid(2, 0.25 * font_size)
         element.add_child(label)
         element.add_child(color_selector)
 
@@ -630,13 +625,12 @@ class ParameterNDArray(Parameter):
             text_edit.text_value = str(self._value[line, col])
         self.on_update(self.value)
 
-    def get_gui_element(self, window):
-        em = window.theme.font_size
+    def get_gui_element(self, font_size):
         label = gui.Label(self.pretty_name)
 
-        elements_array = gui.VGrid(self._value.shape[0], 0.25 * em)
+        elements_array = gui.VGrid(self._value.shape[0], 0.25 * font_size)
         for i in range(self._value.shape[0]):
-            elements_line = gui.Horiz(0.25 * em)
+            elements_line = gui.Horiz(0.25 * font_size)
             for j in range(self._value.shape[1]):
                 text_edit = gui.TextEdit()
                 text_edit.placeholder_text = str(self._value[i, j])
@@ -649,7 +643,7 @@ class ParameterNDArray(Parameter):
 
             elements_array.add_child(elements_line)
 
-        element = gui.VGrid(2, 0.25 * em)
+        element = gui.VGrid(2, 0.25 * font_size)
         element.add_child(label)
         element.add_child(elements_array)
 
@@ -678,3 +672,66 @@ PARAMETER_TYPE_DICTIONARY = {
     np.ndarray: ParameterNDArray,
     gui.Color: ParameterColor,
 }
+
+
+class ParameterPanel:
+    def _get_panel(
+        self,
+        separation_width: float,
+        separation_height: float,
+        title: Union[str, None],
+    ):
+        panel = gui.Vert(
+            separation_width,
+            gui.Margins(
+                separation_width, separation_width, separation_width, separation_width
+            ),
+        )
+
+        if title is not None:
+            h = gui.Horiz()
+            h.add_stretch()
+            h.add_child(gui.Label(title))
+            h.add_stretch()
+            panel.add_child(h)
+
+        subpanels = {}
+
+        for param in self.parameters.values():
+            element = param.get_gui_element(separation_width)
+            if param.subpanel is None:
+                panel.add_child(element)
+                panel.add_fixed(separation_height)
+                continue
+
+            if param.subpanel not in subpanels:
+                subpanel = gui.CollapsableVert(
+                    param.subpanel,
+                    0.25 * separation_width,
+                    gui.Margins(separation_width, 0, 0, 0),
+                )
+                subpanels[param.subpanel] = subpanel
+                panel.add_child(subpanel)
+                subpanel.set_is_open(False)
+                panel.add_fixed(separation_height)
+
+            subpanels[param.subpanel].add_child(element)
+        return panel
+
+    @property
+    def panel(self):
+        return self._panel
+
+    @property
+    def parameters(self):
+        return self._parameters
+
+    def __init__(
+        self,
+        parameters: dict[Parameter],
+        separation_width: float,
+        separation_height: float,
+        title: Union[str, None] = None,
+    ):
+        self._parameters = parameters
+        self._panel = self._get_panel(separation_width, separation_height, title)
