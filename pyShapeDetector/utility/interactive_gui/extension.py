@@ -355,13 +355,6 @@ class Extension:
             self.parameters, separation_width, separation_height, "Enter parameters:"
         ).panel
 
-        # label = gui.Label("Enter parameters:")
-        # h = gui.Horiz()
-        # h.add_stretch()
-        # h.add_child(label)
-        # h.add_stretch()
-        # panel.add_child(h)
-
         def _on_apply():
             self._ran_at_least_once = True
             self._apply_to_elements()
