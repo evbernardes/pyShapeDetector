@@ -359,13 +359,18 @@ class ElementPointCloud(ElementGeometry):
         # drawable.point.colors = color
         if color.shape == (3,):
             drawable.paint_uniform_color(color.astype("float32"))
+            self._colors_updated = False
         elif color.shape == drawable.point.colors.shape:
             drawable.point.colors = Tensor(color.astype("float32"))
+            self._colors_updated = False
         else:
             warnings.warn("Could not paint Tensor-based drawable PointCloud.")
 
     def _get_drawable(self):
         self._drawable = TensorPointCloud.from_legacy(self.raw.as_open3d)
+        self._colors_updated = True
+        self._normals_updated = True
+        self._points_updated = True
 
     def _get_distance_checker(self):
         number_points_distance = self._editor_instance._get_preference(
@@ -380,12 +385,21 @@ class ElementPointCloud(ElementGeometry):
 
     # TODO: check if this can be implemented, maybe with Tensor geometries
     def update_on_scene(self):
-        self._editor_instance._scene.scene.scene.update_geometry(
-            self.name, self.drawable, Scene.UPDATE_COLORS_FLAG
-        )
-        self._editor_instance._scene.scene.scene.update_geometry(
-            self.name, self.drawable, Scene.UPDATE_POINTS_FLAG
-        )
+        if not self._colors_updated:
+            self._editor_instance._scene.scene.scene.update_geometry(
+                self.name, self.drawable, Scene.UPDATE_COLORS_FLAG
+            )
+            self._colors_updated = True
+        if not self._normals_updated:
+            self._editor_instance._scene.scene.scene.update_geometry(
+                self.name, self.drawable, Scene.UPDATE_NORMALS_FLAG
+            )
+            self._normals_updated = True
+        if not self._points_updated:
+            self._editor_instance._scene.scene.scene.update_geometry(
+                self.name, self.drawable, Scene.UPDATE_POINTS_FLAG
+            )
+            self._points_updated = True
 
 
 class ElementTriangleMesh(ElementGeometry):
