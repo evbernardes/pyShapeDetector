@@ -10,6 +10,7 @@ setup(
         "numpy>=1.21.0,<2.0.0",  # Scipy cannot use Numpy 2.0.0 yet
         "open3d>=0.17.0",
         "scipy>=1.11.0",
+        "scikit-learn>=1.2.0",
     ],
     extras_require={
         "dev": [  # Optional dependencies for development
