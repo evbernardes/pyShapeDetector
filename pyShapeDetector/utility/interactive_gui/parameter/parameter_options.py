@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on 2024-12-12 09:54:34
+
+@author: evbernardes
+"""
+from typing import Callable, Union
+from open3d.visualization import gui
+from .parameter import Parameter
+
+
+class ParameterOptions(Parameter):
+    _type = list
+
+    @property
+    def options(self):
+        return self._options
+
+    @options.setter
+    def options(self, new_options):
+        if not isinstance(new_options, (tuple, list)) or len(new_options) == 0:
+            raise ValueError(
+                f"Parameter {self.name} requires non-empty of values for "
+                f"options, got {new_options}."
+            )
+
+        self._options = list(new_options)
+
+    @Parameter.value.setter
+    def value(self, new_value):
+        if new_value not in self.options:
+            raise ValueError(
+                f"Value '{new_value}' for parameter '{self.name}' is not in "
+                f"options list {self.options}."
+            )
+
+        self._value = new_value
+
+        options_strings = [str(option) for option in self.options]
+        self.internal_element.selected_index = options_strings.index(str(self.value))
+
+    def _callback(self, text, index):
+        self._value = self.options[index]
+        self.on_update(self.value)
+        self._update_references()
+
+    def get_gui_element(self, font_size):
+        label = gui.Label(self.pretty_name)
+
+        combobox = self.internal_element
+        combobox.set_on_selection_changed(self._callback)
+
+        element = gui.VGrid(2, 0.25 * font_size)
+        element.add_child(label)
+        element.add_child(combobox)
+
+        return element
+
+    def __init__(
+        self,
+        name: str,
+        options: list,
+        default=None,
+        on_update: Callable = None,
+        subpanel: Union[str, None] = None,
+        **other_kwargs,
+    ):
+        super().__init__(name=name, on_update=on_update, subpanel=subpanel)
+        self.options = options
+
+        if default is None:
+            default = options[0]
+
+        self._internal_element = gui.Combobox()
+        for option in self.options:
+            self._internal_element.add_item(str(option))
+
+        self.value = default
+
+        self._warn_unused_parameters(other_kwargs)
