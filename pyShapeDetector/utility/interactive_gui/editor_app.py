@@ -505,9 +505,12 @@ class Editor:
 
             elem.update(is_current, update_gui)
 
-        # This is not called on the main thread, so we need to
-        # post to the main thread to safely access UI items.
+        self._update_info()
+
+    def _update_info(self):
         def update_label():
+            # This is not called on the main thread, so we need to
+            # post to the main thread to safely access UI items.
             self._info.text = (
                 f"Current: {self.i + 1} / {len(self._elements)} | "
                 f"selected: {'YES' if self.is_current_selected else 'NO'}"
@@ -609,6 +612,7 @@ class Editor:
             elem.add_to_scene()
 
         self._update_BBOX_and_axes()
+        self._update_info()
         bounds = self._scene.scene.bounding_box
         center = bounds.get_center()
         self._scene.setup_camera(60, bounds, center)
