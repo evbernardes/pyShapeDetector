@@ -231,7 +231,9 @@ class Editor:
 
     def _on_layout(self, layout_context):
         r = self._window.content_rect
+
         self._scene.frame = r
+
         pref = self._info.calc_preferred_size(layout_context, gui.Widget.Constraints())
         self._info.frame = gui.Rect(
             r.x, r.get_bottom() - pref.height, pref.width, pref.height
@@ -246,6 +248,11 @@ class Editor:
         )
         self._right_side_panel.frame = gui.Rect(
             r.get_right() - width, r.y, width, height
+        )
+
+        # Hide right side panel if subpanels are also hidden
+        self._right_side_panel.visible = np.any(
+            [widget.visible for widget in self._right_side_panel.get_children()]
         )
 
     def _on_close(self):
