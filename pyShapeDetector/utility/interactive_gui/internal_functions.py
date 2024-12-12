@@ -247,6 +247,9 @@ class InternalFunctions:
     def _cb_toggle(self):
         """Toggle the current highlighted element between selected/unselected."""
         editor_instance = self._editor_instance
+        elem = editor_instance.current_element
+        if elem is None:
+            return
         if not editor_instance.select_filter(editor_instance.current_element):
             return
 

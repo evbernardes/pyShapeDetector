@@ -608,6 +608,7 @@ class Editor:
         for elem in self.elements + self.elements_fixed:
             elem.add_to_scene()
 
+        self._update_BBOX_and_axes()
         bounds = self._scene.scene.bounding_box
         center = bounds.get_center()
         self._scene.setup_camera(60, bounds, center)
