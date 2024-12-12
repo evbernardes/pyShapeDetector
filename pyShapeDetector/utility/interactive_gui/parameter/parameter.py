@@ -6,31 +6,88 @@ Created on 2024-12-12 09:50:31
 @author: evbernardes
 """
 
-import traceback
 import warnings
-from typing import Callable, Union
-import numpy as np
+from typing import Callable, Union, TypeVar, Generic
+from abc import ABC, abstractmethod
 from open3d.visualization import gui
 from pyShapeDetector.utility.interactive_gui.editor_app import Editor
 
+T = TypeVar("T")
 
-class Parameter:
+
+class ParameterBase(ABC, Generic[T]):
+    """Base class to define parameter types that also generate GUI widgets.
+
+    To Inherit, implement the following abstract methods:
+        _update_internal_element
+        _update_references
+        _enable_internal_element
+        get_gui_element
+
+    Attributes
+    ----------
+    internal_element
+    is_reference
+    valid_arguments
+    type
+    value
+    type_name
+    name
+    pretty_name
+    subpanel
+    on_update
+
+    Methods
+    -------
+    _warn_unused_parameters
+    _callback
+    _update_internal_element
+    _reset_values_and_limits
+    _update_references
+    _enable_internal_element
+    get_gui_element
+    create_reference
+    create_from_dict
+
+    """
+
     _type = None.__class__
+    _valid_arguments = ["name", "type", "default", "on_update", "subpanel"]
 
     @property
     def internal_element(self):
         return self._internal_element
 
     @property
-    def type_name(self):
+    def references(self: T) -> list[T]:
+        return self._references
+
+    @property
+    def is_reference(self) -> bool:
+        return self._is_reference
+
+    @property
+    def valid_arguments(self) -> list:
+        return self._valid_arguments
+
+    @property
+    def type(self) -> type:
+        return self._type
+
+    @property
+    def value(self) -> T:
+        return self._value
+
+    @property
+    def type_name(self) -> str:
         return self._type.__name__
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @name.setter
-    def name(self, new_name):
+    def name(self, new_name: str):
         if not isinstance(new_name, str):
             raise TypeError(
                 f"Expected string as name for Parameter, got {type(new_name)}."
@@ -38,19 +95,7 @@ class Parameter:
         self._name = new_name
 
     @property
-    def subpanel(self):
-        return self._subpanel
-
-    @subpanel.setter
-    def subpanel(self, new_subpanel):
-        if new_subpanel is not None and not isinstance(new_subpanel, str):
-            raise TypeError(
-                f"Expected string as subpanel for Parameter, got {type(new_subpanel)}."
-            )
-        self._subpanel = new_subpanel
-
-    @property
-    def pretty_name(self):
+    def pretty_name(self) -> str:
         words = self.name.replace("_", " ").split()
         result = []
         for word in words:
@@ -62,7 +107,19 @@ class Parameter:
         return " ".join(result)
 
     @property
-    def on_update(self):
+    def subpanel(self) -> str:
+        return self._subpanel
+
+    @subpanel.setter
+    def subpanel(self, new_subpanel: Union[str, None]):
+        if new_subpanel is not None and not isinstance(new_subpanel, str):
+            raise TypeError(
+                f"Expected string as subpanel for Parameter, got {type(new_subpanel)}."
+            )
+        self._subpanel = new_subpanel
+
+    @property
+    def on_update(self) -> Union[Callable, None]:
         if self._on_update is None:
             return lambda value: None
         return self._on_update
@@ -78,62 +135,102 @@ class Parameter:
                 f"Parameter of type '{self.type_name}' received invalid 'on_update'"
             )
 
-    @property
-    def type(self):
-        return self._type
+    @abstractmethod
+    def _update_internal_element(self):
+        pass
 
-    @type.setter
-    def type(self, new_type):
-        if not isinstance(new_type, type):
-            raise TypeError("parameter descriptor has invalid type.")
+    def _callback(self, value):
+        # old_value = self.value
+        self.value = value
+        # if abs(self.value - old_value) > 1e-6:
+        self.on_update(self.value)
+        self._update_references()
 
-        self._type = new_type
+    def _reset_values_and_limits(self, editor_instance: Editor):
+        """Resets values and limits if needed"""
+        pass
 
-    @property
-    def value(self):
-        return self._value
+    def _update_references(self) -> None:
+        """Updates references to class"""
+        for reference in self._references:
+            reference.value = self.value
+
+    def _enable_internal_element(self, value: bool) -> None:
+        """Enables/Disables internal element when creating references"""
+        self.internal_element.enabled = value
+
+    @abstractmethod
+    def get_gui_element(self, font_size: float) -> gui.Widget:
+        pass
+        # label = gui.Label(self.pretty_name)
+
+        # # Text field for general inputs
+        # text_edit = gui.TextEdit()
+        # # text_edit.placeholder_text = str(self.value)
+        # text_edit.set_on_value_changed(lambda value: self._callback(value, text_edit))
+
+        # element = gui.VGrid(2, 0.25 * font_size)
+        # element.add_child(label)
+        # element.add_child(text_edit)
+
+        # return element
+
+    def create_reference(self: T) -> T:
+        """Creates a new unusable copy of the parameter that is updated when
+        the original is updated.
+
+        Returns
+        -------
+        T
+            _description_
+        """
+        kwargs = {
+            key: getattr(self, key, None)
+            for key in self.valid_arguments
+            if key != "default" and key != "subpanel"
+        }
+        kwargs["default"] = self.value
+
+        new_parameter = ParameterBase.create_from_dict(self.name, kwargs)
+        new_parameter._enable_internal_element(False)
+
+        new_parameter._is_reference = True
+        self._references.append(new_parameter)
+        return new_parameter
 
     def _warn_unused_parameters(self, other_kwargs: dict):
+        """Warns user that useless arguments were present in the parameter descriptor"""
         for key in other_kwargs:
+            if key in self.valid_arguments:
+                continue
+
             warnings.warn(
                 f"Ignoring unexpected '{key}' descriptor in parameter "
                 f"'{self.name}' of type '{self.type_name}'."
             )
 
-    def _callback(self, value, text_edit=None):
-        old_value = self.value
-        try:
-            self._value = self.type(value)
-            if abs(self.value - old_value) > 1e-6:
-                self.on_update(self.value)
-        except Exception:
-            if text_edit is not None:
-                text_edit.text_value = str(self.value)
-        self._update_references()
-
-    def _reset_values_and_limits(self, editor_instance: Editor):
-        pass
-
-    def _update_references(self):
-        for reference in self._references:
-            reference.value = self.value
-
-    def get_gui_element(self, font_size):
-        label = gui.Label(self.pretty_name)
-
-        # Text field for general inputs
-        text_edit = gui.TextEdit()
-        # text_edit.placeholder_text = str(self.value)
-        text_edit.set_on_value_changed(lambda value: self._callback(value, text_edit))
-
-        element = gui.VGrid(2, 0.25 * font_size)
-        element.add_child(label)
-        element.add_child(text_edit)
-
-        return element
-
     @staticmethod
-    def create_from_dict(key: str, parameter_descriptor: dict):
+    def create_from_dict(key: str, parameter_descriptor: dict) -> "ParameterBase":
+        """Parse a parameter descriptor dictionary and return the correct parameter type
+
+        Parameters
+        ----------
+        key : str
+            Key/variable name of the parameter
+        parameter_descriptor : dict
+            Dictionary defining parameter.
+
+        Returns
+        -------
+        ParameterBase
+            Create parameter
+
+        Raises
+        ------
+        ValueError
+            It type is invalid
+        """
+
         from .__init__ import PARAMETER_TYPE_DICTIONARY
 
         parameter_descriptor = parameter_descriptor.copy()
@@ -154,29 +251,8 @@ class Parameter:
         subpanel: Union[str, None] = None,
     ):
         self._references = []
+        self._is_reference = False
         self.name = name
         self.on_update = on_update
         self.subpanel = subpanel
-
-    def create_reference(self):
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message=".*Ignoring unexpected.*")
-            new_parameter = Parameter.create_from_dict(
-                self.name,
-                {
-                    "type": self.type,
-                    "default": self.value,
-                    "limits": getattr(self, "limits", None),
-                    "limit_setter": getattr(self, "limit_setter", None),
-                    "options": getattr(self, "options", None),
-                },
-            )
-
-        if isinstance(self.internal_element, list):
-            for elem in np.array(new_parameter.internal_element).flatten():
-                elem.enabled = False
-        else:
-            new_parameter.internal_element.enabled = False
-
-        self._references.append(new_parameter)
-        return new_parameter
+        self._internal_element = None

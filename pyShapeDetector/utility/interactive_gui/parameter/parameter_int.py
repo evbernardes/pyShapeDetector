@@ -1,12 +1,46 @@
 import warnings
+import traceback
 from typing import Callable, Union
 from open3d.visualization import gui
 from pyShapeDetector.utility.interactive_gui.editor_app import Editor
-from .parameter import Parameter
+from .parameter import ParameterBase
 
 
-class ParameterInt(Parameter):
+class ParameterInt(ParameterBase[int]):
+    """Parameter for Int types.
+
+    Creates a Slider if has limits, otherwise a normal text edit.
+
+    Attributes
+    ----------
+    is_reference
+    valid_arguments
+    type
+    value
+    type_name
+    name
+    pretty_name
+    subpanel
+    on_update
+
+    limits
+    limit_setter
+
+    Methods
+    -------
+    _warn_unused_parameters
+    _callback
+    _update_internal_element
+    _reset_values_and_limits
+    _update_references
+    _enable_internal_element
+    get_gui_element
+    create_reference
+    create_from_dict
+    """
+
     _type = int
+    _valid_arguments = ParameterBase._valid_arguments + ["limits", "limit_setter"]
 
     @property
     def limit_setter(self):
@@ -21,7 +55,7 @@ class ParameterInt(Parameter):
         elif callable(new_setter):
             self._limit_setter = new_setter
 
-    @Parameter.value.setter
+    @ParameterBase.value.setter
     def value(self, new_value):
         if new_value is not None:
             try:
@@ -31,7 +65,9 @@ class ParameterInt(Parameter):
 
         else:
             if self.limits is None:
-                raise TypeError("No limits or default value for parameter of type int.")
+                raise TypeError(
+                    f"No limits or default value for parameter {self.name} of type {self.type_name}."
+                )
             else:
                 new_value = self.limits[0]
 
@@ -39,16 +75,13 @@ class ParameterInt(Parameter):
             not (self.limits[0] <= new_value <= self.limits[1])
         ):
             warnings.warn(
-                f"Default value not in limits for parameter {self.name}, resetting it."
+                f"Default value not in limits for parameter {self.name} of type {self.type_name}, resetting it."
             )
             new_value = self.limits[0]
 
         self._value = new_value
-
-        if isinstance(self.internal_element, gui.Slider):
-            self.internal_element.int_value = self.value
-        else:
-            self.internal_element.text_value = str(self.value)
+        # if self.is_reference:
+        self._update_internal_element()
 
     @property
     def limits(self):
@@ -67,7 +100,21 @@ class ParameterInt(Parameter):
 
         new_limits = (min(new_limits), max(new_limits))
         self._limits = new_limits
-        self.internal_element.set_limits(*self.limits)
+        # if self.is_reference:
+        # self._update_internal_element()
+
+    def _update_internal_element(self):
+        if self.internal_element is None:
+            return
+        elif isinstance(self.internal_element, gui.Slider):
+            self.internal_element.int_value = self.value
+            self.internal_element.set_limits(*self.limits)
+        else:
+            self.internal_element.text_value = str(self.value)
+
+    def _callback(self, value):
+        self.value = value
+        self._update_references()
 
     def _reset_values_and_limits(self, editor_instance: Editor):
         if self.limit_setter is None:
@@ -91,7 +138,7 @@ class ParameterInt(Parameter):
 
         if isinstance(self.internal_element, gui.Slider):
             slider = self.internal_element
-            slider.set_on_value_changed(self._callback)
+            # slider.set_on_value_changed(self._callback)
 
             element = gui.VGrid(2, 0.25 * font_size)
             element.add_child(label)
@@ -99,9 +146,9 @@ class ParameterInt(Parameter):
 
         elif isinstance(self.internal_element, gui.TextEdit):
             text_edit = self.internal_element
-            text_edit.set_on_value_changed(
-                lambda value: self._callback(value, text_edit)
-            )
+            # text_edit.set_on_value_changed(
+            #     lambda value: self._callback(value, text_edit)
+            # )
 
             element = gui.VGrid(2, 0.25 * font_size)
             element.add_child(label)
@@ -111,6 +158,8 @@ class ParameterInt(Parameter):
                 "ParameterInt internal element is neither a gui.Glider "
                 "nor a gui.TextEdit. This should never happen."
             )
+
+        self.internal_element.set_on_value_changed(self._callback)
 
         return element
 

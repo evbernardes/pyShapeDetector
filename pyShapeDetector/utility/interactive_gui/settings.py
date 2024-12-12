@@ -6,8 +6,8 @@ from .parameter import (
     ParameterBool,
     ParameterInt,
     ParameterFloat,
-    # ParameterNDArray,
-    # ParameterOptions,
+    ParameterNDArray,
+    ParameterOptions,
     ParameterColor,
     ParameterPanel,
 )
@@ -43,6 +43,45 @@ _number_undo_states = 10
 _number_redo_states = 5
 
 
+###################################################
+# Test extension for testing reference parameters #
+# Uncomment and this and the init when testing    #
+###################################################
+# def test(
+#     test_int_no_limits,
+#     test_int_limits,
+#     test_float_no_limits,
+#     test_float_limits,
+#     test_color,
+#     test_options,
+#     test_array_int_shape_2_3,
+#     test_array_float_shape_2_3,
+#     test_array_int_ndim1,
+#     test_array_shape_7_3,
+# ):
+#     return []
+
+
+# test_extension = {
+#     "function": test,
+#     "name": "Testing reference widgets",
+#     "menu": "test",
+#     "inputs": None,
+#     "parameters": {
+#         "test_int_no_limits": {"type": "preference"},
+#         "test_int_limits": {"type": "preference"},
+#         "test_float_no_limits": {"type": "preference"},
+#         "test_float_limits": {"type": "preference"},
+#         "test_color": {"type": "preference"},
+#         "test_options": {"type": "preference"},
+#         "test_array_int_shape_2_3": {"type": "preference"},
+#         "test_array_float_shape_2_3": {"type": "preference"},
+#         "test_array_int_ndim1": {"type": "preference"},
+#         "test_array_shape_7_3": {"type": "preference"},
+#     },
+# }
+
+
 class Settings:
     @property
     def dict(self):
@@ -50,10 +89,80 @@ class Settings:
 
     def __init__(self, editor_instance: Editor, menu="Preferences", **kwargs):
         options = [
+            ###########################################
+            # Test Parameters, uncomment when testing #
+            ###########################################
+            # ParameterInt(
+            #     name="test_int_no_limits",
+            #     default=2,
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterInt(
+            #     name="test_int_limits",
+            #     default=3,
+            #     limits=(-10, 10),
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterFloat(
+            #     name="test_float_no_limits",
+            #     default=2,
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterFloat(
+            #     name="test_float_limits",
+            #     default=3,
+            #     limits=(-10, 10),
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterColor(
+            #     name="test_color",
+            #     default=(0, 0, 1),
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterOptions(
+            #     name="test_options",
+            #     options=["a", "b", "c"],
+            #     default="c",
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNDArray(
+            #     name="test_array_int_shape_2_3",
+            #     default=[[0, 0, 1], [0, 20, 0]],
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNDArray(
+            #     name="test_array_float_shape_2_3",
+            #     default=[[0, 0, 1], [0.0, 20, 0]],
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNDArray(
+            #     name="test_array_int_ndim1",
+            #     default=[0, 0, 1],
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNDArray(
+            #     name="test_array_shape_7_3",
+            #     default=np.zeros((7, 3)),
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            ##########################
+            # End of Test Parameters #
+            ##########################
             ParameterFloat(
                 name="PointCloud_density",
                 default=_PointCloud_density,
                 on_update=self._cb_PointCloud_density,
+                subpanel="test",
             ),
             ParameterBool(
                 name="draw_boundary_lines",
@@ -199,6 +308,14 @@ class Settings:
                         f"Could not initialize value of preference {key} to {value}."
                     )
                     setattr(self, key, value)
+
+        ###################################################
+        # Test extension for testing reference parameters #
+        # Uncomment and this and the definition to test   #
+        ###################################################
+        # from .extension import Extension
+        # extension = Extension(test_extension, self)
+        # extension.add_to_application(editor_instance)
 
     def _cb_PointCloud_density(self, value):
         pass

@@ -9,7 +9,7 @@ from typing import Union, Callable
 from open3d.visualization import gui
 
 from .editor_app import Editor
-from .parameter import Parameter, ParameterPanel
+from .parameter import ParameterBase, ParameterPanel
 from .binding import Binding
 from .settings import Settings
 
@@ -182,7 +182,7 @@ class Extension:
                     f"Function '{self.function.__name__}' from extension '{self.name}' does not take parameter '{key}'."
                 )
 
-            parsed_parameters[key] = Parameter.create_from_dict(
+            parsed_parameters[key] = ParameterBase.create_from_dict(
                 key, parameter_descriptor
             )
 

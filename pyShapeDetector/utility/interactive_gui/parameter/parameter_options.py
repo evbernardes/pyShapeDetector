@@ -7,11 +7,43 @@ Created on 2024-12-12 09:54:34
 """
 from typing import Callable, Union
 from open3d.visualization import gui
-from .parameter import Parameter
+from .parameter import ParameterBase
 
 
-class ParameterOptions(Parameter):
+class ParameterOptions(ParameterBase[list]):
+    """Parameter for choosing between multiple options.
+
+    Creates a combobox
+
+    Attributes
+    ----------
+    is_reference
+    valid_arguments
+    type
+    value
+    type_name
+    name
+    pretty_name
+    subpanel
+    on_update
+
+    options
+
+    Methods
+    -------
+    _warn_unused_parameters
+    _callback
+    _update_internal_element
+    _reset_values_and_limits
+    _update_references
+    _enable_internal_element
+    get_gui_element
+    create_reference
+    create
+    """
+
     _type = list
+    _valid_arguments = ParameterBase._valid_arguments + ["options"]
 
     @property
     def options(self):
@@ -27,7 +59,7 @@ class ParameterOptions(Parameter):
 
         self._options = list(new_options)
 
-    @Parameter.value.setter
+    @ParameterBase.value.setter
     def value(self, new_value):
         if new_value not in self.options:
             raise ValueError(
@@ -37,6 +69,12 @@ class ParameterOptions(Parameter):
 
         self._value = new_value
 
+        # if self.is_reference:
+        self._update_internal_element()
+
+    def _update_internal_element(self):
+        if self.internal_element is None:
+            return
         options_strings = [str(option) for option in self.options]
         self.internal_element.selected_index = options_strings.index(str(self.value))
 

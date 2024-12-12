@@ -8,10 +8,41 @@ Created on 2024-12-12 09:59:28
 from typing import Callable, Union
 import numpy as np
 from open3d.visualization import gui
-from .parameter import Parameter
+from .parameter import ParameterBase
 
 
-class ParameterColor(Parameter):
+class ParameterColor(ParameterBase):
+    """Parameter for Color types.
+
+    Attributes
+    ----------
+    is_reference
+    valid_arguments
+    type
+    value
+    type_name
+    name
+    pretty_name
+    subpanel
+    on_update
+
+    red
+    green
+    blue
+
+    Methods
+    -------
+    _warn_unused_parameters
+    _callback
+    _update_internal_element
+    _reset_values_and_limits
+    _update_references
+    _enable_internal_element
+    get_gui_element
+    create_reference
+    create_from_dict
+    """
+
     _type = gui.Color
 
     @property
@@ -43,6 +74,12 @@ class ParameterColor(Parameter):
                 f"Value of parameter {self.name} of type {self.type_name} should "
                 f"be a gui.Color, a list or tuple of 3 values, got {values}."
             )
+        # if self.is_reference:
+        self.internal_element.color_value = self._value
+
+    def _update_internal_element(self):
+        if self.internal_element is None:
+            return
         self.internal_element.color_value = self._value
 
     def _callback(self, value):

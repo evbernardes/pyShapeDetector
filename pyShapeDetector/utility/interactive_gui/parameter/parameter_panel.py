@@ -7,7 +7,7 @@ Created on 2024-12-12 10:06:33
 """
 from typing import Union
 from open3d.visualization import gui
-from .parameter import Parameter
+from .parameter import ParameterBase
 
 
 class ParameterPanel:
@@ -64,7 +64,7 @@ class ParameterPanel:
 
     def __init__(
         self,
-        parameters: dict[Parameter],
+        parameters: dict[ParameterBase],
         separation_width: float,
         separation_height: float,
         title: Union[str, None] = None,

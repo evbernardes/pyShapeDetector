@@ -9,7 +9,7 @@ Created on 2024-12-12 09:48:24
 from numpy import ndarray
 from open3d.visualization.gui import Color
 
-from .parameter import Parameter
+from .parameter import ParameterBase
 from .parameter_panel import ParameterPanel
 
 from .parameter_bool import ParameterBool
@@ -20,7 +20,7 @@ from .parameter_color import ParameterColor
 from .parameter_ndarray import ParameterNDArray
 
 PARAMETER_TYPE_DICTIONARY = {
-    None: Parameter,
+    None: ParameterBase,
     bool: ParameterBool,
     "bool": ParameterBool,
     int: ParameterInt,

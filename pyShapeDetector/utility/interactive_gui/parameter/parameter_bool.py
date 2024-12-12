@@ -7,15 +7,48 @@ Created on 2024-12-12 09:54:34
 """
 from typing import Callable, Union
 from open3d.visualization import gui
-from .parameter import Parameter
+from .parameter import ParameterBase
 
 
-class ParameterBool(Parameter):
+class ParameterBool(ParameterBase[bool]):
+    """Parameter foor boolean types
+
+    Attributes
+    ----------
+    is_reference
+    valid_arguments
+    type
+    value
+    type_name
+    name
+    pretty_name
+    subpanel
+    on_update
+
+    Methods
+    -------
+    _warn_unused_parameters
+    _callback
+    _update_internal_element
+    _reset_values_and_limits
+    _update_references
+    _enable_internal_element
+    get_gui_element
+    create_reference
+    create_from_dict
+    """
+
     _type = bool
 
-    @Parameter.value.setter
+    @ParameterBase.value.setter
     def value(self, new_value):
         self._value = bool(new_value)
+        # if self.is_reference:
+        self._update_internal_element()
+
+    def _update_internal_element(self):
+        if self.internal_element is None:
+            return
         self.internal_element.checked = self.value
 
     def get_gui_element(self, font_size):

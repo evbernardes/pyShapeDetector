@@ -10,10 +10,47 @@ Created on 2024-12-12 10:03:26
 from typing import Callable, Union
 import numpy as np
 from open3d.visualization import gui
-from .parameter import Parameter
+from .parameter import ParameterBase
 
 
-class ParameterNDArray(Parameter):
+class ParameterNDArray(ParameterBase):
+    """Parameter for NDArray types.
+
+    Creates an array of multiple instances of gui.TextEdit.
+
+    Detects shape and dtype by the given default value.
+
+    Only possible for arrays with 1 or 2 dimensions.
+
+    Attributes
+    ----------
+    is_reference
+    valid_arguments
+    type
+    value
+    type_name
+    name
+    pretty_name
+    subpanel
+    on_update
+
+    shape
+    dtype
+    ndim
+
+    Methods
+    -------
+    _warn_unused_parameters
+    _callback
+    _update_internal_element
+    _reset_values_and_limits
+    _update_references
+    _enable_internal_element
+    get_gui_element
+    create_reference
+    create_from_dict
+    """
+
     _type = np.ndarray
 
     @property
@@ -59,13 +96,21 @@ class ParameterNDArray(Parameter):
         self._shape = new_value.shape
         self._value = np.atleast_2d(new_value)
 
-        if not hasattr(self, "_internal_element"):
-            return
+        # if self.is_reference:
+        self._update_internal_element()
 
+    def _update_internal_element(self):
+        if self.internal_element is None:
+            return
         for i in range(self._value.shape[0]):
             for j in range(self._value.shape[1]):
                 text_edit = self.internal_element[i][j]
                 text_edit.text_value = str(self._value[i, j])
+
+    def _enable_internal_element(self, value: bool) -> None:
+        """Enables/Disables internal element when creating references"""
+        for elem in np.array(self.internal_element).flatten():
+            elem.enabled = value
 
     def _callback(self, line, col, value, text_edit):
         try:
@@ -80,9 +125,9 @@ class ParameterNDArray(Parameter):
 
         text_edits = self.internal_element
 
-        elements_array = gui.VGrid(self._value.shape[0], 0.25 * font_size)
+        elements_array = gui.VGrid(self._value.shape[1], 0.25 * font_size)
         for i in range(self._value.shape[0]):
-            elements_line = gui.Horiz(0.25 * font_size)
+            # elements_line = gui.Horiz(0.25 * font_size)
             for j in range(self._value.shape[1]):
                 text_edit = text_edits[i][j]
                 text_edit.set_on_value_changed(
@@ -90,9 +135,9 @@ class ParameterNDArray(Parameter):
                         line, col, value, t
                     )
                 )
-                elements_line.add_child(text_edit)
-
-            elements_array.add_child(elements_line)
+                # elements_line.add_child(text_edit)
+                # elements_array.add_child(elements_line)
+                elements_array.add_child(text_edit)
 
         element = gui.VGrid(2, 0.25 * font_size)
         element.add_child(label)
