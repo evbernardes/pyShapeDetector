@@ -162,7 +162,6 @@ class Settings:
                 name="PointCloud_density",
                 default=_PointCloud_density,
                 on_update=self._cb_PointCloud_density,
-                subpanel="test",
             ),
             ParameterBool(
                 name="draw_boundary_lines",
