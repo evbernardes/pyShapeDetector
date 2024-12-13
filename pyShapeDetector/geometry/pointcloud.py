@@ -305,9 +305,6 @@ class PointCloud(Numpy_Geometry):
         filepath : string or instance of pathlib.Path
             File to be loaded
 
-        pointcloud : Open3D.geometry.PointCloud
-            PointCloud to be saved
-
         See: Open3D.io.write_point_cloud
         """
         if isinstance(filepath, Path):
