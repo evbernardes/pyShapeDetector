@@ -496,6 +496,7 @@ class InternalFunctions:
         editor_instance._save_state(indices, input_elements, 0)
         editor_instance._future_states = []
         editor_instance._update_plane_boundaries()
+        editor_instance._update_BBOX_and_axes()
 
     def _cb_copy(self):
         """Save elements to be copied."""
