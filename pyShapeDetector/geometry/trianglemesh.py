@@ -8,7 +8,9 @@ Created on Thu May 23 11:32:38 2024
 import copy
 import warnings
 import numpy as np
+from pathlib import Path
 from open3d.geometry import TriangleMesh as open3d_TriangleMesh
+from open3d import io
 
 from pyShapeDetector.utility import mesh_to_obj_description
 from .numpy_geometry import link_to_open3d_geometry, Numpy_Geometry
@@ -51,6 +53,7 @@ class TriangleMesh(Numpy_Geometry):
     get_fused_mesh
     triangulate_earclipping
     fuse_vertices_triangles
+    read_triangle_mesh
     """
 
     @property
@@ -709,6 +712,32 @@ class TriangleMesh(Numpy_Geometry):
             triangles.append(np.array(triangles_list[i]) + L)
             L += len(vertices_list[i])
         return vertices, np.vstack(triangles)
+
+    @classmethod
+    def read_triangle_mesh(cls, filepath):
+        """Read file to triangle mesh.
+
+        Internal call to Open3D.io.read_triangle_mesh.
+
+        Parameters
+        ----------
+        filepath : string or instance of pathlib.Path
+            File to be loaded
+
+        Returns
+        -------
+        PointCloud
+            Loaded point cloud.
+
+        See: Open3D.io.read_point_cloud
+        """
+        if isinstance(filepath, Path):
+            filename = filepath.as_posix()
+        else:
+            filename = filepath
+            filepath = Path(filename)
+
+        return TriangleMesh(io.read_triangle_mesh(filename))
 
     # def alphashape_2d(projections, alpha):
     #     """ Compute the alpha shape (concave hull) of a set of 2D points. If the number
