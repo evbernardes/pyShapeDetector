@@ -44,6 +44,14 @@ class InternalFunctions:
                 menu="File",
             ),
             Binding(
+                key=gui.KeyName.E,
+                lctrl=True,
+                lshift=False,
+                description="Export current element",
+                callback=self._cb_export_current_element,
+                menu="File",
+            ),
+            Binding(
                 key=gui.KeyName.ESCAPE,
                 lctrl=False,
                 lshift=False,
@@ -225,19 +233,19 @@ class InternalFunctions:
         self._dict = {binding.description: binding for binding in self._bindings}
 
     def _cb_import(self):
-        from .io import RECOGNIZED_EXTENSION, _load_one_element
+        from .io import element, _load_one_element
 
         editor_instance = self._editor_instance
         window = self._editor_instance._window
 
         dlg = gui.FileDialog(gui.FileDialog.OPEN, "Choose file to load", window.theme)
 
-        for type, extensions in RECOGNIZED_EXTENSION.items():
+        for type, extensions in element.items():
             if type == "all":
                 continue
             dlg.add_filter(extensions["all"], extensions["all_description"])
 
-        dlg.add_filter(RECOGNIZED_EXTENSION["all"], "All recognized files")
+        dlg.add_filter(element["all"], "All recognized files")
         dlg.add_filter("", "All files")
 
         def _on_file_dialog_cancel():
@@ -289,6 +297,37 @@ class InternalFunctions:
                 warnings.warn("Failed to insert imported files.")
                 traceback.print_exc()
             editor_instance._close_dialog()
+
+        # A file dialog MUST define on_cancel and on_done functions
+        dlg.set_on_cancel(_on_file_dialog_cancel)
+        dlg.set_on_done(_on_load_dialog_done)
+        window.show_dialog(dlg)
+
+    def _cb_export_current_element(self):
+        from .io import _write_one_element
+
+        editor_instance = self._editor_instance
+        window = self._editor_instance._window
+
+        dlg = gui.FileDialog(
+            gui.FileDialog.SAVE,
+            "Export current element to file",
+            window.theme,
+        )
+
+        def _on_file_dialog_cancel():
+            editor_instance._close_dialog()
+
+        def _on_load_dialog_done(filename):
+            print(filename)
+
+            # path.stem
+            current_element = editor_instance.current_element
+            if current_element is None:
+                return
+
+            if _write_one_element(current_element, filename):
+                editor_instance._close_dialog()
 
         # A file dialog MUST define on_cancel and on_done functions
         dlg.set_on_cancel(_on_file_dialog_cancel)
