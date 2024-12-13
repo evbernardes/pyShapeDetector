@@ -36,6 +36,14 @@ class InternalFunctions:
                 menu="File",
             ),
             Binding(
+                key=gui.KeyName.O,
+                lctrl=True,
+                lshift=False,
+                description="Open scene",
+                callback=self._cb_open_scene,
+                menu="File",
+            ),
+            Binding(
                 key=gui.KeyName.S,
                 lctrl=True,
                 lshift=False,
@@ -280,6 +288,37 @@ class InternalFunctions:
         # A file dialog MUST define on_cancel and on_done functions
         dlg.set_on_cancel(_on_file_dialog_cancel)
         dlg.set_on_done(_on_load_dialog_done)
+        window.show_dialog(dlg)
+
+    def _cb_open_scene(self):
+        from .io import _open_scene
+
+        editor_instance = self._editor_instance
+        window = self._editor_instance._window
+
+        dlg = gui.FileDialog(
+            gui.FileDialog.OPEN,
+            "Select scene file to open",
+            window.theme,
+        )
+
+        dlg.add_filter(".sdscene", "Shape Detector Scene (.sdscene)")
+
+        def _on_cancel():
+            editor_instance._close_dialog()
+
+        def _on_done(path):
+            try:
+                _open_scene(path, editor_instance)
+                editor_instance._scene_file_path = path
+            except:
+                warnings.warn(f"Could not open file on path '{path}'.")
+            finally:
+                editor_instance._close_dialog()
+
+        # A file dialog MUST define on_cancel and on_done functions
+        dlg.set_on_cancel(_on_cancel)
+        dlg.set_on_done(_on_done)
         window.show_dialog(dlg)
 
     def _cb_save_scene(self):

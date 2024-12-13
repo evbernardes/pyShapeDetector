@@ -113,11 +113,66 @@ def _write_one_element(element, filename):
         return None
 
 
+def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
+    input_path = Path(input_path)
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with tarfile.open(input_path, "r") as tar:
+            tar.extractall(path=temp_dir)
+            json_path = Path(temp_dir) / "preferences.json"
+            with open(json_path, "r") as json_file:
+                json_data = json.load(json_file)
+
+            for key, value in json_data.items():
+                setting = editor_instance._settings._dict[key]
+                setting.value = value
+                setting.on_update()
+
+            path_elements = Path(temp_dir) / "elements"
+            path_elements_fixed = Path(temp_dir) / "elements_fixed"
+            path_elements_hidden = Path(temp_dir) / "elements_hidden"
+
+            new_elements = []
+            new_elements_fixed = []
+            new_elements_hidden = []
+
+            if path_elements.exists():
+                for path in path_elements.glob("*.pcd"):
+                    new_elements.append(_load_one_element(path))
+
+            if path_elements_fixed.exists():
+                for path in path_elements_fixed.glob("*.pcd"):
+                    new_elements_fixed.append(_load_one_element(path))
+
+            if path_elements_hidden.exists():
+                for path in path_elements_hidden.glob("*.pcd"):
+                    new_elements_hidden.append(_load_one_element(path))
+
+            editor_instance.elements.pop_multiple(
+                range(len(editor_instance.elements)), from_gui=True
+            )
+            editor_instance.elements_fixed.pop_multiple(
+                range(len(editor_instance._elements_fixed), from_gui=True)
+            )
+            editor_instance.elements_fixed.pop_multiple(
+                range(len(editor_instance._elements_fixed))
+            )
+
+            editor_instance.elements.insert_multiple(new_elements, to_gui=True)
+            editor_instance._elements_fixed.insert_multiple(
+                new_elements_fixed, to_gui=True
+            )
+            editor_instance._elements_hidden.insert_multiple(new_elements)
+
+            editor_instance._future_states = []
+            editor_instance._past_states = []
+
+
 def _save_scene(path: Union[Path, str], editor_instance: Editor):
     path = Path(path)
     if path.exists():
-        # path.unlink()
-        return
+        path.unlink()
+        # return
 
     elements = editor_instance.elements
     elements_fixed = editor_instance._elements_fixed
