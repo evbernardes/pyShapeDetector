@@ -3,9 +3,16 @@ import copy
 import numpy as np
 import warnings
 import traceback
+from pathlib import Path
+from importlib.util import find_spec
 from open3d.visualization import gui
+from pyShapeDetector.geometry import PointCloud, TriangleMesh
+from pyShapeDetector.primitives import Primitive
 from .editor_app import Editor
 from .binding import Binding
+
+if has_h5py := find_spec("h5py") is not None:
+    import h5py
 
 
 class InternalFunctions:
@@ -20,6 +27,22 @@ class InternalFunctions:
     def __init__(self, editor_instance: Editor):
         self._editor_instance = editor_instance
         self._bindings = [
+            Binding(
+                key=gui.KeyName.I,
+                lctrl=True,
+                lshift=False,
+                description="Import",
+                callback=self._cb_import,
+                menu="File",
+            ),
+            Binding(
+                key=gui.KeyName.I,
+                lctrl=True,
+                lshift=True,
+                description="Import all from directory",
+                callback=self._cb_import_all_from_directory,
+                menu="File",
+            ),
             Binding(
                 key=gui.KeyName.ESCAPE,
                 lctrl=False,
@@ -200,6 +223,77 @@ class InternalFunctions:
         ]
 
         self._dict = {binding.description: binding for binding in self._bindings}
+
+    def _cb_import(self):
+        from .io import RECOGNIZED_EXTENSION, _load_one_element
+
+        editor_instance = self._editor_instance
+        window = self._editor_instance._window
+
+        dlg = gui.FileDialog(gui.FileDialog.OPEN, "Choose file to load", window.theme)
+
+        for type, extensions in RECOGNIZED_EXTENSION.items():
+            if type == "all":
+                continue
+            dlg.add_filter(extensions["all"], extensions["all_description"])
+
+        dlg.add_filter(RECOGNIZED_EXTENSION["all"], "All recognized files")
+        dlg.add_filter("", "All files")
+
+        def _on_file_dialog_cancel():
+            editor_instance._close_dialog()
+
+        def _on_load_dialog_done(filename):
+            element = _load_one_element(filename)
+            if element is not None:
+                try:
+                    self._editor_instance.elements.insert_multiple(element, to_gui=True)
+                except Exception:
+                    warnings.warn("Failed to insert imported file.")
+                    traceback.print_exc()
+            editor_instance._close_dialog()
+
+        # A file dialog MUST define on_cancel and on_done functions
+        dlg.set_on_cancel(_on_file_dialog_cancel)
+        dlg.set_on_done(_on_load_dialog_done)
+        window.show_dialog(dlg)
+
+    def _cb_import_all_from_directory(self):
+        from .io import RECOGNIZED_EXTENSION, _load_one_element
+
+        editor_instance = self._editor_instance
+        window = self._editor_instance._window
+
+        dlg = gui.FileDialog(
+            gui.FileDialog.OPEN_DIR,
+            "Choose directory to load everything",
+            window.theme,
+        )
+
+        def _on_file_dialog_cancel():
+            editor_instance._close_dialog()
+
+        def _on_load_dialog_done(filename):
+            path = Path(filename)
+
+            subpaths = [
+                subpath
+                for subpath in path.glob("*.*")
+                if subpath.suffix in RECOGNIZED_EXTENSION["all"].split()
+            ]
+            elements = [_load_one_element(subpath) for subpath in subpaths]
+            elements = [element for element in elements if element is not None]
+            try:
+                self._editor_instance.elements.insert_multiple(elements, to_gui=True)
+            except Exception:
+                warnings.warn("Failed to insert imported files.")
+                traceback.print_exc()
+            editor_instance._close_dialog()
+
+        # A file dialog MUST define on_cancel and on_done functions
+        dlg.set_on_cancel(_on_file_dialog_cancel)
+        dlg.set_on_done(_on_load_dialog_done)
+        window.show_dialog(dlg)
 
     def _cb_quit_app(self):
         window = self._editor_instance._window
