@@ -40,6 +40,14 @@ class InternalFunctions:
                 lctrl=True,
                 lshift=False,
                 description="Save scene as",
+                callback=self._cb_save_scene,
+                menu="File",
+            ),
+            Binding(
+                key=gui.KeyName.S,
+                lctrl=True,
+                lshift=True,
+                description="Save scene as",
                 callback=self._cb_save_scene_as,
                 menu="File",
             ),
@@ -274,6 +282,17 @@ class InternalFunctions:
         dlg.set_on_done(_on_load_dialog_done)
         window.show_dialog(dlg)
 
+    def _cb_save_scene(self):
+        from .io import _save_scene
+
+        editor_instance = self._editor_instance
+        path = editor_instance._scene_file_path
+
+        if path is None:
+            self._cb_save_scene_as()
+        else:
+            _save_scene(path, editor_instance)
+
     def _cb_save_scene_as(self):
         from .io import _save_scene
 
@@ -289,18 +308,10 @@ class InternalFunctions:
         def _on_cancel():
             editor_instance._close_dialog()
 
-        def _on_done(filename):
-            print(filename)
-            _save_scene(filename, editor_instance)
-
-            # path.stem
-            # current_element = editor_instance.current_element
-            # if current_element is None:
-            #     return
-
-            # if _write_one_element(current_element, filename):
-            #     editor_instance._close_dialog()
-            # pass
+        def _on_done(path):
+            _save_scene(path, editor_instance)
+            editor_instance._scene_file_path = path
+            editor_instance._close_dialog()
 
         # A file dialog MUST define on_cancel and on_done functions
         dlg.set_on_cancel(_on_cancel)
@@ -330,6 +341,7 @@ class InternalFunctions:
                 for subpath in path.glob("*.*")
                 if subpath.suffix in RECOGNIZED_EXTENSION["all"].split()
             ]
+
             elements = [_load_one_element(subpath) for subpath in subpaths]
             elements = [element for element in elements if element is not None]
             try:

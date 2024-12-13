@@ -79,6 +79,7 @@ class Editor:
         self._submenus = {}
         self._closing_app = False
         self._temp_windows = []
+        self._scene_file_path = None
 
         # self._elements_distance = []
         self.i_old = 0
