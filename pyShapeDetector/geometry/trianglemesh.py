@@ -53,6 +53,7 @@ class TriangleMesh(Numpy_Geometry):
     get_fused_mesh
     triangulate_earclipping
     fuse_vertices_triangles
+    write_triangle_mesh
     read_triangle_mesh
     """
 
@@ -713,6 +714,22 @@ class TriangleMesh(Numpy_Geometry):
             L += len(vertices_list[i])
         return vertices, np.vstack(triangles)
 
+    def write_triangle_mesh(self, filepath, **options):
+        """Write triangle mesh to file.
+
+        Internal call to Open3D.io.write_triangle_mesh
+
+        Parameters
+        ----------
+        filepath : string or instance of pathlib.Path
+            File to be loaded
+
+        See: Open3D.io.write_triangle_mesh
+        """
+        if isinstance(filepath, Path):
+            filepath = filepath.as_posix()
+        io.write_triangle_mesh(filepath, self.as_open3d, **options)
+
     @classmethod
     def read_triangle_mesh(cls, filepath):
         """Read file to triangle mesh.
@@ -729,7 +746,7 @@ class TriangleMesh(Numpy_Geometry):
         PointCloud
             Loaded point cloud.
 
-        See: Open3D.io.read_point_cloud
+        See: Open3D.io.read_triangle_mesh
         """
         if isinstance(filepath, Path):
             filename = filepath.as_posix()
