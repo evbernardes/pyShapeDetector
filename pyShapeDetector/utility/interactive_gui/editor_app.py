@@ -50,8 +50,6 @@ class Editor:
     -----------
         See: settings.Settings
 
-
-
     return_finish_flag : boolean, optional
         Should be deprecated.
     """
@@ -67,7 +65,7 @@ class Editor:
         self._future_states = []
         self._elements = ElementContainer(self)
         self._plane_boundaries = ElementContainer(self, is_color_fixed=True)
-        self._hidden_elements = ElementContainer(self)
+        self._elements_hidden = ElementContainer(self)
         self._elements_fixed = ElementContainer(self, is_color_fixed=True)
         self._pre_selected = []
         self._current_bbox = None
@@ -162,7 +160,7 @@ class Editor:
     def get_elements(self, add_hidden: bool = True, add_fixed: bool = False):
         elements = self.elements
         if add_hidden:
-            elements += self._hidden_elements
+            elements += self._elements_hidden
         if add_fixed:
             elements += self._elements_fixed
         return elements.raw
@@ -523,7 +521,7 @@ class Editor:
                 f"selected: {'YES' if self.is_current_selected else 'NO'}"
             )
 
-            if n := len(self._hidden_elements):
+            if n := len(self._elements_hidden):
                 self._info.text += f" | {n} hidden elements"
 
             if (ext := self._last_used_extension) is not None:

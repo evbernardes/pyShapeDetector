@@ -6,13 +6,21 @@ Created on 2024-12-13 11:12:42
 @author: evbernardes
 """
 import warnings
+import tempfile
+import tarfile
+import json
+import numpy as np
+from typing import Union
 from pathlib import Path
 from importlib.util import find_spec
 from pyShapeDetector.geometry import PointCloud, TriangleMesh
 from pyShapeDetector.primitives import Primitive
+from pyShapeDetector.utility.interactive_gui import Editor
 
 if has_h5py := find_spec("h5py") is not None:
     import h5py
+
+SCENE_FILE_EXTENSION = ".sdscene"
 
 RECOGNIZED_EXTENSION = {
     "Primitive": {
@@ -20,7 +28,7 @@ RECOGNIZED_EXTENSION = {
         ".json": "Primitive descriptors (.json)",
         "loader": Primitive.load,
         "writer": Primitive.save,
-        "default": ".tar"
+        "default": ".tar",
     },
     "PointCloud": {
         ".pcd": "Point Cloud Data files (.pcd)",
@@ -42,7 +50,7 @@ RECOGNIZED_EXTENSION = {
         ".glb": "OpenGL binary transfer files (.glb)",
         "loader": TriangleMesh.read_triangle_mesh,
         "writer": TriangleMesh.write_triangle_mesh,
-        "default": ".stl"
+        "default": ".stl",
     },
 }
 
@@ -78,9 +86,10 @@ def _load_one_element(filename):
 def _write_one_element(element, filename):
     path = Path(filename)
     type_name = type(element.raw).__name__
+
     if type_name not in RECOGNIZED_EXTENSION:
         warnings.warn("Cannot export elements of type '{RECOGNIZED_EXTENSION}'.")
-        return False
+        return None
 
     extensions = RECOGNIZED_EXTENSION[type_name]
 
@@ -93,11 +102,85 @@ def _write_one_element(element, filename):
         warnings.warn(
             f"Suffix '{path.suffix}' invalid for elements of type {type_name}."
         )
-        return False
+        return None
 
     try:
         RECOGNIZED_EXTENSION[type_name]["writer"](element.raw, path.as_posix())
-        return True
+        return path
+
     except Exception:
         warnings.warn(f"Could not write element of {type_name} to {filename}.")
+        return None
+
+
+def _save_scene(path: Union[Path, str], editor_instance: Editor):
+    path = Path(path)
+    if path.exists():
+        # path.unlink()
+        return
+
+    elements = editor_instance.elements
+    elements_fixed = editor_instance._elements_fixed
+    elements_hidden = editor_instance._elements_hidden
+    # scene = editor_instance.scene
+
+    if path.suffix == "":
+        path = path.with_suffix(SCENE_FILE_EXTENSION)
+
+    elif path.suffix != SCENE_FILE_EXTENSION:
+        warnings.warn(f"Extension '{path.suffix}' invalid.")
         return False
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with tarfile.open(path, "w") as tar:
+            temp_dir = Path(temp_dir)
+            json_file_path = temp_dir / "preferences.json"
+            with open(json_file_path, "w") as json_file:
+                json_data = {}
+                for param in editor_instance._settings._dict.values():
+                    value = param.value
+                    if isinstance(value, np.ndarray):
+                        value = value.tolist()
+                    json_data[param.name] = value
+                json.dump(json_data, json_file, indent=4)
+                tar.add(json_file_path, arcname="preferences.json")
+
+            if len(elements) > 0:
+                elements_directory = temp_dir / "elements"
+                elements_directory.mkdir()
+                for i, element in enumerate(elements):
+                    element_path = elements_directory / f"element_{i}"
+                    path_out = _write_one_element(element, element_path)
+                    try:
+                        path_out = _write_one_element(element, element_path)
+                        tar.add(path_out, arcname=f"elements/element_{i}")
+                    except:
+                        pass
+
+            if len(elements_fixed) > 0:
+                elements_directory = temp_dir / "elements_fixed"
+                elements_directory.mkdir()
+                for i, element in enumerate(elements_fixed):
+                    element_path = elements_directory / f"element_{i}"
+                    try:
+                        path_out = _write_one_element(element, element_path)
+                        tar.add(path_out, arcname=f"elements_fixed/element_{i}")
+                    except:
+                        pass
+
+            if len(elements_hidden) > 0:
+                elements_directory = temp_dir / "elements_hidden"
+                elements_directory.mkdir()
+                for i, element in enumerate(elements_hidden):
+                    element_path = elements_directory / f"element_{i}"
+                    path_out = _write_one_element(element, element_path)
+                    try:
+                        path_out = _write_one_element(element, element_path)
+                        tar.add(path_out, arcname=f"elements_hidden/element_{i}")
+                    except:
+                        pass
+
+    # else:
+    #     raise ValueError(
+    #         f"Acceptable extensions are 'tar' and 'json', got {path.suffix}."
+    #     )

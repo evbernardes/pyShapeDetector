@@ -36,6 +36,14 @@ class InternalFunctions:
                 menu="File",
             ),
             Binding(
+                key=gui.KeyName.S,
+                lctrl=True,
+                lshift=False,
+                description="Save scene as",
+                callback=self._cb_save_scene_as,
+                menu="File",
+            ),
+            Binding(
                 key=gui.KeyName.I,
                 lctrl=True,
                 lshift=True,
@@ -266,6 +274,39 @@ class InternalFunctions:
         dlg.set_on_done(_on_load_dialog_done)
         window.show_dialog(dlg)
 
+    def _cb_save_scene_as(self):
+        from .io import _save_scene
+
+        editor_instance = self._editor_instance
+        window = self._editor_instance._window
+
+        dlg = gui.FileDialog(
+            gui.FileDialog.SAVE,
+            "Save scene to file",
+            window.theme,
+        )
+
+        def _on_cancel():
+            editor_instance._close_dialog()
+
+        def _on_done(filename):
+            print(filename)
+            _save_scene(filename, editor_instance)
+
+            # path.stem
+            # current_element = editor_instance.current_element
+            # if current_element is None:
+            #     return
+
+            # if _write_one_element(current_element, filename):
+            #     editor_instance._close_dialog()
+            # pass
+
+        # A file dialog MUST define on_cancel and on_done functions
+        dlg.set_on_cancel(_on_cancel)
+        dlg.set_on_done(_on_done)
+        window.show_dialog(dlg)
+
     def _cb_import_all_from_directory(self):
         from .io import RECOGNIZED_EXTENSION, _load_one_element
 
@@ -278,10 +319,10 @@ class InternalFunctions:
             window.theme,
         )
 
-        def _on_file_dialog_cancel():
+        def _on_cancel():
             editor_instance._close_dialog()
 
-        def _on_load_dialog_done(filename):
+        def _on_done(filename):
             path = Path(filename)
 
             subpaths = [
@@ -299,8 +340,8 @@ class InternalFunctions:
             editor_instance._close_dialog()
 
         # A file dialog MUST define on_cancel and on_done functions
-        dlg.set_on_cancel(_on_file_dialog_cancel)
-        dlg.set_on_done(_on_load_dialog_done)
+        dlg.set_on_cancel(_on_cancel)
+        dlg.set_on_done(_on_done)
         window.show_dialog(dlg)
 
     def _cb_export_current_element(self):
@@ -315,23 +356,20 @@ class InternalFunctions:
             window.theme,
         )
 
-        def _on_file_dialog_cancel():
+        def _on_cancel():
             editor_instance._close_dialog()
 
-        def _on_load_dialog_done(filename):
-            print(filename)
-
-            # path.stem
+        def _on_done(filename):
             current_element = editor_instance.current_element
             if current_element is None:
                 return
 
-            if _write_one_element(current_element, filename):
+            if _write_one_element(current_element, filename) is not None:
                 editor_instance._close_dialog()
 
         # A file dialog MUST define on_cancel and on_done functions
-        dlg.set_on_cancel(_on_file_dialog_cancel)
-        dlg.set_on_done(_on_load_dialog_done)
+        dlg.set_on_cancel(_on_cancel)
+        dlg.set_on_done(_on_done)
         window.show_dialog(dlg)
 
     def _cb_quit_app(self):
@@ -557,7 +595,7 @@ class InternalFunctions:
         if len(indices) == 0:
             return
 
-        editor_instance._hidden_elements += editor_instance.elements.pop_multiple(
+        editor_instance._elements_hidden += editor_instance.elements.pop_multiple(
             indices, from_gui=True
         )
         editor_instance.elements.selected = False
@@ -571,7 +609,7 @@ class InternalFunctions:
         """Unhide all hidden elements."""
 
         editor_instance = self._editor_instance
-        hidden_elements = editor_instance._hidden_elements
+        hidden_elements = editor_instance._elements_hidden
 
         if len(hidden_elements) == 0:
             return
