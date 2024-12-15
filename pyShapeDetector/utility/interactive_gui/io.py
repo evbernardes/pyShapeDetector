@@ -5,6 +5,7 @@ Created on 2024-12-13 11:12:42
 
 @author: evbernardes
 """
+import traceback
 import warnings
 import tempfile
 import tarfile
@@ -119,14 +120,14 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
     with tempfile.TemporaryDirectory() as temp_dir:
         with tarfile.open(input_path, "r") as tar:
             tar.extractall(path=temp_dir)
-            json_path = Path(temp_dir) / "preferences.json"
-            with open(json_path, "r") as json_file:
-                json_data = json.load(json_file)
+            # json_path = Path(temp_dir) / "preferences.json"
+            # with open(json_path, "r") as json_file:
+            #     json_data = json.load(json_file)
 
-            for key, value in json_data.items():
-                setting = editor_instance._settings._dict[key]
-                setting.value = value
-                setting.on_update()
+            # for key, value in json_data.items():
+            #     setting = editor_instance._settings._dict[key]
+            #     setting.value = value
+            #     setting.on_update()
 
             path_elements = Path(temp_dir) / "elements"
             path_elements_fixed = Path(temp_dir) / "elements_fixed"
@@ -137,32 +138,37 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
             new_elements_hidden = []
 
             if path_elements.exists():
-                for path in path_elements.glob("*.pcd"):
+                for path in path_elements.glob("*"):
                     new_elements.append(_load_one_element(path))
 
             if path_elements_fixed.exists():
-                for path in path_elements_fixed.glob("*.pcd"):
+                for path in path_elements_fixed.glob("*"):
                     new_elements_fixed.append(_load_one_element(path))
 
             if path_elements_hidden.exists():
-                for path in path_elements_hidden.glob("*.pcd"):
+                for path in path_elements_hidden.glob("*"):
                     new_elements_hidden.append(_load_one_element(path))
 
-            editor_instance.elements.pop_multiple(
-                range(len(editor_instance.elements)), from_gui=True
-            )
-            editor_instance.elements_fixed.pop_multiple(
-                range(len(editor_instance._elements_fixed), from_gui=True)
-            )
-            editor_instance.elements_fixed.pop_multiple(
-                range(len(editor_instance._elements_fixed))
-            )
+            if len(editor_instance.elements) > 0:
+                editor_instance.elements.pop_multiple(
+                    range(len(editor_instance.elements)), from_gui=True
+                )
+
+            # if len(editor_instance._elements_fixed) > 0:
+            #     editor_instance.elements_fixed.pop_multiple(
+            #         range(len(editor_instance._elements_fixed), from_gui=True)
+            #     )
+
+            if len(editor_instance.elements_hidden) > 0:
+                editor_instance.elements_hidden.pop_multiple(
+                    range(len(editor_instance.elements_hidden))
+                )
 
             editor_instance.elements.insert_multiple(new_elements, to_gui=True)
-            editor_instance._elements_fixed.insert_multiple(
-                new_elements_fixed, to_gui=True
-            )
-            editor_instance._elements_hidden.insert_multiple(new_elements)
+            # editor_instance._elements_fixed.insert_multiple(
+            #     new_elements_fixed, to_gui=True
+            # )
+            editor_instance._elements_hidden.insert_multiple(new_elements_hidden)
 
             editor_instance._future_states = []
             editor_instance._past_states = []
@@ -189,16 +195,16 @@ def _save_scene(path: Union[Path, str], editor_instance: Editor):
     with tempfile.TemporaryDirectory() as temp_dir:
         with tarfile.open(path, "w") as tar:
             temp_dir = Path(temp_dir)
-            json_file_path = temp_dir / "preferences.json"
-            with open(json_file_path, "w") as json_file:
-                json_data = {}
-                for param in editor_instance._settings._dict.values():
-                    value = param.value
-                    if isinstance(value, np.ndarray):
-                        value = value.tolist()
-                    json_data[param.name] = value
-                json.dump(json_data, json_file, indent=4)
-                tar.add(json_file_path, arcname="preferences.json")
+            # json_file_path = temp_dir / "preferences.json"
+            # with open(json_file_path, "w") as json_file:
+            #     json_data = {}
+            #     for param in editor_instance._settings._dict.values():
+            #         value = param.value
+            #         if isinstance(value, np.ndarray):
+            #             value = value.tolist()
+            #         json_data[param.name] = value
+            #     json.dump(json_data, json_file, indent=4)
+            #     tar.add(json_file_path, arcname="preferences.json")
 
             if len(elements) > 0:
                 elements_directory = temp_dir / "elements"
@@ -208,8 +214,11 @@ def _save_scene(path: Union[Path, str], editor_instance: Editor):
                     path_out = _write_one_element(element, element_path)
                     try:
                         path_out = _write_one_element(element, element_path)
-                        tar.add(path_out, arcname=f"elements/element_{i}")
-                    except:
+                        tar.add(
+                            path_out, arcname=f"elements/element_{i}" + path_out.suffix
+                        )
+                    except Exception:
+                        traceback.print_exc()
                         pass
 
             if len(elements_fixed) > 0:
@@ -219,7 +228,10 @@ def _save_scene(path: Union[Path, str], editor_instance: Editor):
                     element_path = elements_directory / f"element_{i}"
                     try:
                         path_out = _write_one_element(element, element_path)
-                        tar.add(path_out, arcname=f"elements_fixed/element_{i}")
+                        tar.add(
+                            path_out,
+                            arcname=f"elements_fixed/element_{i}" + path_out.suffix,
+                        )
                     except:
                         pass
 
@@ -231,7 +243,10 @@ def _save_scene(path: Union[Path, str], editor_instance: Editor):
                     path_out = _write_one_element(element, element_path)
                     try:
                         path_out = _write_one_element(element, element_path)
-                        tar.add(path_out, arcname=f"elements_hidden/element_{i}")
+                        tar.add(
+                            path_out,
+                            arcname=f"elements_hidden/element_{i}" + path_out.suffix,
+                        )
                     except:
                         pass
 
