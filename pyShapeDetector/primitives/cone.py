@@ -9,15 +9,12 @@ import warnings
 import numpy as np
 from open3d.geometry import AxisAlignedBoundingBox
 
-from pyShapeDetector.utility import (
-    get_rotation_from_axis,
-    accept_one_or_multiple_elements,
-)
+from pyShapeDetector import utility
+
 from pyShapeDetector.methods import RANSAC_Classic
 from pyShapeDetector.geometry import TriangleMesh
 from .primitivebase import Primitive
 from .plane import Plane
-# from .cylinder import Cylinder
 
 
 class Cone(Primitive):
@@ -202,7 +199,7 @@ class Cone(Primitive):
     @property
     def rotation_from_axis(self):
         """Rotation matrix that aligns z-axis with cylinder axis."""
-        return get_rotation_from_axis([0, 0, 1], self.axis)
+        return utility.get_rotation_from_axis([0, 0, 1], self.axis)
 
     def __init__(self, model, decimals=None):
         """
@@ -359,7 +356,7 @@ class Cone(Primitive):
         model = np.append(model, half_angle)
         return cls(model, decimals=decimals)
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def get_signed_distances(self, points):
         """Gives the minimum distance between each point to the cylinder.
 
@@ -386,7 +383,7 @@ class Cone(Primitive):
         distances[~safe] = delta_norm[~safe] / (2 * np.cos(self.half_angle))
         return distances
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def get_normals(self, points):
         """Gives, for each input point, the normal vector of the point closest
         to the cylinder.

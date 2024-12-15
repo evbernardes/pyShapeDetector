@@ -12,7 +12,7 @@ import numpy as np
 import open3d as o3d
 
 from pyShapeDetector.geometry import TriangleMesh, PointCloud
-from pyShapeDetector.utility import accept_one_or_multiple_elements
+from pyShapeDetector import utility
 from .primitivebase import Primitive
 
 
@@ -141,7 +141,7 @@ class Template(Primitive):
 
         return Template([])
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def get_signed_distances(self, points):
         """Gives the minimum distance between each point to the model.
 
@@ -157,7 +157,7 @@ class Template(Primitive):
         """
         return np.zeros(len(points))
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def get_normals(self, points):
         """Gives, for each input point, the normal vector of the point closest
         to the primitive.

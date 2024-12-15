@@ -10,10 +10,7 @@ import numpy as np
 from pyShapeDetector.geometry import TriangleMesh
 # from skspatial.objects.cylinder import Cylinder as skcylinder
 
-from pyShapeDetector.utility import (
-    get_rotation_from_axis,
-    accept_one_or_multiple_elements,
-)
+from pyShapeDetector import utility
 from .primitivebase import Primitive
 from .plane import Plane
 from .planebounded import PlaneBounded
@@ -205,7 +202,7 @@ class Cylinder(Primitive):
     @property
     def rotation_from_axis(self):
         """Rotation matrix that aligns z-axis with cylinder axis."""
-        return get_rotation_from_axis([0, 0, 1], self.axis)
+        return utility.get_rotation_from_axis([0, 0, 1], self.axis)
 
     @classmethod
     def from_base_vector_radius(cls, base, vector, radius):
@@ -315,7 +312,7 @@ class Cylinder(Primitive):
         # return Cylinder(center+vector+[radius])
         return Cylinder.from_base_vector_radius(base, vector, radius)
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def get_signed_distances(self, points):
         """Gives the minimum distance between each point to the cylinder.
 
@@ -334,7 +331,7 @@ class Cylinder(Primitive):
 
         return distances - self.radius
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def get_normals(self, points):
         """Gives, for each input point, the normal vector of the point closest
         to the cylinder.
@@ -583,7 +580,7 @@ class Cylinder(Primitive):
         #             return False
         #     return True
 
-        # rot = plane.get_rotation_from_axis([0, 0, 1], plane.normal)
+        # rot = plane.utility.get_rotation_from_axis([0, 0, 1], plane.normal)
         # projected_circle = self.project_to_plane(plane)
         # projected_points = (rot @ projected_circle.bounds.T).T[:, :2]
         # hull = ConvexHull((rot @ plane.bounds.T).T[:, :2])

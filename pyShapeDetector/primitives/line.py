@@ -15,7 +15,7 @@ import open3d as o3d
 from open3d.geometry import AxisAlignedBoundingBox
 
 from pyShapeDetector.geometry import LineSet
-from pyShapeDetector.utility import accept_one_or_multiple_elements
+from pyShapeDetector import utility
 from .primitivebase import Primitive
 from .cylinder import Cylinder
 from .plane import Plane
@@ -232,7 +232,7 @@ class Line(Primitive):
         """
         raise RuntimeError("Fitting is not defined for lines.")
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def get_signed_distances(self, points):
         """Gives the minimum distance between each point to the line.
 
@@ -251,7 +251,7 @@ class Line(Primitive):
 
         return distances
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def get_normals(self, points):
         """Gives, for each input point, the normal vector of the point closest
         to the cylinder.

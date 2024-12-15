@@ -13,7 +13,7 @@ from pyShapeDetector.geometry import (
     OrientedBoundingBox,
 )
 from .plane import Plane, _get_vertices_from_vectors, _get_vx_vy
-from pyShapeDetector.utility import get_area_with_shoelace, midrange
+from pyShapeDetector import utility
 
 
 class PlaneRectangular(Plane):
@@ -159,7 +159,7 @@ class PlaneRectangular(Plane):
 
         surface_area = np.prod(np.linalg.norm(self.parallel_vectors, axis=1))
         for hole in self.holes:
-            surface_area -= get_area_with_shoelace(hole.vertices_projections)
+            surface_area -= utility.get_area_with_shoelace(hole.vertices_projections)
 
         return surface_area
 
@@ -602,7 +602,7 @@ class PlaneRectangular(Plane):
 
         elif self.has_inliers:
             points = self.inliers.points
-            center = midrange(points)
+            center = utility.midrange(points)
 
         else:
             warnings.warn("No input center not inliers, setting center to centroid")

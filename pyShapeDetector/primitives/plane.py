@@ -17,16 +17,8 @@ from pyShapeDetector.geometry import (
     AxisAlignedBoundingBox,
     OrientedBoundingBox,
 )
-
-from pyShapeDetector.utility import (
-    get_rotation_from_axis,
-    midrange,
-    accept_one_or_multiple_elements,
-)
-
-from .primitivebase import Primitive, _set_and_check_3d_array, _check_distance
-# from alphashape import alphashape
-# from .line import Line
+from pyShapeDetector import utility
+from .primitivebase import Primitive, _check_distance
 
 
 def _fuse_loops(loop1, loop2):
@@ -349,7 +341,7 @@ class Plane(Primitive):
 
         return Plane.from_normal_point(abc / norm, centroid)
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def get_signed_distances(self, points):
         """Gives the minimum distance between each point to the model.
 
@@ -368,7 +360,7 @@ class Plane(Primitive):
         points = np.asarray(points)
         return points.dot(self.normal) + self.dist
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def get_normals(self, points):
         """Gives, for each input point, the normal vector of the point closest
         to the primitive.
@@ -476,7 +468,7 @@ class Plane(Primitive):
 
         warnings.warn("Unbounded planes have infinite bounding boxes.")
 
-        R = get_rotation_from_axis([0, 0, 1], self.normal)
+        R = utility.get_rotation_from_axis([0, 0, 1], self.normal)
 
         return OrientedBoundingBox(
             center=self.centroid, R=R, extent=np.array([np.inf, np.inf, slack])
@@ -970,7 +962,7 @@ class Plane(Primitive):
             if self.has_inliers:
                 points = self.inlier_points
                 # center = np.median(self.inlier_points, axis=0)
-                center = midrange(points)
+                center = utility.midrange(points)
             else:
                 center = self.centroid
 
@@ -1182,7 +1174,7 @@ class Plane(Primitive):
         del grid
         return plane
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def get_projections(self, points, return_rotation=False):
         """Get 2D projections of points in plane.
 
@@ -1206,14 +1198,14 @@ class Plane(Primitive):
         points = np.asarray(points)
         if points.shape[1] != 3:
             raise ValueError("Input points must be 3D.")
-        rot = get_rotation_from_axis([0, 0, 1], self.normal)
+        rot = utility.get_rotation_from_axis([0, 0, 1], self.normal)
         projections = (rot @ points.T).T[:, :2]
 
         if return_rotation:
             return projections, rot
         return projections
 
-    @accept_one_or_multiple_elements(2)
+    @utility.accept_one_or_multiple_elements(2)
     def get_points_from_projections(self, projections, return_rotation=False):
         """Get 3D points from 2D projections in plane.
 
@@ -1236,7 +1228,7 @@ class Plane(Primitive):
             raise ValueError("Input points must be 2D.")
         N = len(projections)
 
-        rot = get_rotation_from_axis([0, 0, 1], self.normal)
+        rot = utility.get_rotation_from_axis([0, 0, 1], self.normal)
         proj_z = (rot @ self.centroid)[2]
         projections_3D = np.vstack([projections.T, np.repeat(proj_z, N)]).T
 
@@ -1344,9 +1336,9 @@ class Plane(Primitive):
             points = np.vstack(points)
 
         else:
-            points = _set_and_check_3d_array(points, name="points")
+            points = utility._set_and_check_3d_array(points, name="points")
 
-        center = self.flatten_points(midrange(points))
+        center = self.flatten_points(utility.midrange(points))
         delta = points - center
 
         delta_projection, rot = self.get_projections(delta, return_rotation=True)

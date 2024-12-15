@@ -10,14 +10,9 @@ from itertools import product
 import numpy as np
 from scipy.spatial import QhullError, ConvexHull, Delaunay
 
+from pyShapeDetector import utility
 from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
 from .plane import Plane, _get_vertices_from_vectors
-
-from pyShapeDetector.utility import (
-    check_vertices_clockwise,
-    get_area_with_shoelace,
-    midrange,
-)
 
 from importlib.util import find_spec
 
@@ -191,15 +186,15 @@ class PlaneBounded(Plane):
     def surface_area(self):
         """Surface area of bounded plane."""
 
-        surface_area = get_area_with_shoelace(self.vertices_projections)
+        surface_area = utility.get_area_with_shoelace(self.vertices_projections)
         for hole in self.holes:
-            surface_area -= get_area_with_shoelace(hole.vertices_projections)
+            surface_area -= utility.get_area_with_shoelace(hole.vertices_projections)
 
         return surface_area
 
     @property
     def center(self):
-        return self.flatten_points(midrange(self.vertices))
+        return self.flatten_points(utility.midrange(self.vertices))
 
     @property
     def is_clockwise(self):
@@ -506,7 +501,9 @@ class PlaneBounded(Plane):
         self._vertices_indices = shape_original.vertices_indices.copy()
         self._vertices = shape_original._vertices.copy()
         self._vertices_projections = shape_original._vertices_projections.copy()
-        self._is_clockwise = check_vertices_clockwise(self._vertices_projections)
+        self._is_clockwise = utility.check_vertices_clockwise(
+            self._vertices_projections
+        )
         self._convex = shape_original._convex
 
     def translate(self, translation, translate_inliers=True):
@@ -842,7 +839,9 @@ class PlaneBounded(Plane):
                 self._vertices = vertices
                 self._vertices_projections = projections
 
-            self._is_clockwise = check_vertices_clockwise(self._vertices_projections)
+            self._is_clockwise = utility.check_vertices_clockwise(
+                self._vertices_projections
+            )
             self._convex = convex
 
         except QhullError:
@@ -962,7 +961,7 @@ class PlaneBounded(Plane):
                 f"got {num_frequencies_to_keep}"
             )
 
-        # centroid = midrange(self.vertices_projections)
+        # centroid = utility.midrange(self.vertices_projections)
         centroid = self.vertices_projections.mean(axis=0)
         # projections_centered = self.vertices_projections - centroid
         # projections_centered = np.vstack(

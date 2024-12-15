@@ -6,20 +6,10 @@ Created on Thu Feb 15 10:15:09 2024
 @author: ebernardes
 """
 import warnings
-from itertools import permutations, product, combinations
 import numpy as np
 
-# from scipy.spatial import ConvexHull, Delaunay
-# from scipy.spatial.transform import Rotation
-# from open3d.geometry import AxisAlignedBoundingBox
 from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
 
-# from pyShapeDetector.utility import (
-#     # fuse_vertices_triangles,
-#     # get_triangle_boundary_indexes,
-#     get_loop_indexes_from_boundary_indexes,
-#     )
-# from .primitivebase import Primitive
 from .plane import Plane
 from .planebounded import _unflatten
 

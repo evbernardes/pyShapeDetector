@@ -17,12 +17,8 @@ import numpy as np
 
 # from open3d.geometry import AxisAlignedBoundingBox
 from scipy.spatial.transform import Rotation
-from pyShapeDetector.utility import get_rotation_from_axis, _set_and_check_3d_array
+from pyShapeDetector import utility
 from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
-from pyShapeDetector.utility import (
-    mesh_to_obj_description,
-    accept_one_or_multiple_elements,
-)
 
 
 def _check_distance(shape1, shape2, aabb_intersection, inlier_max_distance):
@@ -560,7 +556,7 @@ class Primitive(ABC):
         """
         pass
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def get_distances(self, points):
         """Gives the absolute value of the minimum distance between each point
         to the model.
@@ -596,7 +592,7 @@ class Primitive(ABC):
         """
         pass
 
-    @accept_one_or_multiple_elements(3, 3)
+    @utility.accept_one_or_multiple_elements(3, 3)
     def get_angles_cos(self, points, normals):
         """Gives the absolute value of cosines of the angles between the input
         normal vectors and the calculated normal vectors from the input points.
@@ -633,7 +629,7 @@ class Primitive(ABC):
         angles_cos = np.clip(np.sum(normals * normals_from_points, axis=1), -1, 1)
         return np.abs(angles_cos)
 
-    @accept_one_or_multiple_elements(3, 3)
+    @utility.accept_one_or_multiple_elements(3, 3)
     def get_angles(self, points, normals):
         """Gives the angles between the input normal vectors and the
         calculated normal vectors from the input points.
@@ -686,7 +682,7 @@ class Primitive(ABC):
         else:
             return self.get_distances(points), self.get_angles(points, normals)
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def flatten_points(self, points):
         """Stick each point in input to the closest point in shape's surface.
 
@@ -779,10 +775,10 @@ class Primitive(ABC):
         else:
             points = points_or_pointcloud
 
-        points = _set_and_check_3d_array(points, "inlier points")
+        points = utility._set_and_check_3d_array(points, "inlier points")
         num_points = len(points)
-        normals = _set_and_check_3d_array(normals, "inlier normals", num_points)
-        colors = _set_and_check_3d_array(colors, "inlier colors", num_points)
+        normals = utility._set_and_check_3d_array(normals, "inlier normals", num_points)
+        colors = utility._set_and_check_3d_array(colors, "inlier colors", num_points)
 
         if flatten:
             points = self.flatten_points(points)
@@ -814,7 +810,7 @@ class Primitive(ABC):
         new_points : N x 3 array
             New inlier points.
         """
-        new_points = _set_and_check_3d_array(new_points, "inlier points")
+        new_points = utility._set_and_check_3d_array(new_points, "inlier points")
         num_points = len(new_points)
 
         new_colors = np.repeat(self.color, num_points).reshape(num_points, 3)
@@ -1243,7 +1239,7 @@ class Primitive(ABC):
         for attr in possible_attributes:
             if hasattr(self, attr):
                 axis_original = getattr(self, attr)
-                rotation = get_rotation_from_axis(axis_original, axis)
+                rotation = utility.get_rotation_from_axis(axis_original, axis)
                 self.rotate(rotation)
                 break
 
@@ -1416,7 +1412,7 @@ class Primitive(ABC):
             The content of the OBJ file as a string.
         """
         name = type(self).__name__
-        return mesh_to_obj_description(
+        return utility.mesh_to_obj_description(
             name, self.mesh, shading=shading, mtl=mtl, **kwargs
         )
 
