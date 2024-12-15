@@ -15,10 +15,8 @@ from itertools import combinations
 
 import numpy as np
 
-# from open3d.geometry import AxisAlignedBoundingBox
 from scipy.spatial.transform import Rotation
-from pyShapeDetector import utility
-from pyShapeDetector.geometry import PointCloud, TriangleMesh, AxisAlignedBoundingBox
+from pyShapeDetector import utility, geometry
 
 
 def _check_distance(shape1, shape2, aabb_intersection, inlier_max_distance):
@@ -335,10 +333,10 @@ class Primitive(ABC):
 
     @mesh.setter
     def mesh(self, new_mesh):
-        if isinstance(new_mesh, TriangleMesh) or new_mesh is None:
+        if isinstance(new_mesh, geometry.TriangleMesh) or new_mesh is None:
             self._mesh = new_mesh
-        elif isinstance(new_mesh, TriangleMesh.__open3d_class__):
-            self._mesh = TriangleMesh(new_mesh)
+        elif isinstance(new_mesh, geometry.TriangleMesh.__open3d_class__):
+            self._mesh = geometry.TriangleMesh(new_mesh)
 
         else:
             raise ValueError(
@@ -352,7 +350,7 @@ class Primitive(ABC):
 
     @property
     def inliers_flattened(self):
-        return PointCloud.from_points_normals_colors(
+        return geometry.PointCloud.from_points_normals_colors(
             self.inlier_points_flattened, self.inliers.normals, self.inliers.colors
         )
 
@@ -486,7 +484,7 @@ class Primitive(ABC):
             )
 
         self._model = Primitive._parse_model_decimals(model, decimals)
-        self._inliers = PointCloud()
+        self._inliers = geometry.PointCloud()
         self._decimals = decimals
 
     @classmethod
@@ -717,7 +715,7 @@ class Primitive(ABC):
             Pointcloud with points flattened
 
         """
-        pcd_flattened = PointCloud(self.flatten_points(pcd.points))
+        pcd_flattened = geometry.PointCloud(self.flatten_points(pcd.points))
         pcd_flattened.normals = pcd.normals
         pcd_flattened.colors = pcd.colors
         return pcd_flattened
@@ -749,7 +747,7 @@ class Primitive(ABC):
             If True, use inliers mean color for shape. Default: False.
         """
 
-        if PointCloud.is_instance_or_open3d(pcd := points_or_pointcloud):
+        if geometry.PointCloud.is_instance_or_open3d(pcd := points_or_pointcloud):
             if normals is not None or colors is not None:
                 raise TypeError(
                     "If PointCloud is given as input, normals and "
@@ -845,7 +843,7 @@ class Primitive(ABC):
         if not isinstance(other_shape, Primitive):
             raise ValueError("other_shape must be a Primitive.")
 
-        closest_points, distances = PointCloud.find_closest_points(
+        closest_points, distances = geometry.PointCloud.find_closest_points(
             self.inliers.points, other_shape.inliers.points, n
         )
 
@@ -1072,9 +1070,11 @@ class Primitive(ABC):
             raise ValueError("No points given, and no inlier points.")
 
         mesh = self.get_mesh()
-        pcd = PointCloud(self.flatten_points(points))
+        pcd = geometry.PointCloud(self.flatten_points(points))
         bb = pcd.get_axis_aligned_bounding_box()
-        bb = AxisAlignedBoundingBox(bb.min_bound - [eps] * 3, bb.max_bound + [eps] * 3)
+        bb = geometry.AxisAlignedBoundingBox(
+            bb.min_bound - [eps] * 3, bb.max_bound + [eps] * 3
+        )
         # return mesh.crop(bb)
         return mesh.clean_crop(bb)
 
@@ -1374,7 +1374,9 @@ class Primitive(ABC):
 
                     inliers_path = Path(temp_dir) / "inliers.ply"
                     if inliers_path.exists():
-                        separated_inliers = PointCloud.read_point_cloud(inliers_path)
+                        separated_inliers = geometry.PointCloud.read_point_cloud(
+                            inliers_path
+                        )
         else:
             raise ValueError(
                 f"Acceptable extensions are 'tar' and 'json', got {extension}."
@@ -1468,7 +1470,9 @@ class Primitive(ABC):
             shape = primitive(model)
 
         if not ignore_extra_data:
-            pcd = PointCloud.fuse_pointclouds([shape.inliers for shape in shapes])
+            pcd = geometry.PointCloud.fuse_pointclouds(
+                [shape.inliers for shape in shapes]
+            )
             shape.set_inliers(pcd)
             shape.color = np.mean([s.color for s in shapes], axis=0)
 

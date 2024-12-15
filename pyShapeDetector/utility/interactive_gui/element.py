@@ -4,7 +4,7 @@ from typing import Union
 from abc import ABC, abstractmethod
 import numpy as np
 
-from .editor_app import Editor
+from pyShapeDetector.utility import interactive_gui
 
 from open3d.visualization.rendering import Scene
 from open3d.geometry import Geometry as Open3d_Geometry
@@ -12,18 +12,13 @@ from open3d.core import Tensor
 from open3d.t.geometry import PointCloud as TensorPointCloud
 
 from pyShapeDetector.primitives import Primitive
+from pyShapeDetector import geometry
 
-from pyShapeDetector.geometry import (
-    PointCloud,
-    TriangleMesh,
-    OrientedBoundingBox,
-    AxisAlignedBoundingBox,
-    LineSet,
-    Numpy_Geometry,
-    equivalent_classes_dict,
+line_elements = (
+    geometry.LineSet,
+    geometry.AxisAlignedBoundingBox,
+    geometry.OrientedBoundingBox,
 )
-
-line_elements = (LineSet, AxisAlignedBoundingBox, OrientedBoundingBox)
 
 
 class Element(ABC):
@@ -139,7 +134,7 @@ class Element(ABC):
         pass
 
     def _get_bbox(self):
-        if self.raw is None or isinstance(self.raw, LineSet):
+        if self.raw is None or isinstance(self.raw, geometry.LineSet):
             return None
 
         BBOX_expand = self._editor_instance._get_preference("BBOX_expand")
@@ -148,10 +143,12 @@ class Element(ABC):
             warnings.simplefilter("ignore")
             try:
                 bbox_original = self.raw.get_oriented_bounding_box()
-                bbox = OrientedBoundingBox(bbox_original).expanded(BBOX_expand)
+                bbox = geometry.OrientedBoundingBox(bbox_original).expanded(BBOX_expand)
             except Exception:
                 bbox_original = self.raw.get_axis_aligned_bounding_box()
-                bbox = AxisAlignedBoundingBox(bbox_original).expanded(BBOX_expand)
+                bbox = geometry.AxisAlignedBoundingBox(bbox_original).expanded(
+                    BBOX_expand
+                )
 
         if self.selected:
             bbox.color = self._editor_instance._get_preference("color_BBOX_selected")
@@ -248,7 +245,7 @@ class Element(ABC):
 
     def __init__(
         self,
-        editor_instance: Editor,
+        editor_instance: interactive_gui.Editor,
         raw,
         selected: bool = False,
         current: bool = False,
@@ -281,7 +278,7 @@ class Element(ABC):
 
     @staticmethod
     def get_from_type(
-        editor_instance: Editor,
+        editor_instance: interactive_gui.Editor,
         raw,
         selected: bool = False,
         current: bool = False,
@@ -289,11 +286,11 @@ class Element(ABC):
     ):
         if isinstance(raw, Primitive):
             element_class = ElementPrimitive
-        elif TriangleMesh.is_instance_or_open3d(raw):
+        elif geometry.TriangleMesh.is_instance_or_open3d(raw):
             element_class = ElementTriangleMesh
-        elif PointCloud.is_instance_or_open3d(raw):
+        elif geometry.PointCloud.is_instance_or_open3d(raw):
             element_class = ElementPointCloud
-        elif isinstance(raw, (Numpy_Geometry, Open3d_Geometry)):
+        elif isinstance(raw, (geometry.Numpy_Geometry, Open3d_Geometry)):
             element_class = ElementGeometry
         else:
             raise TypeError("Expected primitive or geometry, got {type(raw)}.")
@@ -318,11 +315,11 @@ class ElementPrimitive(Element):
 
 class ElementGeometry(Element):
     @staticmethod
-    def _parse_raw(raw: Union[Numpy_Geometry, Open3d_Geometry]):
-        if isinstance(raw, Numpy_Geometry):
+    def _parse_raw(raw: Union[geometry.Numpy_Geometry, Open3d_Geometry]):
+        if isinstance(raw, geometry.Numpy_Geometry):
             return raw
-        elif raw.__class__ in equivalent_classes_dict:
-            return equivalent_classes_dict[raw.__class__](raw)
+        elif raw.__class__ in geometry.equivalent_classes_dict:
+            return geometry.equivalent_classes_dict[raw.__class__](raw)
         elif isinstance(raw, Open3d_Geometry):
             raise NotImplementedError(
                 "Not yet implemented for Open3D geometry of type {raw.__class__}."
@@ -339,9 +336,9 @@ class ElementGeometry(Element):
 
 class ElementPointCloud(ElementGeometry):
     @staticmethod
-    def _parse_raw(raw: PointCloud):
-        if PointCloud.is_instance_or_open3d(raw):
-            pcd = PointCloud(raw)
+    def _parse_raw(raw: geometry.PointCloud):
+        if geometry.PointCloud.is_instance_or_open3d(raw):
+            pcd = geometry.PointCloud(raw)
             if not pcd.has_normals():
                 pcd.estimate_normals()
             return pcd
@@ -381,7 +378,7 @@ class ElementPointCloud(ElementGeometry):
             pcd = self.raw.uniform_down_sample(ratio)
         else:
             pcd = self.raw
-        self._distance_checker = PointCloud(pcd)
+        self._distance_checker = geometry.PointCloud(pcd)
 
     def update_on_scene(self):
         if not self._colors_updated:
@@ -403,9 +400,9 @@ class ElementPointCloud(ElementGeometry):
 
 class ElementTriangleMesh(ElementGeometry):
     @staticmethod
-    def _parse_raw(raw: TriangleMesh):
-        if TriangleMesh.is_instance_or_open3d(raw):
-            return TriangleMesh(raw)
+    def _parse_raw(raw: geometry.TriangleMesh):
+        if geometry.TriangleMesh.is_instance_or_open3d(raw):
+            return geometry.TriangleMesh(raw)
         else:
             raise ValueError("Expected TriangleMesh instance, got {raw}.")
 
@@ -422,6 +419,6 @@ class ElementTriangleMesh(ElementGeometry):
         number_points_distance = self._editor_instance._get_preference(
             "number_points_distance"
         )
-        self._distance_checker = PointCloud(
+        self._distance_checker = geometry.PointCloud(
             self.raw.sample_points_uniformly(number_points_distance)
         )
