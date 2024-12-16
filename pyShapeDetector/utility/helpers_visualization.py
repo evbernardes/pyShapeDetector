@@ -514,7 +514,6 @@ def apply_function_manually(
     elements,
     functions=[],
     function_submenus={},
-    select_filter=None,
     fixed_elements=[],
     pre_selected=None,
     return_indices=False,
@@ -556,9 +555,6 @@ def apply_function_manually(
         Elements to be drawn.
     functions : function or list of functions
         Function(s) to be applied on elements.
-    select_filter : function, optional
-        Function that returns boolean. If given, only selects elements when
-        if the return value for them is True. Default: None
     fixed_elements : list, optional
         Unselectable elements to be drawn. Default: empty.
     pre_selected : list, optional
@@ -598,12 +594,6 @@ def apply_function_manually(
     for menu, functions_list in function_submenus.items():
         for function in functions_list:
             element_selector.add_extension({"function": function, "menu": menu})
-
-    # element_selector.functions = functions
-    # for name, functions in function_submenus.items():
-    #     element_selector.add_function_submenu(name, functions)
-    element_selector.select_filter = select_filter
-    # element_selector.add_elements(fixed_elements, fixed=True)
 
     element_selector.run()
 

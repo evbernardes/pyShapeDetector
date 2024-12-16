@@ -72,7 +72,6 @@ class Editor:
         self._current_bbox_axes = None
         self._extensions = []
         self._last_used_extension = None
-        self._select_filter = lambda x: True
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag
         self._submenu_id_generator = itertools.count(1, 1)
@@ -142,21 +141,6 @@ class Editor:
         except Exception:
             warnings.warn(f"Could not create extension {function_or_descriptor}, got:")
             traceback.print_exc()
-
-    @property
-    def select_filter(self):
-        return self._select_filter
-
-    @select_filter.setter
-    def select_filter(self, new_function):
-        if new_function is None:
-            new_function = lambda x: True
-
-        elif (N := len(inspect.signature(new_function).parameters)) != 1:
-            raise ValueError(
-                f"Expected filter function with 1 parameter (element), got {N}."
-            )
-        self._select_filter = lambda elem: new_function(elem.raw)
 
     def get_elements(self, add_hidden: bool = True, add_fixed: bool = False):
         elements = self.elements

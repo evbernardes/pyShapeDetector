@@ -128,7 +128,7 @@ class ElementContainer(list):
             if not isinstance(value, (bool, np.bool_)):
                 raise ValueError(f"Expected boolean, got {type(value)}")
 
-            elem._selected = value and self.select_filter(elem)
+            elem._selected = value
 
     @property
     def selected_indices(self):
@@ -306,7 +306,7 @@ class ElementContainer(list):
 
         for idx in indices:
             elem = self[idx]
-            elem._selected = elem.selected and self._editor_instance.select_filter(elem)
+            elem._selected = elem.selected
             is_current = self._editor_instance._started and (idx == self.current_index)
 
             elem.update(is_current, update_gui)
@@ -334,11 +334,10 @@ class ElementContainer(list):
 
         for idx in indices:
             elem = self[idx]
-            is_selectable = self._editor_instance.select_filter(elem)
             if to_value is None:
-                selected = (not self._hotkeys._is_lshift_pressed) and is_selectable
+                selected = not self._hotkeys._is_lshift_pressed
             else:
-                selected = to_value and is_selectable
+                selected = to_value
             elem.selected = selected
 
         self.update_indices(indices)

@@ -462,8 +462,6 @@ class InternalFunctions:
         elem = editor_instance.elements.current_element
         if elem is None:
             return
-        if not editor_instance.select_filter(editor_instance.elements.current_element):
-            return
 
         editor_instance.elements.is_current_selected = (
             not editor_instance.elements.is_current_selected
