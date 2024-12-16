@@ -5,14 +5,14 @@ Created on Tur Oct 17 13:17:55 2024
 
 @author: ebernardes
 """
-import time
+# import time
 import copy
 import inspect
 import traceback
-import signal
-import sys
+
+# import signal
+# import sys
 import warnings
-import inspect
 import itertools
 import numpy as np
 from pathlib import Path
@@ -82,8 +82,8 @@ class Editor:
         self._scene_file_path = None
 
         # self._elements_distance = []
-        self.i_old = 0
-        self.i = 0
+        # self._previous_index = 0
+        # self._current_index = 0
         self.finish = False
         self._started = False
 
@@ -176,14 +176,15 @@ class Editor:
 
     @property
     def current_element(self):
-        num_elems = len(self.elements)
-        if self.i in range(num_elems):
-            return self.elements[self.i]
-        else:
-            warnings.warn(
-                f"Tried to update index {self.i}, but {num_elems} elements present."
-            )
-            return None
+        self.elements.current_element
+        # num_elems = len(self.elements)
+        # if self.elements.current_index in range(num_elems):
+        #     return self.elements[self.elements.current_index]
+        # else:
+        #     warnings.warn(
+        #         f"Tried to update index {self.elements.current_index}, but {num_elems} elements present."
+        #     )
+        #     return None
 
     @property
     def is_current_selected(self):
@@ -217,7 +218,7 @@ class Editor:
             "indices": copy.deepcopy(indices),
             "elements": copy.deepcopy(input_elements),
             "num_outputs": num_outputs,
-            "current_index": self.i,
+            "current_index": self.elements.current_index,
         }
 
         self._past_states.append(current_state)
@@ -307,8 +308,8 @@ class Editor:
             if distances[i_min_distance] is np.inf:
                 return gui.Widget.EventCallbackResult.IGNORED
 
-            self.i_old = self.i
-            self.i = i_min_distance
+            self.elements._previous_index = self.elements.current_index
+            self.elements.current_index = i_min_distance
             if event.is_modifier_down(gui.KeyModifier.SHIFT):
                 self._internal_functions._cb_toggle()
             self._update_current_idx()
@@ -507,7 +508,7 @@ class Editor:
         for idx in indices:
             elem = self.elements[idx]
             elem._selected = elem.selected and self.select_filter(elem)
-            is_current = self._started and (idx == self.i)
+            is_current = self._started and (idx == self.elements.current_index)
 
             elem.update(is_current, update_gui)
 
@@ -517,8 +518,11 @@ class Editor:
         def update_label():
             # This is not called on the main thread, so we need to
             # post to the main thread to safely access UI items.
+            if self.elements.current_index is None:
+                return
+
             self._info.text = (
-                f"Current: {self.i + 1} / {len(self._elements)} | "
+                f"Current: {self.elements.current_index + 1} / {len(self._elements)} | "
                 f"selected: {'YES' if self.is_current_selected else 'NO'}"
             )
 
@@ -547,24 +551,29 @@ class Editor:
 
     def _update_current_idx(self, idx=None, update_old=True):
         if idx is not None:
-            self.i_old = self.i
-            self.i = idx
+            self.elements._previous_index = self.elements.current_index
+            self.elements.current_index = idx
+
             self.print_debug(
-                f"Updating index, from {self.i_old} to {self.i}", require_verbose=True
+                f"Updating index, from {self.elements._previous_index} to {self.elements.current_index}",
+                require_verbose=True,
             )
         else:
-            self.print_debug(f"Updating current index: {self.i}", require_verbose=True)
+            self.print_debug(
+                f"Updating current index: {self.elements.current_index}",
+                require_verbose=True,
+            )
 
-        if self.i >= len(self.elements):
+        if self.elements.current_index >= len(self.elements):
             warnings.warn(
-                f"Index error, tried accessing {self.i} out of "
+                f"Index error, tried accessing {self.elements.current_index} out of "
                 f"{len(self.elements)} elements. Getting last one."
             )
             idx = len(self.elements) - 1
 
-        self._update_elements(self.i)
+        self._update_elements(self.elements.current_index)
         if update_old:
-            self._update_elements(self.i_old)
+            self._update_elements(self.elements._previous_index)
         self._update_BBOX_and_axes()
 
     def _get_range(self, indices_or_slice):

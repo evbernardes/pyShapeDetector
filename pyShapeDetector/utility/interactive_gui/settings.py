@@ -380,7 +380,7 @@ class Settings:
         self._editor_instance._update_elements(None)
 
     def _cb_color_selected(self, value):
-        indices = np.where(self._editor_instance.elements.selected)[0].tolist()
+        indices = np.where(self._editor_instance.elements.is_selected)[0].tolist()
         self._editor_instance._update_elements(indices)
 
     def _cb_paint_random(self, value):
@@ -431,7 +431,7 @@ class Settings:
         ]
 
     def _cb_color_unselected(self, value):
-        unselected = ~np.array(self._editor_instance.elements.selected)
+        unselected = ~np.array(self._editor_instance.elements.is_selected)
         indices = np.where(unselected)[0].tolist()
         self._editor_instance._update_elements(indices)
 

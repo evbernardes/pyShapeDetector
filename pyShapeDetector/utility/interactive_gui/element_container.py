@@ -8,11 +8,13 @@ import numpy as np
 
 class ElementContainer(list):
     """
-
     Class implementing a specialized list for containing Element instances.
 
     Attributes
     ----------
+    previous_index
+    current_index
+    current_element
     raw
     drawable
     selected
@@ -27,11 +29,54 @@ class ElementContainer(list):
 
     """
 
+    @property
+    def previous_index(self):
+        return self._previous_index
+
+    @property
+    def current_index(self):
+        return self._current_index
+
+    @current_index.setter
+    def current_index(self, new_index: int):
+        if not isinstance(new_index, (int, np.integer)) or new_index < 0:
+            raise ValueError(f"Index has to be positive integer, got {new_index}.")
+        # self._previous_index = self._current_index
+
+        if len(self) == 0:
+            warnings.warn(
+                f"Tried setting index to {new_index}, but there are "
+                f"no elements in the container."
+            )
+            self._current_index = None
+
+        if new_index > len(self) - 1:
+            warnings.warn(
+                f"Tried setting index to {new_index}, but there are "
+                f"only {len(self)} elements in the container."
+            )
+            self._current_index = len(self) - 1
+
+        self._current_index = int(new_index)
+
+    @property
+    def current_element(self):
+        num_elems = len(self)
+        if self._current_index in range(num_elems):
+            return self[self._current_index]
+        else:
+            warnings.warn(
+                f"Tried to update index {self._current_index}, but {num_elems} elements present."
+            )
+            return None
+
     def __repr__(self):
         return f"ElementContainer({len(self)} elements)"
 
     def __init__(self, editor_instance, elements=[], is_color_fixed=False):
         super().__init__(elements)
+        self._previous_index = None
+        self._current_index = None
         self._editor_instance = editor_instance
         self._is_color_fixed = is_color_fixed
 
@@ -44,11 +89,11 @@ class ElementContainer(list):
         return [element.drawable for element in self]
 
     @property
-    def selected(self):
+    def is_selected(self):
         return [element.selected for element in self]
 
-    @selected.setter
-    def selected(self, values):
+    @is_selected.setter
+    def is_selected(self, values):
         if isinstance(values, bool):
             values = [values] * len(self)
 
@@ -69,7 +114,7 @@ class ElementContainer(list):
 
     @property
     def selected_indices(self):
-        return np.where(self.selected)[0].tolist()
+        return np.where(self.is_selected)[0].tolist()
 
     def insert_multiple(self, elements_new, indices=None, selected=False, to_gui=False):
         from .element import Element
@@ -85,7 +130,11 @@ class ElementContainer(list):
         if isinstance(selected, bool):
             selected = [selected] * len(indices)
 
-        idx_new = self._editor_instance.i
+        if self.current_index is None:
+            self._current_index = 0
+            self._previous_index = 0
+
+        idx_new = self.current_index
 
         self._editor_instance.print_debug(
             f"Adding {len(elements_new)} elements to the existing {len(self)}",
@@ -96,9 +145,7 @@ class ElementContainer(list):
             if idx_new > idx:
                 idx_new += 1
 
-            is_current = self._editor_instance._started and (
-                self._editor_instance.i == idx
-            )
+            is_current = self._editor_instance._started and (self.current_index == idx)
 
             if isinstance(elements_new[i], Element):
                 elem = elements_new[i]
@@ -134,7 +181,7 @@ class ElementContainer(list):
             self._editor_instance._update_current_idx(
                 idx_new, update_old=self._editor_instance._started
             )
-            self._editor_instance.i_old = self._editor_instance.i
+            self._previous_index = self.current_index
 
     def pop_multiple(self, indices, from_gui=False):
         # update_old = self.i in indices
@@ -149,24 +196,24 @@ class ElementContainer(list):
                 elem.remove_from_scene()
             elements_popped.append(elem)
 
-        idx_new = self._editor_instance.i - sum(
-            [idx < self._editor_instance.i for idx in indices]
+        idx_new = self.current_index - sum(
+            [idx < self.current_index for idx in indices]
         )
         self._editor_instance.print_debug(
             f"popped: {indices}",
         )
         self._editor_instance.print_debug(
-            f"old index: {self._editor_instance.i}, new index: {idx_new}"
+            f"old index: {self.current_index}, new index: {idx_new}"
         )
 
         if len(self) == 0:
             warnings.warn("No elements left after popping, not updating.")
-            self._editor_instance.i = 0
-            self._editor_instance.i_old = 0
+            self.current_index = 0
+            self._previous_index = 0
         else:
             idx_new = max(min(idx_new, len(self) - 1), 0)
             self._editor_instance._update_current_idx(idx_new, update_old=False)
-            self._editor_instance.i_old = self._editor_instance.i
+            self._previous_index = self.current_index
 
         return elements_popped
 
@@ -212,7 +259,7 @@ class ElementContainer(list):
 
         distances = []
         for i, elem in enumerate(self):
-            if i == self._editor_instance.i:
+            if i == self.current_index:
                 # for selecting smaller objects closer to bigger ones,
                 # ignores currently selected one
                 distances.append(np.inf)
@@ -222,5 +269,5 @@ class ElementContainer(list):
 
     def update_all(self):
         for i, elem in enumerate(self):
-            elem._current = self._editor_instance.i == 0
+            elem._current = self.current_index == 0
             elem.update()

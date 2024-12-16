@@ -263,7 +263,7 @@ class Extension:
             indices = []
             input_elements = []
         elif self.inputs == "current":
-            indices = [editor_instance.i]
+            indices = [editor_instance.elements.current_index]
             input_elements = [editor_instance.current_element.raw]
         elif self.inputs == "selected":
             indices = editor_instance.elements.selected_indices

@@ -525,7 +525,8 @@ class InternalFunctions:
         """Shifts 'current index' pointer checking if within limits"""
         editor_instance = self._editor_instance
         new_idx = min(
-            max(editor_instance.i + delta, 0), len(editor_instance.elements) - 1
+            max(editor_instance.elements.current_index + delta, 0),
+            len(editor_instance.elements) - 1,
         )
         editor_instance._update_current_idx(new_idx)
 
@@ -644,7 +645,7 @@ class InternalFunctions:
         editor_instance._elements_hidden += editor_instance.elements.pop_multiple(
             indices, from_gui=True
         )
-        editor_instance.elements.selected = False
+        editor_instance.elements.is_selected = False
 
         # TODO: find a way to make hiding work with undoing
         editor_instance._past_states = []
@@ -702,7 +703,7 @@ class InternalFunctions:
             {
                 "modified_elements": modified_elements,
                 "indices": indices,
-                "current_index": editor_instance.i,
+                "current_index": editor_instance.elements.current_index,
             }
         )
 
@@ -735,7 +736,7 @@ class InternalFunctions:
         input_elements = [editor_instance.elements[i].raw for i in indices]
         editor_instance._save_state(indices, input_elements, len(modified_elements))
 
-        editor_instance.i = future_state["current_index"]
+        editor_instance.elements.current_index = future_state["current_index"]
         editor_instance.elements.pop_multiple(indices, from_gui=True)
         editor_instance.elements.insert_multiple(modified_elements, to_gui=True)
 
