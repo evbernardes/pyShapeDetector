@@ -174,34 +174,6 @@ class Editor:
     def elements_fixed(self):
         return self._elements_fixed
 
-    @property
-    def current_element(self):
-        self.elements.current_element
-        # num_elems = len(self.elements)
-        # if self.elements.current_index in range(num_elems):
-        #     return self.elements[self.elements.current_index]
-        # else:
-        #     warnings.warn(
-        #         f"Tried to update index {self.elements.current_index}, but {num_elems} elements present."
-        #     )
-        #     return None
-
-    # @property
-    # def is_current_selected(self):
-    #     if self.current_element is None:
-    #         return None
-    #     return self.current_element.selected
-
-    # @is_current_selected.setter
-    # def is_current_selected(self, boolean_value: bool):
-    #     if not isinstance(boolean_value, bool):
-    #         raise RuntimeError(f"Expected boolean, got {type(boolean_value)}.")
-    #     if self.current_element is None:
-    #         raise RuntimeError(
-    #             "Error setting selected, current element does not exist."
-    #         )
-    #     self.current_element.selected = boolean_value
-
     def _reset_on_key(self):
         """Reset keys to original hotkeys."""
         self._scene.set_on_key(self._hotkeys._on_key)
@@ -312,7 +284,7 @@ class Editor:
             self.elements.current_index = i_min_distance
             if event.is_modifier_down(gui.KeyModifier.SHIFT):
                 self._internal_functions._cb_toggle()
-            self._update_current_idx()
+            self.elements.update_current_index()
 
         self._scene.scene.scene.render_to_depth_image(depth_callback)
 
@@ -489,33 +461,6 @@ class Editor:
             )
             self._current_bbox_axes = (vx, vy, vz)
 
-    def _update_elements(self, indices, update_gui=True):
-        num_elems = len(self.elements)
-
-        if indices is None:
-            indices = range(num_elems)
-
-        if not isinstance(indices, (list, range)):
-            indices = [indices]
-
-        if len(indices) == 0:
-            return
-
-        if num_elems == 0 or max(indices) >= num_elems:
-            warnings.warn(
-                f"Tried to update index {indices}, but {num_elems} elements present."
-            )
-            return
-
-        for idx in indices:
-            elem = self.elements[idx]
-            elem._selected = elem.selected and self.select_filter(elem)
-            is_current = self._started and (idx == self.elements.current_index)
-
-            elem.update(is_current, update_gui)
-
-        self._update_info()
-
     def _update_info(self):
         def update_label():
             # This is not called on the main thread, so we need to
@@ -550,74 +495,6 @@ class Editor:
             self._window.set_needs_layout()
 
         self.app.post_to_main_thread(self._window, update_label)
-
-    def _update_current_idx(self, idx=None, update_old=True):
-        if idx is not None:
-            self.elements._previous_index = self.elements.current_index
-            self.elements.current_index = idx
-
-            self.print_debug(
-                f"Updating index, from {self.elements._previous_index} to {self.elements.current_index}",
-                require_verbose=True,
-            )
-        else:
-            self.print_debug(
-                f"Updating current index: {self.elements.current_index}",
-                require_verbose=True,
-            )
-
-        if self.elements.current_index >= len(self.elements):
-            warnings.warn(
-                f"Index error, tried accessing {self.elements.current_index} out of "
-                f"{len(self.elements)} elements. Getting last one."
-            )
-            idx = len(self.elements) - 1
-
-        self._update_elements(self.elements.current_index)
-        if update_old:
-            self._update_elements(self.elements._previous_index)
-        self._update_BBOX_and_axes()
-
-    def _get_range(self, indices_or_slice):
-        if isinstance(indices_or_slice, (range, list, np.ndarray)):
-            return indices_or_slice
-
-        if indices_or_slice is None:
-            # if indices are not given, update everything
-            return range(len(self.elements))
-
-        if isinstance(indices_or_slice, slice):
-            start, stop, stride = indices_or_slice.indices(len(self.elements))
-            return range(start, stop, stride)
-
-        raise ValueError("Invalid input, expected index list/array, range or slice.")
-
-    def _toggle_indices(self, indices_or_slice, to_value=None):
-        indices = self._get_range(indices_or_slice)
-
-        for idx in indices:
-            elem = self.elements[idx]
-            is_selectable = self.select_filter(elem)
-            if to_value is None:
-                selected = (not self._hotkeys._is_lshift_pressed) and is_selectable
-            else:
-                selected = to_value and is_selectable
-            elem.selected = selected
-
-        self._update_elements(indices)
-
-    # def _reset_elements_in_gui(self, reset_fixed=False):
-    #     """Prepare elements for visualization"""
-
-    #     current_idx = copy.copy(min(self.i, len(self.elements) - 1))
-    #     if reset_fixed:
-    #         self.elements_fixed.update_all()
-    #     else:
-    #         self.elements.update_all()
-
-    #     self._update_plane_boundaries()
-    #     self._update_current_bounding_box()
-    #     self._update_current_idx(current_idx)
 
     def run(self):
         self.print_debug(f"Starting {type(self).__name__}.")

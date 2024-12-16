@@ -25,7 +25,9 @@ class ElementContainer(list):
     insert_multiple
     pop_multiple
     get_distances_to_point
-    update_all
+    update_indices
+    toggle_indices
+    update_current_index
 
     """
 
@@ -116,7 +118,7 @@ class ElementContainer(list):
         elif len(values) != len(self):
             raise ValueError(
                 "Length of input expected to be the same as the "
-                f"current number of elements ({len(self.elements)}), "
+                f"current number of elements ({len(self)}), "
                 f"got {len(values)}."
             )
 
@@ -187,14 +189,14 @@ class ElementContainer(list):
         if self._editor_instance._started:
             for idx in indices:
                 # Updating vis explicitly in order not to remove it
-                self._editor_instance._update_elements(idx, update_gui=False)
+                self.update_indices(idx, update_gui=False)
                 if to_gui:
                     self[idx].add_to_scene()
 
             self._editor_instance.print_debug(f"{len(self)} now.", require_verbose=True)
 
             idx_new = max(min(idx_new, len(self) - 1), 0)
-            self._editor_instance._update_current_idx(
+            self.update_current_index(
                 idx_new, update_old=self._editor_instance._started
             )
             self._previous_index = self.current_index
@@ -229,7 +231,7 @@ class ElementContainer(list):
             self._previous_index = 0
         else:
             idx_new = max(min(idx_new, len(self) - 1), 0)
-            self._editor_instance._update_current_idx(idx_new, update_old=False)
+            self.update_current_index(idx_new, update_old=False)
             self._previous_index = self.current_index
 
         return elements_popped
@@ -284,7 +286,86 @@ class ElementContainer(list):
                 distances.append(_distance_to_point(elem.distance_checker))
         return distances
 
-    def update_all(self):
-        for i, elem in enumerate(self):
-            elem._current = self.current_index == 0
-            elem.update()
+    def update_indices(self, indices, update_gui=True):
+        num_elems = len(self)
+
+        if indices is None:
+            indices = range(num_elems)
+
+        if not isinstance(indices, (list, range)):
+            indices = [indices]
+
+        if len(indices) == 0:
+            return
+
+        if num_elems == 0 or max(indices) >= num_elems:
+            warnings.warn(
+                f"Tried to update index {indices}, but {num_elems} elements present."
+            )
+            return
+
+        for idx in indices:
+            elem = self[idx]
+            elem._selected = elem.selected and self._editor_instance.select_filter(elem)
+            is_current = self._editor_instance._started and (idx == self.current_index)
+
+            elem.update(is_current, update_gui)
+
+        self._editor_instance._update_info()
+
+    def toggle_indices(self, indices_or_slice, to_value=None):
+        if isinstance(indices_or_slice, (range, list, np.ndarray)):
+            indices = indices_or_slice
+
+        elif indices_or_slice is None:
+            # if indices are not given, update everything
+            indices = range(len(self.elements))
+
+        elif isinstance(indices_or_slice, slice):
+            start, stop, stride = indices_or_slice.indices(len(self.elements))
+            indices = range(start, stop, stride)
+
+        else:
+            warnings.warn(
+                "Invalid input to toggle_indices, expected index list/array, "
+                f"range or slice, got {indices_or_slice}."
+            )
+            return
+
+        for idx in indices:
+            elem = self[idx]
+            is_selectable = self._editor_instance.select_filter(elem)
+            if to_value is None:
+                selected = (not self._hotkeys._is_lshift_pressed) and is_selectable
+            else:
+                selected = to_value and is_selectable
+            elem.selected = selected
+
+        self.update_indices(indices)
+
+    def update_current_index(self, idx=None, update_old=True):
+        if idx is not None:
+            self._previous_index = self.current_index
+            self._current_index = idx
+
+            self._editor_instance.print_debug(
+                f"Updating index, from {self._previous_index} to {self.current_index}",
+                require_verbose=True,
+            )
+        else:
+            self._editor_instance.print_debug(
+                f"Updating current index: {self.current_index}",
+                require_verbose=True,
+            )
+
+        if self.current_index >= len(self):
+            warnings.warn(
+                f"Index error, tried accessing {self.current_index} out of "
+                f"{len(self)} elements. Getting last one."
+            )
+            idx = len(self) - 1
+
+        self.update_indices(self.current_index)
+        if update_old:
+            self.update_indices(self._previous_index)
+        self._editor_instance._update_BBOX_and_axes()

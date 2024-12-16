@@ -322,7 +322,9 @@ class Extension:
                 to_gui=True,
                 selected=editor_instance.elements.current_element.selected,
             )
-            editor_instance._update_current_idx(len(editor_instance.elements) - 1)
+            editor_instance.elements.update_current_index(
+                len(editor_instance.elements) - 1
+            )
         else:
             # editor_instance._insert_elements(
             editor_instance.elements.insert_multiple(

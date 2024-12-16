@@ -468,7 +468,7 @@ class InternalFunctions:
         editor_instance.elements.is_current_selected = (
             not editor_instance.elements.is_current_selected
         )
-        editor_instance._update_current_idx()
+        editor_instance.elements.update_current_index()
 
     def _cb_delete(self):
         """Delete selected elements."""
@@ -526,7 +526,7 @@ class InternalFunctions:
             max(editor_instance.elements.current_index + delta, 0),
             len(editor_instance.elements) - 1,
         )
-        editor_instance._update_current_idx(new_idx)
+        editor_instance.elements.update_current_index(new_idx)
 
     def _cb_next(self):
         self._shift_current(+1)
@@ -542,11 +542,11 @@ class InternalFunctions:
 
     def _cb_select_all(self):
         """Toggle the all elements to selected."""
-        self._editor_instance._toggle_indices(None, to_value=True)
+        self._editor_instance.elements.toggle_indices(None, to_value=True)
 
     def _cb_unselect_all(self):
         """Toggle the all elements between to unselected."""
-        self._editor_instance._toggle_indices(None, to_value=False)
+        self._editor_instance.elements.toggle_indices(None, to_value=False)
 
     def _cb_select_last(self):
         """Toggle the elements from last output to selected."""
@@ -555,7 +555,9 @@ class InternalFunctions:
             return
 
         num_outputs = editor_instance._past_states[-1]["num_outputs"]
-        editor_instance._toggle_indices(slice(-num_outputs, None), to_value=True)
+        editor_instance.elements.toggle_indices(
+            slice(-num_outputs, None), to_value=True
+        )
 
     def _cb_unselect_last(self):
         """Toggle the elements from last output to unselected."""
@@ -564,7 +566,9 @@ class InternalFunctions:
             return
 
         num_outputs = editor_instance._past_states[-1]["num_outputs"]
-        editor_instance._toggle_indices(slice(-num_outputs, None), to_value=False)
+        editor_instance.elements.toggle_indices(
+            slice(-num_outputs, None), to_value=False
+        )
 
     def _cb_toggle_type(self):
         editor_instance = self._editor_instance
@@ -580,7 +584,7 @@ class InternalFunctions:
         def _callback(_type, value):
             is_type = [isinstance(elem.raw, _type) for elem in editor_instance.elements]
             indices = np.where(is_type)[0].tolist()
-            editor_instance._toggle_indices(indices, to_value=value)
+            editor_instance.elements.toggle_indices(indices, to_value=value)
 
         dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
         dlg_layout.add_child(gui.Label("Select types to select:"))
@@ -711,7 +715,7 @@ class InternalFunctions:
             editor_instance._future_states.pop(0)
 
         if len(indices) > 0:
-            editor_instance._update_current_idx(indices[-1])
+            editor_instance.elements.update_current_index(indices[-1])
 
         editor_instance._update_plane_boundaries()
 
@@ -738,6 +742,6 @@ class InternalFunctions:
         editor_instance.elements.pop_multiple(indices, from_gui=True)
         editor_instance.elements.insert_multiple(modified_elements, to_gui=True)
 
-        editor_instance._update_current_idx(len(editor_instance.elements) - 1)
+        editor_instance.elements.update_current_index(len(editor_instance.elements) - 1)
 
         editor_instance._update_plane_boundaries()
