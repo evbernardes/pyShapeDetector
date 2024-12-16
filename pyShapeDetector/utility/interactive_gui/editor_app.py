@@ -80,9 +80,6 @@ class Editor:
         self._temp_windows = []
         self._scene_file_path = None
 
-        # self._elements_distance = []
-        # self._previous_index = 0
-        # self._current_index = 0
         self.finish = False
         self._started = False
 
