@@ -345,30 +345,6 @@ class ElementPointCloud(ElementGeometry):
         else:
             raise ValueError(f"Expected PointCloud instance, got {raw}.")
 
-    def _extract_drawable_color(self):
-        drawable = self.drawable
-        return drawable.point.colors.numpy()
-
-    def _update_drawable_color(self, color_input):
-        drawable = self.drawable
-        color = self._get_dimmed_color(color_input)
-
-        # drawable.point.colors = color
-        if color.shape == (3,):
-            drawable.paint_uniform_color(color.astype("float32"))
-            self._colors_updated = False
-        elif color.shape == drawable.point.colors.shape:
-            drawable.point.colors = Tensor(color.astype("float32"))
-            self._colors_updated = False
-        else:
-            warnings.warn("Could not paint Tensor-based drawable PointCloud.")
-
-    def _get_drawable(self):
-        self._drawable = TensorPointCloud.from_legacy(self.raw.as_open3d)
-        self._colors_updated = True
-        self._normals_updated = True
-        self._points_updated = True
-
     def _get_distance_checker(self):
         number_points_distance = self._editor_instance._get_preference(
             "number_points_distance"
@@ -380,22 +356,46 @@ class ElementPointCloud(ElementGeometry):
             pcd = self.raw
         self._distance_checker = geometry.PointCloud(pcd)
 
-    def update_on_scene(self):
-        if not self._colors_updated:
-            self._editor_instance._scene.scene.scene.update_geometry(
-                self.name, self.drawable, Scene.UPDATE_COLORS_FLAG
-            )
-            self._colors_updated = True
-        if not self._normals_updated:
-            self._editor_instance._scene.scene.scene.update_geometry(
-                self.name, self.drawable, Scene.UPDATE_NORMALS_FLAG
-            )
-            self._normals_updated = True
-        if not self._points_updated:
-            self._editor_instance._scene.scene.scene.update_geometry(
-                self.name, self.drawable, Scene.UPDATE_POINTS_FLAG
-            )
-            self._points_updated = True
+    # def _extract_drawable_color(self):
+    #     drawable = self.drawable
+    #     return drawable.point.colors.numpy()
+
+    # def _update_drawable_color(self, color_input):
+    #     drawable = self.drawable
+    #     color = self._get_dimmed_color(color_input)
+
+    #     # drawable.point.colors = color
+    #     if color.shape == (3,):
+    #         drawable.paint_uniform_color(color.astype("float32"))
+    #         self._colors_updated = False
+    #     elif color.shape == drawable.point.colors.shape:
+    #         drawable.point.colors = Tensor(color.astype("float32"))
+    #         self._colors_updated = False
+    #     else:
+    #         warnings.warn("Could not paint Tensor-based drawable PointCloud.")
+
+    # def _get_drawable(self):
+    #     self._drawable = TensorPointCloud.from_legacy(self.raw.as_open3d)
+    #     self._colors_updated = True
+    #     self._normals_updated = True
+    #     self._points_updated = True
+
+    # def update_on_scene(self):
+    #     if not self._colors_updated:
+    #         self._editor_instance._scene.scene.scene.update_geometry(
+    #             self.name, self.drawable, Scene.UPDATE_COLORS_FLAG
+    #         )
+    #         self._colors_updated = True
+    #     if not self._normals_updated:
+    #         self._editor_instance._scene.scene.scene.update_geometry(
+    #             self.name, self.drawable, Scene.UPDATE_NORMALS_FLAG
+    #         )
+    #         self._normals_updated = True
+    #     if not self._points_updated:
+    #         self._editor_instance._scene.scene.scene.update_geometry(
+    #             self.name, self.drawable, Scene.UPDATE_POINTS_FLAG
+    #         )
+    #         self._points_updated = True
 
 
 class ElementTriangleMesh(ElementGeometry):

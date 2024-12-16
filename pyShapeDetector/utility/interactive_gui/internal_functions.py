@@ -492,7 +492,7 @@ class InternalFunctions:
         """Save elements to be copied."""
         editor_instance = self._editor_instance
         copied_elements = copy.deepcopy(
-            [elem.raw for elem in editor_instance.elements if elem["selected"]]
+            [elem.raw for elem in editor_instance.elements if elem.selected]
         )
         editor_instance.print_debug(f"Copying {len(copied_elements)} elements.")
         editor_instance._copied_elements = copied_elements

@@ -334,7 +334,7 @@ class Extension:
             #     editor_instance._pop_elements(indices, from_gui=True) == input_elements
             # )
             assert (
-                editor_instance.elements.pop_multiple(indices, from_gui=True).raw
+                editor_instance.elements.pop_multiple(indices, from_gui=True)
                 == input_elements
             )
 

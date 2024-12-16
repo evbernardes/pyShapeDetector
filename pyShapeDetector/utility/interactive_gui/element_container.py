@@ -147,7 +147,8 @@ class ElementContainer(list):
             elem = self.pop(i - n)
             if from_gui:
                 elem.remove_from_scene()
-            elements_popped.append(elem)
+            elements_popped.append(elem.raw)
+            del elem._drawable
 
         idx_new = self._editor_instance.i - sum(
             [idx < self._editor_instance.i for idx in indices]
