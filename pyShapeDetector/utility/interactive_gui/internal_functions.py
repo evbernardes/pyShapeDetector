@@ -111,8 +111,8 @@ class InternalFunctions:
             ),
             Binding(
                 key=gui.KeyName.RIGHT,
-                lctrl=False,
-                lshift=True,
+                lctrl=True,
+                lshift=False,
                 description="Fast Next",
                 callback=self._cb_fast_next,
                 menu=None,
