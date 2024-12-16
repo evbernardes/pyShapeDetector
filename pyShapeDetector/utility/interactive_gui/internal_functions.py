@@ -11,10 +11,6 @@ from .binding import Binding
 
 class InternalFunctions:
     @property
-    def is_lshift_pressed(self):
-        return self._editor_instance._hotkeys._is_lshift_pressed
-
-    @property
     def bindings(self):
         return self._bindings
 
@@ -111,8 +107,8 @@ class InternalFunctions:
             ),
             Binding(
                 key=gui.KeyName.RIGHT,
-                lctrl=False,
-                lshift=True,
+                lctrl=True,
+                lshift=False,
                 description="Fast Next",
                 callback=self._cb_fast_next,
                 menu=None,
@@ -498,7 +494,7 @@ class InternalFunctions:
         """Save elements to be copied."""
         editor_instance = self._editor_instance
         copied_elements = copy.deepcopy(
-            [elem.raw for elem in editor_instance.elements if elem["selected"]]
+            [elem.raw for elem in editor_instance.elements if elem.selected]
         )
         editor_instance.print_debug(f"Copying {len(copied_elements)} elements.")
         editor_instance._copied_elements = copied_elements
