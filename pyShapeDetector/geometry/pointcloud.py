@@ -404,15 +404,15 @@ class PointCloud(Numpy_Geometry):
         list
             Divided pointclouds
         """
-        suaabbes = self.get_axis_aligned_bounding_box().split(num_boxes, dim)
+        sub_aabbs = self.get_axis_aligned_bounding_box().split(num_boxes, dim)
 
         if return_only_indices:
             return [
                 aabb.get_point_indices_within_bounding_box(self.points)
-                for aabb in suaabbes
+                for aabb in sub_aabbs
             ]
         else:
-            return [self.crop(aabb) for aabb in suaabbes]
+            return [self.crop(aabb) for aabb in sub_aabbs]
 
     # def split(self, num_boxes, dim=None, return_only_indices=False):
     #     """ Split the bounding box of the pointcloud in multiple sub boxes and
