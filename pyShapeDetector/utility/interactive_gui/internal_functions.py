@@ -11,10 +11,6 @@ from .binding import Binding
 
 class InternalFunctions:
     @property
-    def is_lshift_pressed(self):
-        return self._editor_instance._hotkeys._is_lshift_pressed
-
-    @property
     def bindings(self):
         return self._bindings
 
