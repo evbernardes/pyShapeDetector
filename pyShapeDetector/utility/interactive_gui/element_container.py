@@ -70,6 +70,22 @@ class ElementContainer(list):
             )
             return None
 
+    @property
+    def is_current_selected(self):
+        if self.current_element is None:
+            return None
+        return self.current_element.selected
+
+    @is_current_selected.setter
+    def is_current_selected(self, boolean_value: bool):
+        if not isinstance(boolean_value, bool):
+            raise RuntimeError(f"Expected boolean, got {type(boolean_value)}.")
+        if self.current_element is None:
+            raise RuntimeError(
+                "Error setting selected, current element does not exist."
+            )
+        self.current_element.selected = boolean_value
+
     def __repr__(self):
         return f"ElementContainer({len(self)} elements)"
 

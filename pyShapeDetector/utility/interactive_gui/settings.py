@@ -360,11 +360,11 @@ class Settings:
         self._editor_instance._update_BBOX_and_axes()
 
     def _cb_color_BBOX_selected(self, value):
-        if self._editor_instance.is_current_selected:
+        if self._editor_instance.elements.is_current_selected:
             self._editor_instance._update_BBOX_and_axes()
 
     def _cb_color_BBOX_unselected(self, value):
-        if not self._editor_instance.is_current_selected:
+        if not self._editor_instance.elements.is_current_selected:
             self._editor_instance._update_BBOX_and_axes()
 
     def _cb_show_BBOX(self, value):

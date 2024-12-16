@@ -405,7 +405,7 @@ class InternalFunctions:
             editor_instance._close_dialog()
 
         def _on_done(filename):
-            current_element = editor_instance.current_element
+            current_element = editor_instance.elements.current_element
             if current_element is None:
                 return
 
@@ -463,13 +463,15 @@ class InternalFunctions:
     def _cb_toggle(self):
         """Toggle the current highlighted element between selected/unselected."""
         editor_instance = self._editor_instance
-        elem = editor_instance.current_element
+        elem = editor_instance.elements.current_element
         if elem is None:
             return
-        if not editor_instance.select_filter(editor_instance.current_element):
+        if not editor_instance.select_filter(editor_instance.elements.current_element):
             return
 
-        editor_instance.is_current_selected = not editor_instance.is_current_selected
+        editor_instance.elements.is_current_selected = (
+            not editor_instance.elements.is_current_selected
+        )
         editor_instance._update_current_idx()
 
     def _cb_delete(self):

@@ -186,21 +186,21 @@ class Editor:
         #     )
         #     return None
 
-    @property
-    def is_current_selected(self):
-        if self.current_element is None:
-            return None
-        return self.current_element.selected
+    # @property
+    # def is_current_selected(self):
+    #     if self.current_element is None:
+    #         return None
+    #     return self.current_element.selected
 
-    @is_current_selected.setter
-    def is_current_selected(self, boolean_value: bool):
-        if not isinstance(boolean_value, bool):
-            raise RuntimeError(f"Expected boolean, got {type(boolean_value)}.")
-        if self.current_element is None:
-            raise RuntimeError(
-                "Error setting selected, current element does not exist."
-            )
-        self.current_element.selected = boolean_value
+    # @is_current_selected.setter
+    # def is_current_selected(self, boolean_value: bool):
+    #     if not isinstance(boolean_value, bool):
+    #         raise RuntimeError(f"Expected boolean, got {type(boolean_value)}.")
+    #     if self.current_element is None:
+    #         raise RuntimeError(
+    #             "Error setting selected, current element does not exist."
+    #         )
+    #     self.current_element.selected = boolean_value
 
     def _reset_on_key(self):
         """Reset keys to original hotkeys."""
@@ -446,11 +446,13 @@ class Editor:
             self._scene.scene.remove_geometry("BBOXAxisZ")
             self._current_bbox_axes
 
-        if self.current_element is None or not self._get_preference("show_BBOX"):
+        if self.elements.current_element is None or not self._get_preference(
+            "show_BBOX"
+        ):
             self._current_bbox = None
             return
 
-        self._current_bbox = self.current_element._get_bbox().as_open3d
+        self._current_bbox = self.elements.current_element._get_bbox().as_open3d
 
         if self._current_bbox is not None:
             self._scene.scene.add_geometry(
@@ -522,8 +524,8 @@ class Editor:
                 return
 
             self._info.text = (
-                f"Current: {self.elements.current_index + 1} / {len(self._elements)} | "
-                f"selected: {'YES' if self.is_current_selected else 'NO'}"
+                f"Current: {self.elements.current_index + 1} / {len(self.elements)} | "
+                f"selected: {'YES' if self.elements.is_current_selected else 'NO'}"
             )
 
             if n := len(self._elements_hidden):
