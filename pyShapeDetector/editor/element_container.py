@@ -201,7 +201,7 @@ class ElementContainer(list):
 
         idx_new = self.current_index
 
-        self._editor_instance.print_debug(
+        self._editor_instance._settings.print_debug(
             f"Adding {len(elements_new)} elements to the existing {len(self)}",
             require_verbose=True,
         )
@@ -228,8 +228,9 @@ class ElementContainer(list):
                     self._is_color_fixed,
                 )
 
-            self._editor_instance.print_debug(
-                f"Added {elem.raw} at index {idx}.", require_verbose=True
+            self._editor_instance._settings.print_debug(
+                f"Added {elem.raw} at index {idx}.",
+                require_verbose=True,
             )
             self.insert(idx, elem)
 
@@ -240,7 +241,10 @@ class ElementContainer(list):
                 if to_gui:
                     self[idx].add_to_scene()
 
-            self._editor_instance.print_debug(f"{len(self)} now.", require_verbose=True)
+            self._editor_instance._settings.print_debug(
+                f"{len(self)} now.",
+                require_verbose=True,
+            )
 
             idx_new = max(min(idx_new, len(self) - 1), 0)
             self.update_current_index(
@@ -265,11 +269,11 @@ class ElementContainer(list):
         idx_new = self.current_index - sum(
             [idx < self.current_index for idx in indices]
         )
-        self._editor_instance.print_debug(
+        self._editor_instance._settings.print_debug(
             f"popped: {indices}",
         )
-        self._editor_instance.print_debug(
-            f"old index: {self.current_index}, new index: {idx_new}"
+        self._editor_instance._settings.print_debug(
+            f"old index: {self.current_index}, new index: {idx_new}",
         )
 
         if len(self) == 0:
@@ -394,12 +398,12 @@ class ElementContainer(list):
             self._previous_index = self.current_index
             self._current_index = idx
 
-            self._editor_instance.print_debug(
+            self._editor_instance._settings.print_debug(
                 f"Updating index, from {self._previous_index} to {self.current_index}",
                 require_verbose=True,
             )
         else:
-            self._editor_instance.print_debug(
+            self._editor_instance._settings.print_debug(
                 f"Updating current index: {self.current_index}",
                 require_verbose=True,
             )

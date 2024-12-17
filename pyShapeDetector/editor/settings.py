@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 from open3d.visualization import gui
+from open3d.visualization.rendering import MaterialRecord
 from .editor_app import Editor
 from .parameter import (
     ParameterBool,
@@ -92,6 +93,30 @@ class Settings:
             warnings.warn(f"Tried getting non existing preference {key}")
             return None
         return self._dict[key].value
+
+    def get_material(self, key):
+        if key not in self._materials:
+            warnings.warn(f"Material '{key}' not available")
+            return None
+        return self._materials[key]
+
+    def _update_materials(self):
+        scaling = self._editor_instance._window.scaling
+        self._materials["regular"].point_size = (
+            self.get_setting("PointCloud_point_size") * scaling
+        )
+
+        self._materials["line"].line_width = self.get_setting("line_width") * scaling
+
+    def print_debug(self, text: str, require_verbose: bool = False):
+        is_debug_activated = self.get_setting("debug")
+        is_verbose_activated = self.get_setting("verbose")
+
+        if not is_debug_activated or (require_verbose and not is_verbose_activated):
+            return
+
+        text = str(text)
+        print("[DEBUG] " + text)
 
     def __init__(self, editor_instance: Editor, menu="Preferences", **kwargs):
         options = [
@@ -314,6 +339,18 @@ class Settings:
                     )
                     setattr(self, key, value)
 
+        material_regular = MaterialRecord()
+        material_regular.base_color = [1.0, 1.0, 1.0, 1.0]  # White color
+        material_regular.shader = "defaultUnlit"
+
+        material_line = MaterialRecord()
+        material_line.shader = "unlitLine"
+
+        self._materials = {
+            "regular": material_regular,
+            "line": material_line,
+        }
+
         ###################################################
         # Test extension for testing reference parameters #
         # Uncomment and this and the definition to test   #
@@ -330,19 +367,15 @@ class Settings:
 
     def _cb_line_width(self, value):
         # line_width = self._dict["line_width"].value
-        self._editor_instance.material_line.line_width = (
-            value * self._editor_instance._window.scaling
-        )
+
+        self._update_materials()
         self._editor_instance._update_plane_boundaries()
         self._editor_instance._update_BBOX_and_axes()
 
     def _cb_PointCloud_point_size(self, value):
         from .element import ElementPointCloud
 
-        # point_size = self._dict["PointCloud_point_size"].value
-        self._editor_instance.material_regular.point_size = (
-            value * self._editor_instance._window.scaling
-        )
+        self._update_materials()
         indices = np.where(
             [
                 isinstance(element, ElementPointCloud)

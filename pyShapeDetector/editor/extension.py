@@ -13,6 +13,7 @@ from .parameter import ParameterBase, ParameterPanel
 from .binding import Binding
 from .settings import Settings
 
+
 VALID_INPUTS = ("none", "current", "selected", "global")
 
 
@@ -278,11 +279,14 @@ class Extension:
             )
 
         # Debug lines
-        editor_instance.print_debug(f"Applying {self.name} to {len(indices)} elements")
-        editor_instance.print_debug(f"Extension has input type {self.inputs}")
-        editor_instance.print_debug(f"Indices: {indices}.", require_verbose=True)
+        settings = editor_instance._settings
+        settings.print_debug(
+            f"Applying {self.name} to {len(indices)} elements",
+        )
+        settings.print_debug(f"Extension has input type {self.inputs}")
+        settings.print_debug(f"Indices: {indices}.", require_verbose=True)
         if len(self.parameters) > 0:
-            editor_instance.print_debug(f"Parameters: {self.parameters}.")
+            settings.print_debug(f"Parameters: {self.parameters}.")
 
         try:
             kwargs = self.parameters_kwargs

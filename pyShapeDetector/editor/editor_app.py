@@ -94,11 +94,11 @@ class Editor:
 
         if not hasattr(self, "_menubar"):
             self._menubar = self.app.menubar = gui.Menu()
-            self.print_debug("Created menubar.")
+            self._settings.print_debug("Created menubar.")
 
         if not hasattr(self, "_submenus"):
             self._submenus = {}
-            self.print_debug("Initialized submenus dict.")
+            self._settings.print_debug("Initialized submenus dict.")
 
         upper_menu = self._menubar
 
@@ -110,18 +110,18 @@ class Editor:
             upper_menu.add_menu(part, menu)
             self._submenus[path] = menu
 
-        self.print_debug(f"Submenu '{path.as_posix()}' created.")
+        self._settings.print_debug(f"Submenu '{path.as_posix()}' created.")
         return self._submenus[path]
 
-    def print_debug(self, text, require_verbose=False):
-        is_debug_activated = self._get_setting("debug")
-        is_verbose_activated = self._get_setting("verbose")
+    # def print_debug(self, text, require_verbose=False):
+    #     is_debug_activated = self._get_setting("debug")
+    #     is_verbose_activated = self._get_setting("verbose")
 
-        if not is_debug_activated or (require_verbose and not is_verbose_activated):
-            return
+    #     if not is_debug_activated or (require_verbose and not is_verbose_activated):
+    #         return
 
-        text = str(text)
-        print("[DEBUG] " + text)
+    #     text = str(text)
+    #     print("[DEBUG] " + text)
 
     @property
     def extensions(self):
@@ -169,14 +169,16 @@ class Editor:
 
         if to_future:
             self._future_states.append(current_state)
-            self.print_debug(f"Saving state {current_state} to future states.")
+            self._settings.print_debug(
+                f"Saving state {current_state} to future states."
+            )
 
             while len(self._future_states) > self._get_setting("number_redo_states"):
                 self._future_states.pop(0)
 
         else:
             self._past_states.append(current_state)
-            self.print_debug(f"Saving state {current_state} to past states.")
+            self._settings.print_debug(f"Saving state {current_state} to past states.")
 
             while len(self._past_states) > self._get_setting("number_undo_states"):
                 self._past_states.pop(0)
@@ -300,18 +302,18 @@ class Editor:
         )
         self._scene.scene.show_axes(False)
 
-        self.material_regular = rendering.MaterialRecord()
-        self.material_regular.base_color = [1.0, 1.0, 1.0, 1.0]  # White color
-        self.material_regular.shader = "defaultUnlit"
-        self.material_regular.point_size = (
-            self._get_setting("PointCloud_point_size") * self._window.scaling
-        )
+        # self.material_regular = rendering.MaterialRecord()
+        # self.material_regular.base_color = [1.0, 1.0, 1.0, 1.0]  # White color
+        # self.material_regular.shader = "defaultUnlit"
+        # self.material_regular.point_size = (
+        #     self._get_setting("PointCloud_point_size") * self._window.scaling
+        # )
 
-        self.material_line = rendering.MaterialRecord()
-        self.material_line.shader = "unlitLine"
-        self.material_line.line_width = (
-            self._get_setting("line_width") * self._window.scaling
-        )
+        # self.material_line = rendering.MaterialRecord()
+        # self.material_line.shader = "unlitLine"
+        # self.material_line.line_width = (
+        #     self._get_setting("line_width") * self._window.scaling
+        # )
 
         self._info = gui.Label("")
         self._info.visible = False
@@ -333,14 +335,14 @@ class Editor:
         self._scene.set_on_mouse(self._on_mouse)
 
         # 3) Add extension menu items
-        self.print_debug(
-            f"{len(self._internal_functions.bindings)} internal functions."
+        self._settings.print_debug(
+            f"{len(self._internal_functions.bindings)} internal functions.",
         )
         for binding in self._internal_functions.bindings:
             binding.add_to_menu(self)
 
-        self.print_debug(
-            f"{len(self.extensions) if self.extensions else 0} extensions loaded."
+        self._settings.print_debug(
+            f"{len(self.extensions) if self.extensions else 0} extensions loaded.",
         )
         for extension in self.extensions:
             extension.binding.add_to_menu(self)
@@ -388,7 +390,7 @@ class Editor:
         """Remove bounding box and get new one for current element."""
         from pyShapeDetector.geometry import TriangleMesh
 
-        self.print_debug("Updating bounding box...", require_verbose=True)
+        self._settings.print_debug("Updating bounding box...", require_verbose=True)
 
         if self._current_bbox is not None:
             self._scene.scene.remove_geometry("CurrentBoundingBox")
@@ -408,7 +410,9 @@ class Editor:
 
         if self._current_bbox is not None:
             self._scene.scene.add_geometry(
-                "CurrentBoundingBox", self._current_bbox, self.material_line
+                "CurrentBoundingBox",
+                self._current_bbox,
+                self._settings.get_material("line"),
             )
 
         if self._current_bbox is not None and self._get_setting("show_BBOX_axes"):
@@ -477,10 +481,11 @@ class Editor:
         self.app.post_to_main_thread(self._window, update_label)
 
     def run(self):
-        self.print_debug(f"Starting {type(self).__name__}.")
+        self._settings.print_debug(f"Starting {type(self).__name__}.")
 
         # Set up the gui
         self._setup_window_and_scene()
+        self._settings._update_materials()
 
         for elem in self.elements + self.elements_fixed:
             elem.add_to_scene()

@@ -475,7 +475,9 @@ class InternalFunctions:
         input_elements = [editor_instance.elements[i].raw for i in indices]
 
         try:
-            editor_instance.print_debug(f"Deleting elements at indices {indices}.")
+            self._editor_instance._settings.print_debug(
+                f"Deleting elements at indices {indices}."
+            )
             editor_instance.elements.pop_multiple(indices, from_gui=True)
         except Exception:
             warnings.warn(f"Could not delete elements at indices {indices}.")
@@ -499,15 +501,17 @@ class InternalFunctions:
         copied_elements = copy.deepcopy(
             [elem.raw for elem in editor_instance.elements if elem.is_selected]
         )
-        editor_instance.print_debug(f"Copying {len(copied_elements)} elements.")
+        editor_instance._settings.print_debug(
+            f"Copying {len(copied_elements)} elements."
+        )
         editor_instance._copied_elements = copied_elements
 
     def _cb_paste(self):
         editor_instance = self._editor_instance
 
         try:
-            editor_instance.print_debug(
-                f"Pasting {len(editor_instance._copied_elements)} elements."
+            editor_instance._settings.print_debug(
+                f"Pasting {len(editor_instance._copied_elements)} elements.",
             )
             editor_instance.elements.insert_multiple(
                 editor_instance._copied_elements, to_gui=True
@@ -646,7 +650,9 @@ class InternalFunctions:
         ext = editor_instance._last_used_extension
 
         if ext is not None:
-            editor_instance.print_debug(f"Re-applying last function: {ext.name}")
+            print_debug(
+                editor_instance._settings, f"Re-applying last function: {ext.name}"
+            )
             ext._apply_to_elements()
 
     def _cb_toggle_hotkeys_panel(self):
@@ -742,9 +748,10 @@ class InternalFunctions:
         num_outputs = last_state["num_outputs"]
         num_elems = len(editor_instance.elements)
 
-        editor_instance.print_debug(
+        print_debug(
+            editor_instance._settings,
             f"Undoing last operation, removing {num_outputs} outputs and "
-            f"resetting {len(elements)} inputs."
+            f"resetting {len(elements)} inputs.",
         )
 
         indices_to_pop = range(num_elems - num_outputs, num_elems)
@@ -790,9 +797,10 @@ class InternalFunctions:
 
         modified_elements = future_state["modified_elements"]
 
-        editor_instance.print_debug(
+        print_debug(
+            editor_instance._settings,
             f"Redoing last operation, removing {len(indices)} inputs and "
-            f"resetting {len(modified_elements)} inputs."
+            f"resetting {len(modified_elements)} inputs.",
         )
 
         input_elements = [editor_instance.elements[i].raw for i in indices]

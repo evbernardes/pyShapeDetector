@@ -1,7 +1,7 @@
 import warnings
 from open3d.visualization import gui
 from .editor_app import Editor
-from .binding import Binding, KEY_LEFT_CONTROL, KEY_LEFT_SHIFT, _get_key_name
+from .binding import Binding, KEY_LEFT_CONTROL, KEY_LEFT_SHIFT
 
 
 class Hotkeys:
@@ -41,8 +41,9 @@ class Hotkeys:
         return self._bindings_map
 
     def _on_key(self, event):
-        self._editor_instance.print_debug(
-            f"Key: {event.key}, type: {event.type}", require_verbose=True
+        self._editor_instance._settings.print_debug(
+            f"Key: {event.key}, type: {event.type}",
+            require_verbose=True,
         )
 
         # if event.key == gui.KeyName.ESCAPE:

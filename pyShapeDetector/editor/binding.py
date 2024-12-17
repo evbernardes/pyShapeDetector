@@ -87,7 +87,7 @@ class Binding:
             return
 
         menu = editor_instance._get_submenu_from_path(Path(self.menu))
-        editor_instance.print_debug(
+        editor_instance._settings.print_debug(
             f"Assigned id {self.menu_id} to item '{self.menu_item_description}' on menu '{self.menu}'.",
             require_verbose=True,
         )

@@ -14,6 +14,7 @@ from pyShapeDetector.primitives import Primitive
 from pyShapeDetector import geometry
 from pyShapeDetector import editor
 
+
 line_elements = (
     geometry.LineSet,
     geometry.AxisAlignedBoundingBox,
@@ -221,9 +222,9 @@ class Element(ABC):
     def add_to_scene(self):
         # drawable = self.drawable
         if isinstance(self.raw, line_elements):
-            material = self._editor_instance.material_line
+            material = self._settings.get_material("line")
         else:
-            material = self._editor_instance.material_regular
+            material = self._settings.get_material("regular")
         self._editor_instance._scene.scene.add_geometry(
             self.name, self.drawable, material
         )
@@ -252,7 +253,7 @@ class Element(ABC):
         self._update_drawable_color(color)
 
         if update_scene:
-            self._editor_instance.print_debug(
+            self._editor_instance._settings.print_debug(
                 "[Element.update] Updating geometry on scene.",
                 require_verbose=True,
             )
@@ -269,6 +270,7 @@ class Element(ABC):
         _is_hidden: bool = False,
     ):
         self._editor_instance = editor_instance
+        self._settings = editor_instance._settings
         self._raw = self._parse_raw(raw)
         self._is_selected = is_selected
         self._current = current
