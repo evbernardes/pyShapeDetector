@@ -13,6 +13,7 @@ from open3d.t.geometry import PointCloud as TensorPointCloud
 from pyShapeDetector.primitives import Primitive
 from pyShapeDetector import geometry
 from pyShapeDetector import editor
+from .settings import Settings
 
 
 line_elements = (
@@ -272,7 +273,7 @@ class Element(ABC):
 
     def __init__(
         self,
-        editor_instance: editor.Editor,
+        settings: Settings,
         raw,
         is_selected: bool = False,
         current: bool = False,
@@ -280,8 +281,7 @@ class Element(ABC):
         brightness: float = 1,
         _is_hidden: bool = False,
     ):
-        self._editor_instance = editor_instance
-        self._settings = editor_instance._settings
+        self._settings = settings
         self._raw = self._parse_raw(raw)
         self._is_selected = is_selected
         self._current = current
@@ -294,18 +294,18 @@ class Element(ABC):
         self._get_distance_checker()
         self._color_original = self._extract_drawable_color()  # saving original color
 
-        if self._settings._get_setting("paint_random"):
+        if self._settings.get_setting("paint_random"):
             self._color = np.random.random(3)
-            self._brightness = self._settings._get_setting("random_color_brightness")
+            self._brightness = self._settings.get_setting("random_color_brightness")
         else:
             self._color = self.color_original
-            self._brightness = self._settings._get_setting("original_color_brightness")
+            self._brightness = self._settings.get_setting("original_color_brightness")
 
         self._update_drawable_color(self._color)
 
     @staticmethod
     def get_from_type(
-        editor_instance: editor.Editor,
+        settings: Settings,
         raw,
         is_selected: bool = False,
         current: bool = False,
@@ -322,7 +322,7 @@ class Element(ABC):
         else:
             raise TypeError("Expected primitive or geometry, got {type(raw)}.")
 
-        return element_class(editor_instance, raw, is_selected, current, is_color_fixed)
+        return element_class(settings, raw, is_selected, current, is_color_fixed)
 
 
 class ElementPrimitive(Element):

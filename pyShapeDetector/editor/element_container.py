@@ -221,7 +221,7 @@ class ElementContainer(list):
                     elem._is_color_fixed = self._is_color_fixed
             else:
                 elem = Element.get_from_type(
-                    self._editor_instance,
+                    self._editor_instance._settings,
                     elements_new[i],
                     is_selected[i],
                     is_current,
