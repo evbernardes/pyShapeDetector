@@ -113,16 +113,6 @@ class Editor:
         self._settings.print_debug(f"Submenu '{path.as_posix()}' created.")
         return self._submenus[path]
 
-    # def print_debug(self, text, require_verbose=False):
-    #     is_debug_activated = self._get_setting("debug")
-    #     is_verbose_activated = self._get_setting("verbose")
-
-    #     if not is_debug_activated or (require_verbose and not is_verbose_activated):
-    #         return
-
-    #     text = str(text)
-    #     print("[DEBUG] " + text)
-
     @property
     def extensions(self):
         return self._extensions
@@ -173,14 +163,18 @@ class Editor:
                 f"Saving state {current_state} to future states."
             )
 
-            while len(self._future_states) > self._get_setting("number_redo_states"):
+            while len(self._future_states) > self._settings.get_setting(
+                "number_redo_states"
+            ):
                 self._future_states.pop(0)
 
         else:
             self._past_states.append(current_state)
             self._settings.print_debug(f"Saving state {current_state} to past states.")
 
-            while len(self._past_states) > self._get_setting("number_undo_states"):
+            while len(self._past_states) > self._settings.get_setting(
+                "number_undo_states"
+            ):
                 self._past_states.pop(0)
 
             if delete_future:
@@ -354,7 +348,7 @@ class Editor:
 
         plane_boundaries = []
 
-        if self._get_setting("draw_boundary_lines"):
+        if self._settings.get_setting("draw_boundary_lines"):
             for elem in self.elements:
                 if elem.is_hidden:
                     continue
@@ -390,7 +384,9 @@ class Editor:
             self._scene.scene.remove_geometry("BBOXAxisZ")
             self._current_bbox_axes
 
-        if self.elements.current_element is None or not self._get_setting("show_BBOX"):
+        if self.elements.current_element is None or not self._settings.get_setting(
+            "show_BBOX"
+        ):
             self._current_bbox = None
             return
 
@@ -403,11 +399,15 @@ class Editor:
                 self._settings.get_material("line"),
             )
 
-        if self._current_bbox is not None and self._get_setting("show_BBOX_axes"):
+        if self._current_bbox is not None and self._settings.get_setting(
+            "show_BBOX_axes"
+        ):
             center = self._current_bbox.center
             extent = self._current_bbox.extent
             R = self._current_bbox.R
-            radius = self._get_setting("BBOX_axes_width") * self._window.scaling
+            radius = (
+                self._settings.get_setting("BBOX_axes_width") * self._window.scaling
+            )
 
             min_bound = center - extent.dot(R.T) / 2
             vx = TriangleMesh.create_arrow_from_points(
