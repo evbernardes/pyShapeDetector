@@ -151,7 +151,7 @@ class Element(ABC):
         if self.raw is None or isinstance(self.raw, geometry.LineSet):
             return None
 
-        BBOX_expand = self._editor_instance._get_setting("BBOX_expand")
+        BBOX_expand = self._settings.get_setting("BBOX_expand")
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -165,9 +165,9 @@ class Element(ABC):
                 )
 
         if self.is_selected:
-            bbox.color = self._editor_instance._get_setting("color_BBOX_selected")
+            bbox.color = self._settings.get_setting("color_BBOX_selected")
         else:
-            bbox.color = self._editor_instance._get_setting("color_BBOX_unselected")
+            bbox.color = self._settings.get_setting("color_BBOX_unselected")
 
         return bbox
 
@@ -208,7 +208,7 @@ class Element(ABC):
 
     def _get_dimmed_color(self, color):
         highlight_ratio = (
-            self._editor_instance._get_setting("highlight_ratio") * self._brightness
+            self._settings.get_setting("highlight_ratio") * self._brightness
         )
 
         brightness = self._brightness
@@ -220,7 +220,6 @@ class Element(ABC):
         return np.clip(color * brightness, 0, 1)
 
     def add_to_scene(self):
-        # drawable = self.drawable
         if isinstance(self.raw, line_elements):
             material = self._settings.get_material("line")
         else:
@@ -242,7 +241,7 @@ class Element(ABC):
         if self.is_color_fixed:
             return
 
-        paint_selected = self._editor_instance._get_setting("paint_selected")
+        paint_selected = self._settings.get_setting("paint_selected")
         self._current = is_current
 
         if paint_selected and self.is_selected:
@@ -361,9 +360,7 @@ class ElementPointCloud(ElementGeometry):
             raise ValueError(f"Expected PointCloud instance, got {raw}.")
 
     def _get_distance_checker(self):
-        number_points_distance = self._editor_instance._get_setting(
-            "number_points_distance"
-        )
+        number_points_distance = self._settings.get_setting("number_points_distance")
         if len(self.raw.points) > number_points_distance:
             ratio = int(len(self.raw.points) / number_points_distance)
             pcd = self.raw.uniform_down_sample(ratio)
@@ -422,16 +419,14 @@ class ElementTriangleMesh(ElementGeometry):
             raise ValueError("Expected TriangleMesh instance, got {raw}.")
 
     def _get_drawable(self):
-        mesh_show_back_face = self._editor_instance._get_setting("mesh_show_back_face")
+        mesh_show_back_face = self._settings.get_setting("mesh_show_back_face")
         mesh = copy.copy(self.raw)
         if mesh_show_back_face:
             mesh.add_reverse_triangles()
         return mesh.as_open3d
 
     def _get_distance_checker(self):
-        number_points_distance = self._editor_instance._get_setting(
-            "number_points_distance"
-        )
+        number_points_distance = self._settings.get_setting("number_points_distance")
         self._distance_checker = geometry.PointCloud(
             self.raw.sample_points_uniformly(number_points_distance)
         )
