@@ -343,7 +343,7 @@ class Settings:
                 for element in self._editor_instance.elements
             ]
         )[0].tolist()
-        self._editor_instance._update_elements(indices)
+        self._editor_instance.elements.update_indices(indices)
 
     def _cb_mesh_show_back_face(self, value):
         # self._editor_instance._reset_elements_in_gui()
@@ -377,11 +377,11 @@ class Settings:
         self._editor_instance._update_BBOX_and_axes()
 
     def _cb_paint_selected(self, value):
-        self._editor_instance._update_elements(None)
+        self._editor_instance.elements.update_indices(None)
 
     def _cb_color_selected(self, value):
         indices = np.where(self._editor_instance.elements.is_selected)[0].tolist()
-        self._editor_instance._update_elements(indices)
+        self._editor_instance.elements.update_indices(indices)
 
     def _cb_paint_random(self, value):
         elements = self._editor_instance.elements
@@ -394,7 +394,7 @@ class Settings:
                 elem._color = elem.color_original
                 elem._brightness = self._dict["original_color_brightness"].value
 
-        self._editor_instance._update_elements(None)
+        self._editor_instance.elements.update_indices(None)
 
     def _cb_random_color_brightness(self, value):
         if self._dict["paint_random"].value:
@@ -403,7 +403,7 @@ class Settings:
             for elem in elements:
                 elem._brightness = value
 
-        self._editor_instance._update_elements(None)
+        self._editor_instance.elements.update_indices(None)
 
     def _cb_original_color_brightness(self, value):
         if not self._dict["paint_random"].value:
@@ -412,15 +412,15 @@ class Settings:
             for elem in elements:
                 elem._brightness = value
 
-        self._editor_instance._update_elements(None)
+        self._editor_instance.elements.update_indices(None)
         # elements.update_all()
 
     def _cb_highlight_ratio(self, value):
         # if not self._dict["paint_selected"]:
-        self._editor_instance._update_elements(None)
+        self._editor_instance.elements.update_indices(None)
         # self._editor_instance.elements.update_all()
         # indices = self._editor_instance.selected_indices
-        # self._editor_instance._update_elements(indices)
+        # self._editor_instance.elements.update_indices(indices)
 
     def _cb_number_undo_states(self, value):
         self._editor_instance._past_states = self._editor_instance._past_states[-value:]
@@ -433,7 +433,7 @@ class Settings:
     def _cb_color_unselected(self, value):
         unselected = ~np.array(self._editor_instance.elements.is_selected)
         indices = np.where(unselected)[0].tolist()
-        self._editor_instance._update_elements(indices)
+        self._editor_instance.elements.update_indices(indices)
 
     def _cb_number_points_distance(self, value):
         for elem in self._editor_instance.elements:
