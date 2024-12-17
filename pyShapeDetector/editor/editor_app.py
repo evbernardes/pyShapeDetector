@@ -60,12 +60,16 @@ class Editor:
         return_finish_flag=False,
         **kwargs,
     ):
+        from .settings import Settings
+
+        self._settings = Settings(self, **kwargs)
+
         self._copied_elements = []
         self._past_states = []
         self._future_states = []
-        self._elements = ElementContainer(self)
-        self._plane_boundaries = ElementContainer(self, is_color_fixed=True)
-        self._elements_fixed = ElementContainer(self, is_color_fixed=True)
+        self._elements = ElementContainer(self._settings)
+        self._plane_boundaries = ElementContainer(self._settings, is_color_fixed=True)
+        self._elements_fixed = ElementContainer(self._settings, is_color_fixed=True)
         self._pre_selected = []
         self._current_bbox = None
         self._current_bbox_axes = None
@@ -81,10 +85,6 @@ class Editor:
 
         self.finish = False
         self._started = False
-
-        from .settings import Settings
-
-        self._settings = Settings(self, **kwargs)
 
     def _get_submenu_from_path(self, path):
         if path in self._submenus:
@@ -269,6 +269,7 @@ class Editor:
             if event.is_modifier_down(gui.KeyModifier.SHIFT):
                 self._internal_functions._cb_toggle()
             self.elements.update_current_index()
+            self._update_extra_elements(planes_boundaries=False)
 
         self._scene.scene.scene.render_to_depth_image(depth_callback)
 
@@ -302,21 +303,8 @@ class Editor:
         )
         self._scene.scene.show_axes(False)
 
-        # self.material_regular = rendering.MaterialRecord()
-        # self.material_regular.base_color = [1.0, 1.0, 1.0, 1.0]  # White color
-        # self.material_regular.shader = "defaultUnlit"
-        # self.material_regular.point_size = (
-        #     self._get_setting("PointCloud_point_size") * self._window.scaling
-        # )
-
-        # self.material_line = rendering.MaterialRecord()
-        # self.material_line.shader = "unlitLine"
-        # self.material_line.line_width = (
-        #     self._get_setting("line_width") * self._window.scaling
-        # )
-
         self._info = gui.Label("")
-        self._info.visible = False
+        self._info.visible = True
 
         self._window.add_child(self._scene)
         self._window.add_child(self._info)
@@ -480,6 +468,12 @@ class Editor:
 
         self.app.post_to_main_thread(self._window, update_label)
 
+    def _update_extra_elements(self, planes_boundaries: bool = True):
+        if planes_boundaries:
+            self._update_plane_boundaries()
+        self._update_BBOX_and_axes()
+        self._update_info()
+
     def run(self):
         self._settings.print_debug(f"Starting {type(self).__name__}.")
 
@@ -487,11 +481,12 @@ class Editor:
         self._setup_window_and_scene()
         self._settings._update_materials()
 
-        for elem in self.elements + self.elements_fixed:
-            elem.add_to_scene(self._scene.scene)
+        self.elements.add_to_scene(self._scene.scene)
+        self._plane_boundaries.add_to_scene(self._scene.scene)
+        self.elements_fixed.add_to_scene(self._scene.scene)
 
-        self._update_BBOX_and_axes()
-        self._update_info()
+        self._update_extra_elements()
+
         bounds = self._scene.scene.bounding_box
         center = bounds.get_center()
         self._scene.setup_camera(60, bounds, center)

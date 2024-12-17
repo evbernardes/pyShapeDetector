@@ -275,6 +275,7 @@ class InternalFunctions:
                     warnings.warn("Failed to insert imported file.")
                     traceback.print_exc()
             editor_instance._close_dialog()
+            editor_instance._update_info()
 
         # A file dialog MUST define on_cancel and on_done functions
         dlg.set_on_cancel(_on_file_dialog_cancel)
@@ -380,6 +381,7 @@ class InternalFunctions:
                 warnings.warn("Failed to insert imported files.")
                 traceback.print_exc()
             editor_instance._close_dialog()
+            editor_instance._update_info()
 
         # A file dialog MUST define on_cancel and on_done functions
         dlg.set_on_cancel(_on_cancel)
@@ -466,6 +468,7 @@ class InternalFunctions:
 
         elem.is_selected = not elem.is_selected
         editor_instance.elements.update_current_index()
+        editor_instance._update_extra_elements(planes_boundaries=False)
 
     def _cb_delete(self):
         """Delete selected elements."""
@@ -492,8 +495,7 @@ class InternalFunctions:
             "operation": "delete",
         }
         editor_instance._save_state(current_state)
-        editor_instance._update_plane_boundaries()
-        editor_instance._update_BBOX_and_axes()
+        editor_instance._update_extra_elements(planes_boundaries=True)
 
     def _cb_copy(self):
         """Save elements to be copied."""
@@ -531,7 +533,7 @@ class InternalFunctions:
         }
 
         editor_instance._save_state(current_state)
-        editor_instance._update_plane_boundaries()
+        editor_instance._update_extra_elements(planes_boundaries=True)
 
     def _shift_current(self, delta: int):
         """Shifts 'current index' pointer checking if within limits"""
@@ -547,6 +549,7 @@ class InternalFunctions:
         new_position = max(0, min(new_position, len(unhidden_indices) - 1))
 
         elements.update_current_index(unhidden_indices[new_position])
+        self._editor_instance._update_extra_elements(planes_boundaries=False)
 
     def _cb_next(self):
         self._shift_current(+1)
@@ -650,8 +653,8 @@ class InternalFunctions:
         ext = editor_instance._last_used_extension
 
         if ext is not None:
-            print_debug(
-                editor_instance._settings, f"Re-applying last function: {ext.name}"
+            editor_instance._settings.print_debug(
+                f"Re-applying last function: {ext.name}"
             )
             ext._apply_to_elements()
 
@@ -689,8 +692,7 @@ class InternalFunctions:
             new_index = elements.get_closest_unhidden_index()
             elements.update_current_index(new_index)
 
-        editor_instance._update_plane_boundaries()
-        editor_instance._update_info()
+        editor_instance._update_extra_elements(planes_boundaries=False)
 
         editor_instance._save_state(
             {"indices": indices, "operation": "hide"},
@@ -718,8 +720,7 @@ class InternalFunctions:
             elem = editor_instance.elements[idx]
             elem.is_hidden = False
 
-        editor_instance._update_plane_boundaries()
-        editor_instance._update_info()
+        editor_instance._update_extra_elements(planes_boundaries=False)
 
         editor_instance._save_state(
             {"indices": indices, "operation": "unhide"},
@@ -748,8 +749,7 @@ class InternalFunctions:
         num_outputs = last_state["num_outputs"]
         num_elems = len(editor_instance.elements)
 
-        print_debug(
-            editor_instance._settings,
+        editor_instance._settings.print_debug(
             f"Undoing last operation, removing {num_outputs} outputs and "
             f"resetting {len(elements)} inputs.",
         )
@@ -776,7 +776,7 @@ class InternalFunctions:
         if len(indices) > 0:
             editor_instance.elements.update_current_index(indices[-1])
 
-        editor_instance._update_plane_boundaries()
+        editor_instance._update_extra_elements(planes_boundaries=False)
 
     def _cb_redo(self):
         editor_instance = self._editor_instance
@@ -797,8 +797,7 @@ class InternalFunctions:
 
         modified_elements = future_state["modified_elements"]
 
-        print_debug(
-            editor_instance._settings,
+        editor_instance._settings.print_debug(
             f"Redoing last operation, removing {len(indices)} inputs and "
             f"resetting {len(modified_elements)} inputs.",
         )
@@ -819,3 +818,5 @@ class InternalFunctions:
         editor_instance.elements.insert_multiple(modified_elements, to_gui=True)
         editor_instance.elements.update_current_index(len(editor_instance.elements) - 1)
         editor_instance._update_plane_boundaries()
+        editor_instance._update_info()
+        editor_instance._update_BBOX_and_axes()

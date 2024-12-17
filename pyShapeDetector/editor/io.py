@@ -149,10 +149,7 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
                 )
 
             editor_instance.elements.insert_multiple(new_elements, to_gui=True)
-            # editor_instance._elements_fixed.insert_multiple(
-            #     new_elements_fixed, to_gui=True
-            # )
-
+            editor_instance._update_info()
             editor_instance._future_states = []
             editor_instance._past_states = []
 

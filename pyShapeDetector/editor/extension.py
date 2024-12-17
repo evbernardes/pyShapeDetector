@@ -355,6 +355,7 @@ class Extension:
         editor_instance._last_used_extension = self
         editor_instance._future_states = []
         editor_instance._update_plane_boundaries()
+        editor_instance._update_info()
 
     def _create_extension_window(self):
         editor_instance = self._editor_instance

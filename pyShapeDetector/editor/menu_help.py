@@ -50,6 +50,10 @@ class MenuHelp:
         )
         self._about_binding.add_to_menu(self._editor_instance)
 
+        editor_instance._menubar.set_checked(
+            self._info_binding.menu_id, editor_instance._info.visible
+        )
+
     def _on_help_toggle(self):
         editor_instance = self._editor_instance
         window = editor_instance._window

@@ -3,7 +3,8 @@ import copy
 import traceback
 import numpy as np
 from typing import List, Union
-# from .element import Element
+from open3d.visualization.rendering import Open3DScene
+from .element import Element
 
 
 class ElementContainer(list):
@@ -25,6 +26,8 @@ class ElementContainer(list):
 
     Methods
     -------
+    add_to_scene
+    remove_from_scene
     get_closest_unhidden_index
     insert_multiple
     pop_multiple
@@ -32,15 +35,15 @@ class ElementContainer(list):
     update_indices
     toggle_indices
     update_current_index
-
+    scene
     """
 
     @property
-    def previous_index(self):
+    def previous_index(self) -> int:
         return self._previous_index
 
     @property
-    def current_index(self):
+    def current_index(self) -> int:
         return self._current_index
 
     @current_index.setter
@@ -66,7 +69,7 @@ class ElementContainer(list):
         self._current_index = int(new_index)
 
     @property
-    def current_element(self):
+    def current_element(self) -> Element:
         num_elems = len(self)
         if self._current_index in range(num_elems):
             return self[self._current_index]
@@ -82,15 +85,20 @@ class ElementContainer(list):
             return None
         return self.current_element.is_selected
 
+    @property
+    def scene(self) -> Union[Open3DScene, None]:
+        return self._scene
+
     def __repr__(self):
         return f"ElementContainer({len(self)} elements)"
 
-    def __init__(self, editor_instance, elements=[], is_color_fixed=False):
+    def __init__(self, settings, elements=[], is_color_fixed=False):
         super().__init__(elements)
         self._previous_index = None
         self._current_index = None
-        self._editor_instance = editor_instance
+        self._settings = settings
         self._is_color_fixed = is_color_fixed
+        self._scene = None
 
     @property
     def raw(self):
@@ -160,7 +168,29 @@ class ElementContainer(list):
     def unhidden_indices(self):
         return np.where(~np.array(self.is_hidden))[0].tolist()
 
-    def get_closest_unhidden_index(self, index: Union[int, None]):
+    def add_to_scene(self, scene: Open3DScene):
+        if self._scene is not None and self._scene != scene:
+            warnings.warn("Remove from current scene before adding to another.")
+            return
+
+        if isinstance(scene, Open3DScene):
+            self._scene = scene
+        else:
+            raise TypeError(f"Expected Open3DScene, got {scene}.")
+
+        for elem in self:
+            elem.add_to_scene(scene)
+
+    def remove_from_scene(self):
+        if self._scene is None:
+            warnings.warn("Cannot remove from scene: currently not in any scene.")
+            return None
+
+        for elem in self:
+            elem.remove_from_scene()
+        self._scene = None
+
+    def get_closest_unhidden_index(self, index: Union[int, None] = None):
         if index is None:
             index = self.current_index
         elif not isinstance(index, int) or index < 0:
@@ -201,7 +231,7 @@ class ElementContainer(list):
 
         idx_new = self.current_index
 
-        self._editor_instance._settings.print_debug(
+        self._settings.print_debug(
             f"Adding {len(elements_new)} elements to the existing {len(self)}",
             require_verbose=True,
         )
@@ -210,7 +240,7 @@ class ElementContainer(list):
             if idx_new > idx:
                 idx_new += 1
 
-            is_current = self._editor_instance._started and (self.current_index == idx)
+            is_current = (self.scene is not None) and (self.current_index == idx)
 
             if isinstance(elements_new[i], Element):
                 elem = elements_new[i]
@@ -221,43 +251,41 @@ class ElementContainer(list):
                     elem._is_color_fixed = self._is_color_fixed
             else:
                 elem = Element.get_from_type(
-                    self._editor_instance._settings,
+                    self._settings,
                     elements_new[i],
                     is_selected[i],
                     is_current,
                     self._is_color_fixed,
                 )
 
-            self._editor_instance._settings.print_debug(
+            self._settings.print_debug(
                 f"Added {elem.raw} at index {idx}.",
                 require_verbose=True,
             )
             self.insert(idx, elem)
 
-        if self._editor_instance._started:
+        if self.scene is not None:
             for idx in indices:
-                self[idx]._scene = self._editor_instance._scene.scene
+                self[idx]._scene = self.scene
                 # Updating vis explicitly in order not to remove it
                 self.update_indices(idx, update_gui=False)
                 if to_gui:
                     self[idx].add_to_scene()
 
-            self._editor_instance._settings.print_debug(
+            self._settings.print_debug(
                 f"{len(self)} now.",
                 require_verbose=True,
             )
 
             idx_new = max(min(idx_new, len(self) - 1), 0)
-            self.update_current_index(
-                idx_new, update_old=self._editor_instance._started
-            )
+            self.update_current_index(idx_new, update_old=self.scene is not None)
             self._previous_index = self.current_index
 
     def pop_multiple(self, indices, from_gui=False):
         # update_old = self.i in indices
         # idx_new = self.i
         elements_popped = ElementContainer(
-            self._editor_instance, is_color_fixed=self._is_color_fixed
+            self._settings, is_color_fixed=self._is_color_fixed
         )
 
         for n, i in enumerate(indices):
@@ -270,10 +298,10 @@ class ElementContainer(list):
         idx_new = self.current_index - sum(
             [idx < self.current_index for idx in indices]
         )
-        self._editor_instance._settings.print_debug(
+        self._settings.print_debug(
             f"popped: {indices}",
         )
-        self._editor_instance._settings.print_debug(
+        self._settings.print_debug(
             f"old index: {self.current_index}, new index: {idx_new}",
         )
 
@@ -359,11 +387,9 @@ class ElementContainer(list):
         for idx in indices:
             elem = self[idx]
             elem._selected = elem.is_selected
-            is_current = self._editor_instance._started and (idx == self.current_index)
+            is_current = (self.scene is not None) and (idx == self.current_index)
 
             elem.update(is_current, update_gui)
-
-        self._editor_instance._update_info()
 
     def toggle_indices(self, indices_or_slice, to_value=None):
         if isinstance(indices_or_slice, (range, list, np.ndarray)):
@@ -399,12 +425,12 @@ class ElementContainer(list):
             self._previous_index = self.current_index
             self._current_index = idx
 
-            self._editor_instance._settings.print_debug(
+            self._settings.print_debug(
                 f"Updating index, from {self._previous_index} to {self.current_index}",
                 require_verbose=True,
             )
         else:
-            self._editor_instance._settings.print_debug(
+            self._settings.print_debug(
                 f"Updating current index: {self.current_index}",
                 require_verbose=True,
             )
@@ -419,4 +445,3 @@ class ElementContainer(list):
         self.update_indices(self.current_index)
         if update_old:
             self.update_indices(self._previous_index)
-        self._editor_instance._update_BBOX_and_axes()

@@ -1,6 +1,6 @@
 import warnings
 import copy
-from typing import Union
+from typing import Union, TYPE_CHECKING
 from abc import ABC, abstractmethod
 import numpy as np
 
@@ -12,8 +12,9 @@ from open3d.t.geometry import PointCloud as TensorPointCloud
 
 from pyShapeDetector.primitives import Primitive
 from pyShapeDetector import geometry
-from pyShapeDetector import editor
-from .settings import Settings
+
+if TYPE_CHECKING:
+    from .settings import Settings
 
 
 line_elements = (
@@ -124,7 +125,7 @@ class Element(ABC):
         return self._is_color_fixed
 
     @property
-    def scene(self) -> Open3DScene:
+    def scene(self) -> Union[Open3DScene, None]:
         return self._scene
 
     @property
@@ -273,7 +274,7 @@ class Element(ABC):
 
     def __init__(
         self,
-        settings: Settings,
+        settings: "Settings",
         raw,
         is_selected: bool = False,
         current: bool = False,
@@ -305,7 +306,7 @@ class Element(ABC):
 
     @staticmethod
     def get_from_type(
-        settings: Settings,
+        settings: "Settings",
         raw,
         is_selected: bool = False,
         current: bool = False,

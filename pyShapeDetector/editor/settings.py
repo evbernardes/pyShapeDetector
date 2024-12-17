@@ -369,8 +369,7 @@ class Settings:
         # line_width = self._dict["line_width"].value
 
         self._update_materials()
-        self._editor_instance._update_plane_boundaries()
-        self._editor_instance._update_BBOX_and_axes()
+        self._editor_instance._update_extra_elements(planes_boundaries=True)
 
     def _cb_PointCloud_point_size(self, value):
         from .element import ElementPointCloud
@@ -452,14 +451,9 @@ class Settings:
                 elem._brightness = value
 
         self._editor_instance.elements.update_indices(None)
-        # elements.update_all()
 
     def _cb_highlight_ratio(self, value):
-        # if not self._dict["paint_selected"]:
         self._editor_instance.elements.update_indices(None)
-        # self._editor_instance.elements.update_all()
-        # indices = self._editor_instance.selected_indices
-        # self._editor_instance.elements.update_indices(indices)
 
     def _cb_number_undo_states(self, value):
         self._editor_instance._past_states = self._editor_instance._past_states[-value:]
@@ -477,8 +471,6 @@ class Settings:
     def _cb_number_points_distance(self, value):
         for elem in self._editor_instance.elements:
             elem._get_distance_checker(0)
-            # dist_checker = self._editor_instance._get_element_distances([elem.raw])[0]
-            # elem.distance_checker = dist_checker
 
     def get_element_color(self, is_selected, is_current, is_bbox=False):
         # highlight = self._dict["highlight_ratio"].value
