@@ -314,18 +314,21 @@ class InternalFunctions:
         dlg.set_on_done(_on_done)
         window.show_dialog(dlg)
 
-    def _cb_save_scene(self):
+    def _cb_save_scene(self, quitting=False):
         from .io import _save_scene
 
         editor_instance = self._editor_instance
         path = editor_instance._scene_file_path
 
         if path is None:
-            self._cb_save_scene_as()
+            self._cb_save_scene_as(quitting)
         else:
             _save_scene(path, editor_instance)
+            if quitting:
+                self._editor_instance._closing_app = True
+                self._editor_instance._window.close()
 
-    def _cb_save_scene_as(self):
+    def _cb_save_scene_as(self, quitting=False):
         from .io import _create_overwrite_warning
 
         editor_instance = self._editor_instance
@@ -345,11 +348,16 @@ class InternalFunctions:
         def _on_done(path):
             # path = Path(path)
             if Path(path).exists() and path != editor_instance._scene_file_path:
-                _create_overwrite_warning(editor_instance, path)
+                _create_overwrite_warning(editor_instance, path, quitting)
             else:
                 editor_instance._scene_file_path = path
                 self._cb_save_scene()
-                editor_instance._close_dialog()
+
+                if quitting:
+                    self._editor_instance._closing_app = True
+                    self._editor_instance._window.close()
+                else:
+                    editor_instance._close_dialog()
 
         # A file dialog MUST define on_cancel and on_done functions
         dlg.set_on_cancel(_on_cancel)
@@ -430,9 +438,12 @@ class InternalFunctions:
 
         dlg = gui.Dialog("Quit Dialog")
 
-        def _on_close_yes():
+        def _on_quit():
             self._editor_instance._closing_app = True
             window.close()
+
+        def _on_quit_and_save():
+            self._cb_save_scene(quitting=True)
 
         def _on_close_no():
             self._editor_instance._close_dialog()
@@ -441,17 +452,22 @@ class InternalFunctions:
         dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
         dlg_layout.add_child(gui.Label("Close Shape Detector?"))
 
-        yes = gui.Button("Yes [Enter]")
-        yes.set_on_clicked(_on_close_yes)
+        save_and_quit = gui.Button("Save and quit [Enter]")
+        save_and_quit.set_on_clicked(_on_quit_and_save)
 
-        no = gui.Button("No")
-        no.set_on_clicked(_on_close_no)
+        quit_without_saving = gui.Button("Quit without saving")
+        quit_without_saving.set_on_clicked(_on_quit)
+
+        cancel = gui.Button("Cancel")
+        cancel.set_on_clicked(_on_close_no)
 
         h = gui.Horiz()
         h.add_stretch()
-        h.add_child(yes)
+        h.add_child(save_and_quit)
         h.add_fixed(button_separation_width)
-        h.add_child(no)
+        h.add_child(quit_without_saving)
+        h.add_fixed(button_separation_width)
+        h.add_child(cancel)
         h.add_stretch()
         dlg_layout.add_child(h)
 
@@ -460,7 +476,7 @@ class InternalFunctions:
 
         def _on_key_event(event):
             if event.type == gui.KeyEvent.DOWN and event.key == gui.KeyName.ENTER:
-                _on_close_yes()
+                _on_quit_and_save()
                 return True
             return False
 
