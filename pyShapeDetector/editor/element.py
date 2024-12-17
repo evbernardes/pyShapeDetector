@@ -257,14 +257,14 @@ class Element(ABC):
         self._current = is_current
 
         if paint_selected and self.is_selected:
-            color = self._editor_instance._settings.get_element_color(True, is_current)
+            color = self._settings.get_element_color(True, is_current)
         else:
             color = self._color
 
         self._update_drawable_color(color)
 
         if update_scene:
-            self._editor_instance._settings.print_debug(
+            self._settings.print_debug(
                 "[Element.update] Updating geometry on scene.",
                 require_verbose=True,
             )
@@ -294,12 +294,12 @@ class Element(ABC):
         self._get_distance_checker()
         self._color_original = self._extract_drawable_color()  # saving original color
 
-        if editor_instance._get_setting("paint_random"):
+        if self._settings._get_setting("paint_random"):
             self._color = np.random.random(3)
-            self._brightness = editor_instance._get_setting("random_color_brightness")
+            self._brightness = self._settings._get_setting("random_color_brightness")
         else:
             self._color = self.color_original
-            self._brightness = editor_instance._get_setting("original_color_brightness")
+            self._brightness = self._settings._get_setting("original_color_brightness")
 
         self._update_drawable_color(self._color)
 
@@ -310,7 +310,7 @@ class Element(ABC):
         is_selected: bool = False,
         current: bool = False,
         is_color_fixed: bool = False,
-    ):
+    ) -> "Element":
         if isinstance(raw, Primitive):
             element_class = ElementPrimitive
         elif geometry.TriangleMesh.is_instance_or_open3d(raw):
@@ -407,17 +407,17 @@ class ElementPointCloud(ElementGeometry):
 
     # def update_on_scene(self):
     #     if not self._colors_updated:
-    #         self._editor_instance._scene.scene.scene.update_geometry(
+    #         self.scene.update_geometry(
     #             self.name, self.drawable, Scene.UPDATE_COLORS_FLAG
     #         )
     #         self._colors_updated = True
     #     if not self._normals_updated:
-    #         self._editor_instance._scene.scene.scene.update_geometry(
+    #         self.scene.update_geometry(
     #             self.name, self.drawable, Scene.UPDATE_NORMALS_FLAG
     #         )
     #         self._normals_updated = True
     #     if not self._points_updated:
-    #         self._editor_instance._scene.scene.scene.update_geometry(
+    #         self.scene.update_geometry(
     #             self.name, self.drawable, Scene.UPDATE_POINTS_FLAG
     #         )
     #         self._points_updated = True
