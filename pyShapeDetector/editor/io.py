@@ -120,14 +120,6 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
     with tempfile.TemporaryDirectory() as temp_dir:
         with tarfile.open(input_path, "r") as tar:
             tar.extractall(path=temp_dir)
-            # json_path = Path(temp_dir) / "preferences.json"
-            # with open(json_path, "r") as json_file:
-            #     json_data = json.load(json_file)
-
-            # for key, value in json_data.items():
-            #     setting = editor_instance._settings._dict[key]
-            #     setting.value = value
-            #     setting.on_update()
 
             path_elements = Path(temp_dir) / "elements"
             path_elements_fixed = Path(temp_dir) / "elements_fixed"
@@ -158,7 +150,6 @@ def _save_scene(path: Union[Path, str], editor_instance: Editor):
     path = Path(path)
     if path.exists():
         path.unlink()
-        # return
 
     elements = editor_instance.elements
     elements_fixed = editor_instance._elements_fixed
