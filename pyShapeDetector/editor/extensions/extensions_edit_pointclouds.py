@@ -23,6 +23,26 @@ MENU_NAME = "Edit Pointclouds"
 
 
 @_apply_to(PointCloud)
+def uniform_downsample(pcds_input, every_k_points):
+    return [pcd.uniform_downsample(every_k_points) for pcd in pcds_input]
+
+
+extensions.append(
+    {
+        "function": uniform_downsample,
+        "menu": MENU_NAME,
+        "parameters": {
+            "every_k_points": {
+                "type": int,
+                "default": 5,
+                "limits": (1, 500),
+            },
+        },
+    }
+)
+
+
+@_apply_to(PointCloud)
 def segment_distances_with_DBSCAN(
     pcds_input: list[PointCloud], PointCloud_density, dbscan_ratio, min_points, debug
 ):

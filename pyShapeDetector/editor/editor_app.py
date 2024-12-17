@@ -62,6 +62,8 @@ class Editor:
         return_finish_flag=False,
         **kwargs,
     ):
+        from .internal_functions import InternalFunctions
+
         self._settings = Settings(self, **kwargs)
 
         self._copied_elements = []
@@ -85,6 +87,8 @@ class Editor:
 
         self.finish = False
         self._started = False
+
+        self._internal_functions = InternalFunctions(self)
 
         for extension in default_extensions:
             self.add_extension(extension)
@@ -278,7 +282,7 @@ class Editor:
     def _setup_window_and_scene(self):
         from .menu_help import MenuHelp
         from .hotkeys import Hotkeys
-        from .internal_functions import InternalFunctions
+        # from .internal_functions import InternalFunctions
 
         # Set up the application
         self.app = gui.Application.instance
@@ -312,7 +316,7 @@ class Editor:
         self._right_side_panel.visible = True
 
         # 1) Set internal functions and add menu items
-        self._internal_functions = InternalFunctions(self)
+        # self._internal_functions = InternalFunctions(self)
 
         # 2) Add hotkeys for both internal functions and extensions
         self._hotkeys = Hotkeys(self)
@@ -453,11 +457,11 @@ class Editor:
 
             if (ext := self._last_used_extension) is not None:
                 name = ext.name
-                params = ext.parameters_kwargs
+                # params = ext.parameters_kwargs
 
                 self._info.text += f"\nLast used function: {name}"
-                if len(params) > 0:
-                    self._info.text += f", with :{params}"
+                # if len(params) > 0:
+                #     self._info.text += f", with :{params}"
 
                 repeat_binding = self._internal_functions._dict["Repeat last extension"]
                 if repeat_binding is not None:
@@ -506,3 +510,8 @@ class Editor:
         #     traceback.print_exc()
         # finally:
         # pass
+
+
+# if __name__ == "__main__":
+#     editor = Editor()
+#     editor.run()

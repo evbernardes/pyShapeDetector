@@ -256,10 +256,22 @@ class InternalFunctions:
 
         self._dict = {binding.description: binding for binding in self._bindings}
 
-    def _cb_import(self):
-        from .io import element, _load_one_element
+    def _cb_import(self, path=None):
+        from .io import _load_one_element
 
         editor_instance = self._editor_instance
+
+        if path is not None:
+            element = _load_one_element(path)
+            if element is not None:
+                try:
+                    self._editor_instance.elements.insert_multiple(element, to_gui=True)
+                    editor_instance._update_info()
+                except Exception:
+                    warnings.warn(f"Failed to imported from file '{path}'.")
+                    traceback.print_exc()
+            return
+
         window = self._editor_instance._window
 
         dlg = gui.FileDialog(gui.FileDialog.OPEN, "Choose file to load", window.theme)
@@ -275,26 +287,31 @@ class InternalFunctions:
         def _on_file_dialog_cancel():
             editor_instance._close_dialog()
 
-        def _on_load_dialog_done(filename):
-            element = _load_one_element(filename)
-            if element is not None:
-                try:
-                    self._editor_instance.elements.insert_multiple(element, to_gui=True)
-                except Exception:
-                    warnings.warn("Failed to insert imported file.")
-                    traceback.print_exc()
+        def _on_load_dialog_done(path):
+            self._cb_import(path)
             editor_instance._close_dialog()
-            editor_instance._update_info()
 
         # A file dialog MUST define on_cancel and on_done functions
         dlg.set_on_cancel(_on_file_dialog_cancel)
         dlg.set_on_done(_on_load_dialog_done)
         window.show_dialog(dlg)
 
-    def _cb_open_scene(self):
+    def _cb_open_scene(self, path=None):
         from .io import _open_scene
 
         editor_instance = self._editor_instance
+
+        if path is not None:
+            try:
+                _open_scene(path, editor_instance)
+                editor_instance._scene_file_path = path
+            except Exception:
+                warnings.warn(f"Could not open scene on file '{path}'.")
+                traceback.print_exc()
+            # finally:
+            # editor_instance._close_dialog()
+            return
+
         window = self._editor_instance._window
 
         dlg = gui.FileDialog(
@@ -310,8 +327,7 @@ class InternalFunctions:
 
         def _on_done(path):
             try:
-                _open_scene(path, editor_instance)
-                editor_instance._scene_file_path = path
+                self._cb_open_scene(path)
             except Exception:
                 warnings.warn(f"Could not open file on path '{path}'.")
                 traceback.print_exc()

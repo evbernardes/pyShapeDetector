@@ -107,6 +107,8 @@ class Settings:
         # TODO: This might be unnecessary:
         self._dict[key].on_update(value)
 
+        self._dict[key]._update_references()
+
     def get_material(self, key):
         if key not in self._materials:
             warnings.warn(f"Material '{key}' not available")
