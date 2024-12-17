@@ -1,9 +1,8 @@
 import warnings
 import copy
-
-from typing import List, Union
 import traceback
 import numpy as np
+from typing import List, Union
 # from .element import Element
 
 
