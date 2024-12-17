@@ -14,6 +14,7 @@ import numpy as np
 from typing import Union
 from pathlib import Path
 from importlib.util import find_spec
+from open3d.visualization import gui
 from pyShapeDetector.geometry import PointCloud, TriangleMesh
 from pyShapeDetector.primitives import Primitive
 from pyShapeDetector.editor import Editor
@@ -67,6 +68,47 @@ for type_name, extensions in RECOGNIZED_EXTENSION.items():
 RECOGNIZED_EXTENSION["all"] = " ".join(
     [extensions["all"] for extensions in RECOGNIZED_EXTENSION.values()]
 )
+
+
+def _create_overwrite_warning(editor_instance: Editor, path):
+    window = editor_instance._window
+
+    dlg = gui.Dialog("Warning")
+
+    em = window.theme.font_size
+    dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
+
+    title = gui.Horiz()
+    title.add_stretch()
+    title.add_child(gui.Label("Overwrite warning"))
+    title.add_stretch()
+
+    dlg_layout.add_child(title)
+    dlg_layout.add_child(gui.Label(f"File {path} already exists. Overwrite?"))
+
+    def _on_yes():
+        editor_instance._scene_file_path = path
+        editor_instance._close_dialog()
+        editor_instance._internal_functions._cb_save_scene()
+
+    def _on_no():
+        editor_instance._close_dialog()
+
+    yes = gui.Button("Yes")
+    yes.set_on_clicked(_on_yes)
+    no = gui.Button("No")
+    no.set_on_clicked(_on_no)
+
+    title = gui.Horiz()
+    title.add_stretch()
+    title.add_child(yes)
+    title.add_stretch()
+    title.add_child(no)
+    title.add_stretch()
+    dlg_layout.add_child(title)
+
+    dlg.add_child(dlg_layout)
+    window.show_dialog(dlg)
 
 
 def _load_one_element(filename):

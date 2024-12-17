@@ -38,7 +38,7 @@ class InternalFunctions:
                 key=gui.KeyName.S,
                 lctrl=True,
                 lshift=False,
-                description="Save scene as",
+                description="Save scene",
                 callback=self._cb_save_scene,
                 menu="File",
             ),
@@ -303,8 +303,9 @@ class InternalFunctions:
             try:
                 _open_scene(path, editor_instance)
                 editor_instance._scene_file_path = path
-            except:
+            except Exception:
                 warnings.warn(f"Could not open file on path '{path}'.")
+                traceback.print_exc()
             finally:
                 editor_instance._close_dialog()
 
@@ -325,7 +326,7 @@ class InternalFunctions:
             _save_scene(path, editor_instance)
 
     def _cb_save_scene_as(self):
-        from .io import _save_scene
+        from .io import _create_overwrite_warning
 
         editor_instance = self._editor_instance
         window = self._editor_instance._window
@@ -336,13 +337,19 @@ class InternalFunctions:
             window.theme,
         )
 
+        dlg.add_filter(".sdscene", "Shape Detector Scene (.sdscene)")
+
         def _on_cancel():
             editor_instance._close_dialog()
 
         def _on_done(path):
-            _save_scene(path, editor_instance)
-            editor_instance._scene_file_path = path
-            editor_instance._close_dialog()
+            # path = Path(path)
+            if Path(path).exists() and path != editor_instance._scene_file_path:
+                _create_overwrite_warning(editor_instance, path)
+            else:
+                editor_instance._scene_file_path = path
+                self._cb_save_scene()
+                editor_instance._close_dialog()
 
         # A file dialog MUST define on_cancel and on_done functions
         dlg.set_on_cancel(_on_cancel)
