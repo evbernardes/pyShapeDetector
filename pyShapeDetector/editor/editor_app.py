@@ -21,6 +21,7 @@ from open3d.visualization import gui, rendering
 
 from .element_container import ElementContainer
 from .settings import Settings
+from .extensions import default_extensions
 
 
 class Editor:
@@ -84,6 +85,9 @@ class Editor:
 
         self.finish = False
         self._started = False
+
+        for extension in default_extensions:
+            self.add_extension(extension)
 
     def _get_submenu_from_path(self, path):
         if path in self._submenus:
