@@ -328,7 +328,7 @@ class Extension:
             editor_instance.elements.insert_multiple(
                 output_elements,
                 to_gui=True,
-                selected=editor_instance.elements.current_element.selected,
+                is_selected=editor_instance.elements.current_element.selected,
             )
             editor_instance.elements.update_current_index(
                 len(editor_instance.elements) - 1
@@ -336,7 +336,7 @@ class Extension:
         else:
             # editor_instance._insert_elements(
             editor_instance.elements.insert_multiple(
-                output_elements, to_gui=True, selected=self.select_outputs
+                output_elements, to_gui=True, is_selected=self.select_outputs
             )
 
         if not self.keep_inputs:

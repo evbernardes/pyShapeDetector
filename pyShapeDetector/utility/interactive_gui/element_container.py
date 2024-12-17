@@ -79,7 +79,7 @@ class ElementContainer(list):
     def is_current_selected(self) -> bool:
         if self.current_element is None:
             return None
-        return self.current_element.selected
+        return self.current_element.is_selected
 
     def __repr__(self):
         return f"ElementContainer({len(self)} elements)"
@@ -101,7 +101,7 @@ class ElementContainer(list):
 
     @property
     def is_selected(self) -> List[bool]:
-        return [element.selected for element in self]
+        return [element.is_selected for element in self]
 
     @is_selected.setter
     def is_selected(self, values: Union[List[bool], bool]):
@@ -159,7 +159,9 @@ class ElementContainer(list):
     def unhidden_indices(self):
         return np.where(~np.array(self.is_hidden))[0].tolist()
 
-    def insert_multiple(self, elements_new, indices=None, selected=False, to_gui=False):
+    def insert_multiple(
+        self, elements_new, indices=None, is_selected=False, to_gui=False
+    ):
         from .element import Element
 
         if not isinstance(elements_new, (tuple, list)):
@@ -170,8 +172,8 @@ class ElementContainer(list):
         if indices is None:
             indices = range(len(self), len(self) + len(elements_new))
 
-        if isinstance(selected, bool):
-            selected = [selected] * len(indices)
+        if isinstance(is_selected, bool):
+            is_selected = [is_selected] * len(indices)
 
         if self.current_index is None:
             self._current_index = 0
@@ -201,7 +203,7 @@ class ElementContainer(list):
                 elem = Element.get_from_type(
                     self._editor_instance,
                     elements_new[i],
-                    selected[i],
+                    is_selected[i],
                     is_current,
                     self._is_color_fixed,
                 )
@@ -331,7 +333,7 @@ class ElementContainer(list):
 
         for idx in indices:
             elem = self[idx]
-            elem._selected = elem.selected
+            elem._selected = elem.is_selected
             is_current = self._editor_instance._started and (idx == self.current_index)
 
             elem.update(is_current, update_gui)
@@ -360,10 +362,10 @@ class ElementContainer(list):
         for idx in indices:
             elem = self[idx]
             if to_value is None:
-                selected = not self._hotkeys._is_lshift_pressed
+                is_selected = not self._hotkeys._is_lshift_pressed
             else:
-                selected = to_value
-            elem.selected = selected
+                is_selected = to_value
+            elem.is_selected = is_selected
 
         self.update_indices(indices)
 

@@ -45,7 +45,7 @@ class Element(ABC):
        `name`: Strind ID of object, to add to 3DScene
        `raw`: Either a Primitive instance or a Numpy Geometry
        `drawable`: An instance of Open3D Geometry that can be added to the 3DScene
-       `selected`: A flag indicating whether the element is selected or not
+       `is_selected`: A flag indicating whether the element is selected or not
        `current`: A flag indicating whether the element is the current one
        `distance_checker`: Either a simplified PointCloud or a Primitive, to
        detect distances to the screen when clicking.
@@ -88,14 +88,14 @@ class Element(ABC):
         return self._drawable
 
     @property
-    def selected(self) -> bool:
-        return self._selected
+    def is_selected(self) -> bool:
+        return self._is_selected
 
-    @selected.setter
-    def selected(self, value: bool):
+    @is_selected.setter
+    def is_selected(self, value: bool):
         if not isinstance(value, bool):
             raise TypeError(f"'selected' should be a boolean, got {value}.")
-        self._selected = value
+        self._is_selected = value
 
     @property
     def current(self) -> bool:
@@ -163,7 +163,7 @@ class Element(ABC):
                     BBOX_expand
                 )
 
-        if self.selected:
+        if self.is_selected:
             bbox.color = self._editor_instance._get_preference("color_BBOX_selected")
         else:
             bbox.color = self._editor_instance._get_preference("color_BBOX_unselected")
@@ -213,7 +213,7 @@ class Element(ABC):
         brightness = self._brightness
         if self.current:
             brightness += highlight_ratio
-        if self.selected:
+        if self.is_selected:
             brightness += highlight_ratio
 
         return np.clip(color * brightness, 0, 1)
@@ -244,7 +244,7 @@ class Element(ABC):
         paint_selected = self._editor_instance._get_preference("paint_selected")
         self._current = is_current
 
-        if paint_selected and self.selected:
+        if paint_selected and self.is_selected:
             color = self._editor_instance._settings.get_element_color(True, is_current)
         else:
             color = self._color
@@ -262,7 +262,7 @@ class Element(ABC):
         self,
         editor_instance: interactive_gui.Editor,
         raw,
-        selected: bool = False,
+        is_selected: bool = False,
         current: bool = False,
         is_color_fixed: bool = False,
         brightness: float = 1,
@@ -270,7 +270,7 @@ class Element(ABC):
     ):
         self._editor_instance = editor_instance
         self._raw = self._parse_raw(raw)
-        self._selected = selected
+        self._is_selected = is_selected
         self._current = current
         self._is_color_fixed = is_color_fixed
         self._brightness = brightness
@@ -297,7 +297,7 @@ class Element(ABC):
     def get_from_type(
         editor_instance: interactive_gui.Editor,
         raw,
-        selected: bool = False,
+        is_selected: bool = False,
         current: bool = False,
         is_color_fixed: bool = False,
     ):
@@ -312,7 +312,7 @@ class Element(ABC):
         else:
             raise TypeError("Expected primitive or geometry, got {type(raw)}.")
 
-        return element_class(editor_instance, raw, selected, current, is_color_fixed)
+        return element_class(editor_instance, raw, is_selected, current, is_color_fixed)
 
 
 class ElementPrimitive(Element):

@@ -174,12 +174,6 @@ class Editor:
             while len(self._future_states) > self._get_preference("number_redo_states"):
                 self._future_states.pop(0)
 
-            if delete_future:
-                warnings.warn(
-                    "Deleting future when adding to future, doesn't make sense."
-                )
-                # self._future_states = []
-
         else:
             self._past_states.append(current_state)
             self.print_debug(f"Saving state {current_state} to past states.")

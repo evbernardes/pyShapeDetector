@@ -3,6 +3,7 @@ import copy
 import numpy as np
 import warnings
 import traceback
+from typing import List, Union
 from pathlib import Path
 from open3d.visualization import gui
 from .editor_app import Editor
@@ -463,7 +464,7 @@ class InternalFunctions:
         if elem is None:
             return
 
-        elem.selected = not elem.selected
+        elem.is_selected = not elem.is_selected
         editor_instance.elements.update_current_index()
 
     def _cb_delete(self):
@@ -496,7 +497,7 @@ class InternalFunctions:
         """Save elements to be copied."""
         editor_instance = self._editor_instance
         copied_elements = copy.deepcopy(
-            [elem.raw for elem in editor_instance.elements if elem.selected]
+            [elem.raw for elem in editor_instance.elements if elem.is_selected]
         )
         editor_instance.print_debug(f"Copying {len(copied_elements)} elements.")
         editor_instance._copied_elements = copied_elements
@@ -657,13 +658,18 @@ class InternalFunctions:
     def _cb_toggle_settings_panel(self):
         self._editor_instance._settings._on_menu_toggle()
 
-    def _cb_hide(self):
+    def _cb_hide(
+        self,
+        indices: Union[List[int], None] = None,
+        to_future: bool = False,
+        delete_future: bool = True,
+    ):
         """Hide selected elements."""
 
         editor_instance = self._editor_instance
-        indices = editor_instance.elements.selected_indices
-
-        if len(indices) == 0:
+        if indices is None:
+            indices = editor_instance.elements.selected_indices
+        elif len(indices) == 0:
             return
 
         for idx in indices:
@@ -680,13 +686,26 @@ class InternalFunctions:
         editor_instance._update_plane_boundaries()
         editor_instance._update_info()
 
-    def _cb_unhide(self):
+        editor_instance._save_state(
+            {"indices": indices, "operation": "hide"},
+            to_future=to_future,
+            delete_future=delete_future,
+        )
+
+    def _cb_unhide(
+        self,
+        indices: Union[List[int], None] = None,
+        to_future: bool = False,
+        delete_future: bool = True,
+    ):
         """Unhide all hidden elements."""
 
         editor_instance = self._editor_instance
-        indices = editor_instance.elements.hidden_indices
+        print(indices)
 
-        if len(indices) == 0:
+        if indices is None:
+            indices = editor_instance.elements.hidden_indices
+        elif len(indices) == 0:
             return
 
         for idx in indices:
@@ -696,6 +715,12 @@ class InternalFunctions:
         editor_instance._update_plane_boundaries()
         editor_instance._update_info()
 
+        editor_instance._save_state(
+            {"indices": indices, "operation": "unhide"},
+            to_future=to_future,
+            delete_future=delete_future,
+        )
+
     def _cb_undo(self):
         editor_instance = self._editor_instance
 
@@ -704,6 +729,15 @@ class InternalFunctions:
 
         last_state = editor_instance._past_states.pop()
         indices = last_state["indices"]
+
+        if last_state["operation"] == "unhide":
+            self._cb_hide(indices, to_future=True)
+            return
+
+        if last_state["operation"] == "hide":
+            self._cb_unhide(indices, to_future=True)
+            return
+
         elements = last_state["elements"]
         num_outputs = last_state["num_outputs"]
         num_elems = len(editor_instance.elements)
@@ -720,7 +754,7 @@ class InternalFunctions:
         )
 
         editor_instance.elements.insert_multiple(
-            elements, indices, selected=True, to_gui=True
+            elements, indices, is_selected=True, to_gui=True
         )
 
         # editor_instance._future_states.append()
@@ -744,9 +778,17 @@ class InternalFunctions:
             return
 
         future_state = editor_instance._future_states.pop()
+        indices = future_state["indices"]
+
+        if future_state["operation"] == "unhide":
+            self._cb_hide(indices, delete_future=False)
+            return
+
+        if future_state["operation"] == "hide":
+            self._cb_unhide(indices, delete_future=False)
+            return
 
         modified_elements = future_state["modified_elements"]
-        indices = future_state["indices"]
 
         editor_instance.print_debug(
             f"Redoing last operation, removing {len(indices)} inputs and "
