@@ -53,6 +53,7 @@ class Element(ABC):
        `color_original`: The original color when created
        `color`: The current color, either equal to original or a random one
        `is_color_fixed`: Flag indicating whether the color and brightness can be updated
+       `is_hidden`: Flat indicating whether it should be shown.
 
     Methods
     -------
@@ -75,19 +76,19 @@ class Element(ABC):
     """
 
     @property
-    def name(self):
+    def name(self) -> str:
         return str(id(self))
 
     @property
-    def raw(self):
+    def raw(self) -> Union[Primitive, geometry.Numpy_Geometry, Open3d_Geometry]:
         return self._raw
 
     @property
-    def drawable(self):
+    def drawable(self) -> Union[geometry.Numpy_Geometry, Open3d_Geometry]:
         return self._drawable
 
     @property
-    def selected(self):
+    def selected(self) -> bool:
         return self._selected
 
     @selected.setter
@@ -97,7 +98,7 @@ class Element(ABC):
         self._selected = value
 
     @property
-    def current(self):
+    def current(self) -> bool:
         return self._current
 
     @property
@@ -105,20 +106,32 @@ class Element(ABC):
         return self._distance_checker
 
     @property
-    def brightness(self):
+    def brightness(self) -> float:
         return self._brightness
 
     @property
-    def color_original(self):
+    def color_original(self) -> np.ndarray:
         return self._color_original
 
     @property
-    def color(self):
+    def color(self) -> np.ndarray:
         return self._color
 
     @property
-    def is_color_fixed(self):
+    def is_color_fixed(self) -> bool:
         return self._is_color_fixed
+
+    @property
+    def is_hidden(self) -> bool:
+        return self._is_hidden
+
+    @is_hidden.setter
+    def is_hidden(self, value: bool):
+        self._is_hidden = value
+        if value:
+            self.remove_from_scene()
+        else:
+            self.add_to_scene()
 
     @staticmethod
     @abstractmethod
@@ -220,7 +233,9 @@ class Element(ABC):
 
     def update_on_scene(self):
         self.remove_from_scene()
-        self.add_to_scene()
+
+        if not self.is_hidden:
+            self.add_to_scene()
 
     def update(self, is_current: bool, update_scene: bool = True):
         if self.is_color_fixed:
@@ -251,6 +266,7 @@ class Element(ABC):
         current: bool = False,
         is_color_fixed: bool = False,
         brightness: float = 1,
+        _is_hidden: bool = False,
     ):
         self._editor_instance = editor_instance
         self._raw = self._parse_raw(raw)
@@ -258,6 +274,7 @@ class Element(ABC):
         self._current = current
         self._is_color_fixed = is_color_fixed
         self._brightness = brightness
+        self._is_hidden = _is_hidden
 
         self._get_drawable()
         self._get_distance_checker()

@@ -65,7 +65,6 @@ class Editor:
         self._future_states = []
         self._elements = ElementContainer(self)
         self._plane_boundaries = ElementContainer(self, is_color_fixed=True)
-        self._elements_hidden = ElementContainer(self)
         self._elements_fixed = ElementContainer(self, is_color_fixed=True)
         self._pre_selected = []
         self._current_bbox = None
@@ -139,10 +138,8 @@ class Editor:
             warnings.warn(f"Could not create extension {function_or_descriptor}, got:")
             traceback.print_exc()
 
-    def get_elements(self, add_hidden: bool = True, add_fixed: bool = False):
+    def get_elements(self, add_fixed: bool = False):
         elements = self.elements
-        if add_hidden:
-            elements += self._elements_hidden
         if add_fixed:
             elements += self._elements_fixed
         return elements.raw
@@ -213,7 +210,6 @@ class Editor:
             self._internal_functions._dict["Quit"].callback()
             return False
 
-        # self.elements.insert_multiple(self._hidden_elements.raw, to_gui=False)
         for window in self._temp_windows:
             window.close()
         return True
@@ -368,6 +364,9 @@ class Editor:
 
         if self._get_preference("draw_boundary_lines"):
             for elem in self.elements:
+                if elem.is_hidden:
+                    continue
+
                 try:
                     lineset = elem.raw.vertices_LineSet.as_open3d
                     if hasattr(elem.raw, "holes"):
@@ -454,7 +453,7 @@ class Editor:
                 f"selected: {'YES' if self.elements.is_current_selected else 'NO'}"
             )
 
-            if n := len(self._elements_hidden):
+            if n := len(self.elements.hidden_indices):
                 self._info.text += f" | {n} hidden elements"
 
             if (ext := self._last_used_extension) is not None:
@@ -503,5 +502,4 @@ class Editor:
         #     # raise e
         #     traceback.print_exc()
         # finally:
-        # self._insert_elements(self._hidden_elements, to_gui=False)
-        # self.elements.insert_multiple(self._hidden_elements, to_gui=False)
+        # pass

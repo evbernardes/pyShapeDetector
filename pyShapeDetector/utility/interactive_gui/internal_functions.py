@@ -463,9 +463,7 @@ class InternalFunctions:
         if elem is None:
             return
 
-        editor_instance.elements.is_current_selected = (
-            not editor_instance.elements.is_current_selected
-        )
+        elem.selected = not elem.selected
         editor_instance.elements.update_current_index()
 
     def _cb_delete(self):
@@ -517,14 +515,20 @@ class InternalFunctions:
         editor_instance._future_states = []
         editor_instance._update_plane_boundaries()
 
-    def _shift_current(self, delta):
+    def _shift_current(self, delta: int):
         """Shifts 'current index' pointer checking if within limits"""
-        editor_instance = self._editor_instance
-        new_idx = min(
-            max(editor_instance.elements.current_index + delta, 0),
-            len(editor_instance.elements) - 1,
-        )
-        editor_instance.elements.update_current_index(new_idx)
+        if delta == 0:
+            # should not happen though
+            return
+
+        elements = self._editor_instance.elements
+        unhidden_indices = elements.unhidden_indices
+        current_index = elements.current_index
+
+        new_position = unhidden_indices.index(current_index) + delta
+        new_position = max(0, min(new_position, len(unhidden_indices) - 1))
+
+        elements.update_current_index(unhidden_indices[new_position])
 
     def _cb_next(self):
         self._shift_current(+1)
@@ -639,38 +643,39 @@ class InternalFunctions:
 
         editor_instance = self._editor_instance
         indices = editor_instance.elements.selected_indices
+
         if len(indices) == 0:
             return
 
-        editor_instance._elements_hidden += editor_instance.elements.pop_multiple(
-            indices, from_gui=True
-        )
-        editor_instance.elements.is_selected = False
+        for idx in indices:
+            elem = editor_instance.elements[idx]
+            elem.is_hidden = True
+            elem.is_selected = False
 
-        # TODO: find a way to make hiding work with undoing
-        editor_instance._past_states = []
-        editor_instance._future_states = []
+        current_index = editor_instance.elements.current_index
+        if current_index in indices:
+            unhidden_indices = editor_instance.elements.unhidden_indices
+            position = np.argmin(abs(np.array(unhidden_indices) - current_index))
+            editor_instance.elements.update_current_index(unhidden_indices[position])
+
         editor_instance._update_plane_boundaries()
+        editor_instance._update_info()
 
     def _cb_unhide(self):
         """Unhide all hidden elements."""
 
         editor_instance = self._editor_instance
-        hidden_elements = editor_instance._elements_hidden
+        indices = editor_instance.elements.hidden_indices
 
-        if len(hidden_elements) == 0:
+        if len(indices) == 0:
             return
 
-        editor_instance.elements.insert_multiple(
-            hidden_elements.pop_multiple(range(len(hidden_elements))),
-            selected=True,
-            to_gui=True,
-        )
+        for idx in indices:
+            elem = editor_instance.elements[idx]
+            elem.is_hidden = False
 
-        # TODO: find a way to make hiding work with undoing
-        editor_instance._past_states = []
-        editor_instance._future_states = []
         editor_instance._update_plane_boundaries()
+        editor_instance._update_info()
 
     def _cb_undo(self):
         editor_instance = self._editor_instance

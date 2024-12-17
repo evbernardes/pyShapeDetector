@@ -1,7 +1,7 @@
 import warnings
 import copy
 
-# from typing import List
+from typing import List, Union
 import numpy as np
 # from .element import Element
 
@@ -17,8 +17,11 @@ class ElementContainer(list):
     current_element
     raw
     drawable
-    selected
+    is_selected
     selected_indices
+    is_hidden
+    hidden_indices
+    unhidden_indices
 
     Methods
     -------
@@ -73,20 +76,10 @@ class ElementContainer(list):
             return None
 
     @property
-    def is_current_selected(self):
+    def is_current_selected(self) -> bool:
         if self.current_element is None:
             return None
         return self.current_element.selected
-
-    @is_current_selected.setter
-    def is_current_selected(self, boolean_value: bool):
-        if not isinstance(boolean_value, bool):
-            raise RuntimeError(f"Expected boolean, got {type(boolean_value)}.")
-        if self.current_element is None:
-            raise RuntimeError(
-                "Error setting selected, current element does not exist."
-            )
-        self.current_element.selected = boolean_value
 
     def __repr__(self):
         return f"ElementContainer({len(self)} elements)"
@@ -107,11 +100,11 @@ class ElementContainer(list):
         return [element.drawable for element in self]
 
     @property
-    def is_selected(self):
+    def is_selected(self) -> List[bool]:
         return [element.selected for element in self]
 
     @is_selected.setter
-    def is_selected(self, values):
+    def is_selected(self, values: Union[List[bool], bool]):
         if isinstance(values, bool):
             values = [values] * len(self)
 
@@ -131,8 +124,40 @@ class ElementContainer(list):
             elem._selected = value
 
     @property
+    def is_hidden(self) -> List[bool]:
+        return [element.is_hidden for element in self]
+
+    @is_hidden.setter
+    def is_hidden(self, values: Union[List[bool], bool]):
+        if isinstance(values, bool):
+            values = [values] * len(self)
+
+        elif len(values) != len(self):
+            raise ValueError(
+                "Length of input expected to be the same as the "
+                f"current number of elements ({len(self)}), "
+                f"got {len(values)}."
+            )
+
+        values = copy.deepcopy(values)
+
+        for elem, value in zip(self, values):
+            if not isinstance(value, (bool, np.bool_)):
+                raise ValueError(f"Expected boolean, got {type(value)}")
+
+            elem._is_hidden = value
+
+    @property
     def selected_indices(self):
         return np.where(self.is_selected)[0].tolist()
+
+    @property
+    def hidden_indices(self):
+        return np.where(self.is_hidden)[0].tolist()
+
+    @property
+    def unhidden_indices(self):
+        return np.where(~np.array(self.is_hidden))[0].tolist()
 
     def insert_multiple(self, elements_new, indices=None, selected=False, to_gui=False):
         from .element import Element
@@ -278,7 +303,7 @@ class ElementContainer(list):
 
         distances = []
         for i, elem in enumerate(self):
-            if i == self.current_index:
+            if i == self.current_index or elem.is_hidden:
                 # for selecting smaller objects closer to bigger ones,
                 # ignores currently selected one
                 distances.append(np.inf)
