@@ -1,8 +1,12 @@
 import warnings
 import numpy as np
+from typing import TYPE_CHECKING
 from open3d.visualization import gui
 from open3d.visualization.rendering import MaterialRecord
-from .editor_app import Editor
+
+if TYPE_CHECKING:
+    from .editor_app import Editor
+
 from .parameter import (
     ParameterBool,
     ParameterInt,
@@ -118,7 +122,7 @@ class Settings:
         text = str(text)
         print("[DEBUG] " + text)
 
-    def __init__(self, editor_instance: Editor, menu="Preferences", **kwargs):
+    def __init__(self, editor_instance: "Editor", menu="Preferences", **kwargs):
         options = [
             ###########################################
             # Test Parameters, uncomment when testing #

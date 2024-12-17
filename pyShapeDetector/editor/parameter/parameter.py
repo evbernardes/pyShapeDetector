@@ -10,7 +10,9 @@ import warnings
 from typing import Callable, Union, TypeVar, Generic
 from abc import ABC, abstractmethod
 from open3d.visualization import gui
-from pyShapeDetector.editor.editor_app import Editor
+
+# from pyShapeDetector.editor.editor_app import Editor
+from ..element_container import ElementContainer
 
 T = TypeVar("T")
 
@@ -146,7 +148,7 @@ class ParameterBase(ABC, Generic[T]):
         self.on_update(self.value)
         self._update_references()
 
-    def _reset_values_and_limits(self, editor_instance: Editor):
+    def _reset_values_and_limits(self, elements: ElementContainer):
         """Resets values and limits if needed"""
         pass
 

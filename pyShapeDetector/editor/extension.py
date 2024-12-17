@@ -379,7 +379,7 @@ class Extension:
         previous_values = {}
         for key, param in self.parameters.items():
             previous_values[key] = copy.copy(param.value)
-            param._reset_values_and_limits(editor_instance)
+            param._reset_values_and_limits(editor_instance.elements)
 
         separation_width = em
         separation_height = int(round(0.1 * em))

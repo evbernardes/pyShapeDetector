@@ -2,8 +2,8 @@ import warnings
 import traceback
 from typing import Callable, Union
 from open3d.visualization import gui
-from pyShapeDetector.editor.editor_app import Editor
 from .parameter import ParameterBase
+from ..element_container import ElementContainer
 
 
 class ParameterFloat(ParameterBase[float]):
@@ -118,14 +118,12 @@ class ParameterFloat(ParameterBase[float]):
         # self._update_internal_element()
         self._update_references()
 
-    def _reset_values_and_limits(self, editor_instance: Editor):
+    def _reset_values_and_limits(self, elements: ElementContainer):
         if self.limit_setter is None:
             return
 
         try:
-            self.limits = self.limit_setter(
-                editor_instance.elements.selected_raw_elements
-            )
+            self.limits = self.limit_setter(elements.selected_raw_elements)
         except Exception:
             warnings.warn(f"Could not reset limits of parameter {self.name}:")
             traceback.print_exc()

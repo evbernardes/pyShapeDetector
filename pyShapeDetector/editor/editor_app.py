@@ -20,6 +20,7 @@ from open3d.visualization import gui, rendering
 # from .element import Element, ElementGeometry
 
 from .element_container import ElementContainer
+from .settings import Settings
 
 
 class Editor:
@@ -60,8 +61,6 @@ class Editor:
         return_finish_flag=False,
         **kwargs,
     ):
-        from .settings import Settings
-
         self._settings = Settings(self, **kwargs)
 
         self._copied_elements = []
