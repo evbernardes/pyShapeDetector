@@ -23,8 +23,6 @@ import numpy as np
 from multiprocessing import Manager, Process
 from open3d import visualization
 
-from .editor.editor_app import Editor
-
 if has_matplotlib := find_spec("matplotlib") is not None:
     import matplotlib.pyplot as plt
 if not has_matplotlib:
@@ -494,6 +492,8 @@ def select_manually(
         List of booleans showing which of the elements where selected.
     """
 
+    from pyShapeDetector.editor import Editor
+
     if "print_instructions" in kwargs:
         warnings.warn("print_instructions option not used anymore")
 
@@ -574,6 +574,8 @@ def apply_function_manually(
     list
         List containing sublists of indices
     """
+    from pyShapeDetector.editor import Editor
+
     if pre_selected is None:
         pre_selected = [False] * len(elements)
 

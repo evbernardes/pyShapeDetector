@@ -2,7 +2,7 @@ import warnings
 import traceback
 from typing import Callable, Union
 from open3d.visualization import gui
-from pyShapeDetector.utility.editor.editor_app import Editor
+from pyShapeDetector.editor.editor_app import Editor
 from .parameter import ParameterBase
 
 

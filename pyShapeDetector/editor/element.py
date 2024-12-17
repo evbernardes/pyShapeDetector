@@ -12,7 +12,7 @@ from open3d.t.geometry import PointCloud as TensorPointCloud
 
 from pyShapeDetector.primitives import Primitive
 from pyShapeDetector import geometry
-from pyShapeDetector.utility import editor
+from pyShapeDetector import editor
 
 line_elements = (
     geometry.LineSet,
