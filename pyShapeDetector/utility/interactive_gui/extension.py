@@ -313,7 +313,15 @@ class Extension:
             )
             return
 
-        editor_instance._save_state(indices, input_elements, len(output_elements))
+        # Saving state for undoing purposes
+        current_state = {
+            "indices": copy.deepcopy(indices),
+            "elements": copy.deepcopy(input_elements),
+            "num_outputs": len(output_elements),
+            "current_index": editor_instance.elements.current_index,
+            "operation": "extension",
+        }
+        editor_instance._save_state(current_state)
 
         if self.inputs == "current":
             # editor_instance._insert_elements(

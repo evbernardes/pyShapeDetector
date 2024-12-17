@@ -162,22 +162,33 @@ class Editor:
         self._window.close_dialog()
         self._reset_on_key()
 
-    def _save_state(self, indices, input_elements, num_outputs):
+    def _save_state(
+        self, current_state: dict, to_future: bool = False, delete_future: bool = True
+    ):
         """Save state for undoing."""
-        current_state = {
-            "indices": copy.deepcopy(indices),
-            "elements": copy.deepcopy(input_elements),
-            "num_outputs": num_outputs,
-            "current_index": self.elements.current_index,
-        }
 
-        self._past_states.append(current_state)
-        self.print_debug(
-            f"Saving state with {len(input_elements)} inputs and {num_outputs} outputs."
-        )
+        if to_future:
+            self._future_states.append(current_state)
+            self.print_debug(f"Saving state {current_state} to future states.")
 
-        while len(self._past_states) > self._get_preference("number_undo_states"):
-            self._past_states.pop(0)
+            while len(self._future_states) > self._get_preference("number_redo_states"):
+                self._future_states.pop(0)
+
+            if delete_future:
+                warnings.warn(
+                    "Deleting future when adding to future, doesn't make sense."
+                )
+                # self._future_states = []
+
+        else:
+            self._past_states.append(current_state)
+            self.print_debug(f"Saving state {current_state} to past states.")
+
+            while len(self._past_states) > self._get_preference("number_undo_states"):
+                self._past_states.pop(0)
+
+            if delete_future:
+                self._future_states = []
 
     def _on_layout(self, layout_context):
         r = self._window.content_rect

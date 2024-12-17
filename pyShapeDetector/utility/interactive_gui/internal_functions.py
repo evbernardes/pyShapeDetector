@@ -481,8 +481,14 @@ class InternalFunctions:
             traceback.print_exc()
             return
 
-        editor_instance._save_state(indices, input_elements, 0)
-        editor_instance._future_states = []
+        current_state = {
+            "indices": copy.deepcopy(indices),
+            "elements": copy.deepcopy(input_elements),
+            "num_outputs": 0,
+            "current_index": editor_instance.elements.current_index,
+            "operation": "delete",
+        }
+        editor_instance._save_state(current_state)
         editor_instance._update_plane_boundaries()
         editor_instance._update_BBOX_and_axes()
 
@@ -511,8 +517,15 @@ class InternalFunctions:
             )
             traceback.print_exc()
 
-        editor_instance._save_state([], [], len(editor_instance._copied_elements))
-        editor_instance._future_states = []
+        current_state = {
+            "indices": [],
+            "elements": [],
+            "num_outputs": len(editor_instance._copied_elements),
+            "current_index": self.elements.current_index,
+            "operation": "paste",
+        }
+
+        editor_instance._save_state(current_state)
         editor_instance._update_plane_boundaries()
 
     def _shift_current(self, delta: int):
@@ -556,7 +569,9 @@ class InternalFunctions:
         if len(editor_instance._past_states) == 0:
             return
 
-        num_outputs = editor_instance._past_states[-1]["num_outputs"]
+        if (num_outputs := editor_instance._past_states[-1]["num_outputs"]) == 0:
+            return
+
         editor_instance.elements.toggle_indices(
             slice(-num_outputs, None), to_value=True
         )
@@ -567,7 +582,11 @@ class InternalFunctions:
         if len(editor_instance._past_states) == 0:
             return
 
-        num_outputs = editor_instance._past_states[-1]["num_outputs"]
+        if (num_outputs := editor_instance._past_states[-1]["num_outputs"]) == 0:
+            return
+
+        print(num_outputs)
+
         editor_instance.elements.toggle_indices(
             slice(-num_outputs, None), to_value=False
         )
@@ -704,18 +723,14 @@ class InternalFunctions:
             elements, indices, selected=True, to_gui=True
         )
 
-        editor_instance._future_states.append(
-            {
-                "modified_elements": modified_elements,
-                "indices": indices,
-                "current_index": editor_instance.elements.current_index,
-            }
-        )
-
-        while len(editor_instance._future_states) > editor_instance._get_preference(
-            "number_redo_states"
-        ):
-            editor_instance._future_states.pop(0)
+        # editor_instance._future_states.append()
+        current_state = {
+            "modified_elements": modified_elements,
+            "indices": indices,
+            "current_index": editor_instance.elements.current_index,
+            "operation": "undo",
+        }
+        editor_instance._save_state(current_state, to_future=True, delete_future=False)
 
         if len(indices) > 0:
             editor_instance.elements.update_current_index(indices[-1])
@@ -739,12 +754,18 @@ class InternalFunctions:
         )
 
         input_elements = [editor_instance.elements[i].raw for i in indices]
-        editor_instance._save_state(indices, input_elements, len(modified_elements))
+
+        current_state = {
+            "indices": copy.deepcopy(indices),
+            "elements": copy.deepcopy(input_elements),
+            "num_outputs": len(modified_elements),
+            "current_index": editor_instance.elements.current_index,
+            "operation": "redo",
+        }
+        editor_instance._save_state(current_state, delete_future=False)
 
         editor_instance.elements.current_index = future_state["current_index"]
         editor_instance.elements.pop_multiple(indices, from_gui=True)
         editor_instance.elements.insert_multiple(modified_elements, to_gui=True)
-
         editor_instance.elements.update_current_index(len(editor_instance.elements) - 1)
-
         editor_instance._update_plane_boundaries()
