@@ -10,7 +10,7 @@ import warnings
 from typing import Callable, Union, TypeVar, Generic
 from abc import ABC, abstractmethod
 from open3d.visualization import gui
-from pyShapeDetector.utility.interactive_gui.editor_app import Editor
+from pyShapeDetector.utility.editor.editor_app import Editor
 
 T = TypeVar("T")
 

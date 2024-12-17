@@ -16,7 +16,7 @@ from pathlib import Path
 from importlib.util import find_spec
 from pyShapeDetector.geometry import PointCloud, TriangleMesh
 from pyShapeDetector.primitives import Primitive
-from pyShapeDetector.utility.interactive_gui import Editor
+from pyShapeDetector.utility.editor import Editor
 
 if has_h5py := find_spec("h5py") is not None:
     import h5py

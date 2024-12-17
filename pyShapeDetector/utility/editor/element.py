@@ -12,7 +12,7 @@ from open3d.t.geometry import PointCloud as TensorPointCloud
 
 from pyShapeDetector.primitives import Primitive
 from pyShapeDetector import geometry
-from pyShapeDetector.utility import interactive_gui
+from pyShapeDetector.utility import editor
 
 line_elements = (
     geometry.LineSet,
@@ -260,7 +260,7 @@ class Element(ABC):
 
     def __init__(
         self,
-        editor_instance: interactive_gui.Editor,
+        editor_instance: editor.Editor,
         raw,
         is_selected: bool = False,
         current: bool = False,
@@ -295,7 +295,7 @@ class Element(ABC):
 
     @staticmethod
     def get_from_type(
-        editor_instance: interactive_gui.Editor,
+        editor_instance: editor.Editor,
         raw,
         is_selected: bool = False,
         current: bool = False,

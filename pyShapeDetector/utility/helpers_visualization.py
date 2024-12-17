@@ -23,7 +23,7 @@ import numpy as np
 from multiprocessing import Manager, Process
 from open3d import visualization
 
-from .interactive_gui.editor_app import Editor
+from .editor.editor_app import Editor
 
 if has_matplotlib := find_spec("matplotlib") is not None:
     import matplotlib.pyplot as plt

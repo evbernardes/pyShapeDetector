@@ -2,12 +2,12 @@ import warnings
 import traceback
 from typing import Callable, Union
 from open3d.visualization import gui
-from pyShapeDetector.utility.interactive_gui.editor_app import Editor
+from pyShapeDetector.utility.editor.editor_app import Editor
 from .parameter import ParameterBase
 
 
-class ParameterInt(ParameterBase[int]):
-    """Parameter for Int types.
+class ParameterFloat(ParameterBase[float]):
+    """Parameter for Float types.
 
     Creates a Slider if has limits, otherwise a normal text edit.
 
@@ -39,7 +39,7 @@ class ParameterInt(ParameterBase[int]):
     create_from_dict
     """
 
-    _type = int
+    _type = float
     _valid_arguments = ParameterBase._valid_arguments + ["limits", "limit_setter"]
 
     @property
@@ -58,10 +58,7 @@ class ParameterInt(ParameterBase[int]):
     @ParameterBase.value.setter
     def value(self, new_value):
         if new_value is not None:
-            try:
-                new_value = int(new_value)
-            except ValueError:
-                new_value = int(float(new_value))
+            new_value = float(new_value)
 
         else:
             if self.limits is None:
@@ -107,13 +104,18 @@ class ParameterInt(ParameterBase[int]):
         if self.internal_element is None:
             return
         elif isinstance(self.internal_element, gui.Slider):
-            self.internal_element.int_value = self.value
+            self.internal_element.double_value = self.value
             self.internal_element.set_limits(*self.limits)
         else:
             self.internal_element.text_value = str(self.value)
 
     def _callback(self, value):
+        old_value = self.value
         self.value = value
+        if abs(self.value - old_value) > 1e-6:
+            self.on_update(self.value)
+        # if self.is_reference:
+        # self._update_internal_element()
         self._update_references()
 
     def _reset_values_and_limits(self, editor_instance: Editor):
@@ -145,7 +147,9 @@ class ParameterInt(ParameterBase[int]):
             element.add_child(slider)
 
         elif isinstance(self.internal_element, gui.TextEdit):
+            # Text field for general inputs
             text_edit = self.internal_element
+            # text_edit.placeholder_text = str(self.value)
             # text_edit.set_on_value_changed(
             #     lambda value: self._callback(value, text_edit)
             # )
@@ -153,6 +157,7 @@ class ParameterInt(ParameterBase[int]):
             element = gui.VGrid(2, 0.25 * font_size)
             element.add_child(label)
             element.add_child(text_edit)
+
         else:
             raise RuntimeError(
                 "ParameterInt internal element is neither a gui.Glider "
@@ -176,8 +181,8 @@ class ParameterInt(ParameterBase[int]):
         super().__init__(name=name, on_update=on_update, subpanel=subpanel)
         self.limit_setter = limit_setter
 
-        if limits is not None and self.limit_setter is None:
-            self._internal_element = gui.Slider(gui.Slider.INT)
+        if limits is not None and limit_setter is None:
+            self._internal_element = gui.Slider(gui.Slider.DOUBLE)
         else:
             # Text field for general inputs
             self._internal_element = gui.TextEdit()
