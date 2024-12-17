@@ -150,7 +150,7 @@ class Element(ABC):
         if self.raw is None or isinstance(self.raw, geometry.LineSet):
             return None
 
-        BBOX_expand = self._editor_instance._get_preference("BBOX_expand")
+        BBOX_expand = self._editor_instance._get_setting("BBOX_expand")
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -164,9 +164,9 @@ class Element(ABC):
                 )
 
         if self.is_selected:
-            bbox.color = self._editor_instance._get_preference("color_BBOX_selected")
+            bbox.color = self._editor_instance._get_setting("color_BBOX_selected")
         else:
-            bbox.color = self._editor_instance._get_preference("color_BBOX_unselected")
+            bbox.color = self._editor_instance._get_setting("color_BBOX_unselected")
 
         return bbox
 
@@ -207,7 +207,7 @@ class Element(ABC):
 
     def _get_dimmed_color(self, color):
         highlight_ratio = (
-            self._editor_instance._get_preference("highlight_ratio") * self._brightness
+            self._editor_instance._get_setting("highlight_ratio") * self._brightness
         )
 
         brightness = self._brightness
@@ -241,7 +241,7 @@ class Element(ABC):
         if self.is_color_fixed:
             return
 
-        paint_selected = self._editor_instance._get_preference("paint_selected")
+        paint_selected = self._editor_instance._get_setting("paint_selected")
         self._current = is_current
 
         if paint_selected and self.is_selected:
@@ -280,16 +280,12 @@ class Element(ABC):
         self._get_distance_checker()
         self._color_original = self._extract_drawable_color()  # saving original color
 
-        if editor_instance._get_preference("paint_random"):
+        if editor_instance._get_setting("paint_random"):
             self._color = np.random.random(3)
-            self._brightness = editor_instance._get_preference(
-                "random_color_brightness"
-            )
+            self._brightness = editor_instance._get_setting("random_color_brightness")
         else:
             self._color = self.color_original
-            self._brightness = editor_instance._get_preference(
-                "original_color_brightness"
-            )
+            self._brightness = editor_instance._get_setting("original_color_brightness")
 
         self._update_drawable_color(self._color)
 
@@ -363,7 +359,7 @@ class ElementPointCloud(ElementGeometry):
             raise ValueError(f"Expected PointCloud instance, got {raw}.")
 
     def _get_distance_checker(self):
-        number_points_distance = self._editor_instance._get_preference(
+        number_points_distance = self._editor_instance._get_setting(
             "number_points_distance"
         )
         if len(self.raw.points) > number_points_distance:
@@ -424,16 +420,14 @@ class ElementTriangleMesh(ElementGeometry):
             raise ValueError("Expected TriangleMesh instance, got {raw}.")
 
     def _get_drawable(self):
-        mesh_show_back_face = self._editor_instance._get_preference(
-            "mesh_show_back_face"
-        )
+        mesh_show_back_face = self._editor_instance._get_setting("mesh_show_back_face")
         mesh = copy.copy(self.raw)
         if mesh_show_back_face:
             mesh.add_reverse_triangles()
         return mesh.as_open3d
 
     def _get_distance_checker(self):
-        number_points_distance = self._editor_instance._get_preference(
+        number_points_distance = self._editor_instance._get_setting(
             "number_points_distance"
         )
         self._distance_checker = geometry.PointCloud(

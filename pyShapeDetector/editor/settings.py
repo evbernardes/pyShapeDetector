@@ -87,6 +87,12 @@ class Settings:
     def dict(self):
         self._dict
 
+    def get_setting(self, key):
+        if key not in self._dict:
+            warnings.warn(f"Tried getting non existing preference {key}")
+            return None
+        return self._dict[key].value
+
     def __init__(self, editor_instance: Editor, menu="Preferences", **kwargs):
         options = [
             ###########################################

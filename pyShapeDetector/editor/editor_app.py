@@ -114,8 +114,8 @@ class Editor:
         return self._submenus[path]
 
     def print_debug(self, text, require_verbose=False):
-        is_debug_activated = self._get_preference("debug")
-        is_verbose_activated = self._get_preference("verbose")
+        is_debug_activated = self._get_setting("debug")
+        is_verbose_activated = self._get_setting("verbose")
 
         if not is_debug_activated or (require_verbose and not is_verbose_activated):
             return
@@ -171,14 +171,14 @@ class Editor:
             self._future_states.append(current_state)
             self.print_debug(f"Saving state {current_state} to future states.")
 
-            while len(self._future_states) > self._get_preference("number_redo_states"):
+            while len(self._future_states) > self._get_setting("number_redo_states"):
                 self._future_states.pop(0)
 
         else:
             self._past_states.append(current_state)
             self.print_debug(f"Saving state {current_state} to past states.")
 
-            while len(self._past_states) > self._get_preference("number_undo_states"):
+            while len(self._past_states) > self._get_setting("number_undo_states"):
                 self._past_states.pop(0)
 
             if delete_future:
@@ -272,11 +272,8 @@ class Editor:
 
         return gui.Widget.EventCallbackResult.HANDLED
 
-    def _get_preference(self, key):
-        if key not in self._settings._dict:
-            warnings.warn(f"Tried getting non existing preference {key}")
-            return None
-        return self._settings._dict[key].value
+    def _get_setting(self, key):
+        return self._settings.get_setting(key)
 
     def _setup_window_and_scene(self):
         from .menu_help import MenuHelp
@@ -307,13 +304,13 @@ class Editor:
         self.material_regular.base_color = [1.0, 1.0, 1.0, 1.0]  # White color
         self.material_regular.shader = "defaultUnlit"
         self.material_regular.point_size = (
-            self._get_preference("PointCloud_point_size") * self._window.scaling
+            self._get_setting("PointCloud_point_size") * self._window.scaling
         )
 
         self.material_line = rendering.MaterialRecord()
         self.material_line.shader = "unlitLine"
         self.material_line.line_width = (
-            self._get_preference("line_width") * self._window.scaling
+            self._get_setting("line_width") * self._window.scaling
         )
 
         self._info = gui.Label("")
@@ -367,7 +364,7 @@ class Editor:
 
         plane_boundaries = []
 
-        if self._get_preference("draw_boundary_lines"):
+        if self._get_setting("draw_boundary_lines"):
             for elem in self.elements:
                 if elem.is_hidden:
                     continue
@@ -403,9 +400,7 @@ class Editor:
             self._scene.scene.remove_geometry("BBOXAxisZ")
             self._current_bbox_axes
 
-        if self.elements.current_element is None or not self._get_preference(
-            "show_BBOX"
-        ):
+        if self.elements.current_element is None or not self._get_setting("show_BBOX"):
             self._current_bbox = None
             return
 
@@ -416,11 +411,11 @@ class Editor:
                 "CurrentBoundingBox", self._current_bbox, self.material_line
             )
 
-        if self._current_bbox is not None and self._get_preference("show_BBOX_axes"):
+        if self._current_bbox is not None and self._get_setting("show_BBOX_axes"):
             center = self._current_bbox.center
             extent = self._current_bbox.extent
             R = self._current_bbox.R
-            radius = self._get_preference("BBOX_axes_width") * self._window.scaling
+            radius = self._get_setting("BBOX_axes_width") * self._window.scaling
 
             min_bound = center - extent.dot(R.T) / 2
             vx = TriangleMesh.create_arrow_from_points(
