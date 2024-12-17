@@ -4,7 +4,6 @@ from typing import Union
 from abc import ABC, abstractmethod
 import numpy as np
 
-from pyShapeDetector.utility import interactive_gui
 
 from open3d.visualization.rendering import Scene
 from open3d.geometry import Geometry as Open3d_Geometry
@@ -13,6 +12,7 @@ from open3d.t.geometry import PointCloud as TensorPointCloud
 
 from pyShapeDetector.primitives import Primitive
 from pyShapeDetector import geometry
+from pyShapeDetector.utility import interactive_gui
 
 line_elements = (
     geometry.LineSet,

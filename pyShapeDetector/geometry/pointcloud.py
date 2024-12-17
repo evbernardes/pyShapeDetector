@@ -30,13 +30,7 @@ from sklearn.neighbors import KDTree
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
-from pyShapeDetector.utility import (
-    rgb_to_cielab,
-    cielab_to_rgb,
-    parallelize,
-    midrange,
-    accept_one_or_multiple_elements,
-)
+from pyShapeDetector import utility
 from .numpy_geometry import link_to_open3d_geometry, Numpy_Geometry
 
 
@@ -82,7 +76,7 @@ class PointCloud(Numpy_Geometry):
 
     @property
     def midrange(self):
-        return midrange(self.points)
+        return utility.midrange(self.points)
 
     @property
     def volume(self):
@@ -108,11 +102,11 @@ class PointCloud(Numpy_Geometry):
 
     @property
     def colors_cielab(self):
-        return rgb_to_cielab(self.colors.copy())
+        return utility.rgb_to_cielab(self.colors.copy())
 
     @colors_cielab.setter
     def colors_cielab(self, lab):
-        self.colors = cielab_to_rgb(lab)
+        self.colors = utility.cielab_to_rgb(lab)
 
     def from_points_normals_colors(element, normals=[], colors=[]):
         """Creates PointCloud instance from points, normals or colors.
@@ -150,7 +144,7 @@ class PointCloud(Numpy_Geometry):
         pcd.colors = colors
         return pcd
 
-    @accept_one_or_multiple_elements(3)
+    @utility.accept_one_or_multiple_elements(3)
     def get_distances(self, points):
         """Gives the distance between each input point to the original pointcloud.
 
@@ -236,7 +230,7 @@ class PointCloud(Numpy_Geometry):
         tree = KDTree(points)
         # curvature = np.zeros(len(points))
 
-        @parallelize(cores)
+        @utility.parallelize(cores)
         def _get_normals(indices):
             curvature = np.empty(len(indices))
             j = 0
