@@ -98,6 +98,15 @@ class Settings:
             return None
         return self._dict[key].value
 
+    def set_setting(self, key, value):
+        if key not in self._dict:
+            warnings.warn(f"Tried getting non existing preference {key}")
+            return None
+        self._dict[key].value = value
+
+        # TODO: This might be unnecessary:
+        self._dict[key].on_update(value)
+
     def get_material(self, key):
         if key not in self._materials:
             warnings.warn(f"Material '{key}' not available")

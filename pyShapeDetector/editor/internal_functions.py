@@ -187,6 +187,15 @@ class InternalFunctions:
                 menu="Edit",
             ),
             Binding(
+                # key=gui.KeyName.Z,
+                # lctrl=True,
+                # lshift=True,S
+                description="Estimate PointCloud density",
+                callback=self._cb_estimate_pointcloud_density,
+                menu="Edit",
+                creates_window=True,
+            ),
+            Binding(
                 key=gui.KeyName.U,
                 lctrl=True,
                 lshift=False,
@@ -690,6 +699,88 @@ class InternalFunctions:
     def _cb_toggle_settings_panel(self):
         self._editor_instance._settings._on_menu_toggle()
 
+    def _estimate_pointcloud_density(self, k: int, split: int):
+        from pyShapeDetector.primitives import Primitive
+        from pyShapeDetector.geometry import PointCloud
+
+        pcds = []
+        for element in self._editor_instance.elements:
+            if not element.is_selected:
+                continue
+            if isinstance(element.raw, PointCloud):
+                pcds.append(element.raw)
+            elif (
+                isinstance(element.raw, Primitive)
+                and len(element.raw.inliers.points) > 0
+            ):
+                pcds.append(element.raw.inliers)
+
+        if len(pcds) == 0:
+            self._editor_instance._settings.print_debug(
+                "No pointclouds found, cannot estimate density."
+            )
+            return
+
+        density = np.mean([pcd.average_nearest_dist(k=k, split=split) for pcd in pcds])
+        self._editor_instance._settings.print_debug(
+            f"Estimated PointCloud density: {density}"
+        )
+        self._editor_instance._settings.set_setting("PointCloud_density", density)
+
+    def _cb_estimate_pointcloud_density(self):
+        from .parameter import ParameterInt, ParameterPanel
+
+        editor_instance = self._editor_instance
+
+        parameters = {
+            "number_of_neighbors": ParameterInt(
+                name="Number of neighbors", limits=(3, 50), default=10
+            ),
+            "split": ParameterInt(name="Split", limits=(1, 30), default=30),
+        }
+
+        temp_window = editor_instance.app.create_window(
+            "Estimate PointCloud density", 300, 100 * (len(parameters) + 2)
+        )
+        temp_window.show_menu(False)
+        self._editor_instance._temp_windows.append(temp_window)
+        em = temp_window.theme.font_size
+
+        separation_width = em
+        separation_height = int(round(0.1 * em))
+
+        panel = ParameterPanel(
+            parameters,
+            separation_width,
+            separation_height,
+            "Enter parameters:",
+        ).panel
+
+        def _on_apply():
+            self._estimate_pointcloud_density(
+                parameters["number_of_neighbors"].value, parameters["split"].value
+            )
+
+        def _on_close():
+            temp_window.close()
+            self._editor_instance._temp_windows.remove(temp_window)
+
+        apply = gui.Button("Apply")
+        apply.set_on_clicked(_on_apply)
+        close = gui.Button("Close")
+        close.set_on_clicked(_on_close)
+
+        h = gui.Horiz()
+        h.add_stretch()
+        h.add_child(apply)
+        # h.add_fixed(separation_width)
+
+        h.add_stretch()
+        h.add_child(close)
+        h.add_stretch()
+        panel.add_child(h)
+        temp_window.add_child(panel)
+
     def _cb_hide(
         self,
         indices: Union[List[int], None] = None,
@@ -799,7 +890,7 @@ class InternalFunctions:
         if len(indices) > 0:
             editor_instance.elements.update_current_index(indices[-1])
 
-        editor_instance._update_extra_elements(planes_boundaries=False)
+        editor_instance._update_extra_elements(planes_boundaries=True)
 
     def _cb_redo(self):
         editor_instance = self._editor_instance
@@ -840,6 +931,4 @@ class InternalFunctions:
         editor_instance.elements.pop_multiple(indices, from_gui=True)
         editor_instance.elements.insert_multiple(modified_elements, to_gui=True)
         editor_instance.elements.update_current_index(len(editor_instance.elements) - 1)
-        editor_instance._update_plane_boundaries()
-        editor_instance._update_info()
-        editor_instance._update_BBOX_and_axes()
+        editor_instance._update_extra_elements(planes_boundaries=True)

@@ -583,8 +583,6 @@ def apply_function_manually(
         warnings.warn("print_instructions option not used anymore")
 
     element_selector = Editor(**kwargs)
-    # element_selector.add_elements(elements, pre_selected=pre_selected)
-    # for element, selected in zip(elements, pre_selected):
     element_selector.elements.insert_multiple(
         elements, is_selected=pre_selected, to_gui=False
     )
