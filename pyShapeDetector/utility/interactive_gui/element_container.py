@@ -2,6 +2,7 @@ import warnings
 import copy
 
 from typing import List, Union
+import traceback
 import numpy as np
 # from .element import Element
 
@@ -25,6 +26,7 @@ class ElementContainer(list):
 
     Methods
     -------
+    get_closest_unhidden_index
     insert_multiple
     pop_multiple
     get_distances_to_point
@@ -158,6 +160,25 @@ class ElementContainer(list):
     @property
     def unhidden_indices(self):
         return np.where(~np.array(self.is_hidden))[0].tolist()
+
+    def get_closest_unhidden_index(self, index: Union[int, None]):
+        if index is None:
+            index = self.current_index
+        elif not isinstance(index, int) or index < 0:
+            raise ValueError("Expected positive integer index, got {index}.")
+        if index in self.unhidden_indices:
+            return index
+
+        try:
+            position = np.argmin(abs(np.array(self.unhidden_indices) - index))
+            return self.unhidden_indices[position]
+        except Exception:
+            warnings.warn(
+                f"Could not get closest unhidden index to index {index}. "
+                f"There are currently {len(self.unhidden_indices)} unhidden indexes."
+            )
+            traceback.print_exc()
+            return None
 
     def insert_multiple(
         self, elements_new, indices=None, is_selected=False, to_gui=False

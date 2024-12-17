@@ -667,8 +667,10 @@ class InternalFunctions:
         """Hide selected elements."""
 
         editor_instance = self._editor_instance
+        elements = editor_instance.elements
+
         if indices is None:
-            indices = editor_instance.elements.selected_indices
+            indices = elements.selected_indices
         elif len(indices) == 0:
             return
 
@@ -677,11 +679,9 @@ class InternalFunctions:
             elem.is_hidden = True
             elem.is_selected = False
 
-        current_index = editor_instance.elements.current_index
-        if current_index in indices:
-            unhidden_indices = editor_instance.elements.unhidden_indices
-            position = np.argmin(abs(np.array(unhidden_indices) - current_index))
-            editor_instance.elements.update_current_index(unhidden_indices[position])
+        if elements.current_index in indices:
+            new_index = elements.get_closest_unhidden_index()
+            elements.update_current_index(new_index)
 
         editor_instance._update_plane_boundaries()
         editor_instance._update_info()
