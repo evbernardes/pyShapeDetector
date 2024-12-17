@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 
-from open3d.visualization.rendering import Scene
+from open3d.visualization.rendering import Scene, Open3DScene
 from open3d.geometry import Geometry as Open3d_Geometry
 from open3d.core import Tensor
 from open3d.t.geometry import PointCloud as TensorPointCloud
@@ -123,6 +123,10 @@ class Element(ABC):
         return self._is_color_fixed
 
     @property
+    def scene(self) -> Open3DScene:
+        return self._scene
+
+    @property
     def is_hidden(self) -> bool:
         return self._is_hidden
 
@@ -219,17 +223,25 @@ class Element(ABC):
 
         return np.clip(color * brightness, 0, 1)
 
-    def add_to_scene(self):
+    def add_to_scene(self, scene: Union[Open3DScene, None] = None):
+        if scene is None:
+            pass
+        elif isinstance(scene, Open3DScene):
+            self._scene = scene
+        else:
+            raise TypeError(f"Expected Open3DScene, got {scene}.")
+
+        if self.scene is None:
+            raise RuntimeError("No scene was set for element!")
+
         if isinstance(self.raw, line_elements):
             material = self._settings.get_material("line")
         else:
             material = self._settings.get_material("regular")
-        self._editor_instance._scene.scene.add_geometry(
-            self.name, self.drawable, material
-        )
+        self.scene.add_geometry(self.name, self.drawable, material)
 
     def remove_from_scene(self):
-        self._editor_instance._scene.scene.remove_geometry(self.name)
+        self.scene.remove_geometry(self.name)
 
     def update_on_scene(self):
         self.remove_from_scene()
@@ -276,6 +288,7 @@ class Element(ABC):
         self._is_color_fixed = is_color_fixed
         self._brightness = brightness
         self._is_hidden = _is_hidden
+        self._scene: Union[Open3DScene, None] = None
 
         self._get_drawable()
         self._get_distance_checker()

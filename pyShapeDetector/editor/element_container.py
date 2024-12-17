@@ -236,6 +236,7 @@ class ElementContainer(list):
 
         if self._editor_instance._started:
             for idx in indices:
+                self[idx]._scene = self._editor_instance._scene.scene
                 # Updating vis explicitly in order not to remove it
                 self.update_indices(idx, update_gui=False)
                 if to_gui:

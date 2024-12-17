@@ -378,7 +378,7 @@ class Editor:
                             lineset += hole.vertices_LineSet.as_open3d
 
                     plane_boundary = ElementGeometry(self, lineset)
-                    plane_boundary.add_to_scene()
+                    plane_boundary.add_to_scene(self._scene)
                     plane_boundaries.append(plane_boundary)
 
                 except AttributeError:
@@ -488,7 +488,7 @@ class Editor:
         self._settings._update_materials()
 
         for elem in self.elements + self.elements_fixed:
-            elem.add_to_scene()
+            elem.add_to_scene(self._scene.scene)
 
         self._update_BBOX_and_axes()
         self._update_info()
