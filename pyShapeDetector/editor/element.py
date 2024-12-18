@@ -387,7 +387,10 @@ class ElementPointCloud(ElementGeometry):
         if not PCD_use_Tensor:
             return super()._extract_drawable_color()
 
-        return self.drawable.point.colors.numpy()
+        try:
+            return self.drawable.point.colors.numpy()
+        except KeyError:
+            return np.empty((0, 3))
 
     def _update_drawable_color(self, color_input):
         PCD_use_Tensor = self._settings.get_setting("PCD_use_Tensor")
