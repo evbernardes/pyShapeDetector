@@ -121,7 +121,7 @@ class ParameterInt(ParameterBase[int]):
             return
 
         try:
-            selected_raw_elements = [elem for elem in elements if elem.is_selected]
+            selected_raw_elements = [elem.raw for elem in elements if elem.is_selected]
             self.limits = self.limit_setter(selected_raw_elements)
         except Exception:
             warnings.warn(f"Could not reset limits of parameter {self.name}:")
@@ -130,11 +130,10 @@ class ParameterInt(ParameterBase[int]):
             # Recheck changed limits
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-            # self.limits = (self.value, self.value)
             self.value = self.value
 
     def get_gui_widget(self, font_size):
-        if self.limits is not None and self.limit_setter is None:
+        if self.limits is not None:
             self._internal_element = gui.Slider(gui.Slider.INT)
         else:
             # Text field for general inputs
@@ -181,26 +180,16 @@ class ParameterInt(ParameterBase[int]):
         **other_kwargs,
     ):
         super().__init__(name=name, on_update=on_update, subpanel=subpanel)
+
+        if limit_setter is not None and limits is None:
+            warnings.warn(
+                "When setting a limit setter, default limits should be given. "
+                f"Ignoring limit_setter for parameter '{self.name}'."
+            )
+            limit_setter = None
+
         self.limit_setter = limit_setter
-
-        if self.limit_setter is None:
-            self.limits = limits
-            self.value = default
-
-        else:
-            if limits is not None:
-                warnings.warn(
-                    f"Limit setter defined for parameter {self.name}, "
-                    "ignoring input limits."
-                )
-
-            self._limits = None
-
-            if default is not None:
-                warnings.warn(
-                    f"Limit setter defined for parameter {self.name}, "
-                    "ignoring input default value."
-                )
-            self._value = None
+        self.limits = limits
+        self.value = default
 
         self._warn_unused_parameters(other_kwargs)

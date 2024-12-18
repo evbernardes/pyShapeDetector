@@ -378,13 +378,14 @@ class Extension:
         previous_values = {}
         for key, param in self.parameters.items():
             previous_values[key] = copy.copy(param.value)
-            param._reset_values_and_limits(editor_instance.elements)
 
         separation_width = em
         separation_height = int(round(0.1 * em))
-        panel = ParameterPanel(
+        parameter_panel = ParameterPanel(
             self.parameters, separation_width, separation_height, "Enter parameters:"
-        ).panel
+        )
+
+        panel = parameter_panel.panel
 
         window_width = 500
         window_height = 50 * len(panel.get_children())
@@ -403,6 +404,11 @@ class Extension:
         def _on_close_button():
             temp_window.close()
 
+        def _on_refresh_limits():
+            if len(editor_instance.elements.selected_indices) > 0:
+                for param in self.parameters.values():
+                    param._reset_values_and_limits(editor_instance.elements)
+
         def _on_close():
             if not self._ran_at_least_once:
                 for key, param in self.parameters.items():
@@ -415,6 +421,8 @@ class Extension:
         apply.set_on_clicked(_on_apply_button)
         close = gui.Button("Close")
         close.set_on_clicked(_on_close_button)
+        refresh = gui.Button("Refresh limits")
+        refresh.set_on_clicked(_on_refresh_limits)
         temp_window.add_child(panel)
         temp_window.set_on_close(_on_close)
 
@@ -424,5 +432,10 @@ class Extension:
         h.add_stretch()
         h.add_child(close)
         h.add_stretch()
+        if parameter_panel.has_limit_setters:
+            h.add_child(refresh)
+            h.add_stretch()
         panel.add_child(h)
+
+        _on_refresh_limits()
         # temp_window.size_to_fit()

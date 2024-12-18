@@ -18,7 +18,7 @@ from pyShapeDetector.primitives import (
 )
 from pyShapeDetector.methods import list_methods_RANSAC
 from pyShapeDetector.utility import MultiDetector
-from helpers import _apply_to
+from .helpers import _apply_to
 
 
 MENU_NAME = "Create shapes"

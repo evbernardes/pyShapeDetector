@@ -14,7 +14,7 @@ from scipy.spatial.transform import Rotation
 # from pyShapeDetector.utility import get_inputs, select_function_with_gui
 from pyShapeDetector.geometry import PointCloud, TriangleMesh, OrientedBoundingBox
 from pyShapeDetector.primitives import Primitive, PlaneBounded, Plane
-from helpers import (
+from .helpers import (
     _apply_to,
     _extract_element_by_type,
     _get_pointcloud_sizes,
@@ -38,6 +38,7 @@ extensions.append(
         "parameters": {
             "min_points": {
                 "type": int,
+                "limits": (1, 100),
                 "limit_setter": _get_pointcloud_sizes,
             }
         },
@@ -57,8 +58,7 @@ extensions.append(
         "parameters": {
             "min_area": {
                 "type": float,
-                # "default": 0,
-                # "limits": (1, 10000),
+                "limits": (1, 10000),
                 "limit_setter": _get_shape_areas,
             }
         },

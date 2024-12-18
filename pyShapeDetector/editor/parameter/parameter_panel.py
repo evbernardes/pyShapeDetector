@@ -62,6 +62,10 @@ class ParameterPanel:
     def parameters(self):
         return self._parameters
 
+    @property
+    def has_limit_setters(self):
+        return self._has_limit_setters
+
     def __init__(
         self,
         parameters: dict[ParameterBase],
@@ -71,3 +75,9 @@ class ParameterPanel:
     ):
         self._parameters = parameters
         self._panel = self._get_panel(separation_width, separation_height, title)
+
+        self._has_limit_setters = False
+        for parameter in parameters.values():
+            if getattr(parameter, "limit_setter", None) is not None:
+                self._has_limit_setters = True
+                break

@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 from pyShapeDetector.utility import get_inputs, select_function_with_gui
 from pyShapeDetector.primitives import Plane, PlaneBounded
-from helpers import _apply_to
+from .helpers import _apply_to
 from extensions_simple import fuse_primitives_as_mesh
 
 MENU_NAME = "Edit planes"
@@ -311,7 +311,11 @@ extensions.append(
                 "default": 180,
                 "limits": (0, 180),
             },
-            "min_point_dist": {"type": float, "limit_setter": _get_line_lenghts},
+            "min_point_dist": {
+                "type": float,
+                "limits": (0, 10),
+                "limit_setter": _get_line_lenghts,
+            },
         },
     }
 )

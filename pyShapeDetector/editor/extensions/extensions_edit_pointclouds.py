@@ -12,7 +12,7 @@ from multiprocessing import cpu_count
 from pyShapeDetector.utility import get_inputs, select_function_with_gui
 from pyShapeDetector.geometry import PointCloud
 from pyShapeDetector.primitives import Primitive, Plane
-from helpers import (
+from .helpers import (
     _apply_to,
     _extract_element_by_type,
 )

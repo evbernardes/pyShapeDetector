@@ -12,24 +12,31 @@ import numpy as np
 import json
 from itertools import compress
 
-from pyShapeDetector.primitives import Primitive, PlaneBounded, PlaneRectangular  # , Sphere, Plane, Cylinder
+from pyShapeDetector.primitives import (
+    Primitive,
+    PlaneBounded,
+    PlaneRectangular,
+)  # , Sphere, Plane, Cylinder
 from pyShapeDetector.geometry import PointCloud
 from pyShapeDetector import utility as util
 from pyShapeDetector import methods
 from datetime import datetime
 
-format_int = lambda i, N:"0" * (len(str(N)) - len(str(i))) + str(i)
+format_int = lambda i, N: "0" * (len(str(N)) - len(str(i))) + str(i)
+
 
 def _get_pointcloud_sizes(elements):
     sizes = [
         len(elem.points) for elem in elements if PointCloud.is_instance_or_open3d(elem)
     ]
-    return (min(sizes), max(sizes))
+    min_ = min(sizes)
+    return min_, min([max(sizes), min_ + 1000])
 
 
 def _get_shape_areas(elements):
     areas = [elem.surface_area for elem in elements if isinstance(elem, Primitive)]
     return (min(areas), max(areas))
+
 
 def _extract_element_by_type(elements, element_type):
     mask = np.array([isinstance(elem, element_type) for elem in elements])
@@ -43,6 +50,7 @@ def _extract_element_by_type(elements, element_type):
 
     return elements_selected, other
 
+
 def _apply_to(element_type):
     def decorator(func):
         @functools.wraps(func)
@@ -53,26 +61,30 @@ def _apply_to(element_type):
                 return other
 
             return other + func(elements_selected, *args, **kwargs)
+
         return wrapper
+
     return decorator
+
 
 def load_current_state(path):
     try:
-        ground = Primitive.load(path/'ground.tar')
+        ground = Primitive.load(path / "ground.tar")
         shapes = [Primitive.load(f) for f in (path).glob("shape_*.tar")]
         pcds = [PointCloud.read_point_cloud(f) for f in (path).glob("pcd_*.ply")]
         with open(path / "parameters.json", "r") as json_file:
-             parameters = json.load(json_file)
+            parameters = json.load(json_file)
     except:
         warnings.warn("Could not find elements, returning zero...")
         ground = None
         shapes = []
         pcds = []
         parameters = None
-    return ground, shapes+pcds, parameters
+    return ground, shapes + pcds, parameters
+
 
 def save_current_state(path, ground, elements, parameters):
-    """ Quick save elements."""
+    """Quick save elements."""
     util.check_existance(path, remove_dir=True)
     pcds = [elem for elem in elements if PointCloud.is_instance_or_open3d(elem)]
     shapes = [elem for elem in elements if isinstance(elem, Primitive)]
@@ -88,6 +100,7 @@ def save_current_state(path, ground, elements, parameters):
 
     with open(path / "parameters.json", "w") as fp:
         json.dump(parameters, fp)
+
 
 def get_camera_from_plane(plane, zoom=0.8):
     pcd = plane.inliers
@@ -105,6 +118,7 @@ def get_camera_from_plane(plane, zoom=0.8):
     camera_options["dist"] = max(plane.aabb.get_extent()) / 5
     return camera_options
 
+
 def extract_options(options):
     draw = options.get("draw", True)
     ask = options.get("ask", True)
@@ -115,6 +129,7 @@ def extract_options(options):
         timer = Timer()
 
     return draw, ask, camera_options, timer
+
 
 class Timer:
     def __init__(self):
@@ -149,6 +164,7 @@ class Timer:
         minutes = "0" * (2 - len(str(minutes))) + str(minutes)
         seconds = "0" * (2 - len(str(seconds))) + str(seconds)
         return f"{hours}:{minutes}:{seconds}"
+
 
 def separate_ground_pcd_camera(
     pcd,
@@ -201,7 +217,11 @@ def separate_ground_pcd_camera(
     if draw:
         util.draw_two_columns(
             [ground.inliers, pcd_no_ground],
-            [ground, pcd_above_ground, util.get_painted(pcd_below_ground, color=(0,0,0))],
+            [
+                ground,
+                pcd_above_ground,
+                util.get_painted(pcd_below_ground, color=(0, 0, 0)),
+            ],
             # draw_inliers=True,
             window_name=f"Ground with {len(ground.inliers.points)} inliers, {len(pcd_no_ground.points)} remaining points.",
             **camera_options,
@@ -209,8 +229,10 @@ def separate_ground_pcd_camera(
 
     return ground, pcd_above_ground, pcd_below_ground, camera_options
 
+
 def choose_threshold_parameters(pcds, eps, **options):
     from open3d import visualization
+
     draw, ask, camera_options, timer = extract_options(options)
 
     if not isinstance(pcds, list):
@@ -241,7 +263,7 @@ def choose_threshold_parameters(pcds, eps, **options):
         "std_ratio": 0,
         "distance_threshold_ratio": 1,
         "std": np.std(pcd.curvature),
-        "mean": np.mean(pcd.curvature)
+        "mean": np.mean(pcd.curvature),
     }
 
     def update(vis):
@@ -278,7 +300,9 @@ def choose_threshold_parameters(pcds, eps, **options):
         vis.add_geometry(data["pcd_high"], reset_bounding_box=False)
         vis.add_geometry(data["pcd_close"], reset_bounding_box=False)
 
-        print(f"distance_threshold_ratio = {data['distance_threshold_ratio']}, std_ratio = {data['std_ratio']}")
+        print(
+            f"distance_threshold_ratio = {data['distance_threshold_ratio']}, std_ratio = {data['std_ratio']}"
+        )
 
     def std_decrease(vis):
         global data
@@ -292,7 +316,9 @@ def choose_threshold_parameters(pcds, eps, **options):
 
     def distance_threshold_decrease(vis):
         global data
-        data["distance_threshold_ratio"] = max(data["distance_threshold_ratio"] - 0.1, 0)
+        data["distance_threshold_ratio"] = max(
+            data["distance_threshold_ratio"] - 0.1, 0
+        )
         update(vis)
 
     def distance_threshold_increase(vis):
@@ -316,5 +342,3 @@ def choose_threshold_parameters(pcds, eps, **options):
     )
 
     return data
-
-
