@@ -52,8 +52,8 @@ class ParameterBool(ParameterBase[bool]):
         self.internal_element.checked = self.value
 
     def get_gui_widget(self, font_size):
-        self._internal_element = gui.Checkbox(self.pretty_name + "?")
-        checkbox = self.internal_element
+        checkbox = self._internal_element = gui.Checkbox(self.pretty_name + "?")
+        self._update_internal_element()
         checkbox.set_on_checked(self._callback)
         self._enable_internal_element(not self.is_reference)
         return checkbox
