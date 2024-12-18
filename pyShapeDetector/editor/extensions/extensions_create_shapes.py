@@ -107,7 +107,9 @@ def detect_shapes(
     method,
     shapes_per_cluster,
     inliers_min,
+    use_adaptative_threshold,
     threshold_distance_ratio,
+    adaptative_threshold_k,
     max_sample_distance_ratio,
     threshold_angle_degrees,
     threshold_refit_ratio,
@@ -126,7 +128,7 @@ def detect_shapes(
 ):
     detector = dict_methods[method]()
     detector.options.inliers_min = inliers_min
-    detector.options.threshold_distance = threshold_distance_ratio * PointCloud_density
+
     detector.options.max_sample_distance = (
         max_sample_distance_ratio * PointCloud_density
     )
@@ -135,6 +137,12 @@ def detect_shapes(
     detector.options.num_iterations = num_iterations
     detector.options.num_samples = num_samples
     detector.options.downsample = downsample
+    if use_adaptative_threshold:
+        detector.options.adaptative_threshold_k = adaptative_threshold_k
+    else:
+        detector.options.threshold_distance = (
+            threshold_distance_ratio * PointCloud_density
+        )
 
     if detect_PlaneBounded:
         detector.add(PlaneBounded)
@@ -187,10 +195,21 @@ extensions.append(
             "PointCloud_density": {"type": "preference"},
             "shapes_per_cluster": {"type": int, "default": 1, "limits": (1, 50)},
             "inliers_min": {"type": int, "default": 100, "limits": (1, 1000)},
+            "use_adaptative_threshold": {
+                "name": "test",
+                "type": bool,
+                "subpanel": "RANSAC Options",
+            },
             "threshold_distance_ratio": {
                 "type": float,
                 "default": 1,
                 "limits": (0.01, 100),
+                "subpanel": "RANSAC Options",
+            },
+            "adaptative_threshold_k": {
+                "type": int,
+                "default": 1,
+                "limits": (1, 50),
                 "subpanel": "RANSAC Options",
             },
             "max_sample_distance_ratio": {
