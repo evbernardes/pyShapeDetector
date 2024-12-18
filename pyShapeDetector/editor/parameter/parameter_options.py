@@ -85,6 +85,11 @@ class ParameterOptions(ParameterBase[list]):
         self._update_references()
 
     def _create_gui_widget(self, font_size):
+        self._internal_element = gui.Combobox()
+        for option in self.options:
+            self._internal_element.add_item(str(option))
+        self._update_internal_element()
+
         label = gui.Label(self.pretty_name)
 
         combobox = self.internal_element
@@ -93,6 +98,7 @@ class ParameterOptions(ParameterBase[list]):
         element = gui.VGrid(2, 0.25 * font_size)
         element.add_child(label)
         element.add_child(combobox)
+        self._enable_internal_element(not self.is_reference)
 
         return element
 
@@ -110,10 +116,6 @@ class ParameterOptions(ParameterBase[list]):
 
         if default is None:
             default = options[0]
-
-        self._internal_element = gui.Combobox()
-        for option in self.options:
-            self._internal_element.add_item(str(option))
 
         self.value = default
 
