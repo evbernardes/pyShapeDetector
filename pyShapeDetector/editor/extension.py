@@ -367,8 +367,8 @@ class Extension:
 
         temp_window = app.create_window(
             f"{self.name}",
-            500,
-            100 * (len(self.parameters)),
+            100,
+            100,
         )
         temp_window.show_menu(False)
         self._editor_instance._temp_windows.append(temp_window)
@@ -414,5 +414,6 @@ class Extension:
         h.add_stretch()
         panel.add_child(h)
         temp_window.add_child(panel)
+        temp_window.size_to_fit()
 
         return gui.Widget.EventCallbackResult.HANDLED

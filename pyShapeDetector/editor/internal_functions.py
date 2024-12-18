@@ -695,6 +695,7 @@ class InternalFunctions:
         dlg_layout.add_child(h)
 
         temp_window.add_child(dlg_layout)
+        temp_window.size_to_fit()
 
     def _cb_repeat_last_extension(self):
         editor_instance = self._editor_instance
@@ -795,6 +796,7 @@ class InternalFunctions:
         h.add_child(close)
         h.add_stretch()
         panel.add_child(h)
+        temp_window.size_to_fit()
         temp_window.add_child(panel)
 
     def _cb_hide(
