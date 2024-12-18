@@ -371,14 +371,7 @@ class Extension:
 
     def _create_extension_window(self):
         editor_instance = self._editor_instance
-
-        app = editor_instance.app
-
-        temp_window = app.create_window(self.name, 300, 300)
-        self._window_opened = True
-        temp_window.show_menu(False)
-        self._editor_instance._temp_windows.append(temp_window)
-        em = temp_window.theme.font_size
+        em = editor_instance._window.theme.font_size
 
         self._ran_at_least_once = False
 
@@ -392,6 +385,16 @@ class Extension:
         panel = ParameterPanel(
             self.parameters, separation_width, separation_height, "Enter parameters:"
         ).panel
+
+        window_width = 500
+        window_height = 50 * len(panel.get_children())
+
+        temp_window = editor_instance.app.create_window(
+            self.name, window_width, window_height
+        )
+        self._window_opened = True
+        temp_window.show_menu(False)
+        self._editor_instance._temp_windows.append(temp_window)
 
         def _on_apply_button():
             self._ran_at_least_once = True
@@ -422,4 +425,4 @@ class Extension:
         h.add_child(close)
         h.add_stretch()
         panel.add_child(h)
-        temp_window.size_to_fit()
+        # temp_window.size_to_fit()

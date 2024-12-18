@@ -28,6 +28,9 @@ _PointCloud_density = 0.00224
 _draw_boundary_lines = True
 _line_width = 7
 _PointCloud_point_size = 5
+_PCD_downsample_when_drawing = True
+_PCD_max_points = 1000000
+_PCD_use_Tensor = True
 _mesh_show_back_face = True
 _paint_selected = True
 _color_selected = gui.Color(*COLOR_SELECTED_DEFAULT)
@@ -229,6 +232,26 @@ class Settings:
                 name="PointCloud_density",
                 default=_PointCloud_density,
                 on_update=self._cb_PointCloud_density,
+                subpanel="PointCloud options",
+            ),
+            ParameterBool(
+                name="PCD_downsample_when_drawing",
+                default=_PCD_downsample_when_drawing,
+                on_update=self._cb_PCD_downsample_when_drawing,
+                subpanel="PointCloud options",
+            ),
+            ParameterInt(
+                name="PCD_max_points",
+                default=_PCD_max_points,
+                on_update=self._cb_PCD_max_points,
+                limits=(500000, 10000000),
+                subpanel="PointCloud options",
+            ),
+            ParameterBool(
+                name="PCD_use_Tensor",
+                default=_PCD_use_Tensor,
+                on_update=self._cb_PCD_use_Tensor,
+                subpanel="PointCloud options",
             ),
             ParameterBool(
                 name="draw_boundary_lines",
@@ -397,6 +420,22 @@ class Settings:
 
     def _cb_PointCloud_density(self, value):
         pass
+
+    def _cb_PCD_downsample_when_drawing(self, value):
+        from .element import ElementPointCloud
+
+        for elem in self._editor_instance.elements:
+            if not isinstance(elem, ElementPointCloud):
+                continue
+
+            elem._get_drawable()
+            elem.update_on_scene()
+
+    def _cb_PCD_max_points(self, value):
+        self._cb_PCD_downsample_when_drawing(value)
+
+    def _cb_PCD_use_Tensor(self, value):
+        self._cb_PCD_downsample_when_drawing(value)
 
     def _cb_draw_boundary_lines(self, value):
         self._editor_instance._update_plane_boundaries()
