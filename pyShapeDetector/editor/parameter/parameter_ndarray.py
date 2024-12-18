@@ -110,6 +110,8 @@ class ParameterNDArray(ParameterBase):
 
     def _enable_internal_element(self, value: bool) -> None:
         """Enables/Disables internal element when creating references"""
+        if self.internal_element is None:
+            return
         for elem in np.array(self.internal_element).flatten():
             elem.enabled = value
 
@@ -122,11 +124,18 @@ class ParameterNDArray(ParameterBase):
         self._update_references()
 
     def _create_gui_widget(self, font_size):
+        shape_internal = self._value.shape
+        self._internal_element = [
+            [gui.TextEdit() for col in range(shape_internal[1])]
+            for line in range(shape_internal[0])
+        ]
+        self._update_internal_element()
+
         label = gui.Label(self.pretty_name)
 
         text_edits = self.internal_element
 
-        elements_array = gui.VGrid(self._value.shape[1], 0.25 * font_size)
+        elements_array = gui.VGrid(self._value.shape[1], 0.5 * font_size)
         for i in range(self._value.shape[0]):
             # elements_line = gui.Horiz(0.25 * font_size)
             for j in range(self._value.shape[1]):
@@ -140,9 +149,10 @@ class ParameterNDArray(ParameterBase):
                 # elements_array.add_child(elements_line)
                 elements_array.add_child(text_edit)
 
-        element = gui.VGrid(2, 0.25 * font_size)
+        element = gui.VGrid(2, 0.5 * font_size)
         element.add_child(label)
         element.add_child(elements_array)
+        self._enable_internal_element(not self.is_reference)
 
         return element
 
@@ -157,11 +167,4 @@ class ParameterNDArray(ParameterBase):
         super().__init__(name=name, on_update=on_update, subpanel=subpanel)
 
         self.value = default
-        shape = self._value.shape
-        self._internal_element = [
-            [gui.TextEdit() for col in range(shape[1])] for line in range(shape[0])
-        ]
-        # Setting value on internal element
-        self.value = self.value
-
         self._warn_unused_parameters(other_kwargs)
