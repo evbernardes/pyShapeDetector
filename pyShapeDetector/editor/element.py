@@ -438,17 +438,17 @@ class ElementPointCloud(ElementGeometry):
             return
 
         if not self._colors_updated:
-            self.scene.update_geometry(
+            self.scene.scene.update_geometry(
                 self.name, self.drawable, Scene.UPDATE_COLORS_FLAG
             )
             self._colors_updated = True
         if not self._normals_updated:
-            self.scene.update_geometry(
+            self.scene.scene.update_geometry(
                 self.name, self.drawable, Scene.UPDATE_NORMALS_FLAG
             )
             self._normals_updated = True
         if not self._points_updated:
-            self.scene.update_geometry(
+            self.scene.scene.update_geometry(
                 self.name, self.drawable, Scene.UPDATE_POINTS_FLAG
             )
             self._points_updated = True
