@@ -202,6 +202,7 @@ class Primitive(ABC):
     copy
     translate
     rotate
+    transform
     align
     __put_attributes_in_dict__
     save
@@ -1164,6 +1165,26 @@ class Primitive(ABC):
 
         if self._mesh is not None:
             self._mesh.translate(translation)
+
+    def transform(self, transformation_matrix, translate_inliers=True):
+        """Apply 4x4 transformation matrix.
+
+        Parameters
+        ----------
+        translation : 1 x 3 array
+            Translation vector.
+        translate_inliers : boolean, optional
+            If True, also translate inliers. Default: True.
+        """
+        # if not hasattr(self, '_translatable'):
+        #     raise NotImplementedError('Shapes of type {shape.name} do not '
+        #                               'have an implemented _translatable '
+        #                               'attribute')
+
+        translation = transformation_matrix[:3, 3]
+        rotation = transformation_matrix[:3, :3]
+        self.rotate(rotation)
+        self.translate(translation, translate_inliers=translate_inliers)
 
     @staticmethod
     def _parse_rotation(rotation):

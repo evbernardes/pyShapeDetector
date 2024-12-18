@@ -593,7 +593,7 @@ class InternalFunctions:
             "indices": [],
             "elements": [],
             "num_outputs": len(editor_instance._copied_elements),
-            "current_index": self.elements.current_index,
+            "current_index": editor_instance.elements.current_index,
             "operation": "paste",
         }
 

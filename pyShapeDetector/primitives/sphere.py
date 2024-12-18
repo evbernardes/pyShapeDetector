@@ -81,6 +81,7 @@ class Sphere(Primitive):
     copy
     translate
     rotate
+    transform
     align
     __put_attributes_in_dict__
     save

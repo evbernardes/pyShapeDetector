@@ -94,6 +94,7 @@ class Cylinder(Primitive):
     copy
     translate
     rotate
+    transform
     align
     save
     load

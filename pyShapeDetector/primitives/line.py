@@ -100,6 +100,7 @@ class Line(Primitive):
     copy
     translate
     rotate
+    transform
     align
     save
     load
