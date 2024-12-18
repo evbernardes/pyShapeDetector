@@ -53,8 +53,10 @@ class ParameterBool(ParameterBase[bool]):
         self.internal_element.checked = self.value
 
     def _create_gui_widget(self, font_size):
+        self._internal_element = gui.Checkbox(self.pretty_name + "?")
         checkbox = self.internal_element
         checkbox.set_on_checked(self._callback)
+        self._enable_internal_element(not self.is_reference)
         return checkbox
 
     def __init__(
@@ -66,6 +68,5 @@ class ParameterBool(ParameterBase[bool]):
         **other_kwargs,
     ):
         super().__init__(name=name, on_update=on_update, subpanel=subpanel)
-        self._internal_element = gui.Checkbox(self.pretty_name + "?")
         self.value = default
         self._warn_unused_parameters(other_kwargs)
