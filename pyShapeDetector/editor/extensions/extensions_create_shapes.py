@@ -161,6 +161,7 @@ def detect_shapes(
     use_adaptative_threshold,
     threshold_distance_ratio,
     adaptative_threshold_k,
+    limit_sample_distance,
     max_sample_distance_ratio,
     threshold_angle_degrees,
     threshold_refit_ratio,
@@ -180,9 +181,10 @@ def detect_shapes(
     detector = dict_methods[method]()
     detector.options.inliers_min = inliers_min
 
-    detector.options.max_sample_distance = (
-        max_sample_distance_ratio * PointCloud_density
-    )
+    if limit_sample_distance:
+        detector.options.max_sample_distance = (
+            max_sample_distance_ratio * PointCloud_density
+        )
     detector.options.threshold_angle_degrees = threshold_angle_degrees
     detector.options.threshold_refit_ratio = threshold_refit_ratio
     detector.options.num_iterations = num_iterations
@@ -261,6 +263,10 @@ extensions.append(
                 "type": float,
                 "default": 1,
                 "limits": (0.01, 100),
+                "subpanel": "RANSAC Options",
+            },
+            "limit_sample_distance": {
+                "type": bool,
                 "subpanel": "RANSAC Options",
             },
             "max_sample_distance_ratio": {

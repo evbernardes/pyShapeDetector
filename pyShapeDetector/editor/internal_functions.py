@@ -275,6 +275,11 @@ class InternalFunctions:
         window = self._editor_instance._window
 
         dlg = gui.FileDialog(gui.FileDialog.OPEN, "Choose file to load", window.theme)
+        if editor_instance._scene_file_path is not None:
+            try:
+                dlg.set_path(Path(editor_instance._scene_file_path).parent.as_posix())
+            except Exception:
+                pass
 
         for type, extensions in element.items():
             if type == "all":
@@ -315,10 +320,13 @@ class InternalFunctions:
         window = self._editor_instance._window
 
         dlg = gui.FileDialog(
-            gui.FileDialog.OPEN,
-            "Select scene file to open",
-            window.theme,
+            gui.FileDialog.OPEN, "Select scene file to open", window.theme
         )
+        if editor_instance._scene_file_path is not None:
+            try:
+                dlg.set_path(Path(editor_instance._scene_file_path).parent.as_posix())
+            except Exception:
+                pass
 
         dlg.add_filter(".sdscene", "Shape Detector Scene (.sdscene)")
 
@@ -359,11 +367,12 @@ class InternalFunctions:
         editor_instance = self._editor_instance
         window = self._editor_instance._window
 
-        dlg = gui.FileDialog(
-            gui.FileDialog.SAVE,
-            "Save scene to file",
-            window.theme,
-        )
+        dlg = gui.FileDialog(gui.FileDialog.SAVE, "Save scene to file", window.theme)
+        if editor_instance._scene_file_path is not None:
+            try:
+                dlg.set_path(Path(editor_instance._scene_file_path).parent.as_posix())
+            except Exception:
+                pass
 
         dlg.add_filter(".sdscene", "Shape Detector Scene (.sdscene)")
 
@@ -396,10 +405,13 @@ class InternalFunctions:
         window = self._editor_instance._window
 
         dlg = gui.FileDialog(
-            gui.FileDialog.OPEN_DIR,
-            "Choose directory to load everything",
-            window.theme,
+            gui.FileDialog.OPEN_DIR, "Choose directory to load everything", window.theme
         )
+        if editor_instance._scene_file_path is not None:
+            try:
+                dlg.set_path(Path(editor_instance._scene_file_path).parent.as_posix())
+            except Exception:
+                pass
 
         def _on_cancel():
             editor_instance._close_dialog()
@@ -439,6 +451,11 @@ class InternalFunctions:
             "Export current element to file",
             window.theme,
         )
+        if editor_instance._scene_file_path is not None:
+            try:
+                dlg.set_path(Path(editor_instance._scene_file_path).parent.as_posix())
+            except Exception:
+                pass
 
         def _on_cancel():
             editor_instance._close_dialog()

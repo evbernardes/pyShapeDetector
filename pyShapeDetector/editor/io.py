@@ -133,10 +133,13 @@ def _load_one_element(filename):
 
 def _write_one_element(element, filename):
     path = Path(filename)
-    type_name = type(element.raw).__name__
+    if isinstance(element.raw, Primitive):
+        type_name = "Primitive"
+    else:
+        type_name = type(element.raw).__name__
 
     if type_name not in RECOGNIZED_EXTENSION:
-        warnings.warn("Cannot export elements of type '{RECOGNIZED_EXTENSION}'.")
+        warnings.warn(f"Cannot export elements of type '{type_name}'.")
         return None
 
     extensions = RECOGNIZED_EXTENSION[type_name]
