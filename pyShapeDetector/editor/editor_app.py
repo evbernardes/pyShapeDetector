@@ -64,6 +64,7 @@ class Editor:
     ):
         from .internal_functions import InternalFunctions
 
+        self._extensions = []
         self._settings = Settings(self, **kwargs)
 
         self._copied_elements = []
@@ -75,7 +76,6 @@ class Editor:
         self._pre_selected = []
         self._current_bbox = None
         self._current_bbox_axes = None
-        self._extensions = []
         self._last_used_extension = None
         self.window_name = window_name
         self.return_finish_flag = return_finish_flag

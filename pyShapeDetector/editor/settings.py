@@ -53,6 +53,7 @@ _number_redo_states = 5
 # Uncomment and this and the init when testing    #
 ###################################################
 # def test(
+#     test_bool,
 #     test_int_no_limits,
 #     test_int_limits,
 #     test_float_no_limits,
@@ -64,6 +65,19 @@ _number_redo_states = 5
 #     test_array_int_ndim1,
 #     test_array_shape_7_3,
 # ):
+#     print("************")
+#     print(f"test_bool: {test_bool}")
+#     print(f"test_int_no_limits: {test_int_no_limits}")
+#     print(f"test_int_limits: {test_int_limits}")
+#     print(f"test_float_no_limits: {test_float_no_limits}")
+#     print(f"test_float_limits: {test_float_limits}")
+#     print(f"test_color: {test_color}")
+#     print(f"test_options: {test_options}")
+#     print(f"test_array_int_shape_2_3: {test_array_int_shape_2_3}")
+#     print(f"test_array_float_shape_2_3 {test_array_float_shape_2_3}")
+#     print(f"test_array_int_ndim1: {test_array_int_ndim1}")
+#     print(f"test_array_shape_7_3: {test_array_shape_7_3}")
+#     print("************")
 #     return []
 
 
@@ -73,6 +87,7 @@ _number_redo_states = 5
 #     "menu": "test",
 #     "inputs": None,
 #     "parameters": {
+#         "test_bool": {"type": "preference"},
 #         "test_int_no_limits": {"type": "preference"},
 #         "test_int_limits": {"type": "preference"},
 #         "test_float_no_limits": {"type": "preference"},
@@ -138,6 +153,12 @@ class Settings:
             ###########################################
             # Test Parameters, uncomment when testing #
             ###########################################
+            # ParameterBool(
+            #     name="test_bool",
+            #     default=True,
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
             # ParameterInt(
             #     name="test_int_no_limits",
             #     default=2,
@@ -166,7 +187,7 @@ class Settings:
             # ),
             # ParameterColor(
             #     name="test_color",
-            #     default=(0, 0, 1),
+            #     default=(0.2, 0.2, 0.2),
             #     on_update=lambda x: print(x),
             #     subpanel="test",
             # ),
