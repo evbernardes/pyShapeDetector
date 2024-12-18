@@ -75,8 +75,7 @@ class ParameterColor(ParameterBase):
                 f"Value of parameter {self.name} of type {self.type_name} should "
                 f"be a gui.Color, a list or tuple of 3 values, got {values}."
             )
-        # if self.is_reference:
-        self.internal_element.color_value = self._value
+        self._update_internal_element()
 
     def _update_internal_element(self):
         if self.internal_element is None:
@@ -91,6 +90,8 @@ class ParameterColor(ParameterBase):
         self._update_references()
 
     def _create_gui_widget(self, font_size):
+        self._internal_element = gui.ColorEdit()
+        self._update_internal_element()
         label = gui.Label(self.pretty_name)
 
         color_selector = self.internal_element
@@ -99,6 +100,7 @@ class ParameterColor(ParameterBase):
         element = gui.VGrid(2, 0.25 * font_size)
         element.add_child(label)
         element.add_child(color_selector)
+        self._enable_internal_element(not self.is_reference)
 
         return element
 
@@ -111,7 +113,5 @@ class ParameterColor(ParameterBase):
         **other_kwargs,
     ):
         super().__init__(name=name, on_update=on_update, subpanel=subpanel)
-        self._internal_element = gui.ColorEdit()
         self.value = default
-
         self._warn_unused_parameters(other_kwargs)
