@@ -135,6 +135,13 @@ class ParameterFloat(ParameterBase[float]):
             self.value = self.value
 
     def _create_gui_widget(self, font_size):
+        if self.limits is not None and self.limit_setter is None:
+            self._internal_element = gui.Slider(gui.Slider.DOUBLE)
+        else:
+            # Text field for general inputs
+            self._internal_element = gui.TextEdit()
+        self._update_internal_element()
+
         label = gui.Label(self.pretty_name)
 
         if isinstance(self.internal_element, gui.Slider):
@@ -164,7 +171,7 @@ class ParameterFloat(ParameterBase[float]):
             )
 
         self.internal_element.set_on_value_changed(self._callback)
-
+        self._enable_internal_element(not self.is_reference)
         return element
 
     def __init__(
@@ -179,12 +186,6 @@ class ParameterFloat(ParameterBase[float]):
     ):
         super().__init__(name=name, on_update=on_update, subpanel=subpanel)
         self.limit_setter = limit_setter
-
-        if limits is not None and limit_setter is None:
-            self._internal_element = gui.Slider(gui.Slider.DOUBLE)
-        else:
-            # Text field for general inputs
-            self._internal_element = gui.TextEdit()
 
         if self.limit_setter is None:
             self.limits = limits
