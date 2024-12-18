@@ -247,20 +247,20 @@ extensions.append(
             "shapes_per_cluster": {"type": int, "default": 1, "limits": (1, 50)},
             "inliers_min": {"type": int, "default": 100, "limits": (1, 1000)},
             "use_adaptative_threshold": {
-                "name": "test",
+                "name": "Use adaptative (instead of threshold_distance_ratio)",
                 "type": bool,
-                "subpanel": "RANSAC Options",
-            },
-            "threshold_distance_ratio": {
-                "type": float,
-                "default": 1,
-                "limits": (0.01, 100),
                 "subpanel": "RANSAC Options",
             },
             "adaptative_threshold_k": {
                 "type": int,
                 "default": 1,
                 "limits": (1, 50),
+                "subpanel": "RANSAC Options",
+            },
+            "threshold_distance_ratio": {
+                "type": float,
+                "default": 1,
+                "limits": (0.01, 100),
                 "subpanel": "RANSAC Options",
             },
             "max_sample_distance_ratio": {

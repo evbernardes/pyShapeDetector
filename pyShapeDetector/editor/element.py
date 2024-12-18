@@ -410,7 +410,7 @@ class ElementPointCloud(ElementGeometry):
 
     def _get_drawable(self):
         settings = self._settings
-        drawable = self.raw.as_open3d
+        drawable = copy.deepcopy(self.raw).as_open3d
         downsample = settings.get_setting("PCD_downsample_when_drawing")
         max_points = settings.get_setting("PCD_max_points")
         PCD_use_Tensor = settings.get_setting("PCD_use_Tensor")
@@ -418,8 +418,6 @@ class ElementPointCloud(ElementGeometry):
         if downsample and len(drawable.points) > max_points:
             ratio = int(len(drawable.points) / max_points)
             drawable = drawable.uniform_down_sample(ratio)
-        else:
-            drawable = copy.deepcopy(drawable)
 
         if PCD_use_Tensor:
             self._drawable = TensorPointCloud.from_legacy(drawable)
