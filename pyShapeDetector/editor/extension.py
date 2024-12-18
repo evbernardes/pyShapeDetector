@@ -239,6 +239,8 @@ class Extension:
             creates_window=len(self.parameters) > 0,
         )
 
+        self._window_opened: bool = False
+
     def add_to_application(self, editor_instance: Editor):
         self._editor_instance = editor_instance
 
@@ -251,11 +253,21 @@ class Extension:
         self.binding.add_to_menu(self._editor_instance)
 
     def run(self):
-        event_result = self._create_extension_window()
-        if event_result is gui.Widget.EventCallbackResult.HANDLED:
-            return
+        if len(self.parameters) == 0:
+            self._apply_to_elements()
+        else:
+            if self._window_opened:
+                print(
+                    f"Tried opening extension '{self.name}' window, "
+                    "but it's already opened"
+                )
+                return
 
-        self._apply_to_elements()
+            try:
+                self._create_extension_window()
+            except Exception:
+                warnings.warn("Could not create extension window.")
+                traceback.print_exc()
 
     def _apply_to_elements(self):
         editor_instance = self._editor_instance
@@ -360,16 +372,10 @@ class Extension:
     def _create_extension_window(self):
         editor_instance = self._editor_instance
 
-        if len(self.parameters) == 0:
-            return gui.Widget.EventCallbackResult.IGNORED
-
         app = editor_instance.app
 
-        temp_window = app.create_window(
-            f"{self.name}",
-            100,
-            100,
-        )
+        temp_window = app.create_window(self.name, 300, 300)
+        self._window_opened = True
         temp_window.show_menu(False)
         self._editor_instance._temp_windows.append(temp_window)
         em = temp_window.theme.font_size
@@ -387,33 +393,33 @@ class Extension:
             self.parameters, separation_width, separation_height, "Enter parameters:"
         ).panel
 
-        def _on_apply():
+        def _on_apply_button():
             self._ran_at_least_once = True
             self._apply_to_elements()
+
+        def _on_close_button():
+            temp_window.close()
 
         def _on_close():
             if not self._ran_at_least_once:
                 for key, param in self.parameters.items():
                     param.value = previous_values[key]
-
-            temp_window.close()
             self._editor_instance._temp_windows.remove(temp_window)
+            self._window_opened = False
+            return True
 
         apply = gui.Button("Apply")
-        apply.set_on_clicked(_on_apply)
+        apply.set_on_clicked(_on_apply_button)
         close = gui.Button("Close")
-        close.set_on_clicked(_on_close)
+        close.set_on_clicked(_on_close_button)
+        temp_window.add_child(panel)
+        temp_window.set_on_close(_on_close)
 
         h = gui.Horiz()
         h.add_stretch()
         h.add_child(apply)
-        # h.add_fixed(separation_width)
-
         h.add_stretch()
         h.add_child(close)
         h.add_stretch()
         panel.add_child(h)
-        temp_window.add_child(panel)
         temp_window.size_to_fit()
-
-        return gui.Widget.EventCallbackResult.HANDLED
