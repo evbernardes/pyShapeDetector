@@ -34,7 +34,6 @@ class ParameterInt(ParameterBase[int]):
     _reset_values_and_limits
     _update_references
     _enable_internal_element
-    _create_gui_widget
     get_gui_widget
     create_reference
     create_from_dict
@@ -132,7 +131,7 @@ class ParameterInt(ParameterBase[int]):
                 warnings.simplefilter("ignore")
             self.value = self.value
 
-    def _create_gui_widget(self, font_size):
+    def get_gui_widget(self, font_size):
         if self.limits is not None and self.limit_setter is None:
             self._internal_element = gui.Slider(gui.Slider.INT)
         else:
