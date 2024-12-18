@@ -429,7 +429,7 @@ class Settings:
                 continue
 
             elem._get_drawable()
-            elem.update_on_scene()
+            elem.update(is_current=elem.current, update_scene=True, reset=True)
 
     def _cb_PCD_max_points(self, value):
         self._cb_PCD_downsample_when_drawing(value)

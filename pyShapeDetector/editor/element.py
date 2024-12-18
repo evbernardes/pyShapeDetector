@@ -245,13 +245,13 @@ class Element(ABC):
     def remove_from_scene(self):
         self.scene.remove_geometry(self.name)
 
-    def update_on_scene(self):
+    def update_on_scene(self, reset: bool = False):
         self.remove_from_scene()
 
         if not self.is_hidden:
             self.add_to_scene()
 
-    def update(self, is_current: bool, update_scene: bool = True):
+    def update(self, is_current: bool, update_scene: bool = True, reset: bool = False):
         if self.is_color_fixed:
             return
 
@@ -270,7 +270,7 @@ class Element(ABC):
                 "[Element.update] Updating geometry on scene.",
                 require_verbose=True,
             )
-            self.update_on_scene()
+            self.update_on_scene(reset=reset)
 
     def __init__(
         self,
@@ -429,9 +429,8 @@ class ElementPointCloud(ElementGeometry):
         self._normals_updated = True
         self._points_updated = True
 
-    def update_on_scene(self):
-        PCD_use_Tensor = self._settings.get_setting("PCD_use_Tensor")
-        if not PCD_use_Tensor:
+    def update_on_scene(self, reset: bool = False):
+        if reset or not self._settings.get_setting("PCD_use_Tensor"):
             super().update_on_scene()
             return
 
