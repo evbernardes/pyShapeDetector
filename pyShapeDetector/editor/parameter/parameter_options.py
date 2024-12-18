@@ -37,7 +37,8 @@ class ParameterOptions(ParameterBase[list]):
     _reset_values_and_limits
     _update_references
     _enable_internal_element
-    get_gui_element
+    _create_gui_widget
+    get_gui_widget
     create_reference
     create
     """
@@ -83,7 +84,7 @@ class ParameterOptions(ParameterBase[list]):
         self.on_update(self.value)
         self._update_references()
 
-    def get_gui_element(self, font_size):
+    def _create_gui_widget(self, font_size):
         label = gui.Label(self.pretty_name)
 
         combobox = self.internal_element

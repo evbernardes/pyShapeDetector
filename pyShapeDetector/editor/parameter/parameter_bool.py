@@ -33,7 +33,8 @@ class ParameterBool(ParameterBase[bool]):
     _reset_values_and_limits
     _update_references
     _enable_internal_element
-    get_gui_element
+    _create_gui_widget
+    get_gui_widget
     create_reference
     create_from_dict
     """
@@ -51,7 +52,7 @@ class ParameterBool(ParameterBase[bool]):
             return
         self.internal_element.checked = self.value
 
-    def get_gui_element(self, font_size):
+    def _create_gui_widget(self, font_size):
         checkbox = self.internal_element
         checkbox.set_on_checked(self._callback)
         return checkbox

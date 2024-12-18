@@ -24,7 +24,7 @@ class ParameterBase(ABC, Generic[T]):
         _update_internal_element
         _update_references
         _enable_internal_element
-        get_gui_element
+        _create_gui_widget
 
     Attributes
     ----------
@@ -47,7 +47,8 @@ class ParameterBase(ABC, Generic[T]):
     _reset_values_and_limits
     _update_references
     _enable_internal_element
-    get_gui_element
+    _create_gui_widget
+    get_gui_widget
     create_reference
     create_from_dict
 
@@ -162,7 +163,7 @@ class ParameterBase(ABC, Generic[T]):
         self.internal_element.enabled = value
 
     @abstractmethod
-    def get_gui_element(self, font_size: float) -> gui.Widget:
+    def _create_gui_widget(self, font_size: float) -> gui.Widget:
         pass
         # label = gui.Label(self.pretty_name)
 
@@ -176,6 +177,11 @@ class ParameterBase(ABC, Generic[T]):
         # element.add_child(text_edit)
 
         # return element
+
+    def get_gui_widget(self, font_size: float) -> gui.Widget:
+        if self._gui_widget is None:
+            self._gui_widget = self._create_gui_widget(font_size)
+        return self._gui_widget
 
     def create_reference(self: T) -> T:
         """Creates a new unusable copy of the parameter that is updated when
@@ -258,3 +264,4 @@ class ParameterBase(ABC, Generic[T]):
         self.on_update = on_update
         self.subpanel = subpanel
         self._internal_element = None
+        self._gui_widget = None

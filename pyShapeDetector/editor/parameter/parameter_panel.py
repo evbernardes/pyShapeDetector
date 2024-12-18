@@ -34,7 +34,7 @@ class ParameterPanel:
         subpanels = {}
 
         for param in self.parameters.values():
-            element = param.get_gui_element(separation_width)
+            element = param.get_gui_widget(separation_width)
             if param.subpanel is None:
                 panel.add_child(element)
                 panel.add_fixed(separation_height)
