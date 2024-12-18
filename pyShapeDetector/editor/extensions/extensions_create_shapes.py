@@ -16,7 +16,7 @@ from pyShapeDetector.primitives import (
     Cylinder,
     Cone,
 )
-from pyShapeDetector.methods import list_methods_RANSAC, BDSAC
+from pyShapeDetector.methods import list_methods_RANSAC
 from pyShapeDetector.utility import MultiDetector
 from helpers import _apply_to
 
