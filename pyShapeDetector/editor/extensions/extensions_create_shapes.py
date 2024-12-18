@@ -26,10 +26,9 @@ MENU_NAME = "Create shapes"
 dict_methods = {method.__name__: method for method in list_methods_RANSAC}
 extensions = []
 
-
 extensions.append(
     {
-        "name": "... from center and radius",
+        "name": "From center and radius",
         "function": lambda center, radius: Sphere.from_center_radius(center, radius),
         "menu": MENU_NAME + "/Create Sphere...",
         "inputs": None,
@@ -46,11 +45,11 @@ extensions.append(
 
 extensions.append(
     {
-        "name": "Create Cylinder",
+        "name": "From center, half vector and radius",
         "function": lambda center,
         vector,
         radius: Cylinder.from_center_half_vector_radius(center, vector, radius),
-        "menu": MENU_NAME,
+        "menu": MENU_NAME + "/Create Cylinder...",
         "inputs": None,
         "parameters": {
             "radius": {
@@ -59,6 +58,58 @@ extensions.append(
                 "limits": (0, 5),
             },
             "center": {
+                "type": np.ndarray,
+                "default": [0.0, 0.0, 0.0],
+            },
+            "vector": {
+                "type": np.ndarray,
+                "default": [0.0, 0.0, 1.0],
+            },
+        },
+    }
+)
+
+extensions.append(
+    {
+        "name": "From base, top and radius",
+        "function": lambda base, top, radius: Cylinder.from_base_top_radius(
+            base, top, radius
+        ),
+        "menu": MENU_NAME + "/Create Cylinder...",
+        "inputs": None,
+        "parameters": {
+            "radius": {
+                "type": float,
+                "default": 1,
+                "limits": (0, 5),
+            },
+            "base": {
+                "type": np.ndarray,
+                "default": [0.0, 0.0, 0.0],
+            },
+            "top": {
+                "type": np.ndarray,
+                "default": [0.0, 0.0, 1.0],
+            },
+        },
+    }
+)
+
+extensions.append(
+    {
+        "name": "From base, vector and radius",
+        "function": lambda base, vector, radius: Cylinder.from_base_vector_radius(
+            base, vector, radius
+        ),
+        "menu": MENU_NAME + "/Create Cylinder...",
+        "inputs": None,
+        "parameters": {
+            "radius": {
+                "type": float,
+                "default": 1,
+                "limits": (0, 5),
+            },
+            "base": {
                 "type": np.ndarray,
                 "default": [0.0, 0.0, 0.0],
             },
