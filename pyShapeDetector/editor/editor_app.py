@@ -84,6 +84,7 @@ class Editor:
         self._closing_app = False
         self._temp_windows = []
         self._scene_file_path = None
+        self._window = None
 
         self.finish = False
         self._started = False
@@ -441,6 +442,10 @@ class Editor:
             self._current_bbox_axes = (vx, vy, vz)
 
     def _update_info(self):
+        if self._window is None:
+            """ Not initialized yet"""
+            return
+
         def update_label():
             # This is not called on the main thread, so we need to
             # post to the main thread to safely access UI items.
