@@ -121,7 +121,8 @@ class ParameterInt(ParameterBase[int]):
             return
 
         try:
-            self.limits = self.limit_setter(elements.selected_raw_elements)
+            selected_raw_elements = [elem for elem in elements if elem.is_selected]
+            self.limits = self.limit_setter(selected_raw_elements)
         except Exception:
             warnings.warn(f"Could not reset limits of parameter {self.name}:")
             traceback.print_exc()
@@ -129,6 +130,7 @@ class ParameterInt(ParameterBase[int]):
             # Recheck changed limits
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
+            # self.limits = (self.value, self.value)
             self.value = self.value
 
     def get_gui_widget(self, font_size):

@@ -290,35 +290,35 @@ extensions.append(
 )
 
 
-@_apply_to(PointCloud)
-def split_pcd_in_half_along_axis(pcds_input: list[PointCloud], axis, resolution):
-    dim = "xyz".index(axis)
+# @_apply_to(PointCloud)
+# def split_pcd_in_half_along_axis(pcds_input: list[PointCloud], axis, resolution):
+#     dim = "xyz".index(axis)
 
-    return [
-        pcd
-        for input_pcd in pcds_input
-        for pcd in input_pcd.split_in_half(dim=dim, resolution=resolution)
-    ]
+#     return [
+#         pcd
+#         for input_pcd in pcds_input
+#         for pcd in input_pcd.split_in_half(dim=dim, resolution=resolution)
+#     ]
 
 
-extensions.append(
-    {
-        "function": split_pcd_in_half_along_axis,
-        "menu": MENU_NAME,
-        "parameters": {
-            "axis": {
-                "type": list,
-                "options": ["x", "y", "z"],
-                "default": "z",
-            },
-            "resolution": {
-                "type": int,
-                "default": 5,
-                "limits": (2, 20),
-            },
-        },
-    }
-)
+# extensions.append(
+#     {
+#         "function": split_pcd_in_half_along_axis,
+#         "menu": MENU_NAME,
+#         "parameters": {
+#             "axis": {
+#                 "type": list,
+#                 "options": ["x", "y", "z"],
+#                 "default": "z",
+#             },
+#             "resolution": {
+#                 "type": int,
+#                 "default": 5,
+#                 "limits": (2, 20),
+#             },
+#         },
+#     }
+# )
 
 
 @_apply_to(PointCloud)

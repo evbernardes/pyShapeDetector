@@ -41,7 +41,7 @@ RECOGNIZED_EXTENSION = {
         ".pts": "3D Points files (.pts)",
         "loader": PointCloud.read_point_cloud,
         "writer": PointCloud.write_point_cloud,
-        "default": ".pcd",
+        "default": ".ply",
     },
     "TriangleMesh": {
         ".stl": "Stereolithography files (.stl)",
