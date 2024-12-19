@@ -302,7 +302,7 @@ class InternalFunctions:
         window.show_dialog(dlg)
 
     def _cb_open_scene(self, path=None):
-        from .io import _open_scene
+        from .io import _open_scene, SCENE_FILE_EXTENSION
 
         editor_instance = self._editor_instance
 
@@ -328,7 +328,9 @@ class InternalFunctions:
             except Exception:
                 pass
 
-        dlg.add_filter(".sdscene", "Shape Detector Scene (.sdscene)")
+        dlg.add_filter(
+            f"{SCENE_FILE_EXTENSION}", "Shape Detector Scene ({SCENE_FILE_EXTENSION})"
+        )
 
         def _on_cancel():
             editor_instance._close_dialog()
@@ -362,7 +364,7 @@ class InternalFunctions:
                 self._editor_instance._window.close()
 
     def _cb_save_scene_as(self, quitting=False):
-        from .io import _create_overwrite_warning
+        from .io import _create_overwrite_warning, SCENE_FILE_EXTENSION
 
         editor_instance = self._editor_instance
         window = self._editor_instance._window
@@ -374,7 +376,9 @@ class InternalFunctions:
             except Exception:
                 pass
 
-        dlg.add_filter(".sdscene", "Shape Detector Scene (.sdscene)")
+        dlg.add_filter(
+            f"{SCENE_FILE_EXTENSION}", "Shape Detector Scene ({SCENE_FILE_EXTENSION})"
+        )
 
         def _on_cancel():
             editor_instance._close_dialog()

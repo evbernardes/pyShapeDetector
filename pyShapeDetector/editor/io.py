@@ -3,6 +3,22 @@
 """
 Created on 2024-12-13 11:12:42
 
+Helpers for saving and loading Elements and scenes.
+
+Attributes
+----------
+SCENE_FILE_EXTENSION
+RECOGNIZED_EXTENSION
+
+
+Methods
+-------
+_create_overwrite_warning
+_load_one_element
+_write_one_element
+_open_scene
+_save_scene
+
 @author: evbernardes
 """
 import traceback
@@ -73,6 +89,7 @@ RECOGNIZED_EXTENSION["all"] = " ".join(
 def _create_overwrite_warning(
     editor_instance: Editor, path: str, quitting: bool = False
 ):
+    """Creates Warning dialog when trying to save to existing file."""
     window = editor_instance._window
 
     dlg = gui.Dialog("Warning")
@@ -117,6 +134,7 @@ def _create_overwrite_warning(
 
 
 def _load_one_element(filename):
+    """Loads one element into the ElementContainer."""
     path = Path(filename)
     element = None
     for key, extensions in RECOGNIZED_EXTENSION.items():
@@ -132,6 +150,7 @@ def _load_one_element(filename):
 
 
 def _write_one_element(element, filename):
+    """Write one element from the ElementContainer."""
     path = Path(filename)
     if isinstance(element.raw, Primitive):
         type_name = "Primitive"
@@ -165,6 +184,7 @@ def _write_one_element(element, filename):
 
 
 def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
+    """Replace all elements from the current ElementContainer with elements from a file."""
     input_path = Path(input_path)
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -197,6 +217,7 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
 
 
 def _save_scene(path: Union[Path, str], editor_instance: Editor):
+    """Save all elements from the current ElementContainer into a file, overwriting."""
     path = Path(path)
     if path.exists():
         path.unlink()
@@ -252,7 +273,7 @@ def _save_scene(path: Union[Path, str], editor_instance: Editor):
                             path_out,
                             arcname=f"elements_fixed/element_{i}" + path_out.suffix,
                         )
-                    except:
+                    except Exception:
                         pass
 
     # else:
