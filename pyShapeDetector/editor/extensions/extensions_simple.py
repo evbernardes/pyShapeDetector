@@ -97,7 +97,7 @@ def transform(
             for elem in transformed_elements:
                 rotation_center += elem.get_oriented_bounding_box().center
             rotation_center /= len(transformed_elements)
-        except:
+        except Exception:
             warnings.warn("Could not get center for transform.")
             traceback.print_exc()
 
