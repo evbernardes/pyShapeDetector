@@ -85,6 +85,7 @@ class Editor:
         self._temp_windows = []
         self._scene_file_path = None
         self._window = None
+        # self._gray_overlay: gui.Widget = None
 
         self.finish = False
         self._started = False
@@ -93,6 +94,37 @@ class Editor:
 
         for extension in default_extensions:
             self.add_extension(extension)
+
+    def _create_simple_dialog(self, text, create_button: bool = True):
+        window = self._window
+        em = window.theme.font_size
+        dlg = gui.Dialog(text)
+
+        # Add the text
+        dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
+
+        title = gui.Horiz()
+        title.add_stretch()
+        title.add_child(gui.Label(text))
+        title.add_stretch()
+
+        if create_button:
+
+            def _on_about_ok():
+                self._close_dialog()
+
+            ok = gui.Button("OK")
+            ok.set_on_clicked(_on_about_ok)
+
+            title = gui.Horiz()
+            title.add_stretch()
+            title.add_child(ok)
+            title.add_stretch()
+
+        dlg_layout.add_child(title)
+
+        dlg.add_child(dlg_layout)
+        window.show_dialog(dlg)
 
     def _get_submenu_from_path(self, path):
         if path in self._submenus:
@@ -149,6 +181,21 @@ class Editor:
     @property
     def elements_fixed(self):
         return self._elements_fixed
+
+    # def _set_gray_overlay(self, value: bool):
+    #     if value is False:
+    #         if self._gray_overlay is not None:
+    #             self._window.remove_child(self._gray_overlay)
+    #             self._gray_overlay = None
+    #         return
+
+    #     self._gray_overlay = gui.Widget()
+    #     width = self._window.content_rect.width
+    #     height = self._window.content_rect.height
+    #     self._gray_overlay.frame = gui.Rect(0, 0, int(width), int(height))
+    #     self._gray_overlay.background_color = gui.Color(0.5, 0.5, 0.5, 0.1)
+    #     self._gray_overlay.visible = True
+    #     self._window.remove_child(self._gray_overlay)
 
     def _reset_on_key(self):
         """Reset keys to original hotkeys."""
