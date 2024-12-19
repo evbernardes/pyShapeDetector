@@ -215,6 +215,34 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
             editor_instance._future_states = []
             editor_instance._past_states = []
 
+            json_path = Path(temp_dir) / "preferences.json"
+            if not json_path.exists():
+                return
+
+            try:
+                with open(json_path, "r") as json_file:
+                    json_data = json.load(json_file)
+            except Exception:
+                warnings.warn("Could not load preferences file from '{input_path}'.")
+                return
+
+            keys = ["PointCloud_density"]
+            for key in keys:
+                if key not in json_data:
+                    warnings.warn(
+                        f"{key} not found in preferences from '{input_path}'."
+                    )
+                    continue
+
+                try:
+                    editor_instance._settings.set_setting(key, json_data[key])
+                except Exception:
+                    warnings.warn(
+                        f"Could set '{key}':{json_data[key]}  from preferences in "
+                        f"file '{input_path}' into settings."
+                    )
+                    traceback.print_exc()
+
 
 def _save_scene(path: Union[Path, str], editor_instance: Editor):
     """Save all elements from the current ElementContainer into a file, overwriting."""
@@ -236,16 +264,22 @@ def _save_scene(path: Union[Path, str], editor_instance: Editor):
     with tempfile.TemporaryDirectory() as temp_dir:
         with tarfile.open(path, "w") as tar:
             temp_dir = Path(temp_dir)
-            # json_file_path = temp_dir / "preferences.json"
-            # with open(json_file_path, "w") as json_file:
-            #     json_data = {}
-            #     for param in editor_instance._settings._dict.values():
-            #         value = param.value
-            #         if isinstance(value, np.ndarray):
-            #             value = value.tolist()
-            #         json_data[param.name] = value
-            #     json.dump(json_data, json_file, indent=4)
-            #     tar.add(json_file_path, arcname="preferences.json")
+            json_file_name = "preferences.json"
+            temp_json_file_path = temp_dir / json_file_name
+
+            json_data = {}
+            for key, param in editor_instance._settings._dict.items():
+                if isinstance(param.value, np.ndarray):
+                    json_data[key] = param.value.tolist()
+                else:
+                    json_data[key] = param.value
+
+            print(json_data)
+
+            with open(temp_json_file_path, "w") as fp:
+                json.dump(json_data, fp, indent=4)
+
+            tar.add(temp_json_file_path, arcname=json_file_name)
 
             if len(elements) > 0:
                 elements_directory = temp_dir / "elements"

@@ -1311,8 +1311,8 @@ class Primitive(ABC):
 
             json_data = {}
             self.__put_attributes_in_dict__(json_data, save_inliers=save_inliers)
-            with open(path, "w") as json_file:
-                json.dump(json_data, json_file, indent=4)
+            with open(path, "w") as fp:
+                json.dump(json_data, fp, indent=4)
 
         elif path.suffix == ".tar":
             if save_inliers is None:
@@ -1324,9 +1324,10 @@ class Primitive(ABC):
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Create a temporary JSON file
                 temp_dir = Path(temp_dir)
-                json_file_path = temp_dir / "shape.json"
-                with open(json_file_path, "w") as json_file:
-                    json.dump(json_data, json_file, indent=4)
+                json_file_name = "shape.json"
+                temp_json_file_path = temp_dir / json_file_name
+                with open(temp_json_file_path, "w") as fp:
+                    json.dump(json_data, fp, indent=4)
 
                 # Create a temporary copy of the other file
                 if save_inliers:
@@ -1335,12 +1336,12 @@ class Primitive(ABC):
 
                 # Create the tar file and add both files
                 with tarfile.open(path, "w") as tar:
-                    tar.add(json_file_path, arcname="shape.json")
+                    tar.add(temp_json_file_path, arcname=json_file_name)
                     if save_inliers:
                         tar.add(temp_inliers_path, arcname="inliers.ply")
         else:
             raise ValueError(
-                f"Acceptable extensions are 'tar' and 'json', got {path.suffix}."
+                f"Acceptable extensions are '.tar' and '.json', got {path.suffix}."
             )
 
     def __get_attributes_from_dict__(self, data):
