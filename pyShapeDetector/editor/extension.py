@@ -254,7 +254,7 @@ class Extension:
 
     def run(self):
         if len(self.parameters) == 0:
-            self._apply_to_elements()
+            self._apply_to_elements_in_thread()
         else:
             if self._window_opened:
                 print(
@@ -268,6 +268,11 @@ class Extension:
             except Exception:
                 warnings.warn("Could not create extension window.")
                 traceback.print_exc()
+
+    def _apply_to_elements_in_thread(self):
+        editor_instance = self._editor_instance
+        editor_instance._create_simple_dialog(f"Applying {self.name}...", False)
+        editor_instance.app.run_in_thread(self._apply_to_elements)
 
     def _apply_to_elements(self):
         editor_instance = self._editor_instance
@@ -307,12 +312,14 @@ class Extension:
             else:
                 output_elements = self.function(input_elements, **kwargs)
         except KeyboardInterrupt:
+            editor_instance._close_dialog()
             return
         except Exception as e:
             warnings.warn(
                 f"Failed to apply {self.name} extension to "
                 f"elements in indices {indices}, got:"
             )
+            editor_instance._close_dialog()
             traceback.print_exc()
             return
 
@@ -368,6 +375,8 @@ class Extension:
         editor_instance._future_states = []
         editor_instance._update_plane_boundaries()
         editor_instance._update_info()
+        editor_instance._close_dialog()
+        # editor_instance._set_gray_overlay(False)
 
     def _create_extension_window(self):
         editor_instance = self._editor_instance
@@ -399,7 +408,7 @@ class Extension:
 
         def _on_apply_button():
             self._ran_at_least_once = True
-            self._apply_to_elements()
+            self._apply_to_elements_in_thread()
 
         def _on_close_button():
             temp_window.close()

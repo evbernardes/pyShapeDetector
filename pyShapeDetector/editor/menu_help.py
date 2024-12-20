@@ -101,6 +101,7 @@ class MenuHelp:
         title.add_stretch()
 
         dlg_layout.add_child(title)
+
         dlg_layout.add_child(
             gui.Label(
                 "Developed by:\n\n\tEvandro Bernardes"
@@ -111,11 +112,12 @@ class MenuHelp:
         ok = gui.Button("OK")
         ok.set_on_clicked(self._on_about_ok)
 
-        title = gui.Horiz()
-        title.add_stretch()
-        title.add_child(ok)
-        title.add_stretch()
-        dlg_layout.add_child(title)
+        button_stretch = gui.Horiz()
+        button_stretch.add_stretch()
+        button_stretch.add_child(ok)
+        button_stretch.add_stretch()
+
+        dlg_layout.add_child(button_stretch)
 
         dlg.add_child(dlg_layout)
         window.show_dialog(dlg)
