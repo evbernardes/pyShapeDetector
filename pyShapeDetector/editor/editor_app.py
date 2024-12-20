@@ -86,6 +86,8 @@ class Editor:
         self._temp_windows = []
         self._scene_file_path = None
         self._window = None
+        self._extensions_on_panel = {}
+        # self._extension_tabs = gui.TabControl()
         # self._gray_overlay = gui.Widget()
 
         self.finish = False
@@ -192,6 +194,30 @@ class Editor:
     def elements_fixed(self):
         return self._elements_fixed
 
+    def _add_extension_panel(self, name, panel):
+        if name in self._extensions_on_panel:
+            self._extensions_on_panel.pop(name).visible = False
+            self._add_extension_panel(name, panel)
+            return
+
+        N = len(self._extensions_on_panel)
+
+        em = self._window.theme.font_size
+
+        self._extensions_on_panel[name] = panel
+        panel_collapsable = gui.CollapsableVert(name, em, gui.Margins(0, 0, 0, 0))
+        panel_collapsable.add_child(panel)
+        self._extension_tabs_panel.add_child(panel_collapsable)
+        self._window.set_needs_layout()
+
+    def _set_extension_panel_open(self, name, is_open) -> bool:
+        if name not in self._extensions_on_panel:
+            return False
+
+        self._extensions_on_panel[name].visible = is_open
+        self._window.set_needs_layout()
+        return True
+
     # def _set_gray_overlay(self, value: bool):
     #     if value is False:
     #         self._gray_overlay.visible = False
@@ -257,21 +283,24 @@ class Editor:
             info_preferred_size.height,
         )
 
-        panel_preferred_size = self._right_side_panel.calc_preferred_size(
-            layout_context, gui.Widget.Constraints()
-        )
+        def _adjust_panel(panel, min_width=17):
+            preferred_size = panel.calc_preferred_size(
+                layout_context, gui.Widget.Constraints()
+            )
 
-        width = min(17 * layout_context.theme.font_size, panel_preferred_size.width)
-        height = min(r.height, panel_preferred_size.height)
+            width = min(
+                min_width * layout_context.theme.font_size, preferred_size.width
+            )
+            height = min(r.height, preferred_size.height)
 
-        self._right_side_panel.frame = gui.Rect(
-            r.get_right() - width, r.y, width, height
-        )
+            panel.frame = gui.Rect(r.get_right() - width, r.y, width, height)
 
-        # Hide right side panel if subpanels are also hidden
-        self._right_side_panel.visible = np.any(
-            [widget.visible for widget in self._right_side_panel.get_children()]
-        )
+            panel.visible = np.any(
+                [False] + [widget.visible for widget in panel.get_children()]
+            )
+
+        _adjust_panel(self._extension_tabs_panel, 17)
+        _adjust_panel(self._right_side_panel, 25)
 
     def _on_close(self):
         if not self._closing_app:
@@ -401,6 +430,13 @@ class Editor:
         self._settings._create_menu()
         self._menu_help = MenuHelp(self)
         self._menu_help._create_menu()
+
+        self._extension_tabs_panel = gui.CollapsableVert(
+            "Extensions", em, gui.Margins(0, 0, 0, 0)
+        )
+        # self._extension_tabs_tree = gui.TreeView()
+        # self._extension_tabs_panel.add_child(self._extension_tabs_tree)
+        self._right_side_panel.add_child(self._extension_tabs_panel)
 
     # def _signal_handler(self, sig, frame):
     #     self._vis.destroy_window()

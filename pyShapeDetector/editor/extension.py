@@ -252,7 +252,7 @@ class Extension:
             creates_window=len(self.parameters) > 0,
         )
 
-        self._window_opened: bool = False
+        self._extension_window_opened: bool = False
 
     def add_to_application(self, editor_instance: Editor):
         self._editor_instance = editor_instance
@@ -266,14 +266,13 @@ class Extension:
         self.binding.add_to_menu(self._editor_instance)
 
     def run(self):
+        _on_panel = self._editor_instance._settings.get_setting("extensions_on_panel")
+
         if len(self.parameters) == 0:
             self._apply_to_elements_in_thread()
         else:
-            if self._window_opened:
-                print(
-                    f"Tried opening extension '{self.name}' window, "
-                    "but it's already opened"
-                )
+            if self._extension_window_opened and not _on_panel:
+                print(f"Tried opening extension '{self.name}' but it's already opened.")
                 return
 
             try:
@@ -412,7 +411,13 @@ class Extension:
         # editor_instance._set_gray_overlay(False)
 
     def _create_extension_window(self):
+        _on_panel = self._editor_instance._settings.get_setting("extensions_on_panel")
         editor_instance = self._editor_instance
+
+        if editor_instance._set_extension_panel_open(self.name, True):
+            """ If True, it was already opened and set visibility to True."""
+            return
+
         em = editor_instance._window.theme.font_size
 
         self._ran_at_least_once = False
@@ -423,6 +428,7 @@ class Extension:
 
         separation_width = em
         separation_height = int(round(0.1 * em))
+
         parameter_panel = ParameterPanel(
             self.parameters, separation_width, separation_height, "Enter parameters:"
         )
@@ -432,31 +438,39 @@ class Extension:
         window_width = 500
         window_height = 50 * len(panel.get_children())
 
-        temp_window = editor_instance.app.create_window(
-            self.name, window_width, window_height
-        )
-        self._window_opened = True
-        temp_window.show_menu(False)
-        self._editor_instance._temp_windows.append(temp_window)
+        if not _on_panel:
+            temp_window = editor_instance.app.create_window(
+                self.name, window_width, window_height
+            )
+            temp_window.show_menu(False)
+            self._editor_instance._temp_windows.append(temp_window)
+
+        self._extension_window_opened = True
 
         def _on_apply_button():
             self._ran_at_least_once = True
             self._apply_to_elements_in_thread()
 
         def _on_close_button():
-            temp_window.close()
+            if not _on_panel:
+                temp_window.close()
+            else:
+                self._editor_instance._set_extension_panel_open(self.name, False)
+                # editor_instance._remove_extension_panel(self.name)
+                # editor_instance._extension_tabs.remove_tab(self.name)
 
         def _on_refresh_limits():
             if len(editor_instance.elements.selected_indices) > 0:
                 for param in self.parameters.values():
                     param._reset_values_and_limits(editor_instance.elements)
 
-        def _on_close():
+        def _on_close_window():
             if not self._ran_at_least_once:
                 for key, param in self.parameters.items():
                     param.value = previous_values[key]
+
             self._editor_instance._temp_windows.remove(temp_window)
-            self._window_opened = False
+            self._extension_window_opened = False
             return True
 
         apply = gui.Button("Apply")
@@ -465,8 +479,6 @@ class Extension:
         close.set_on_clicked(_on_close_button)
         refresh = gui.Button("Refresh limits")
         refresh.set_on_clicked(_on_refresh_limits)
-        temp_window.add_child(panel)
-        temp_window.set_on_close(_on_close)
 
         h = gui.Horiz()
         h.add_stretch()
@@ -478,6 +490,16 @@ class Extension:
             h.add_child(refresh)
             h.add_stretch()
         panel.add_child(h)
+
+        if not _on_panel:
+            temp_window.add_child(panel)
+            temp_window.set_on_close(_on_close_window)
+
+        else:
+            editor_instance._add_extension_panel(self.name, panel)
+            # editor_instance._extension_tabs.add_tab(self.name, panel)
+            # editor_instance._add_extension_panel(self.name, panel)
+            # editor_instance._window.set_needs_layout()
 
         _on_refresh_limits()
         # temp_window.size_to_fit()
