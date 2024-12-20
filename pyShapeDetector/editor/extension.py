@@ -271,7 +271,20 @@ class Extension:
 
     def _apply_to_elements_in_thread(self):
         editor_instance = self._editor_instance
-        editor_instance._create_simple_dialog(f"Applying {self.name}...", False)
+
+        def _on_cancel():
+            self._cancelled = True
+            editor_instance._close_dialog()
+            print("Cancel!")
+
+        self._cancelled = False
+        editor_instance._create_simple_dialog(
+            f"Applying {self.name}...",
+            create_button=True,
+            button_text="Cancel",
+            button_callback=_on_cancel,
+        )
+
         editor_instance.app.run_in_thread(self._apply_to_elements)
 
     def _apply_to_elements(self):
@@ -334,6 +347,9 @@ class Extension:
                 "Only one output expected for extensions with "
                 f"'current' input type, got {len(output_elements)}."
             )
+            return
+
+        if self._cancelled:
             return
 
         # Saving state for undoing purposes

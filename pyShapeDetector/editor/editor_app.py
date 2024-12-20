@@ -15,6 +15,7 @@ import traceback
 import warnings
 import itertools
 import numpy as np
+from typing import Callable, Union, Literal
 from pathlib import Path
 from open3d.visualization import gui, rendering
 # from .element import Element, ElementGeometry
@@ -95,7 +96,13 @@ class Editor:
         for extension in default_extensions:
             self.add_extension(extension)
 
-    def _create_simple_dialog(self, text, create_button: bool = True):
+    def _create_simple_dialog(
+        self,
+        text,
+        create_button: bool = True,
+        button_text: str = "Close",
+        button_callback: Union[Callable, None] = None,
+    ):
         window = self._window
         em = window.theme.font_size
         dlg = gui.Dialog(text)
@@ -110,22 +117,24 @@ class Editor:
         dlg_layout.add_child(title)
 
         if create_button:
+            button = gui.Button(button_text)
+            if button_callback is None:
 
-            def _on_ok():
-                self._close_dialog()
+                def _on_ok():
+                    self._close_dialog()
 
-            ok = gui.Button("OK")
-            ok.set_on_clicked(_on_ok)
+                button.set_on_clicked(_on_ok)
+            else:
+                button.set_on_clicked(button_callback)
 
             button_stretch = gui.Horiz()
             button_stretch.add_stretch()
-            button_stretch.add_child(ok)
+            button_stretch.add_child(button)
             button_stretch.add_stretch()
             dlg_layout.add_child(button_stretch)
 
         dlg.add_child(dlg_layout)
         window.show_dialog(dlg)
-        return dlg
 
     def _get_submenu_from_path(self, path):
         if path in self._submenus:
