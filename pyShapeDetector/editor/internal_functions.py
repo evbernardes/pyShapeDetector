@@ -358,7 +358,16 @@ class InternalFunctions:
         if path is None:
             self._cb_save_scene_as(quitting)
         else:
-            _save_scene(path, editor_instance)
+
+            def _save_thread():
+                _save_scene(path, editor_instance)
+                editor_instance._close_dialog()
+
+            editor_instance._create_simple_dialog(
+                f"Saving scene to {path}...",
+                create_button=False,
+            )
+            editor_instance.app.run_in_thread(_save_thread)
             if quitting:
                 self._editor_instance._closing_app = True
                 self._editor_instance._window.close()
