@@ -1,4 +1,5 @@
 import warnings
+import copy
 import numpy as np
 from typing import TYPE_CHECKING
 from open3d.visualization import gui
@@ -26,6 +27,7 @@ COLOR_SELECTED_DEFAULT = np.array([178.5, 163.8, 0.0]) / 255
 COLOR_UNSELECTED_DEFAULT = np.array([76.5, 76.5, 76.5]) / 255
 
 # DEFAULT VALUES
+_extensions_on_window = False
 _PointCloud_density = 0.00224
 _draw_boundary_lines = True
 _line_width = 7
@@ -101,6 +103,11 @@ class Settings:
 
     def __init__(self, editor_instance: "Editor", menu="Preferences", **kwargs):
         self._dict = {
+            "extensions_on_window": ParameterBool(
+                label="Open extensions on window",
+                default=_extensions_on_window,
+                on_update=self._cb_extensions_on_window,
+            ),
             "PointCloud_density": ParameterNumeric(
                 type=float,
                 label="Density",
@@ -308,6 +315,14 @@ class Settings:
 
             extension = Extension(test_extension, self)
             extension.add_to_application(editor_instance)
+
+    def _cb_extensions_on_window(self, value):
+        if value is False:
+            for window in self._editor_instance._temp_windows:
+                window.close()
+        else:
+            for name in self._editor_instance._extensions_on_window:
+                self._editor_instance._set_extension_panel_open(name, False)
 
     def _cb_PointCloud_density(self, value):
         pass
