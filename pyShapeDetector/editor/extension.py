@@ -336,6 +336,13 @@ class Extension:
             traceback.print_exc()
             return
 
+        if self._cancelled:
+            editor_instance._settings.print_debug(
+                f"Extensions '{self.name}' thread ended, but call was canceled. "
+                "Ignoring output."
+            )
+            return
+
         # assures it's a list
         if isinstance(output_elements, tuple):
             output_elements = list(output_elements)
@@ -347,9 +354,6 @@ class Extension:
                 "Only one output expected for extensions with "
                 f"'current' input type, got {len(output_elements)}."
             )
-            return
-
-        if self._cancelled:
             return
 
         # Saving state for undoing purposes
