@@ -54,60 +54,60 @@ _number_redo_states = 5
 # Test extension for testing reference parameters #
 # Uncomment and this and the init when testing    #
 ###################################################
-def test(
-    test_bool,
-    test_int,
-    test_int_no_slider,
-    test_int_no_limits,
-    test_float,
-    test_float_no_slider,
-    test_float_no_limits,
-    test_color,
-    test_options,
-    test_int_shape_2_3,
-    test_float_shape_2_3,
-    test_array_int_ndim1,
-    test_array_shape_7_3,
-):
-    print("************")
-    print(f"test_bool: {test_bool}")
-    print(f"test_int: {test_int}")
-    print(f"test_int_no_slider: {test_int_no_slider}")
-    print(f"test_int_no_limits: {test_int_no_limits}")
-    print(f"test_float: {test_float}")
-    print(f"test_float_no_slider: {test_float_no_slider}")
-    print(f"test_float_no_limits: {test_float_no_limits}")
-    print(f"test_color: {test_color}")
-    print(f"test_options: {test_options}")
-    print(f"test_int_shape_2_3: {test_int_shape_2_3}")
-    print(f"test_float_shape_2_3 {test_float_shape_2_3}")
-    print(f"test_array_int_ndim1: {test_array_int_ndim1}")
-    print(f"test_array_shape_7_3: {test_array_shape_7_3}")
-    print("************")
-    return []
+# def test(
+#     test_bool,
+#     test_int,
+#     test_int_no_slider,
+#     test_int_no_limits,
+#     test_float,
+#     test_float_no_slider,
+#     test_float_no_limits,
+#     test_color,
+#     test_options,
+#     test_int_shape_2_3,
+#     test_float_shape_2_3,
+#     test_array_int_ndim1,
+#     test_array_shape_7_3,
+# ):
+#     print("************")
+#     print(f"test_bool: {test_bool}")
+#     print(f"test_int: {test_int}")
+#     print(f"test_int_no_slider: {test_int_no_slider}")
+#     print(f"test_int_no_limits: {test_int_no_limits}")
+#     print(f"test_float: {test_float}")
+#     print(f"test_float_no_slider: {test_float_no_slider}")
+#     print(f"test_float_no_limits: {test_float_no_limits}")
+#     print(f"test_color: {test_color}")
+#     print(f"test_options: {test_options}")
+#     print(f"test_int_shape_2_3: {test_int_shape_2_3}")
+#     print(f"test_float_shape_2_3 {test_float_shape_2_3}")
+#     print(f"test_array_int_ndim1: {test_array_int_ndim1}")
+#     print(f"test_array_shape_7_3: {test_array_shape_7_3}")
+#     print("************")
+#     return []
 
 
-test_extension = {
-    "function": test,
-    "name": "Testing reference widgets",
-    "menu": "test",
-    "inputs": None,
-    "parameters": {
-        "test_bool": {"type": "preference"},
-        "test_int": {"type": "preference"},
-        "test_int_no_slider": {"type": "preference"},
-        "test_int_no_limits": {"type": "preference"},
-        "test_float": {"type": "preference"},
-        "test_float_no_slider": {"type": "preference"},
-        "test_float_no_limits": {"type": "preference"},
-        "test_color": {"type": "preference"},
-        "test_options": {"type": "preference"},
-        "test_int_shape_2_3": {"type": "preference"},
-        "test_float_shape_2_3": {"type": "preference"},
-        "test_array_int_ndim1": {"type": "preference"},
-        "test_array_shape_7_3": {"type": "preference"},
-    },
-}
+# test_extension = {
+#     "function": test,
+#     "name": "Testing reference widgets",
+#     "menu": "test",
+#     "inputs": None,
+#     "parameters": {
+#         "test_bool": {"type": "preference"},
+#         "test_int": {"type": "preference"},
+#         "test_int_no_slider": {"type": "preference"},
+#         "test_int_no_limits": {"type": "preference"},
+#         "test_float": {"type": "preference"},
+#         "test_float_no_slider": {"type": "preference"},
+#         "test_float_no_limits": {"type": "preference"},
+#         "test_color": {"type": "preference"},
+#         "test_options": {"type": "preference"},
+#         "test_int_shape_2_3": {"type": "preference"},
+#         "test_float_shape_2_3": {"type": "preference"},
+#         "test_array_int_ndim1": {"type": "preference"},
+#         "test_array_shape_7_3": {"type": "preference"},
+#     },
+# }
 
 
 class Settings:
@@ -161,97 +161,97 @@ class Settings:
             ###########################################
             # Test Parameters, uncomment when testing #
             ###########################################
-            ParameterBool(
-                name="test_bool",
-                default=True,
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
-            ParameterNumeric(
-                type=int,
-                name="test_int",
-                default=3,
-                limits=(-10, 10),
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
-            ParameterNumeric(
-                type=int,
-                name="test_int_no_slider",
-                default=3,
-                limits=(-10, 10),
-                use_slider=False,
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
-            ParameterNumeric(
-                type=int,
-                name="test_int_no_limits",
-                default=2,
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
-            ParameterNumeric(
-                type=float,
-                name="test_float",
-                default=3,
-                limits=(-10, 10),
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
-            ParameterNumeric(
-                type=float,
-                name="test_float_no_slider",
-                default=3,
-                limits=(-10, 10),
-                use_slider=False,
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
-            ParameterNumeric(
-                type=float,
-                name="test_float_no_limits",
-                default=2,
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
-            ParameterColor(
-                name="test_color",
-                default=(0.2, 0.2, 0.2),
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
-            ParameterOptions(
-                name="test_options",
-                options=["a", "b", "c"],
-                default="c",
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
-            ParameterNDArray(
-                name="test_int_shape_2_3",
-                default=[[0, 0, 1], [0, 20, 0]],
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
-            ParameterNDArray(
-                name="test_float_shape_2_3",
-                default=[[0, 0, 1], [0.0, 20, 0]],
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
-            ParameterNDArray(
-                name="test_array_int_ndim1",
-                default=[0, 0, 1],
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
-            ParameterNDArray(
-                name="test_array_shape_7_3",
-                default=np.zeros((7, 3)),
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
+            # ParameterBool(
+            #     name="test_bool",
+            #     default=True,
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNumeric(
+            #     type=int,
+            #     name="test_int",
+            #     default=3,
+            #     limits=(-10, 10),
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNumeric(
+            #     type=int,
+            #     name="test_int_no_slider",
+            #     default=3,
+            #     limits=(-10, 10),
+            #     use_slider=False,
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNumeric(
+            #     type=int,
+            #     name="test_int_no_limits",
+            #     default=2,
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNumeric(
+            #     type=float,
+            #     name="test_float",
+            #     default=3,
+            #     limits=(-10, 10),
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNumeric(
+            #     type=float,
+            #     name="test_float_no_slider",
+            #     default=3,
+            #     limits=(-10, 10),
+            #     use_slider=False,
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNumeric(
+            #     type=float,
+            #     name="test_float_no_limits",
+            #     default=2,
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterColor(
+            #     name="test_color",
+            #     default=(0.2, 0.2, 0.2),
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterOptions(
+            #     name="test_options",
+            #     options=["a", "b", "c"],
+            #     default="c",
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNDArray(
+            #     name="test_int_shape_2_3",
+            #     default=[[0, 0, 1], [0, 20, 0]],
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNDArray(
+            #     name="test_float_shape_2_3",
+            #     default=[[0, 0, 1], [0.0, 20, 0]],
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNDArray(
+            #     name="test_array_int_ndim1",
+            #     default=[0, 0, 1],
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
+            # ParameterNDArray(
+            #     name="test_array_shape_7_3",
+            #     default=np.zeros((7, 3)),
+            #     on_update=lambda x: print(x),
+            #     subpanel="test",
+            # ),
             ##########################
             # End of Test Parameters #
             ##########################
@@ -453,10 +453,9 @@ class Settings:
         # Test extension for testing reference parameters #
         # Uncomment and this and the definition to test   #
         ###################################################
-        from .extension import Extension
-
-        extension = Extension(test_extension, self)
-        extension.add_to_application(editor_instance)
+        # from .extension import Extension
+        # extension = Extension(test_extension, self)
+        # extension.add_to_application(editor_instance)
 
     def _cb_PointCloud_density(self, value):
         pass
