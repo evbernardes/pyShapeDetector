@@ -23,6 +23,7 @@ class ParameterInt(ParameterBase[int]):
     subpanel
     on_update
 
+    use_slider
     limits
     limit_setter
 
@@ -40,7 +41,21 @@ class ParameterInt(ParameterBase[int]):
     """
 
     _type = int
-    _valid_arguments = ParameterBase._valid_arguments + ["limits", "limit_setter"]
+    _valid_arguments = ParameterBase._valid_arguments + [
+        "limits",
+        "limit_setter",
+        "use_slider",
+    ]
+
+    @property
+    def use_slider(self):
+        return self._use_slider
+
+    @use_slider.setter
+    def use_slider(self, value):
+        if not isinstance(value, bool):
+            raise TypeError(f"Expected boolean for 'use_slider', got {value}.")
+        self._use_slider = value
 
     @property
     def limit_setter(self):
@@ -77,7 +92,7 @@ class ParameterInt(ParameterBase[int]):
             warnings.warn(
                 f"Default value not in limits for parameter {self.name} of type {self.type_name}, resetting it."
             )
-            new_value = self.limits[0]
+            new_value = self._value
 
         self._value = new_value
         # if self.is_reference:
@@ -106,11 +121,10 @@ class ParameterInt(ParameterBase[int]):
     def _update_internal_element(self):
         if self.internal_element is None:
             return
-        elif isinstance(self.internal_element, gui.Slider):
-            self.internal_element.int_value = self.value
+
+        self.internal_element.int_value = self.value
+        if self.limits is not None:
             self.internal_element.set_limits(*self.limits)
-        else:
-            self.internal_element.text_value = str(self.value)
 
     def _callback(self, value):
         self.value = value
@@ -133,37 +147,17 @@ class ParameterInt(ParameterBase[int]):
             self.value = self.value
 
     def get_gui_widget(self, font_size):
-        if self.limits is not None:
+        if self.use_slider:
             self._internal_element = gui.Slider(gui.Slider.INT)
         else:
-            # Text field for general inputs
-            self._internal_element = gui.TextEdit()
+            self._internal_element = gui.NumberEdit(gui.NumberEdit.INT)
         self._update_internal_element()
 
         label = gui.Label(self.pretty_name)
 
-        if isinstance(self.internal_element, gui.Slider):
-            slider = self.internal_element
-            # slider.set_on_value_changed(self._callback)
-
-            element = gui.VGrid(2, 0.25 * font_size)
-            element.add_child(label)
-            element.add_child(slider)
-
-        elif isinstance(self.internal_element, gui.TextEdit):
-            text_edit = self.internal_element
-            # text_edit.set_on_value_changed(
-            #     lambda value: self._callback(value, text_edit)
-            # )
-
-            element = gui.VGrid(2, 0.25 * font_size)
-            element.add_child(label)
-            element.add_child(text_edit)
-        else:
-            raise RuntimeError(
-                "ParameterInt internal element is neither a gui.Glider "
-                "nor a gui.TextEdit. This should never happen."
-            )
+        element = gui.VGrid(2, 0.25 * font_size)
+        element.add_child(label)
+        element.add_child(self.internal_element)
 
         self.internal_element.set_on_value_changed(self._callback)
         self._enable_internal_element(not self.is_reference)
@@ -175,6 +169,7 @@ class ParameterInt(ParameterBase[int]):
         limit_setter: Callable = None,
         limits: Union[list, tuple] = None,
         default: int = None,
+        use_slider: Union[bool, None] = None,
         on_update: Callable = None,
         subpanel: Union[str, None] = None,
         **other_kwargs,
@@ -191,5 +186,18 @@ class ParameterInt(ParameterBase[int]):
         self.limit_setter = limit_setter
         self.limits = limits
         self.value = default
+
+        if self.name == "number_undo_states":
+            print()
+
+        if use_slider is None:
+            self.use_slider = self.limits is not None
+        elif use_slider and self.limits is None:
+            warnings.warn(
+                f"Cannot use Slider for parameter {self.name}, no limits given."
+            )
+            self.use_slider = False
+        else:
+            self.use_slider = use_slider
 
         self._warn_unused_parameters(other_kwargs)

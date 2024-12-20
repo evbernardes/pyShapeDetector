@@ -246,18 +246,24 @@ class Editor:
 
         self._scene.frame = r
 
-        pref = self._info.calc_preferred_size(layout_context, gui.Widget.Constraints())
-        self._info.frame = gui.Rect(
-            r.x, r.get_bottom() - pref.height, pref.width, pref.height
+        info_preferred_size = self._info.calc_preferred_size(
+            layout_context, gui.Widget.Constraints()
         )
 
-        width = 17 * layout_context.theme.font_size
-        height = min(
-            r.height,
-            self._right_side_panel.calc_preferred_size(
-                layout_context, gui.Widget.Constraints()
-            ).height,
+        self._info.frame = gui.Rect(
+            r.x,
+            r.get_bottom() - info_preferred_size.height,
+            info_preferred_size.width,
+            info_preferred_size.height,
         )
+
+        panel_preferred_size = self._right_side_panel.calc_preferred_size(
+            layout_context, gui.Widget.Constraints()
+        )
+
+        width = min(17 * layout_context.theme.font_size, panel_preferred_size.width)
+        height = min(r.height, panel_preferred_size.height)
+
         self._right_side_panel.frame = gui.Rect(
             r.get_right() - width, r.y, width, height
         )
