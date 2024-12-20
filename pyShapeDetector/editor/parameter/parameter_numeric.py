@@ -1,15 +1,16 @@
 import warnings
 import traceback
+from abc import ABC, abstractmethod
 from typing import Callable, Union
 from open3d.visualization import gui
 from .parameter import ParameterBase
 from ..element_container import ElementContainer
 
 
-class ParameterInt(ParameterBase[int]):
-    """Parameter for Int types.
+class ParameterNumeric(ParameterBase[type]):
+    """Parameter for Int for Float types.
 
-    Creates a Slider if has limits, otherwise a normal text edit.
+    Creates a Slider if has limits, otherwise a number edit edit.
 
     Attributes
     ----------
@@ -40,12 +41,37 @@ class ParameterInt(ParameterBase[int]):
     create_from_dict
     """
 
-    _type = int
+    # _type = int
     _valid_arguments = ParameterBase._valid_arguments + [
         "limits",
         "limit_setter",
         "use_slider",
+        "type",
     ]
+
+    def get_slider_type(self):
+        if self.type == int:
+            return gui.Slider.INT
+        elif self.type == float:
+            return gui.Slider.DOUBLE
+        else:
+            assert False
+
+    def get_number_edit_type(self):
+        if self.type == int:
+            return gui.NumberEdit.INT
+        elif self.type == float:
+            return gui.NumberEdit.DOUBLE
+        else:
+            assert False
+
+    def update_widget(self, value):
+        if self.type is int:
+            self.internal_element.int_value = self.value
+        elif self.type is float:
+            self.internal_element.double_value = self.value
+        else:
+            assert False
 
     @property
     def use_slider(self):
@@ -74,9 +100,9 @@ class ParameterInt(ParameterBase[int]):
     def value(self, new_value):
         if new_value is not None:
             try:
-                new_value = int(new_value)
+                new_value = self.type(new_value)
             except ValueError:
-                new_value = int(float(new_value))
+                new_value = self.type(float(new_value))
 
         else:
             if self.limits is None:
@@ -115,14 +141,12 @@ class ParameterInt(ParameterBase[int]):
 
         new_limits = (min(new_limits), max(new_limits))
         self._limits = new_limits
-        # if self.is_reference:
-        # self._update_internal_element()
 
     def _update_internal_element(self):
         if self.internal_element is None:
             return
 
-        self.internal_element.int_value = self.value
+        self.update_widget(self.value)
         if self.limits is not None:
             self.internal_element.set_limits(*self.limits)
 
@@ -148,9 +172,9 @@ class ParameterInt(ParameterBase[int]):
 
     def get_gui_widget(self, font_size):
         if self.use_slider:
-            self._internal_element = gui.Slider(gui.Slider.INT)
+            self._internal_element = gui.Slider(self.get_slider_type())
         else:
-            self._internal_element = gui.NumberEdit(gui.NumberEdit.INT)
+            self._internal_element = gui.NumberEdit(self.get_number_edit_type())
         self._update_internal_element()
 
         label = gui.Label(self.pretty_name)
@@ -170,6 +194,7 @@ class ParameterInt(ParameterBase[int]):
         limits: Union[list, tuple] = None,
         default: int = None,
         use_slider: Union[bool, None] = None,
+        type: Union[type, None] = None,
         on_update: Callable = None,
         subpanel: Union[str, None] = None,
         **other_kwargs,
@@ -183,9 +208,22 @@ class ParameterInt(ParameterBase[int]):
             )
             limit_setter = None
 
+        if type is None:
+            if isinstance(default, int):
+                type = int
+            elif isinstance(default, float):
+                type = float
+            else:
+                raise ValueError(
+                    "Expected int or float values for Numeric parameter, got {value}."
+                )
+        self._type = type
+
         self.limit_setter = limit_setter
         self.limits = limits
         self.value = default
+
+
 
         if self.name == "number_undo_states":
             print()

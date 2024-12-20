@@ -9,8 +9,7 @@ if TYPE_CHECKING:
 
 from .parameter import (
     ParameterBool,
-    ParameterInt,
-    ParameterFloat,
+    ParameterNumeric,
     ParameterNDArray,
     ParameterOptions,
     ParameterColor,
@@ -57,29 +56,31 @@ _number_redo_states = 5
 ###################################################
 def test(
     test_bool,
+    test_int,
+    test_int_no_slider,
     test_int_no_limits,
-    test_int_limits,
-    test_int_limits_no_slider,
+    test_float,
+    test_float_no_slider,
     test_float_no_limits,
-    test_float_limits,
     test_color,
     test_options,
-    test_array_int_shape_2_3,
-    test_array_float_shape_2_3,
+    test_int_shape_2_3,
+    test_float_shape_2_3,
     test_array_int_ndim1,
     test_array_shape_7_3,
 ):
     print("************")
     print(f"test_bool: {test_bool}")
+    print(f"test_int: {test_int}")
+    print(f"test_int_no_slider: {test_int_no_slider}")
     print(f"test_int_no_limits: {test_int_no_limits}")
-    print(f"test_int_limits: {test_int_limits}")
-    print(f"test_int_limits_no_slider: {test_int_limits_no_slider}")
+    print(f"test_float: {test_float}")
+    print(f"test_float_no_slider: {test_float_no_slider}")
     print(f"test_float_no_limits: {test_float_no_limits}")
-    print(f"test_float_limits: {test_float_limits}")
     print(f"test_color: {test_color}")
     print(f"test_options: {test_options}")
-    print(f"test_array_int_shape_2_3: {test_array_int_shape_2_3}")
-    print(f"test_array_float_shape_2_3 {test_array_float_shape_2_3}")
+    print(f"test_int_shape_2_3: {test_int_shape_2_3}")
+    print(f"test_float_shape_2_3 {test_float_shape_2_3}")
     print(f"test_array_int_ndim1: {test_array_int_ndim1}")
     print(f"test_array_shape_7_3: {test_array_shape_7_3}")
     print("************")
@@ -93,15 +94,16 @@ test_extension = {
     "inputs": None,
     "parameters": {
         "test_bool": {"type": "preference"},
+        "test_int": {"type": "preference"},
+        "test_int_no_slider": {"type": "preference"},
         "test_int_no_limits": {"type": "preference"},
-        "test_int_limits": {"type": "preference"},
-        "test_int_limits_no_slider": {"type": "preference"},
+        "test_float": {"type": "preference"},
+        "test_float_no_slider": {"type": "preference"},
         "test_float_no_limits": {"type": "preference"},
-        "test_float_limits": {"type": "preference"},
         "test_color": {"type": "preference"},
         "test_options": {"type": "preference"},
-        "test_array_int_shape_2_3": {"type": "preference"},
-        "test_array_float_shape_2_3": {"type": "preference"},
+        "test_int_shape_2_3": {"type": "preference"},
+        "test_float_shape_2_3": {"type": "preference"},
         "test_array_int_ndim1": {"type": "preference"},
         "test_array_shape_7_3": {"type": "preference"},
     },
@@ -165,37 +167,51 @@ class Settings:
                 on_update=lambda x: print(x),
                 subpanel="test",
             ),
-            ParameterInt(
-                name="test_int_no_limits",
-                default=2,
-                on_update=lambda x: print(x),
-                subpanel="test",
-            ),
-            ParameterInt(
-                name="test_int_limits",
+            ParameterNumeric(
+                type=int,
+                name="test_int",
                 default=3,
                 limits=(-10, 10),
                 on_update=lambda x: print(x),
                 subpanel="test",
             ),
-            ParameterInt(
-                name="test_int_limits_no_slider",
+            ParameterNumeric(
+                type=int,
+                name="test_int_no_slider",
                 default=3,
                 limits=(-10, 10),
                 use_slider=False,
                 on_update=lambda x: print(x),
                 subpanel="test",
             ),
-            ParameterFloat(
-                name="test_float_no_limits",
+            ParameterNumeric(
+                type=int,
+                name="test_int_no_limits",
                 default=2,
                 on_update=lambda x: print(x),
                 subpanel="test",
             ),
-            ParameterFloat(
-                name="test_float_limits",
+            ParameterNumeric(
+                type=float,
+                name="test_float",
                 default=3,
                 limits=(-10, 10),
+                on_update=lambda x: print(x),
+                subpanel="test",
+            ),
+            ParameterNumeric(
+                type=float,
+                name="test_float_no_slider",
+                default=3,
+                limits=(-10, 10),
+                use_slider=False,
+                on_update=lambda x: print(x),
+                subpanel="test",
+            ),
+            ParameterNumeric(
+                type=float,
+                name="test_float_no_limits",
+                default=2,
                 on_update=lambda x: print(x),
                 subpanel="test",
             ),
@@ -213,13 +229,13 @@ class Settings:
                 subpanel="test",
             ),
             ParameterNDArray(
-                name="test_array_int_shape_2_3",
+                name="test_int_shape_2_3",
                 default=[[0, 0, 1], [0, 20, 0]],
                 on_update=lambda x: print(x),
                 subpanel="test",
             ),
             ParameterNDArray(
-                name="test_array_float_shape_2_3",
+                name="test_float_shape_2_3",
                 default=[[0, 0, 1], [0.0, 20, 0]],
                 on_update=lambda x: print(x),
                 subpanel="test",
@@ -239,7 +255,8 @@ class Settings:
             ##########################
             # End of Test Parameters #
             ##########################
-            ParameterFloat(
+            ParameterNumeric(
+                type=float,
                 name="PointCloud_density",
                 default=_PointCloud_density,
                 on_update=self._cb_PointCloud_density,
@@ -251,7 +268,8 @@ class Settings:
                 on_update=self._cb_PCD_downsample_when_drawing,
                 subpanel="PointCloud options",
             ),
-            ParameterInt(
+            ParameterNumeric(
+                type=int,
                 name="PCD_max_points",
                 default=_PCD_max_points,
                 on_update=self._cb_PCD_max_points,
@@ -269,13 +287,15 @@ class Settings:
                 default=_draw_boundary_lines,
                 on_update=self._cb_draw_boundary_lines,
             ),
-            ParameterFloat(
+            ParameterNumeric(
+                type=float,
                 name="line_width",
                 default=_line_width,
                 on_update=self._cb_line_width,
                 limits=(1.5, 15),
             ),
-            ParameterFloat(
+            ParameterNumeric(
+                type=float,
                 name="PointCloud_point_size",
                 default=_PointCloud_point_size,
                 on_update=self._cb_PointCloud_point_size,
@@ -298,7 +318,8 @@ class Settings:
                 on_update=self._cb_verbose,
                 subpanel="Debug",
             ),
-            ParameterFloat(
+            ParameterNumeric(
+                type=float,
                 name="BBOX_expand",
                 default=_BBOX_expand,
                 limits=(0, 2),
@@ -329,7 +350,8 @@ class Settings:
                 on_update=self._cb_show_BBOX_axes,
                 subpanel="Bounding Box and axes",
             ),
-            ParameterFloat(
+            ParameterNumeric(
+                type=float,
                 name="BBOX_axes_width",
                 default=_BBOX_axes_width,
                 on_update=self._cb_BBOX_axes_width,
@@ -354,40 +376,46 @@ class Settings:
                 on_update=self._cb_paint_random,
                 subpanel="Color",
             ),
-            ParameterFloat(
+            ParameterNumeric(
+                type=float,
                 name="random_color_brightness",
                 default=_random_color_brightness,
                 on_update=self._cb_random_color_brightness,
                 limits=(0.001, 1),
                 subpanel="Color",
             ),
-            ParameterFloat(
+            ParameterNumeric(
+                type=float,
                 name="original_color_brightness",
                 default=_original_color_brightness,
                 on_update=self._cb_original_color_brightness,
                 limits=(0.001, 1),
                 subpanel="Color",
             ),
-            ParameterFloat(
+            ParameterNumeric(
+                type=float,
                 name="highlight_ratio",
                 default=_highlight_ratio,
                 on_update=self._cb_highlight_ratio,
                 limits=(0.01, 1),
                 subpanel="Color",
             ),
-            ParameterInt(
+            ParameterNumeric(
+                type=int,
                 name="number_points_distance",
                 default=_number_points_distance,
                 on_update=self._cb_number_points_distance,
                 limits=(5, 50),
             ),
-            ParameterInt(
+            ParameterNumeric(
+                type=int,
                 name="number_undo_states",
                 default=_number_undo_states,
                 on_update=self._cb_number_undo_states,
                 limits=(1, 10),
             ),
-            ParameterInt(
+            ParameterNumeric(
+                type=int,
                 name="number_redo_states",
                 default=_number_redo_states,
                 on_update=self._cb_number_redo_states,

@@ -14,8 +14,10 @@ from .parameter_panel import ParameterPanel
 
 from .parameter_bool import ParameterBool
 from .parameter_options import ParameterOptions
-from .parameter_float import ParameterFloat
-from .parameter_int import ParameterInt
+
+# from .parameter_float import ParameterFloat
+# from .parameter_int import ParameterInt
+from .parameter_numeric import ParameterNumeric
 from .parameter_color import ParameterColor
 from .parameter_ndarray import ParameterNDArray
 
@@ -23,10 +25,10 @@ PARAMETER_TYPE_DICTIONARY = {
     None: ParameterBase,
     bool: ParameterBool,
     "bool": ParameterBool,
-    int: ParameterInt,
-    "int": ParameterInt,
-    float: ParameterFloat,
-    "float": ParameterFloat,
+    int: ParameterNumeric,
+    "int": ParameterNumeric,
+    float: ParameterNumeric,
+    "float": ParameterNumeric,
     list: ParameterOptions,
     "list": ParameterOptions,
     ndarray: ParameterNDArray,

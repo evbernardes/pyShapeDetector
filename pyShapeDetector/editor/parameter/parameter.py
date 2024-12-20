@@ -239,7 +239,7 @@ class ParameterBase(ABC, Generic[T]):
         parameter_descriptor = parameter_descriptor.copy()
         if "name" not in parameter_descriptor:
             parameter_descriptor["name"] = key
-        _type = parameter_descriptor.pop("type", None)
+        _type = parameter_descriptor.get("type", None)
         if _type not in PARAMETER_TYPE_DICTIONARY:
             raise ValueError(f"{_type} does not correspond to valid Parameter type.")
 
