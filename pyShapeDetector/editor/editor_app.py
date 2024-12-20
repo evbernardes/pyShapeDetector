@@ -272,8 +272,9 @@ class Editor:
             self._internal_functions._dict["Quit"].callback()
             return False
 
-        for window in self._temp_windows:
-            window.close()
+        # for window in self._temp_windows:
+        #     window.close()
+        self.app.quit()
         return True
 
     def _on_mouse(self, event):
