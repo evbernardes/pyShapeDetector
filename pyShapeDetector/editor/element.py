@@ -157,23 +157,23 @@ class Element(ABC):
         if self.raw is None or isinstance(self.raw, geometry.LineSet):
             return None
 
-        BBOX_expand = self._settings.get_setting("BBOX_expand")
+        bbox_expand = self._settings.get_setting("bbox_expand")
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             try:
                 bbox_original = self.raw.get_oriented_bounding_box()
-                bbox = geometry.OrientedBoundingBox(bbox_original).expanded(BBOX_expand)
+                bbox = geometry.OrientedBoundingBox(bbox_original).expanded(bbox_expand)
             except Exception:
                 bbox_original = self.raw.get_axis_aligned_bounding_box()
                 bbox = geometry.AxisAlignedBoundingBox(bbox_original).expanded(
-                    BBOX_expand
+                    bbox_expand
                 )
 
         if self.is_selected:
-            bbox.color = self._settings.get_setting("color_BBOX_selected")
+            bbox.color = self._settings.get_setting("color_bbox_selected")
         else:
-            bbox.color = self._settings.get_setting("color_BBOX_unselected")
+            bbox.color = self._settings.get_setting("color_bbox_unselected")
 
         return bbox
 

@@ -29,8 +29,7 @@ class ParameterNDArray(ParameterBase):
     type
     value
     type_name
-    name
-    pretty_name
+    label
     subpanel
     on_update
 
@@ -76,7 +75,7 @@ class ParameterNDArray(ParameterBase):
     def value(self, new_value):
         if new_value is None:
             raise TypeError(
-                f"Parameter {self.name} of type {self.type_name} requires default value."
+                f"Parameter {self.label} of type {self.type_name} requires default value."
             )
 
         new_value = np.asarray(new_value)
@@ -90,7 +89,7 @@ class ParameterNDArray(ParameterBase):
         if new_value.ndim > 2:
             raise ValueError(
                 "Only shapes up to 2 dimentions are accepted, got "
-                f"{new_value.shape} for parameter {self.name}"
+                f"{new_value.shape} for parameter {self.label}"
             )
         self._ndim = new_value.ndim
         self._shape = new_value.shape
@@ -130,7 +129,7 @@ class ParameterNDArray(ParameterBase):
         ]
         self._update_internal_element()
 
-        label = gui.Label(self.pretty_name)
+        label = gui.Label(self.label)
 
         text_edits = self.internal_element
 
@@ -157,13 +156,13 @@ class ParameterNDArray(ParameterBase):
 
     def __init__(
         self,
-        name: str,
+        label: str,
         default: Union[list, tuple, np.ndarray] = None,
         on_update: Callable = None,
         subpanel: Union[str, None] = None,
         **other_kwargs,
     ):
-        super().__init__(name=name, on_update=on_update, subpanel=subpanel)
+        super().__init__(label=label, on_update=on_update, subpanel=subpanel)
 
         self.value = default
         self._warn_unused_parameters(other_kwargs)

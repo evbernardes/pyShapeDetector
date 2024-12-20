@@ -249,7 +249,7 @@ extensions.append(
             "shapes_per_cluster": {"type": int, "default": 1, "limits": (1, 50)},
             "inliers_min": {"type": int, "default": 100, "limits": (1, 1000)},
             "use_adaptative_threshold": {
-                "name": "Use adaptative (instead of threshold_distance_ratio)",
+                "label": "Use adaptative (instead of threshold_distance_ratio)",
                 "type": bool,
                 "subpanel": "RANSAC Options",
             },

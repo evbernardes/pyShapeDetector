@@ -17,8 +17,18 @@ from .settings import Settings
 VALID_INPUTS = ("none", "current", "selected", "global")
 
 
-def get_pretty_name(func):
-    return func.__name__.replace("_", " ").title()
+def _get_pretty_name(label: Union[Callable, str]):
+    if callable(label):
+        label = label.__name__
+    words = label.replace("_", " ").split()
+    result = []
+    for word in words:
+        if word.isupper():  # Keep existing UPPERCASE values as is
+            result.append(word)
+        else:  # Capitalize other words
+            result.append(word.capitalize())
+
+    return " ".join(result)
 
 
 class Extension:
@@ -79,7 +89,7 @@ class Extension:
         return int(chr(self.hotkey))
 
     def _set_name(self, descriptor: dict):
-        name = descriptor.get("name", get_pretty_name(self.function))
+        name = descriptor.get("name", _get_pretty_name(self.function))
         if not isinstance(name, str):
             raise TypeError("Name expected to be string.")
         self._name = name
@@ -165,6 +175,9 @@ class Extension:
                 )
 
         for key, parameter_descriptor in parameter_descriptors.items():
+            if "label" not in parameter_descriptor:
+                parameter_descriptor["label"] = _get_pretty_name(key)
+
             if parameter_descriptor["type"] == "preference":
                 if key not in settings._dict:
                     raise KeyError(

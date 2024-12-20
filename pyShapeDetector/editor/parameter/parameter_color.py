@@ -21,8 +21,7 @@ class ParameterColor(ParameterBase):
     type
     value
     type_name
-    name
-    pretty_name
+    label
     subpanel
     on_update
 
@@ -71,7 +70,7 @@ class ParameterColor(ParameterBase):
             self._value = gui.Color((0, 0, 0, 1))
         else:
             raise TypeError(
-                f"Value of parameter {self.name} of type {self.type_name} should "
+                f"Value of parameter {self.label} of type {self.type_name} should "
                 f"be a gui.Color, a list or tuple of 3 values, got {values}."
             )
         self._update_internal_element()
@@ -91,7 +90,7 @@ class ParameterColor(ParameterBase):
     def get_gui_widget(self, font_size):
         self._internal_element = gui.ColorEdit()
         self._update_internal_element()
-        label = gui.Label(self.pretty_name)
+        label = gui.Label(self.label)
 
         color_selector = self.internal_element
         color_selector.set_on_value_changed(self._callback)
@@ -105,12 +104,12 @@ class ParameterColor(ParameterBase):
 
     def __init__(
         self,
-        name: str,
+        label: str,
         default: Union[list, tuple, np.ndarray] = None,
         on_update: Callable = None,
         subpanel: Union[str, None] = None,
         **other_kwargs,
     ):
-        super().__init__(name=name, on_update=on_update, subpanel=subpanel)
+        super().__init__(label=label, on_update=on_update, subpanel=subpanel)
         self.value = default
         self._warn_unused_parameters(other_kwargs)

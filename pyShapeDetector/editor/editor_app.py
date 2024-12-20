@@ -453,7 +453,7 @@ class Editor:
             self._current_bbox_axes
 
         if self.elements.current_element is None or not self._settings.get_setting(
-            "show_BBOX"
+            "show_bbox"
         ):
             self._current_bbox = None
             return
@@ -468,13 +468,13 @@ class Editor:
             )
 
         if self._current_bbox is not None and self._settings.get_setting(
-            "show_BBOX_axes"
+            "show_bbox_axes"
         ):
             center = self._current_bbox.center
             extent = self._current_bbox.extent
             R = self._current_bbox.R
             radius = (
-                self._settings.get_setting("BBOX_axes_width") * self._window.scaling
+                self._settings.get_setting("bbox_axes_width") * self._window.scaling
             )
 
             min_bound = center - extent.dot(R.T) / 2

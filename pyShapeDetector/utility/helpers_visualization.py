@@ -671,7 +671,7 @@ def apply_function_manually(
 def select_combinations_manually(
     elements,
     return_grouped=False,
-    BBOX_expand=0.0,
+    bbox_expand=0.0,
     paint_selected=True,
     window_name="",
     **camera_options,
@@ -719,7 +719,7 @@ def select_combinations_manually(
             elements[i + 1 :],
             fixed_elements=elements_fused[i],
             window_name=f"{window_name}Element {i}",
-            BBOX_expand=BBOX_expand,
+            bbox_expand=bbox_expand,
             paint_selected=paint_selected,
             return_finish_flag=True,
             **camera_options,

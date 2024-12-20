@@ -34,8 +34,7 @@ class ParameterBase(ABC, Generic[T]):
     type
     value
     type_name
-    name
-    pretty_name
+    label
     subpanel
     on_update
 
@@ -54,7 +53,7 @@ class ParameterBase(ABC, Generic[T]):
     """
 
     _type = None.__class__
-    _valid_arguments = ["name", "type", "default", "on_update", "subpanel"]
+    _valid_arguments = ["label", "type", "default", "on_update", "subpanel"]
 
     @property
     def internal_element(self):
@@ -85,28 +84,28 @@ class ParameterBase(ABC, Generic[T]):
         return self._type.__name__
 
     @property
-    def name(self) -> str:
-        return self._name
+    def label(self) -> str:
+        return self._label
 
-    @name.setter
-    def name(self, new_name: str):
-        if not isinstance(new_name, str):
+    @label.setter
+    def label(self, new_label: str):
+        if not isinstance(new_label, str):
             raise TypeError(
-                f"Expected string as name for Parameter, got {type(new_name)}."
+                f"Expected string as label for Parameter, got {type(new_label)}."
             )
-        self._name = new_name
+        self._label = new_label
 
-    @property
-    def pretty_name(self) -> str:
-        words = self.name.replace("_", " ").split()
-        result = []
-        for word in words:
-            if word.isupper():  # Keep existing UPPERCASE values as is
-                result.append(word)
-            else:  # Capitalize other words
-                result.append(word.capitalize())
+    # @property
+    # def label(self) -> str:
+    #     words = self.label.replace("_", " ").split()
+    #     result = []
+    #     for word in words:
+    #         if word.isupper():  # Keep existing UPPERCASE values as is
+    #             result.append(word)
+    #         else:  # Capitalize other words
+    #             result.append(word.capitalize())
 
-        return " ".join(result)
+    #     return " ".join(result)
 
     @property
     def subpanel(self) -> str:
@@ -165,18 +164,6 @@ class ParameterBase(ABC, Generic[T]):
     @abstractmethod
     def get_gui_widget(self, font_size: float) -> gui.Widget:
         pass
-        # label = gui.Label(self.pretty_name)
-
-        # # Text field for general inputs
-        # text_edit = gui.TextEdit()
-        # # text_edit.placeholder_text = str(self.value)
-        # text_edit.set_on_value_changed(lambda value: self._callback(value, text_edit))
-
-        # element = gui.VGrid(2, 0.25 * font_size)
-        # element.add_child(label)
-        # element.add_child(text_edit)
-
-        # return element
 
     def create_reference(self: T) -> T:
         """Creates a new unusable copy of the parameter that is updated when
@@ -194,7 +181,7 @@ class ParameterBase(ABC, Generic[T]):
         }
         kwargs["default"] = self.value
 
-        new_parameter = ParameterBase.create_from_dict(self.name, kwargs)
+        new_parameter = ParameterBase.create_from_dict(self.label, kwargs)
         new_parameter._enable_internal_element(False)
 
         new_parameter._is_reference = True
@@ -209,7 +196,7 @@ class ParameterBase(ABC, Generic[T]):
 
             warnings.warn(
                 f"Ignoring unexpected '{key}' descriptor in parameter "
-                f"'{self.name}' of type '{self.type_name}'."
+                f"'{self.label}' of type '{self.type_name}'."
             )
 
     @staticmethod
@@ -237,9 +224,11 @@ class ParameterBase(ABC, Generic[T]):
         from .__init__ import PARAMETER_TYPE_DICTIONARY
 
         parameter_descriptor = parameter_descriptor.copy()
-        if "name" not in parameter_descriptor:
-            parameter_descriptor["name"] = key
+
+        if "label" not in parameter_descriptor:
+            parameter_descriptor["label"] = key
         _type = parameter_descriptor.get("type", None)
+
         if _type not in PARAMETER_TYPE_DICTIONARY:
             raise ValueError(f"{_type} does not correspond to valid Parameter type.")
 
@@ -249,13 +238,13 @@ class ParameterBase(ABC, Generic[T]):
 
     def __init__(
         self,
-        name: str,
+        label: str,
         on_update: Callable = None,
         subpanel: Union[str, None] = None,
     ):
         self._references = []
         self._is_reference = False
-        self.name = name
+        self.label = label
         self.on_update = on_update
         self.subpanel = subpanel
         self._internal_element = None

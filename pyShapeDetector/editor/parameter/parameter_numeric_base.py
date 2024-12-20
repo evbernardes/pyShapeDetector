@@ -45,7 +45,6 @@ class ParameterNumeric(ParameterBase[type]):
         "limits",
         "limit_setter",
         "use_slider",
-        "type",
     ]
 
     def get_slider_type(self):
@@ -53,24 +52,21 @@ class ParameterNumeric(ParameterBase[type]):
             return gui.Slider.INT
         elif self.type == float:
             return gui.Slider.DOUBLE
-        else:
-            assert False
+        assert False
 
     def get_number_edit_type(self):
         if self.type == int:
             return gui.NumberEdit.INT
         elif self.type == float:
             return gui.NumberEdit.DOUBLE
-        else:
-            assert False
+        assert False
 
     def update_widget(self, value):
-        if self.type is int:
+        if self.type == int:
             self.internal_element.int_value = self.value
-        elif self.type is float:
+        elif self.type == float:
             self.internal_element.double_value = self.value
-        else:
-            assert False
+        assert False
 
     @property
     def use_slider(self):
@@ -193,7 +189,6 @@ class ParameterNumeric(ParameterBase[type]):
         limits: Union[list, tuple] = None,
         default: int = None,
         use_slider: Union[bool, None] = None,
-        type: Union[type, None] = None,
         on_update: Callable = None,
         subpanel: Union[str, None] = None,
         **other_kwargs,
@@ -206,17 +201,6 @@ class ParameterNumeric(ParameterBase[type]):
                 f"Ignoring limit_setter for parameter '{self.label}'."
             )
             limit_setter = None
-
-        if type is None:
-            if isinstance(default, int):
-                type = int
-            elif isinstance(default, float):
-                type = float
-            else:
-                raise ValueError(
-                    "Expected int or float values for Numeric parameter, got {value}."
-                )
-        self._type = type
 
         self.limit_setter = limit_setter
         self.limits = limits

@@ -16,9 +16,12 @@ from .parameter import (
     ParameterPanel,
 )
 
-COLOR_BBOX_SELECTED_DEFAULT = np.array([0, 204.8, 0.0]) / 255
-# color_BBOX_unselected_DEFAULT = np.array([255.0, 0.0, 0.0]) / 255
-COLOR_BBOX_UNSELECTED_DEFAULT = np.array([146.0, 3.0, 3.0]) / 255
+# Uncomment this to create extension for testing reference parameters
+TEST_PARAMETER_REFERENCES = False
+
+color_bbox_selected_DEFAULT = np.array([0, 204.8, 0.0]) / 255
+# color_bbox_unselected_DEFAULT = np.array([255.0, 0.0, 0.0]) / 255
+color_bbox_unselected_DEFAULT = np.array([146.0, 3.0, 3.0]) / 255
 COLOR_SELECTED_DEFAULT = np.array([178.5, 163.8, 0.0]) / 255
 COLOR_UNSELECTED_DEFAULT = np.array([76.5, 76.5, 76.5]) / 255
 
@@ -36,78 +39,18 @@ _color_selected = gui.Color(*COLOR_SELECTED_DEFAULT)
 _paint_random = False
 _debug = True
 _verbose = False
-_BBOX_expand = 0.01
-_color_BBOX_selected = gui.Color(*COLOR_BBOX_SELECTED_DEFAULT)
-_color_BBOX_unselected = gui.Color(*COLOR_BBOX_UNSELECTED_DEFAULT)
-_show_BBOX = True
-_show_BBOX_axes = False
-_BBOX_axes_width = 0.01
+_bbox_expand = 0.01
+_color_bbox_selected = gui.Color(*color_bbox_selected_DEFAULT)
+_color_bbox_unselected = gui.Color(*color_bbox_unselected_DEFAULT)
+_show_bbox = True
+_show_bbox_axes = False
+_bbox_axes_width = 0.01
 _number_points_distance = 30
 _random_color_brightness = 0.5
 _original_color_brightness = 0.5
 _highlight_ratio = 1.0
 _number_undo_states = 10
 _number_redo_states = 5
-
-
-###################################################
-# Test extension for testing reference parameters #
-# Uncomment and this and the init when testing    #
-###################################################
-# def test(
-#     test_bool,
-#     test_int,
-#     test_int_no_slider,
-#     test_int_no_limits,
-#     test_float,
-#     test_float_no_slider,
-#     test_float_no_limits,
-#     test_color,
-#     test_options,
-#     test_int_shape_2_3,
-#     test_float_shape_2_3,
-#     test_array_int_ndim1,
-#     test_array_shape_7_3,
-# ):
-#     print("************")
-#     print(f"test_bool: {test_bool}")
-#     print(f"test_int: {test_int}")
-#     print(f"test_int_no_slider: {test_int_no_slider}")
-#     print(f"test_int_no_limits: {test_int_no_limits}")
-#     print(f"test_float: {test_float}")
-#     print(f"test_float_no_slider: {test_float_no_slider}")
-#     print(f"test_float_no_limits: {test_float_no_limits}")
-#     print(f"test_color: {test_color}")
-#     print(f"test_options: {test_options}")
-#     print(f"test_int_shape_2_3: {test_int_shape_2_3}")
-#     print(f"test_float_shape_2_3 {test_float_shape_2_3}")
-#     print(f"test_array_int_ndim1: {test_array_int_ndim1}")
-#     print(f"test_array_shape_7_3: {test_array_shape_7_3}")
-#     print("************")
-#     return []
-
-
-# test_extension = {
-#     "function": test,
-#     "name": "Testing reference widgets",
-#     "menu": "test",
-#     "inputs": None,
-#     "parameters": {
-#         "test_bool": {"type": "preference"},
-#         "test_int": {"type": "preference"},
-#         "test_int_no_slider": {"type": "preference"},
-#         "test_int_no_limits": {"type": "preference"},
-#         "test_float": {"type": "preference"},
-#         "test_float_no_slider": {"type": "preference"},
-#         "test_float_no_limits": {"type": "preference"},
-#         "test_color": {"type": "preference"},
-#         "test_options": {"type": "preference"},
-#         "test_int_shape_2_3": {"type": "preference"},
-#         "test_float_shape_2_3": {"type": "preference"},
-#         "test_array_int_ndim1": {"type": "preference"},
-#         "test_array_shape_7_3": {"type": "preference"},
-#     },
-# }
 
 
 class Settings:
@@ -157,273 +100,180 @@ class Settings:
         print("[DEBUG] " + text)
 
     def __init__(self, editor_instance: "Editor", menu="Preferences", **kwargs):
-        options = [
-            ###########################################
-            # Test Parameters, uncomment when testing #
-            ###########################################
-            # ParameterBool(
-            #     name="test_bool",
-            #     default=True,
-            #     on_update=lambda x: print(x),
-            #     subpanel="test",
-            # ),
-            # ParameterNumeric(
-            #     type=int,
-            #     name="test_int",
-            #     default=3,
-            #     limits=(-10, 10),
-            #     on_update=lambda x: print(x),
-            #     subpanel="test",
-            # ),
-            # ParameterNumeric(
-            #     type=int,
-            #     name="test_int_no_slider",
-            #     default=3,
-            #     limits=(-10, 10),
-            #     use_slider=False,
-            #     on_update=lambda x: print(x),
-            #     subpanel="test",
-            # ),
-            # ParameterNumeric(
-            #     type=int,
-            #     name="test_int_no_limits",
-            #     default=2,
-            #     on_update=lambda x: print(x),
-            #     subpanel="test",
-            # ),
-            # ParameterNumeric(
-            #     type=float,
-            #     name="test_float",
-            #     default=3,
-            #     limits=(-10, 10),
-            #     on_update=lambda x: print(x),
-            #     subpanel="test",
-            # ),
-            # ParameterNumeric(
-            #     type=float,
-            #     name="test_float_no_slider",
-            #     default=3,
-            #     limits=(-10, 10),
-            #     use_slider=False,
-            #     on_update=lambda x: print(x),
-            #     subpanel="test",
-            # ),
-            # ParameterNumeric(
-            #     type=float,
-            #     name="test_float_no_limits",
-            #     default=2,
-            #     on_update=lambda x: print(x),
-            #     subpanel="test",
-            # ),
-            # ParameterColor(
-            #     name="test_color",
-            #     default=(0.2, 0.2, 0.2),
-            #     on_update=lambda x: print(x),
-            #     subpanel="test",
-            # ),
-            # ParameterOptions(
-            #     name="test_options",
-            #     options=["a", "b", "c"],
-            #     default="c",
-            #     on_update=lambda x: print(x),
-            #     subpanel="test",
-            # ),
-            # ParameterNDArray(
-            #     name="test_int_shape_2_3",
-            #     default=[[0, 0, 1], [0, 20, 0]],
-            #     on_update=lambda x: print(x),
-            #     subpanel="test",
-            # ),
-            # ParameterNDArray(
-            #     name="test_float_shape_2_3",
-            #     default=[[0, 0, 1], [0.0, 20, 0]],
-            #     on_update=lambda x: print(x),
-            #     subpanel="test",
-            # ),
-            # ParameterNDArray(
-            #     name="test_array_int_ndim1",
-            #     default=[0, 0, 1],
-            #     on_update=lambda x: print(x),
-            #     subpanel="test",
-            # ),
-            # ParameterNDArray(
-            #     name="test_array_shape_7_3",
-            #     default=np.zeros((7, 3)),
-            #     on_update=lambda x: print(x),
-            #     subpanel="test",
-            # ),
-            ##########################
-            # End of Test Parameters #
-            ##########################
-            ParameterNumeric(
+        self._dict = {
+            "PointCloud_density": ParameterNumeric(
                 type=float,
-                name="PointCloud_density",
+                label="Density",
                 default=_PointCloud_density,
                 on_update=self._cb_PointCloud_density,
                 subpanel="PointCloud options",
             ),
-            ParameterBool(
-                name="PCD_downsample_when_drawing",
+            "PCD_downsample_when_drawing": ParameterBool(
+                label="Downsample",
                 default=_PCD_downsample_when_drawing,
                 on_update=self._cb_PCD_downsample_when_drawing,
                 subpanel="PointCloud options",
             ),
-            ParameterNumeric(
+            "PCD_max_points": ParameterNumeric(
                 type=int,
-                name="PCD_max_points",
+                label="Max points",
                 default=_PCD_max_points,
                 on_update=self._cb_PCD_max_points,
                 limits=(500000, 10000000),
                 subpanel="PointCloud options",
             ),
-            ParameterBool(
-                name="PCD_use_Tensor",
+            "PCD_use_Tensor": ParameterBool(
+                label="Use Tensor",
                 default=_PCD_use_Tensor,
                 on_update=self._cb_PCD_use_Tensor,
                 subpanel="PointCloud options",
             ),
-            ParameterBool(
-                name="draw_boundary_lines",
-                default=_draw_boundary_lines,
-                on_update=self._cb_draw_boundary_lines,
-            ),
-            ParameterNumeric(
+            "PointCloud_point_size": ParameterNumeric(
                 type=float,
-                name="line_width",
-                default=_line_width,
-                on_update=self._cb_line_width,
-                limits=(1.5, 15),
-            ),
-            ParameterNumeric(
-                type=float,
-                name="PointCloud_point_size",
+                label="Point Size",
                 default=_PointCloud_point_size,
                 on_update=self._cb_PointCloud_point_size,
                 limits=(3, 15),
             ),
-            ParameterBool(
-                name="mesh_show_back_face",
+            "draw_boundary_lines": ParameterBool(
+                label="Draw Boundary Lines",
+                default=_draw_boundary_lines,
+                on_update=self._cb_draw_boundary_lines,
+            ),
+            "line_width": ParameterNumeric(
+                type=float,
+                label="Line Width",
+                default=_line_width,
+                on_update=self._cb_line_width,
+                limits=(1.5, 15),
+            ),
+            "mesh_show_back_face": ParameterBool(
+                label="Show meshes' back face",
                 default=_mesh_show_back_face,
                 on_update=self._cb_mesh_show_back_face,
             ),
-            ParameterBool(
-                name="debug",
+            "debug": ParameterBool(
+                label="Debug",
                 default=_debug,
                 on_update=self._cb_debug,
                 subpanel="Debug",
             ),
-            ParameterBool(
-                name="verbose",
+            "verbose": ParameterBool(
+                label="Verbose",
                 default=_verbose,
                 on_update=self._cb_verbose,
                 subpanel="Debug",
             ),
-            ParameterNumeric(
+            "bbox_expand": ParameterNumeric(
                 type=float,
-                name="BBOX_expand",
-                default=_BBOX_expand,
+                label="Expand BBOX %",
+                default=_bbox_expand,
                 limits=(0, 2),
-                on_update=self._cb_BBOX_expand,
+                on_update=self._cb_bbox_expand,
                 subpanel="Bounding Box and axes",
             ),
-            ParameterColor(
-                name="color_BBOX_selected",
-                default=_color_BBOX_selected,
-                on_update=self._cb_color_BBOX_selected,
+            "color_bbox_selected": ParameterColor(
+                label="Color BBOX selected",
+                default=_color_bbox_selected,
+                on_update=self._cb_color_bbox_selected,
                 subpanel="Bounding Box and axes",
             ),
-            ParameterColor(
-                name="color_BBOX_unselected",
-                default=_color_BBOX_unselected,
-                on_update=self._cb_color_BBOX_unselected,
+            "color_bbox_unselected": ParameterColor(
+                label="Color BBOX unselected",
+                default=_color_bbox_unselected,
+                on_update=self._cb_color_bbox_unselected,
                 subpanel="Bounding Box and axes",
             ),
-            ParameterBool(
-                name="show_BBOX",
-                default=_show_BBOX,
-                on_update=self._cb_show_BBOX,
+            "show_bbox": ParameterBool(
+                label="Show BBOX",
+                default=_show_bbox,
+                on_update=self._cb_show_bbox,
                 subpanel="Bounding Box and axes",
             ),
-            ParameterBool(
-                name="show_BBOX_axes",
-                default=_show_BBOX_axes,
-                on_update=self._cb_show_BBOX_axes,
+            "show_bbox_axes": ParameterBool(
+                label="Show BBOX's axes",
+                default=_show_bbox_axes,
+                on_update=self._cb_show_bbox_axes,
                 subpanel="Bounding Box and axes",
             ),
-            ParameterNumeric(
+            "bbox_axes_width": ParameterNumeric(
                 type=float,
-                name="BBOX_axes_width",
-                default=_BBOX_axes_width,
-                on_update=self._cb_BBOX_axes_width,
+                label="BBOX's axes width",
+                default=_bbox_axes_width,
+                on_update=self._cb_bbox_axes_width,
                 subpanel="Bounding Box and axes",
                 limits=(0.01, 0.5),
             ),
-            ParameterBool(
-                name="paint_selected",
+            "paint_selected": ParameterBool(
+                label="Paint when Selected",
                 default=_paint_selected,
                 on_update=self._cb_paint_selected,
                 subpanel="Color",
             ),
-            ParameterColor(
-                name="color_selected",
+            "color_selected": ParameterColor(
+                label="Selected color",
                 default=_color_selected,
                 on_update=self._cb_color_selected,
                 subpanel="Color",
             ),
-            ParameterBool(
-                name="paint_random",
+            "paint_random": ParameterBool(
+                label="Paint with random colors",
                 default=_paint_random,
                 on_update=self._cb_paint_random,
                 subpanel="Color",
             ),
-            ParameterNumeric(
+            "random_color_brightness": ParameterNumeric(
                 type=float,
-                name="random_color_brightness",
+                label="Random Color Brightness",
                 default=_random_color_brightness,
                 on_update=self._cb_random_color_brightness,
                 limits=(0.001, 1),
                 subpanel="Color",
             ),
-            ParameterNumeric(
+            "original_color_brightness": ParameterNumeric(
                 type=float,
-                name="original_color_brightness",
+                label="Original Color Brightness",
                 default=_original_color_brightness,
                 on_update=self._cb_original_color_brightness,
                 limits=(0.001, 1),
                 subpanel="Color",
             ),
-            ParameterNumeric(
+            "highlight_ratio": ParameterNumeric(
                 type=float,
-                name="highlight_ratio",
+                label="Highlight ratio",
                 default=_highlight_ratio,
                 on_update=self._cb_highlight_ratio,
                 limits=(0.01, 1),
                 subpanel="Color",
             ),
-            ParameterNumeric(
+            "number_points_distance": ParameterNumeric(
                 type=int,
-                name="number_points_distance",
+                label="Number of points distances",
                 default=_number_points_distance,
                 on_update=self._cb_number_points_distance,
                 limits=(5, 50),
             ),
-            ParameterNumeric(
+            "number_undo_states": ParameterNumeric(
                 type=int,
-                name="number_undo_states",
+                label="Number of undo states",
                 default=_number_undo_states,
                 on_update=self._cb_number_undo_states,
                 limits=(1, 10),
             ),
-            ParameterNumeric(
+            "number_redo_states": ParameterNumeric(
                 type=int,
-                name="number_redo_states",
+                label="Number of redo states",
                 default=_number_redo_states,
                 on_update=self._cb_number_redo_states,
                 limits=(1, 10),
             ),
-        ]
+        }
 
-        self._dict = {param.name: param for param in options}
+        if TEST_PARAMETER_REFERENCES:
+            for key, param in PARAMETERS_TEST_DICTIONARY.items():
+                self._dict[key] = param
+
+        # self._dict = {param.name: param for param in options}
         self._editor_instance = editor_instance
         self._menu = menu
 
@@ -453,9 +303,11 @@ class Settings:
         # Test extension for testing reference parameters #
         # Uncomment and this and the definition to test   #
         ###################################################
-        # from .extension import Extension
-        # extension = Extension(test_extension, self)
-        # extension.add_to_application(editor_instance)
+        if TEST_PARAMETER_REFERENCES:
+            from .extension import Extension
+
+            extension = Extension(test_extension, self)
+            extension.add_to_application(editor_instance)
 
     def _cb_PointCloud_density(self, value):
         pass
@@ -476,15 +328,6 @@ class Settings:
     def _cb_PCD_use_Tensor(self, value):
         self._cb_PCD_downsample_when_drawing(value)
 
-    def _cb_draw_boundary_lines(self, value):
-        self._editor_instance._update_plane_boundaries()
-
-    def _cb_line_width(self, value):
-        # line_width = self._dict["line_width"].value
-
-        self._update_materials()
-        self._editor_instance._update_extra_elements(planes_boundaries=True)
-
     def _cb_PointCloud_point_size(self, value):
         from .element import ElementPointCloud
 
@@ -497,6 +340,15 @@ class Settings:
         )[0].tolist()
         self._editor_instance.elements.update_indices(indices)
 
+    def _cb_draw_boundary_lines(self, value):
+        self._editor_instance._update_plane_boundaries()
+
+    def _cb_line_width(self, value):
+        # line_width = self._dict["line_width"].value
+
+        self._update_materials()
+        self._editor_instance._update_extra_elements(planes_boundaries=True)
+
     def _cb_mesh_show_back_face(self, value):
         # self._editor_instance._reset_elements_in_gui()
         elements = self._editor_instance.elements
@@ -508,24 +360,24 @@ class Settings:
     def _cb_verbose(self, value):
         pass
 
-    def _cb_BBOX_expand(self, value):
+    def _cb_bbox_expand(self, value):
         self._editor_instance._update_BBOX_and_axes()
 
-    def _cb_color_BBOX_selected(self, value):
+    def _cb_color_bbox_selected(self, value):
         if self._editor_instance.elements.is_current_selected:
             self._editor_instance._update_BBOX_and_axes()
 
-    def _cb_color_BBOX_unselected(self, value):
+    def _cb_color_bbox_unselected(self, value):
         if not self._editor_instance.elements.is_current_selected:
             self._editor_instance._update_BBOX_and_axes()
 
-    def _cb_show_BBOX(self, value):
+    def _cb_show_bbox(self, value):
         self._editor_instance._update_BBOX_and_axes()
 
-    def _cb_show_BBOX_axes(self, value):
+    def _cb_show_bbox_axes(self, value):
         self._editor_instance._update_BBOX_and_axes()
 
-    def _cb_BBOX_axes_width(self, value):
+    def _cb_bbox_axes_width(self, value):
         self._editor_instance._update_BBOX_and_axes()
 
     def _cb_paint_selected(self, value):
@@ -634,3 +486,143 @@ class Settings:
         self._panel.visible = not self._panel.visible
         menubar.set_checked(self._preferences_binding._menu_id, self._panel.visible)
         window.set_needs_layout()
+
+
+###########################################
+# Test Parameters, uncomment when testing #
+###########################################
+PARAMETERS_TEST_DICTIONARY = {
+    "test_bool": ParameterBool(
+        label="test_bool",
+        default=True,
+        on_update=lambda x: print(x),
+        subpanel="test",
+    ),
+    "test_int": ParameterNumeric(
+        type=int,
+        label="test_int",
+        default=3,
+        limits=(-10, 10),
+        on_update=lambda x: print(x),
+        subpanel="test",
+    ),
+    "test_int_no_slider": ParameterNumeric(
+        type=int,
+        label="test_int_no_slider",
+        default=3,
+        limits=(-10, 10),
+        use_slider=False,
+        on_update=lambda x: print(x),
+        subpanel="test",
+    ),
+    "test_int_no_limits": ParameterNumeric(
+        type=int,
+        label="test_int_no_limits",
+        default=2,
+        on_update=lambda x: print(x),
+        subpanel="test",
+    ),
+    "test_float": ParameterNumeric(
+        type=float,
+        label="test_float",
+        default=3,
+        limits=(-10, 10),
+        on_update=lambda x: print(x),
+        subpanel="test",
+    ),
+    "test_float_no_slider": ParameterNumeric(
+        type=float,
+        label="test_float_no_slider",
+        default=3,
+        limits=(-10, 10),
+        use_slider=False,
+        on_update=lambda x: print(x),
+        subpanel="test",
+    ),
+    "test_float_no_limits": ParameterNumeric(
+        type=float,
+        label="test_float_no_limits",
+        default=2,
+        on_update=lambda x: print(x),
+        subpanel="test",
+    ),
+    "test_color": ParameterColor(
+        label="test_color",
+        default=(0.2, 0.2, 0.2),
+        on_update=lambda x: print(x),
+        subpanel="test",
+    ),
+    "test_options": ParameterOptions(
+        label="test_options",
+        options=["a", "b", "c"],
+        default="c",
+        on_update=lambda x: print(x),
+        subpanel="test",
+    ),
+    "test_int_shape_2_3": ParameterNDArray(
+        label="test_int_shape_2_3",
+        default=[[0, 0, 1], [0, 20, 0]],
+        on_update=lambda x: print(x),
+        subpanel="test",
+    ),
+    "test_float_shape_2_3": ParameterNDArray(
+        label="test_float_shape_2_3",
+        default=[[0, 0, 1], [0.0, 20, 0]],
+        on_update=lambda x: print(x),
+        subpanel="test",
+    ),
+    "test_array_int_ndim1": ParameterNDArray(
+        label="test_array_int_ndim1",
+        default=[0, 0, 1],
+        on_update=lambda x: print(x),
+        subpanel="test",
+    ),
+    "test_array_shape_7_3": ParameterNDArray(
+        label="test_array_shape_7_3",
+        default=np.zeros((7, 3)),
+        on_update=lambda x: print(x),
+        subpanel="test",
+    ),
+}
+
+
+def test_function(
+    test_bool,
+    test_int,
+    test_int_no_slider,
+    test_int_no_limits,
+    test_float,
+    test_float_no_slider,
+    test_float_no_limits,
+    test_color,
+    test_options,
+    test_int_shape_2_3,
+    test_float_shape_2_3,
+    test_array_int_ndim1,
+    test_array_shape_7_3,
+):
+    print("************")
+    print(f"test_bool: {test_bool}")
+    print(f"test_int: {test_int}")
+    print(f"test_int_no_slider: {test_int_no_slider}")
+    print(f"test_int_no_limits: {test_int_no_limits}")
+    print(f"test_float: {test_float}")
+    print(f"test_float_no_slider: {test_float_no_slider}")
+    print(f"test_float_no_limits: {test_float_no_limits}")
+    print(f"test_color: {test_color}")
+    print(f"test_options: {test_options}")
+    print(f"test_int_shape_2_3: {test_int_shape_2_3}")
+    print(f"test_float_shape_2_3 {test_float_shape_2_3}")
+    print(f"test_array_int_ndim1: {test_array_int_ndim1}")
+    print(f"test_array_shape_7_3: {test_array_shape_7_3}")
+    print("************")
+    return []
+
+
+test_extension = {
+    "function": test_function,
+    "name": "Testing reference widgets",
+    "menu": "Test",
+    "inputs": None,
+    "parameters": {key: {"type": "preference"} for key in PARAMETERS_TEST_DICTIONARY},
+}

@@ -22,8 +22,7 @@ class ParameterOptions(ParameterBase[list]):
     type
     value
     type_name
-    name
-    pretty_name
+    label
     subpanel
     on_update
 
@@ -53,7 +52,7 @@ class ParameterOptions(ParameterBase[list]):
     def options(self, new_options):
         if not isinstance(new_options, (tuple, list)) or len(new_options) == 0:
             raise ValueError(
-                f"Parameter {self.name} requires non-empty of values for "
+                f"Parameter {self.label} requires non-empty of values for "
                 f"options, got {new_options}."
             )
 
@@ -63,7 +62,7 @@ class ParameterOptions(ParameterBase[list]):
     def value(self, new_value):
         if new_value not in self.options:
             raise ValueError(
-                f"Value '{new_value}' for parameter '{self.name}' is not in "
+                f"Value '{new_value}' for parameter '{self.label}' is not in "
                 f"options list {self.options}."
             )
 
@@ -89,7 +88,7 @@ class ParameterOptions(ParameterBase[list]):
             self._internal_element.add_item(str(option))
         self._update_internal_element()
 
-        label = gui.Label(self.pretty_name)
+        label = gui.Label(self.label)
 
         combobox = self.internal_element
         combobox.set_on_selection_changed(self._callback)
@@ -103,14 +102,14 @@ class ParameterOptions(ParameterBase[list]):
 
     def __init__(
         self,
-        name: str,
+        label: str,
         options: list,
         default=None,
         on_update: Callable = None,
         subpanel: Union[str, None] = None,
         **other_kwargs,
     ):
-        super().__init__(name=name, on_update=on_update, subpanel=subpanel)
+        super().__init__(label=label, on_update=on_update, subpanel=subpanel)
         self.options = options
 
         if default is None:
