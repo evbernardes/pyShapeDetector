@@ -337,7 +337,7 @@ class Extension:
             return
 
         if self._cancelled:
-            editor_instance._settings.print_debug(
+            settings.print_debug(
                 f"Extensions '{self.name}' thread ended, but call was canceled. "
                 "Ignoring output."
             )
