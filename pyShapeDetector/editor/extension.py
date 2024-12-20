@@ -461,10 +461,13 @@ class Extension:
 
         apply = gui.Button("Apply")
         apply.set_on_clicked(_on_apply_button)
+        apply.vertical_padding_em = 0
         close = gui.Button("Close")
         close.set_on_clicked(_on_close_button)
+        close.vertical_padding_em = 0
         refresh = gui.Button("Refresh limits")
         refresh.set_on_clicked(_on_refresh_limits)
+        refresh.vertical_padding_em = 0
         temp_window.add_child(panel)
         temp_window.set_on_close(_on_close)
 
