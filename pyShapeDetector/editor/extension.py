@@ -266,7 +266,9 @@ class Extension:
         self.binding.add_to_menu(self._editor_instance)
 
     def run(self):
-        _on_panel = self._editor_instance._settings.get_setting("extensions_on_panel")
+        _on_panel = not self._editor_instance._settings.get_setting(
+            "extensions_on_window"
+        )
 
         if len(self.parameters) == 0:
             self._apply_to_elements_in_thread()
@@ -411,7 +413,9 @@ class Extension:
         # editor_instance._set_gray_overlay(False)
 
     def _create_extension_window(self):
-        _on_panel = self._editor_instance._settings.get_setting("extensions_on_panel")
+        _on_panel = not self._editor_instance._settings.get_setting(
+            "extensions_on_window"
+        )
         editor_instance = self._editor_instance
 
         if editor_instance._set_extension_panel_open(self.name, True):
