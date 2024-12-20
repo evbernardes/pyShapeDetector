@@ -27,7 +27,7 @@ COLOR_SELECTED_DEFAULT = np.array([178.5, 163.8, 0.0]) / 255
 COLOR_UNSELECTED_DEFAULT = np.array([76.5, 76.5, 76.5]) / 255
 
 # DEFAULT VALUES
-_extensions_on_window = False
+_extensions_on_panel = False
 _PointCloud_density = 0.00224
 _draw_boundary_lines = True
 _line_width = 7
@@ -105,8 +105,8 @@ class Settings:
         self._dict = {
             "extensions_on_window": ParameterBool(
                 label="Open extensions on window",
-                default=_extensions_on_window,
-                on_update=self._cb_extensions_on_window,
+                default=_extensions_on_panel,
+                on_update=self._cb_extensions_on_panel,
             ),
             "PointCloud_density": ParameterNumeric(
                 type=float,
@@ -316,12 +316,12 @@ class Settings:
             extension = Extension(test_extension, self)
             extension.add_to_application(editor_instance)
 
-    def _cb_extensions_on_window(self, value):
+    def _cb_extensions_on_panel(self, value):
         if value is False:
             for window in self._editor_instance._temp_windows:
                 window.close()
         else:
-            for name in self._editor_instance._extensions_on_window:
+            for name in self._editor_instance._extensions_panels:
                 self._editor_instance._set_extension_panel_open(name, False)
 
     def _cb_PointCloud_density(self, value):

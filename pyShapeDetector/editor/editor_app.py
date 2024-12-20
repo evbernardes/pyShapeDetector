@@ -59,6 +59,8 @@ class Editor:
 
     def __init__(
         self,
+        width: int = 1024,
+        height: int = 768,
         window_name="Shape Detector",
         return_finish_flag=False,
         **kwargs,
@@ -68,6 +70,7 @@ class Editor:
         self._extensions = []
         self._settings = Settings(self, **kwargs)
 
+        self._init_window_size = (width, height)
         self._copied_elements = []
         self._past_states = []
         self._future_states = []
@@ -86,7 +89,7 @@ class Editor:
         self._temp_windows = []
         self._scene_file_path = None
         self._window = None
-        self._extensions_on_panel = {}
+        self._extensions_panels = {}
         # self._extension_tabs = gui.TabControl()
         # self._gray_overlay = gui.Widget()
 
@@ -195,26 +198,27 @@ class Editor:
         return self._elements_fixed
 
     def _add_extension_panel(self, name, panel):
-        if name in self._extensions_on_panel:
-            self._extensions_on_panel.pop(name).visible = False
+        if name in self._extensions_panels:
+            self._extensions_panels.pop(name).visible = False
             self._add_extension_panel(name, panel)
             return
 
-        N = len(self._extensions_on_panel)
+        N = len(self._extensions_panels)
 
         em = self._window.theme.font_size
 
-        self._extensions_on_panel[name] = panel
+        # self._extensions_panels[name] = panel
         panel_collapsable = gui.CollapsableVert(name, em, gui.Margins(0, 0, 0, 0))
         panel_collapsable.add_child(panel)
         self._extension_tabs_panel.add_child(panel_collapsable)
+        self._extensions_panels[name] = panel_collapsable
         self._window.set_needs_layout()
 
     def _set_extension_panel_open(self, name, is_open) -> bool:
-        if name not in self._extensions_on_panel:
+        if name not in self._extensions_panels:
             return False
 
-        self._extensions_on_panel[name].visible = is_open
+        self._extensions_panels[name].visible = is_open
         self._window.set_needs_layout()
         return True
 
@@ -379,7 +383,7 @@ class Editor:
         self.app.initialize()
 
         # Create a window
-        self._window = self.app.create_window(self.window_name, 1024, 768)
+        self._window = self.app.create_window(self.window_name, *self._init_window_size)
         self._window.set_on_layout(self._on_layout)
         self._window.set_on_close(self._on_close)
 
@@ -432,10 +436,8 @@ class Editor:
         self._menu_help._create_menu()
 
         self._extension_tabs_panel = gui.CollapsableVert(
-            "Extensions", em, gui.Margins(0, 0, 0, 0)
+            "Extensions", em, gui.Margins(em, em, em, em)
         )
-        # self._extension_tabs_tree = gui.TreeView()
-        # self._extension_tabs_panel.add_child(self._extension_tabs_tree)
         self._right_side_panel.add_child(self._extension_tabs_panel)
 
     # def _signal_handler(self, sig, frame):

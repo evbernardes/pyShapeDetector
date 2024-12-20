@@ -460,8 +460,6 @@ class Extension:
                 temp_window.close()
             else:
                 self._editor_instance._set_extension_panel_open(self.name, False)
-                # editor_instance._remove_extension_panel(self.name)
-                # editor_instance._extension_tabs.remove_tab(self.name)
 
         def _on_refresh_limits():
             if len(editor_instance.elements.selected_indices) > 0:
