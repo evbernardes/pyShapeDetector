@@ -367,6 +367,7 @@ class InternalFunctions:
                 f"Saving scene to {path}...",
                 create_button=False,
             )
+
             editor_instance.app.run_in_thread(_save_thread)
             if quitting:
                 self._editor_instance._closing_app = True
