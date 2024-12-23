@@ -151,6 +151,7 @@ class ParameterNumeric(ParameterBase[type]):
 
     def _callback(self, value):
         self.value = value
+        self.on_update(self.value)
         self._update_references()
 
     def _reset_values_and_limits(self, elements: ElementContainer):
