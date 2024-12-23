@@ -624,11 +624,15 @@ class InternalFunctions:
         unhidden_indices = elements.unhidden_indices
         current_index = elements.current_index
 
-        new_position = unhidden_indices.index(current_index) + delta
-        new_position = max(0, min(new_position, len(unhidden_indices) - 1))
+        try:
+            new_position = unhidden_indices.index(current_index) + delta
+            new_position = max(0, min(new_position, len(unhidden_indices) - 1))
+            elements.update_current_index(unhidden_indices[new_position])
+            self._editor_instance._update_extra_elements(planes_boundaries=False)
+        except Exception:
+            warnings.warn("Could not shift index.")
+            traceback.print_exc()
 
-        elements.update_current_index(unhidden_indices[new_position])
-        self._editor_instance._update_extra_elements(planes_boundaries=False)
 
     def _cb_next(self):
         self._shift_current(+1)
@@ -656,7 +660,11 @@ class InternalFunctions:
         if len(editor_instance._past_states) == 0:
             return
 
-        if (num_outputs := editor_instance._past_states[-1]["num_outputs"]) == 0:
+        last_state = editor_instance._past_states[-1]
+        if "num_outputs" not in last_state:
+            return
+
+        if (num_outputs := last_state["num_outputs"]) == 0:
             return
 
         editor_instance.elements.toggle_indices(
