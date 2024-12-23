@@ -346,14 +346,15 @@ class Settings:
     def _cb_PointCloud_point_size(self, value):
         from .element import ElementPointCloud
 
+        elements = self._editor_instance.elements
+
         self._update_materials()
         indices = np.where(
-            [
-                isinstance(element, ElementPointCloud)
-                for element in self._editor_instance.elements
-            ]
+            [isinstance(element, ElementPointCloud) for element in elements]
         )[0].tolist()
-        self._editor_instance.elements.update_indices(indices)
+
+        for idx in indices:
+            elements[idx].update_on_scene(reset=True)
 
     def _cb_draw_boundary_lines(self, value):
         self._editor_instance._update_plane_boundaries()
