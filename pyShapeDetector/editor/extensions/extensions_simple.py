@@ -219,12 +219,12 @@ def add_pcds_as_inliers_to_closest_shape(elements):
     pcds, other = _extract_element_by_type(other, PointCloud)
 
     shapes = [s.copy() for s in shapes]
-    pcds = [p.copy() for p in pcds]
+    pcds = [PointCloud(p) for p in pcds]
 
     for i, pcd in enumerate(pcds):
         distances = [min(shape.get_distances(pcd.points)) for shape in shapes]
         shape = shapes[np.argmin(distances)]
-        full_pcd = PointCloud.fuse_pointclouds([shape.inliers] + pcd)
+        full_pcd = PointCloud.fuse_pointclouds([shape.inliers] + pcds)
         shape.set_inliers(full_pcd)
 
     for shape in shapes:

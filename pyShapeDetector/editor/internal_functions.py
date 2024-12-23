@@ -776,20 +776,23 @@ class InternalFunctions:
         self._editor_instance._settings.set_setting("PointCloud_density", density)
 
     def _cb_estimate_pointcloud_density(self):
-        from .parameter import ParameterInt, ParameterPanel
+        from .parameter import ParameterNumeric, ParameterPanel
 
         editor_instance = self._editor_instance
 
         parameters = {
-            "number_of_neighbors": ParameterInt(
-                name="Number of neighbors", limits=(3, 50), default=10
+            "number_of_neighbors": ParameterNumeric(
+                type=int, label="Number of neighbors", limits=(3, 50), default=10
             ),
-            "split": ParameterInt(name="Split", limits=(1, 30), default=30),
+            "split": ParameterNumeric(
+                type=int, label="Split", limits=(1, 30), default=30
+            ),
         }
 
         temp_window = editor_instance.app.create_window(
             "Estimate PointCloud density", 300, 100 * (len(parameters) + 2)
         )
+
         temp_window.show_menu(False)
         self._editor_instance._temp_windows.append(temp_window)
         em = temp_window.theme.font_size
