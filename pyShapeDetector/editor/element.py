@@ -1,4 +1,5 @@
 import warnings
+import traceback
 import copy
 from typing import Union, TYPE_CHECKING
 from abc import ABC, abstractmethod
@@ -319,6 +320,9 @@ class Element(ABC):
         elif geometry.TriangleMesh.is_instance_or_open3d(raw):
             element_class = ElementTriangleMesh
         elif geometry.PointCloud.is_instance_or_open3d(raw):
+            if len(raw.points) == 0:
+                warnings.warn("Tried to create an empty PointCloud, ignoring.")
+                return None
             element_class = ElementPointCloud
         elif isinstance(raw, (geometry.Numpy_Geometry, Open3d_Geometry)):
             element_class = ElementGeometry
@@ -404,14 +408,18 @@ class ElementPointCloud(ElementGeometry):
         color = self._get_dimmed_color(color_input)
 
         # drawable.point.colors = color
-        if color.shape == (3,):
-            drawable.paint_uniform_color(color.astype("float32"))
-            self._colors_updated = False
-        elif color.shape == drawable.point.colors.shape:
-            drawable.point.colors = Tensor(color.astype("float32"))
-            self._colors_updated = False
-        else:
-            warnings.warn("Could not paint Tensor-based drawable PointCloud.")
+        try:
+            if color.shape == (3,):
+                drawable.paint_uniform_color(color.astype("float32"))
+                self._colors_updated = False
+            elif color.shape == drawable.point.colors.shape:
+                drawable.point.colors = Tensor(color.astype("float32"))
+                self._colors_updated = False
+            else:
+                warnings.warn("Could not paint Tensor-based drawable PointCloud.")
+        except Exception:
+            warnings.warn(f"Could not update color of PointCloud element {self.raw}.")
+            traceback.print_exc()
 
     def _get_drawable(self):
         settings = self._settings

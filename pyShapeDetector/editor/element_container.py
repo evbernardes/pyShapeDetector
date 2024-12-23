@@ -236,7 +236,12 @@ class ElementContainer(list):
             require_verbose=True,
         )
 
+        failed_indices = []
+        tested_indices = []
+
         for i, idx in enumerate(indices):
+            idx -= len([failed for failed in failed_indices if failed < idx])
+
             if idx_new > idx:
                 idx_new += 1
 
@@ -257,15 +262,20 @@ class ElementContainer(list):
                     is_current,
                     self._is_color_fixed,
                 )
+                if elem is None:
+                    warnings.warn(f"Could not insert element {elements_new[i]}.")
+                    continue
 
             self._settings.print_debug(
                 f"Added {elem.raw} at index {idx}.",
                 require_verbose=True,
             )
             self.insert(idx, elem)
+            tested_indices.append(idx)
 
         if self.scene is not None:
-            for idx in indices:
+            for idx in tested_indices:
+                print(f"idx={idx}, keb")
                 self[idx]._scene = self.scene
                 # Updating vis explicitly in order not to remove it
                 self.update_indices(idx, update_gui=False)
