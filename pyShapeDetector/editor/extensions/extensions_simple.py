@@ -181,7 +181,9 @@ def fuse_elements(elements):
         print(e)
 
     pcd = PointCloud.fuse_pointclouds(pcds)
-    return shapes + [pcd] + other
+    if len(pcd.points) > 0:
+        return shapes + [pcd] + other
+    return shapes + other
 
 
 extensions.append(
