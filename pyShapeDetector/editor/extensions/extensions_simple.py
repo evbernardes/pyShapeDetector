@@ -216,6 +216,20 @@ def revert_to_inliers(shapes_input):
 extensions.append({"function": revert_to_inliers, "menu": MENU_NAME})
 
 
+@_apply_to(Primitive)
+def remove_inliers(shapes_input):
+    shapes = []
+    for s in shapes_input:
+        new_shape = s.copy()
+        new_shape._inliers = PointCloud()
+        shapes.append(new_shape)
+
+    return shapes
+
+
+extensions.append({"function": remove_inliers, "menu": MENU_NAME})
+
+
 def add_pcds_as_inliers_to_closest_shape(elements):
     shapes, other = _extract_element_by_type(elements, Primitive)
     pcds, other = _extract_element_by_type(other, PointCloud)
