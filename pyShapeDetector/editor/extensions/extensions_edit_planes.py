@@ -10,7 +10,7 @@ import numpy as np
 from pyShapeDetector.utility import get_inputs, select_function_with_gui
 from pyShapeDetector.primitives import Plane, PlaneBounded
 from .helpers import _apply_to
-from extensions_simple import fuse_primitives_as_mesh
+from .extensions_simple import fuse_primitives_as_mesh
 
 MENU_NAME = "Edit planes"
 
