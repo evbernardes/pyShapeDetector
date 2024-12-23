@@ -41,7 +41,7 @@ _color_selected = gui.Color(*COLOR_SELECTED_DEFAULT)
 _paint_random = False
 _debug = True
 _verbose = False
-_bbox_expand = 0.01
+_bbox_expand_percentage = 0
 _color_bbox_selected = gui.Color(*color_bbox_selected_DEFAULT)
 _color_bbox_unselected = gui.Color(*color_bbox_unselected_DEFAULT)
 _show_bbox = True
@@ -171,12 +171,12 @@ class Settings:
                 on_update=self._cb_verbose,
                 subpanel="Debug",
             ),
-            "bbox_expand": ParameterNumeric(
-                type=float,
+            "bbox_expand_percentage": ParameterNumeric(
+                type=int,
                 label="Expand BBOX %",
-                default=_bbox_expand,
-                limits=(0, 2),
-                on_update=self._cb_bbox_expand,
+                default=_bbox_expand_percentage,
+                limits=(-100, 100),
+                on_update=self._cb_bbox_expand_percentage,
                 subpanel="Bounding Box and axes",
             ),
             "color_bbox_selected": ParameterColor(
@@ -375,7 +375,7 @@ class Settings:
     def _cb_verbose(self, value):
         pass
 
-    def _cb_bbox_expand(self, value):
+    def _cb_bbox_expand_percentage(self, value):
         self._editor_instance._update_BBOX_and_axes()
 
     def _cb_color_bbox_selected(self, value):

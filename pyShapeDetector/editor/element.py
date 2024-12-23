@@ -157,15 +157,17 @@ class Element(ABC):
         if self.raw is None or isinstance(self.raw, geometry.LineSet):
             return None
 
-        bbox_expand = self._settings.get_setting("bbox_expand")
+        bbox_expand_ratio = self._settings.get_setting("bbox_expand_percentage") / 100.0
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             try:
                 bbox_original = self.raw.get_oriented_bounding_box()
+                bbox_expand = bbox_expand_ratio * (bbox_original.volume() ** (1 / 3))
                 bbox = geometry.OrientedBoundingBox(bbox_original).expanded(bbox_expand)
             except Exception:
                 bbox_original = self.raw.get_axis_aligned_bounding_box()
+                bbox_expand = bbox_expand_ratio * (bbox_original.volume() ** (1 / 3))
                 bbox = geometry.AxisAlignedBoundingBox(bbox_original).expanded(
                     bbox_expand
                 )
