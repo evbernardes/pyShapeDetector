@@ -541,6 +541,8 @@ class Editor:
             """ Not initialized yet"""
             return
 
+        debug = self._get_setting("debug")
+
         def update_label():
             # This is not called on the main thread, so we need to
             # post to the main thread to safely access UI items.
@@ -555,6 +557,11 @@ class Editor:
                 self._info.text += (
                     f"selected: {'YES' if self.elements.is_current_selected else 'NO'}"
                 )
+
+                if debug:
+                    self._info.text += (
+                        f" | {len(self.elements.selected_indices)} selected elements"
+                    )
 
                 if n := len(self.elements.hidden_indices):
                     self._info.text += f" | {n} hidden elements"

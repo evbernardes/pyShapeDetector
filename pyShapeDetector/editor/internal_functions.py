@@ -201,7 +201,7 @@ class InternalFunctions:
                 lshift=False,
                 description="Hide toggled elements",
                 callback=self._cb_hide,
-                menu=None,
+                menu="Edit",
             ),
             Binding(
                 key=gui.KeyName.U,
@@ -209,7 +209,7 @@ class InternalFunctions:
                 lshift=True,
                 description="Unhide all hidden elements",
                 callback=self._cb_unhide,
-                menu=None,
+                menu="Edit",
             ),
             Binding(
                 key=gui.KeyName.A,
@@ -664,10 +664,12 @@ class InternalFunctions:
     def _cb_select_all(self):
         """Toggle the all elements to selected."""
         self._editor_instance.elements.toggle_indices(None, to_value=True)
+        self._editor_instance._update_info()
 
     def _cb_unselect_all(self):
         """Toggle the all elements between to unselected."""
         self._editor_instance.elements.toggle_indices(None, to_value=False)
+        self._editor_instance._update_info()
 
     def _cb_select_last(self):
         """Toggle the elements from last output to selected."""
@@ -686,6 +688,8 @@ class InternalFunctions:
             slice(-num_outputs, None), to_value=True
         )
 
+        self._editor_instance._update_info()
+
     def _cb_unselect_last(self):
         """Toggle the elements from last output to unselected."""
         editor_instance = self._editor_instance
@@ -700,6 +704,8 @@ class InternalFunctions:
         editor_instance.elements.toggle_indices(
             slice(-num_outputs, None), to_value=False
         )
+
+        self._editor_instance._update_info()
 
     def _cb_toggle_type(self):
         editor_instance = self._editor_instance
@@ -716,6 +722,7 @@ class InternalFunctions:
             is_type = [isinstance(elem.raw, _type) for elem in editor_instance.elements]
             indices = np.where(is_type)[0].tolist()
             editor_instance.elements.toggle_indices(indices, to_value=value)
+            self._editor_instance._update_info()
 
         dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
         dlg_layout.add_child(gui.Label("Select types to select:"))

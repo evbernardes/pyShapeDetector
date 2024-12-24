@@ -396,7 +396,7 @@ class ElementContainer(list):
 
         for idx in indices:
             elem = self[idx]
-            elem._selected = elem.is_selected
+            elem._selected = elem.is_selected and not elem.is_hidden
             is_current = (self.scene is not None) and (idx == self.current_index)
 
             elem.update(is_current, update_gui)

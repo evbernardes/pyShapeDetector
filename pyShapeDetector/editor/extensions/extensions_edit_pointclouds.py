@@ -24,7 +24,7 @@ MENU_NAME = "Edit Pointclouds"
 
 @_apply_to(PointCloud)
 def uniform_downsample(pcds_input, every_k_points):
-    return [pcd.uniform_downsample(every_k_points) for pcd in pcds_input]
+    return [pcd.uniform_down_sample(every_k_points) for pcd in pcds_input]
 
 
 extensions.append(

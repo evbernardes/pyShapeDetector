@@ -20,8 +20,7 @@ extensions = []
 @_apply_to(PlaneBounded)
 def get_concave_alpha_shapes(
     shapes,
-    PointCloud_density,
-    radius_ratio,
+    alpha,
     angle_colinear_degrees,
     contract_boundary,
     detect_holes,
@@ -34,14 +33,11 @@ def get_concave_alpha_shapes(
 
     shapes = get_convex(concave_shapes) + convex_shapes
 
-    alpha_inv = PointCloud_density * radius_ratio
-    alpha = 1 / alpha_inv
-
     extra_options = {
         "detect_holes": detect_holes,
         "add_inliers": add_inliers,
         "angle_colinear": np.deg2rad(angle_colinear_degrees),
-        "min_point_dist": alpha_inv * 2,
+        "min_point_dist": (1 / alpha) * 2,
         "contract_boundary": contract_boundary,
         "min_inliers": min_inliers,
         "min_area": min_area,  # 0.0035,
@@ -68,11 +64,143 @@ extensions.append(
         "function": get_concave_alpha_shapes,
         "menu": MENU_NAME,
         "parameters": {
+            "alpha": {
+                "type": float,
+                "default": 1,
+                "limits": (0.001, 1000),
+            },
+            "angle_colinear_degrees": {
+                "type": float,
+                "default": 15,
+                "limits": (0, 180),
+            },
+            "contract_boundary": {"type": bool},
+            "detect_holes": {"type": bool, "default": True, "subpanel": "Extra"},
+            "add_inliers": {"type": bool, "default": True, "subpanel": "Extra"},
+            "min_inliers": {
+                "type": int,
+                "default": 1,
+                "limits": (1, 1000),
+                "subpanel": "Extra",
+            },
+            "min_area": {
+                "type": float,
+                "default": 0.0035,
+                "limits": (0.0001, 100),
+                "subpanel": "Extra",
+            },
+        },
+    }
+)
+
+
+@_apply_to(PlaneBounded)
+def get_concave_alpha_shapes_with_radius_ratio(
+    shapes,
+    PointCloud_density,
+    radius_ratio,
+    angle_colinear_degrees,
+    contract_boundary,
+    detect_holes,
+    add_inliers,
+    min_inliers,
+    min_area,
+):
+    alpha_inv = PointCloud_density * radius_ratio
+    alpha = 1 / alpha_inv
+
+    return get_concave_alpha_shapes(
+        shapes,
+        alpha,
+        angle_colinear_degrees,
+        contract_boundary,
+        detect_holes,
+        add_inliers,
+        min_inliers,
+        min_area,
+    )
+
+
+extensions.append(
+    {
+        "function": get_concave_alpha_shapes_with_radius_ratio,
+        "menu": MENU_NAME,
+        "parameters": {
             "PointCloud_density": {"type": "preference"},
             "radius_ratio": {
                 "type": float,
                 "default": 2,
                 "limits": (0, 100),
+            },
+            "angle_colinear_degrees": {
+                "type": float,
+                "default": 15,
+                "limits": (0, 180),
+            },
+            "contract_boundary": {"type": bool},
+            "detect_holes": {"type": bool, "default": True, "subpanel": "Extra"},
+            "add_inliers": {"type": bool, "default": True, "subpanel": "Extra"},
+            "min_inliers": {
+                "type": int,
+                "default": 1,
+                "limits": (1, 1000),
+                "subpanel": "Extra",
+            },
+            "min_area": {
+                "type": float,
+                "default": 0.0035,
+                "limits": (0.0001, 100),
+                "subpanel": "Extra",
+            },
+        },
+    }
+)
+
+
+@_apply_to(PlaneBounded)
+def get_concave_alpha_shapes_with_area_percentage(
+    shapes,
+    area_percentage,
+    angle_colinear_degrees,
+    contract_boundary,
+    detect_holes,
+    add_inliers,
+    min_inliers,
+    min_area,
+):
+    convex_shapes = [shape for shape in shapes if shape.is_convex]
+    concave_shapes = [shape for shape in shapes if not shape.is_convex]
+
+    shapes = get_convex(concave_shapes) + convex_shapes
+
+    output_shapes = []
+    for shape in shapes:
+        area = shape.surface_area
+        alpha_inv = area * area_percentage / 100
+        alpha = 1 / alpha_inv
+
+        output_shapes += get_concave_alpha_shapes(
+            [shape],
+            alpha,
+            angle_colinear_degrees,
+            contract_boundary,
+            detect_holes,
+            add_inliers,
+            min_inliers,
+            min_area,
+        )
+    return output_shapes
+
+
+extensions.append(
+    {
+        "function": get_concave_alpha_shapes_with_area_percentage,
+        "menu": MENU_NAME,
+        "parameters": {
+            "area_percentage": {
+                "type": float,
+                "default": 10,
+                "limits": (0.001, 15),
             },
             "angle_colinear_degrees": {
                 "type": float,
