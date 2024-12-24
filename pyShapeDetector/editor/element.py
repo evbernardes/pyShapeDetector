@@ -275,6 +275,16 @@ class Element(ABC):
             )
             self.update_on_scene(reset=reset)
 
+    def _init_colors(self):
+        self._color_original = self._extract_drawable_color()  # saving original color
+
+        if self._settings.get_setting("paint_random"):
+            self._color = np.random.random(3)
+            self._brightness = self._settings.get_setting("random_color_brightness")
+        else:
+            self._color = self.color_original
+            self._brightness = self._settings.get_setting("original_color_brightness")
+
     def __init__(
         self,
         settings: "Settings",
@@ -296,14 +306,7 @@ class Element(ABC):
 
         self._get_drawable()
         self._get_distance_checker()
-        self._color_original = self._extract_drawable_color()  # saving original color
-
-        if self._settings.get_setting("paint_random"):
-            self._color = np.random.random(3)
-            self._brightness = self._settings.get_setting("random_color_brightness")
-        else:
-            self._color = self.color_original
-            self._brightness = self._settings.get_setting("original_color_brightness")
+        self._init_colors()
 
         self._update_drawable_color(self._color)
 
@@ -408,6 +411,12 @@ class ElementPointCloud(ElementGeometry):
         color = self._get_dimmed_color(color_input)
 
         # drawable.point.colors = color
+
+        self._settings.print_debug(
+            f"Painting Tensor-based PointCloud. Input color shape: {color.shape}. "
+            f"Prevous color shape: {drawable.point.colors.shape}."
+        )
+
         try:
             if color.shape == (3,):
                 drawable.paint_uniform_color(color.astype("float32"))

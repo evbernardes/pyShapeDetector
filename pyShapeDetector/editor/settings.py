@@ -33,7 +33,7 @@ _draw_boundary_lines = True
 _line_width = 7
 _PointCloud_point_size = 5
 _PCD_downsample_when_drawing = True
-_PCD_max_points = 100000
+_PCD_max_points = 50000
 _PCD_use_Tensor = True
 _mesh_show_back_face = True
 _paint_selected = True
@@ -342,6 +342,7 @@ class Settings:
                 continue
 
             elem._get_drawable()
+            elem._init_colors()
             elem.update(is_current=elem.current, update_scene=True, reset=True)
 
     def _cb_PCD_max_points(self, value):
