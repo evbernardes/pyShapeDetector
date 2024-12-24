@@ -245,7 +245,7 @@ def ask_and_save(
         save_elements(outdir, elems, start, order_func, reverse, remove_dir)
 
 
-def load_pointcloud_from_e57(filepath, fuse=False):
+def load_pointcloud_from_e57(filepath, fuse=False, downsample=1):
     from pyShapeDetector.geometry import PointCloud
 
     filepath = Path(filepath)
@@ -260,53 +260,36 @@ def load_pointcloud_from_e57(filepath, fuse=False):
     scans = manager.dict()
 
     # Worker function for multiprocessing
-    def _worker(scans, filepath, idx, factor):
+    def _worker(scans, filepath, idx, downsample):
         # Creating e57 object again to avoid parallel errors
         e57 = pye57.E57(filepath.as_posix())
 
-        # data = e57.read_scan_raw(idx)
         data = e57.read_scan(idx, transform=True, colors=True)
-        # header = e57.get_header(idx)
 
         points = np.array(
             [
-                data["cartesianX"][::factor],
-                data["cartesianY"][::factor],
-                data["cartesianZ"][::factor],
+                data["cartesianX"][::downsample],
+                data["cartesianY"][::downsample],
+                data["cartesianZ"][::downsample],
             ]
         ).T
 
         colors = (
             np.array(
                 [
-                    data["colorRed"][::factor],
-                    data["colorGreen"][::factor],
-                    data["colorBlue"][::factor],
+                    data["colorRed"][::downsample],
+                    data["colorGreen"][::downsample],
+                    data["colorBlue"][::downsample],
                 ]
             ).T
             / 255
         )
 
-        # rotation = copy.copy(header.rotation_matrix)
-        # translation = copy.copy(header.translation)
-
-        # scans[idx] = (points, colors, rotation, translation)
-
-        # transformation = np.eye(4)
-        # transformation[:3, :3] = rotation
-        # transformation[:3, -1] = translation
-        # scans[idx] = (points, colors, transformation)
-        # rot = Rotation.from_quat(header.rotation[[1, 2, 3, 0]])
-        # points = rot.apply(points) + header.translation
-
-        # points = e57.to_global(points, header.rotation, header.translation)
         scans[idx] = (points, colors)
-
-        # print(f"Scan number {idx}, done!")
 
     # Create processes and queues
     processes = [
-        multiprocessing.Process(target=_worker, args=(scans, filepath, idx, 1))
+        multiprocessing.Process(target=_worker, args=(scans, filepath, idx, downsample))
         for idx in range(N)
     ]
 
@@ -324,21 +307,9 @@ def load_pointcloud_from_e57(filepath, fuse=False):
     # for scan in scans.values():
     for i in range(len(scans)):
         points, colors = scans.get(i)
-        # points, colors, transformation = scans.get(i)
-        # points, colors, rotation, translation = scan
-        # Creating a Open3D pointcloud
-        # points = (points + translation) @ rotation
         pcd = PointCloud()
         pcd.points = points
         pcd.colors = colors
-
-        # transformation = np.linalg.inv(transformation)
-
-        # Apply transformation
-        # pcd.transform(transformation)
-        # pcd.rotate(rotation)
-        # pcd.translate(translation)
-        # pcd_full += pcd
         pcds.append(pcd)
 
     if fuse:

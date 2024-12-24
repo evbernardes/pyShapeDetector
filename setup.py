@@ -26,7 +26,7 @@ setup(
             "h5py==3.10.0",
         ],
         "e57_files": [
-            "pye57",
+            "pye57>=0.4.16",
         ],
         "lines_to_plane_with_shapely": [
             "shapely>=2.0.2",
