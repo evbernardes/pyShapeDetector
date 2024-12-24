@@ -24,6 +24,7 @@ from scipy.spatial.distance import cdist
 
 if has_h5py := find_spec("h5py") is not None:
     import h5py
+has_pye57 = find_spec("pye57")
 
 
 from sklearn.neighbors import KDTree
@@ -341,9 +342,18 @@ class PointCloud(Numpy_Geometry):
             filename = filepath
             filepath = Path(filename)
 
-        # print(filename)
+        if not filepath.exists():
+            raise RuntimeError(f"File {filepath} does not exist.")
 
-        if filepath.suffix == ".h5":
+        if filepath.suffix == ".e57":
+            if not has_pye57:
+                raise ImportError("pye57 library is necessary to read e57 files.")
+
+            from pyShapeDetector.utility import load_pointcloud_from_e57
+
+            pcds = load_pointcloud_from_e57(filepath)
+
+        elif filepath.suffix == ".h5":
             if not has_h5py:
                 raise ImportError("h5py library is necessary to read h5 files.")
             f = h5py.File(filepath, "r")

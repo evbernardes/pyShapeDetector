@@ -70,4 +70,5 @@ from .helpers_io import (
     save_elements,
     save_ask,
     ask_and_save,
+    load_pointcloud_from_e57,
 )

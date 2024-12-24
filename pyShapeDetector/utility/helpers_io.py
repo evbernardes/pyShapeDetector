@@ -12,7 +12,12 @@ import time
 import uuid
 import tempfile
 import tarfile
+import multiprocessing
+from importlib.util import find_spec
 from pathlib import Path
+
+if has_pye57 := find_spec("pye57") is not None:
+    import pye57
 
 
 def _format_int(i, num_digits):
@@ -238,3 +243,105 @@ def ask_and_save(
     outdir = save_ask(outdir)
     if outdir is not None:
         save_elements(outdir, elems, start, order_func, reverse, remove_dir)
+
+
+def load_pointcloud_from_e57(filepath, fuse=False):
+    from pyShapeDetector.geometry import PointCloud
+
+    filepath = Path(filepath)
+
+    if not has_pye57:
+        raise ImportError("Module pye57 not installed.")
+
+    e57 = pye57.E57(filepath.as_posix())
+
+    N = len(e57.data3d)
+    manager = multiprocessing.Manager()
+    scans = manager.dict()
+
+    # Worker function for multiprocessing
+    def _worker(scans, filepath, idx, factor):
+        # Creating e57 object again to avoid parallel errors
+        e57 = pye57.E57(filepath.as_posix())
+
+        # data = e57.read_scan_raw(idx)
+        data = e57.read_scan(idx, transform=True, colors=True)
+        # header = e57.get_header(idx)
+
+        points = np.array(
+            [
+                data["cartesianX"][::factor],
+                data["cartesianY"][::factor],
+                data["cartesianZ"][::factor],
+            ]
+        ).T
+
+        colors = (
+            np.array(
+                [
+                    data["colorRed"][::factor],
+                    data["colorGreen"][::factor],
+                    data["colorBlue"][::factor],
+                ]
+            ).T
+            / 255
+        )
+
+        # rotation = copy.copy(header.rotation_matrix)
+        # translation = copy.copy(header.translation)
+
+        # scans[idx] = (points, colors, rotation, translation)
+
+        # transformation = np.eye(4)
+        # transformation[:3, :3] = rotation
+        # transformation[:3, -1] = translation
+        # scans[idx] = (points, colors, transformation)
+        # rot = Rotation.from_quat(header.rotation[[1, 2, 3, 0]])
+        # points = rot.apply(points) + header.translation
+
+        # points = e57.to_global(points, header.rotation, header.translation)
+        scans[idx] = (points, colors)
+
+        # print(f"Scan number {idx}, done!")
+
+    # Create processes and queues
+    processes = [
+        multiprocessing.Process(target=_worker, args=(scans, filepath, idx, 1))
+        for idx in range(N)
+    ]
+
+    # Start all processes
+    for process in processes:
+        process.start()
+
+    # Wait until all processes are finished
+    for process in processes:
+        process.join()
+
+    # pcd_full = PointCloud()
+    pcds = []
+
+    # for scan in scans.values():
+    for i in range(len(scans)):
+        points, colors = scans.get(i)
+        # points, colors, transformation = scans.get(i)
+        # points, colors, rotation, translation = scan
+        # Creating a Open3D pointcloud
+        # points = (points + translation) @ rotation
+        pcd = PointCloud()
+        pcd.points = points
+        pcd.colors = colors
+
+        # transformation = np.linalg.inv(transformation)
+
+        # Apply transformation
+        # pcd.transform(transformation)
+        # pcd.rotate(rotation)
+        # pcd.translate(translation)
+        # pcd_full += pcd
+        pcds.append(pcd)
+
+    if fuse:
+        return PointCloud.fuse_pointclouds(pcds)
+    else:
+        return pcds

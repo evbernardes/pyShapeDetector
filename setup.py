@@ -25,6 +25,9 @@ setup(
         "h5_files": [
             "h5py==3.10.0",
         ],
+        "e57_files": [
+            "pye57",
+        ],
         "lines_to_plane_with_shapely": [
             "shapely>=2.0.2",
         ],
@@ -32,7 +35,7 @@ setup(
     author="Evandro Bernardes",
     author_email="evbernardes@gmail.com",
     description="Python 3 module to detect geometrical primitives in pointclouds",
-    license="MIT",
+    license="GPL-3.0-or-later",
     url="https://github.com/evbernardes/pyShapeDetector",
     classifiers=[
         "Development Status :: 3 - Alpha",
