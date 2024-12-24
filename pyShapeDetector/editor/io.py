@@ -35,8 +35,8 @@ from pyShapeDetector.geometry import PointCloud, TriangleMesh
 from pyShapeDetector.primitives import Primitive
 from pyShapeDetector.editor import Editor
 
-if has_h5py := find_spec("h5py") is not None:
-    import h5py
+has_pye57 = find_spec("pye57")
+has_h5py = find_spec("h5py")
 
 SCENE_FILE_EXTENSION = ".sdscene"
 
@@ -76,6 +76,11 @@ if has_h5py:
     RECOGNIZED_EXTENSION["PointCloud"][
         ".h5"
     ] = "Point Cloud in Hierarchical Data Format (.h5)"
+
+if has_pye57:
+    RECOGNIZED_EXTENSION["PointCloud"][
+        ".e57"
+    ] = "Point Cloud in ASTM E57 file format (.h5)"
 
 for type_name, extensions in RECOGNIZED_EXTENSION.items():
     extensions["all"] = " ".join([key for key in extensions.keys() if key[0] == "."])

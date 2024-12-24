@@ -263,10 +263,12 @@ class InternalFunctions:
 
         if path is not None:
             element = _load_one_element(path)
+            self._editor_instance._settings.print_debug(f"Loaded element: {element}")
             if element is not None:
                 try:
                     self._editor_instance.elements.insert_multiple(element, to_gui=True)
                     editor_instance._update_info()
+                    editor_instance._reset_camera()
                 except Exception:
                     warnings.warn(f"Failed to imported from file '{path}'.")
                     traceback.print_exc()
@@ -281,15 +283,15 @@ class InternalFunctions:
             except Exception:
                 pass
 
-        # First general types...
+        # First all recognized files...
+        dlg.add_filter(RECOGNIZED_EXTENSION["all"], "All recognized files")
+
+        # ... then general types...
         for type_name, extensions in RECOGNIZED_EXTENSION.items():
             if type_name == "all":
                 continue
 
             dlg.add_filter(extensions["all"], extensions["all_description"])
-
-        # ... then all recognized files...
-        dlg.add_filter(RECOGNIZED_EXTENSION["all"], "All recognized files")
 
         # ... finally specific extensions
         for type_name, extensions in RECOGNIZED_EXTENSION.items():
