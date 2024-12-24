@@ -230,26 +230,37 @@ def remove_inliers(shapes_input):
 extensions.append({"function": remove_inliers, "menu": MENU_NAME})
 
 
-def add_pcds_as_inliers_to_closest_shape(elements):
+def add_pcds_as_inliers(elements):
     shapes, other = _extract_element_by_type(elements, Primitive)
     pcds, other = _extract_element_by_type(other, PointCloud)
 
-    shapes = [s.copy() for s in shapes]
-    pcds = [PointCloud(p) for p in pcds]
+    if len(shapes) != 1:
+        raise ValueError(f"Only one primitive should be given, got {len(shapes)}.")
 
-    for i, pcd in enumerate(pcds):
-        distances = [min(shape.get_distances(pcd.points)) for shape in shapes]
-        shape = shapes[np.argmin(distances)]
-        full_pcd = PointCloud.fuse_pointclouds([shape.inliers] + pcds)
-        shape.set_inliers(full_pcd)
+    shapes[0]._inliers += PointCloud.fuse_pointclouds(pcds)
+    # shapes = [s.copy() for s in shapes]
+    # new_inliers = {}
+    # # pcds = [PointCloud(p) for p in pcds]
+    # # new_inliers = [s.inliers for s in shapes]
 
-    for shape in shapes:
-        shape.color = shape.inliers.colors.mean(axis=0)
+    # for pcd in pcds:
+    #     distances = [min(shape.get_distances(pcd.points)) for shape in shapes]
+    #     idx = np.argmin(distances)
+
+    #     if idx not in new_inliers:
+    #         new_inliers[idx] = [shapes[idx].inliers]
+
+    #     new_inliers[idx].append(pcd)
+
+    # for i, pcds in new_inliers.items():
+    #     shape = shapes[i]
+    #     shape.set_inliers(PointCloud.fuse_pointclouds(pcds))
+    #     shape.color = shape.inliers.colors.mean(axis=0)
 
     return shapes + other
 
 
-extensions.append({"function": add_pcds_as_inliers_to_closest_shape, "menu": MENU_NAME})
+extensions.append({"function": add_pcds_as_inliers, "menu": MENU_NAME})
 
 
 @_apply_to(Primitive)
