@@ -281,18 +281,26 @@ class InternalFunctions:
             except Exception:
                 pass
 
+        # First general types...
         for type_name, extensions in RECOGNIZED_EXTENSION.items():
             if type_name == "all":
                 continue
 
             dlg.add_filter(extensions["all"], extensions["all_description"])
 
+        # ... then all recognized files...
+        dlg.add_filter(RECOGNIZED_EXTENSION["all"], "All recognized files")
+
+        # ... finally specific extensions
+        for type_name, extensions in RECOGNIZED_EXTENSION.items():
+            if type_name == "all":
+                continue
+
             for extension, description in extensions.items():
                 if extension[0] != ".":
                     continue
                 dlg.add_filter(extension, description)
 
-        dlg.add_filter(RECOGNIZED_EXTENSION["all"], "All recognized files")
         dlg.add_filter("", "All files")
 
         def _on_file_dialog_cancel():
