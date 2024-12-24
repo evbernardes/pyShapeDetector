@@ -19,14 +19,6 @@ class InternalFunctions:
         self._editor_instance = editor_instance
         self._bindings = [
             Binding(
-                key=gui.KeyName.I,
-                lctrl=True,
-                lshift=False,
-                description="Import",
-                callback=self._cb_import,
-                menu="File",
-            ),
-            Binding(
                 key=gui.KeyName.O,
                 lctrl=True,
                 lshift=False,
@@ -48,6 +40,14 @@ class InternalFunctions:
                 lshift=True,
                 description="Save scene as",
                 callback=self._cb_save_scene_as,
+                menu="File",
+            ),
+            Binding(
+                key=gui.KeyName.I,
+                lctrl=True,
+                lshift=False,
+                description="Import",
+                callback=self._cb_import,
                 menu="File",
             ),
             Binding(
@@ -632,7 +632,6 @@ class InternalFunctions:
         except Exception:
             warnings.warn("Could not shift index.")
             traceback.print_exc()
-
 
     def _cb_next(self):
         self._shift_current(+1)
