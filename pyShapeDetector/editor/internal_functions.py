@@ -257,7 +257,7 @@ class InternalFunctions:
         self._dict = {binding.description: binding for binding in self._bindings}
 
     def _cb_import(self, path=None):
-        from .io import _load_one_element
+        from .io import _load_one_element, RECOGNIZED_EXTENSION
 
         editor_instance = self._editor_instance
 
@@ -281,12 +281,18 @@ class InternalFunctions:
             except Exception:
                 pass
 
-        for type, extensions in element.items():
-            if type == "all":
+        for type_name, extensions in RECOGNIZED_EXTENSION.items():
+            if type_name == "all":
                 continue
+
             dlg.add_filter(extensions["all"], extensions["all_description"])
 
-        dlg.add_filter(element["all"], "All recognized files")
+            for extension, description in extensions.items():
+                if extension[0] != ".":
+                    continue
+                dlg.add_filter(extension, description)
+
+        dlg.add_filter(RECOGNIZED_EXTENSION["all"], "All recognized files")
         dlg.add_filter("", "All files")
 
         def _on_file_dialog_cancel():
