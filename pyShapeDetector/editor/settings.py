@@ -33,7 +33,7 @@ _draw_boundary_lines = True
 _line_width = 7
 _PointCloud_point_size = 5
 _PCD_downsample_when_drawing = True
-_PCD_max_points = 500000
+_PCD_max_points = 100000
 _PCD_use_Tensor = True
 _mesh_show_back_face = True
 _paint_selected = True
@@ -126,7 +126,7 @@ class Settings:
                 label="Max points",
                 default=_PCD_max_points,
                 on_update=self._cb_PCD_max_points,
-                limits=(500000, 10000000),
+                limits=(50000, 10000000),
                 subpanel="PointCloud options",
             ),
             "PCD_use_Tensor": ParameterBool(
