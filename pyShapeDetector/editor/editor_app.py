@@ -547,36 +547,37 @@ class Editor:
         def update_label():
             # This is not called on the main thread, so we need to
             # post to the main thread to safely access UI items.
-            if self.elements.current_index is None:
-                return
+            if self.elements.current_index is None or len(self.elements) == 0:
+                self._info.text = ""
+            else:
 
-            self._info.text = (
-                f"Current: {self.elements.current_index + 1} / {len(self.elements)} | "
-            )
+                self._info.text = (
+                    f"Current: {self.elements.current_index + 1} / {len(self.elements)} | "
+                )
 
-            if self._get_setting("show_current"):
-                self._info.text += f"{self.elements.current_element.raw} | "
+                if self._get_setting("show_current"):
+                    self._info.text += f"{self.elements.current_element.raw} | "
 
-            self._info.text += (
-                f"selected: {'YES' if self.elements.is_current_selected else 'NO'}"
-            )
+                self._info.text += (
+                    f"selected: {'YES' if self.elements.is_current_selected else 'NO'}"
+                )
 
-            if n := len(self.elements.hidden_indices):
-                self._info.text += f" | {n} hidden elements"
+                if n := len(self.elements.hidden_indices):
+                    self._info.text += f" | {n} hidden elements"
 
-            if (ext := self._last_used_extension) is not None:
-                name = ext.name
-                # params = ext.parameters_kwargs
+                if (ext := self._last_used_extension) is not None:
+                    name = ext.name
+                    # params = ext.parameters_kwargs
 
-                self._info.text += f"\nLast used function: {name}"
-                # if len(params) > 0:
-                #     self._info.text += f", with :{params}"
+                    self._info.text += f"\nLast used function: {name}"
+                    # if len(params) > 0:
+                    #     self._info.text += f", with :{params}"
 
-                repeat_binding = self._internal_functions._dict["Repeat last extension"]
-                if repeat_binding is not None:
-                    self._info.text += f"\n{repeat_binding.key_instruction} to repeat"
+                    repeat_binding = self._internal_functions._dict["Repeat last extension"]
+                    if repeat_binding is not None:
+                        self._info.text += f"\n{repeat_binding.key_instruction} to repeat"
 
-            # self._info.visible = self._info.text != ""
+            self._info.visible = self._info.text != ""
             # We are sizing the info label to be exactly the right size,
             # so since the text likely changed width, we need to
             # re-layout to set the new frame.
@@ -590,6 +591,12 @@ class Editor:
         self._update_BBOX_and_axes()
         self._update_info()
 
+    def _reset_camera(self):
+        bounds = self._scene.scene.bounding_box
+        center = bounds.get_center()
+        self._scene.setup_camera(60, bounds, center)
+        self._scene.look_at(center, center - [0, 0, 3], [0, 1, 0])
+
     def run(self):
         self._settings.print_debug(f"Starting {type(self).__name__}.")
 
@@ -602,11 +609,7 @@ class Editor:
         self.elements_fixed.add_to_scene(self._scene.scene)
 
         self._update_extra_elements()
-
-        bounds = self._scene.scene.bounding_box
-        center = bounds.get_center()
-        self._scene.setup_camera(60, bounds, center)
-        self._scene.look_at(center, center - [0, 0, 3], [0, 1, 0])
+        self._reset_camera()
 
         self._started = True
 
