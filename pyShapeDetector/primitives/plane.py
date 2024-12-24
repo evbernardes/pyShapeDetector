@@ -526,11 +526,10 @@ class Plane(Primitive):
         rotate_inliers : boolean, optional
             If True, also rotate inliers. Default: True.
         """
+        rotation = Primitive._parse_rotation(rotation)
 
         centroid = rotation.apply(self.centroid)
         normal = rotation.apply(self.normal)
-
-        rotation = Primitive._parse_rotation(rotation)
 
         # for everything else
         super().rotate(rotation, rotate_inliers=rotate_inliers)
