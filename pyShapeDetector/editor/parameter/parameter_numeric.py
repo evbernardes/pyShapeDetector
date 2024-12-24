@@ -66,9 +66,9 @@ class ParameterNumeric(ParameterBase[type]):
 
     def update_widget(self, value):
         if self.type is int:
-            self.internal_element.int_value = self.value
+            self.internal_element.int_value = value
         elif self.type is float:
-            self.internal_element.double_value = self.value
+            self.internal_element.double_value = value
         else:
             assert False
 
@@ -111,13 +111,16 @@ class ParameterNumeric(ParameterBase[type]):
             else:
                 new_value = self.limits[0]
 
-        if self.limits is not None and (
-            not (self.limits[0] <= new_value <= self.limits[1])
-        ):
-            warnings.warn(
-                f"Default value not in limits for parameter {self.label} of type {self.type_name}, resetting it."
-            )
-            new_value = self._value
+        if self.limits is not None:
+            if (self.limits[0] - new_value > 1e-50) or (
+                new_value - self.limits[1] > 1e-5
+            ):
+                warnings.warn(
+                    f"Default value {new_value} not in limits {self.limits} "
+                    f"for parameter {self.label} of type {self.type_name}, "
+                    "resetting it."
+                )
+                new_value = self._value
 
         self._value = new_value
         # if self.is_reference:
@@ -145,7 +148,7 @@ class ParameterNumeric(ParameterBase[type]):
         if self.internal_element is None:
             return
 
-        self.update_widget(self.value)
+        self.update_widget(self._value)
         if self.limits is not None:
             self.internal_element.set_limits(*self.limits)
 

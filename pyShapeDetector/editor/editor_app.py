@@ -527,16 +527,13 @@ class Editor:
             vz = TriangleMesh.create_arrow_from_points(
                 min_bound, min_bound + extent[2] * R.dot([0, 0, 1]), radius=radius
             )
+
+            material = self._settings.get_material("regular")
+
             vz.paint_uniform_color([0, 0, 1])
-            self._scene.scene.add_geometry(
-                "BBOXAxisX", vx.as_open3d, self.material_regular
-            )
-            self._scene.scene.add_geometry(
-                "BBOXAxisY", vy.as_open3d, self.material_regular
-            )
-            self._scene.scene.add_geometry(
-                "BBOXAxisZ", vz.as_open3d, self.material_regular
-            )
+            self._scene.scene.add_geometry("BBOXAxisX", vx.as_open3d, material)
+            self._scene.scene.add_geometry("BBOXAxisY", vy.as_open3d, material)
+            self._scene.scene.add_geometry("BBOXAxisZ", vz.as_open3d, material)
             self._current_bbox_axes = (vx, vy, vz)
 
     def _update_info(self):
@@ -550,10 +547,7 @@ class Editor:
             if self.elements.current_index is None or len(self.elements) == 0:
                 self._info.text = ""
             else:
-
-                self._info.text = (
-                    f"Current: {self.elements.current_index + 1} / {len(self.elements)} | "
-                )
+                self._info.text = f"Current: {self.elements.current_index + 1} / {len(self.elements)} | "
 
                 if self._get_setting("show_current"):
                     self._info.text += f"{self.elements.current_element.raw} | "
@@ -573,9 +567,13 @@ class Editor:
                     # if len(params) > 0:
                     #     self._info.text += f", with :{params}"
 
-                    repeat_binding = self._internal_functions._dict["Repeat last extension"]
+                    repeat_binding = self._internal_functions._dict[
+                        "Repeat last extension"
+                    ]
                     if repeat_binding is not None:
-                        self._info.text += f"\n{repeat_binding.key_instruction} to repeat"
+                        self._info.text += (
+                            f"\n{repeat_binding.key_instruction} to repeat"
+                        )
 
             self._info.visible = self._info.text != ""
             # We are sizing the info label to be exactly the right size,
