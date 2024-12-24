@@ -552,6 +552,12 @@ class Editor:
 
             self._info.text = (
                 f"Current: {self.elements.current_index + 1} / {len(self.elements)} | "
+            )
+
+            if self._get_setting("show_current"):
+                self._info.text += f"{self.elements.current_element.raw} | "
+
+            self._info.text += (
                 f"selected: {'YES' if self.elements.is_current_selected else 'NO'}"
             )
 

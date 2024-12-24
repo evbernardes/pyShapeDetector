@@ -39,6 +39,7 @@ _mesh_show_back_face = True
 _paint_selected = True
 _color_selected = gui.Color(*COLOR_SELECTED_DEFAULT)
 _paint_random = False
+_show_current = True
 _debug = True
 _verbose = False
 _bbox_expand_percentage = 0
@@ -158,6 +159,12 @@ class Settings:
                 label="Show meshes' back face",
                 default=_mesh_show_back_face,
                 on_update=self._cb_mesh_show_back_face,
+            ),
+            "show_current": ParameterBool(
+                label="Show current element on info",
+                default=_show_current,
+                on_update=self._cb_show_current,
+                subpanel="Debug",
             ),
             "debug": ParameterBool(
                 label="Debug",
@@ -369,6 +376,9 @@ class Settings:
         # self._editor_instance._reset_elements_in_gui()
         elements = self._editor_instance.elements
         elements.update_all()
+
+    def _cb_show_current(self, value):
+        self._editor_instance._update_info()
 
     def _cb_debug(self, value):
         pass
