@@ -769,10 +769,10 @@ class InternalFunctions:
             ext._apply_to_elements()
 
     def _cb_toggle_hotkeys_panel(self):
-        self._editor_instance._menu_help._on_help_toggle()
+        self._editor_instance._menu_show._on_hotkeys_toggle()
 
     def _cb_toggle_info_panel(self):
-        self._editor_instance._menu_help._on_info_toggle()
+        self._editor_instance._menu_show._on_info_toggle()
 
     def _cb_toggle_settings_panel(self):
         self._editor_instance._settings._on_menu_toggle()

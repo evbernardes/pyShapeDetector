@@ -3,8 +3,8 @@ from .editor_app import Editor
 from .binding import Binding
 
 
-class MenuHelp:
-    def __init__(self, editor_instance: Editor, menu="Help"):
+class MenuShow:
+    def __init__(self, editor_instance: Editor, menu="Show"):
         self._menu = menu
         self._editor_instance = editor_instance
 
@@ -54,7 +54,7 @@ class MenuHelp:
             self._info_binding.menu_id, editor_instance._info.visible
         )
 
-    def _on_help_toggle(self):
+    def _on_hotkeys_toggle(self):
         editor_instance = self._editor_instance
         window = editor_instance._window
         menubar = editor_instance._menubar

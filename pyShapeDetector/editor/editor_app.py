@@ -374,7 +374,7 @@ class Editor:
         return self._settings.get_setting(key)
 
     def _setup_window_and_scene(self):
-        from .menu_help import MenuHelp
+        from .menu_show import MenuShow
         from .hotkeys import Hotkeys
         # from .internal_functions import InternalFunctions
 
@@ -432,8 +432,8 @@ class Editor:
 
         # 4) Finally, other menus (so that they are at the end)
         self._settings._create_menu()
-        self._menu_help = MenuHelp(self)
-        self._menu_help._create_menu()
+        self._menu_show = MenuShow(self)
+        self._menu_show._create_menu()
 
         self._extension_tabs_panel = gui.CollapsableVert(
             "Extensions", em, gui.Margins(em, em, em, em)
