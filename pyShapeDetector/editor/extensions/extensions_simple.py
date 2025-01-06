@@ -66,12 +66,48 @@ extensions.append(
 )
 
 
-def transform(
-    elements, vector, angles_ZYX_degrees, reverse_translation, reverse_rotation
+def _transform_with_rotation_matrix_and_translation(
+    elements, rotation_center, rotation_matrix, vector
 ):
     transformed_elements = copy.deepcopy(elements)
 
-    if not isinstance(transformed_elements, list):
+    translate_to_origin = np.eye(4)
+    translate_to_origin[:3, 3] = -rotation_center
+
+    # Step 2: Apply rotation
+    rotation = np.eye(4)
+    rotation[:3, :3] = rotation_matrix
+
+    # Step 3: Translate back
+    translate_back = np.eye(4)
+    translate_back[:3, 3] = rotation_center
+
+    # Step 4: Apply final translation
+    translation = np.eye(4)
+    translation[:3, 3] = vector
+
+    # Combine transformations
+    transformation_matrix = (
+        translation @ translate_back @ rotation @ translate_to_origin
+    )
+
+    if isinstance(transformed_elements, list):
+        for elem in transformed_elements:
+            elem.transform(transformation_matrix)
+    else:
+        transformed_elements.transform(transformation_matrix)
+
+    # print(transformation_matrix)
+
+    return transformed_elements
+
+
+def transform_with_angles(
+    elements, vector, angles_ZYX_degrees, reverse_translation, reverse_rotation
+):
+    # transformed_elements = copy.deepcopy(elements)
+
+    if not isinstance(elements, list):
         try:
             bbox = elements.get_oriented_bounding_box()
             vector = bbox.R @ vector
@@ -94,9 +130,9 @@ def transform(
         ).as_matrix()
         rotation_center = np.array([0.0, 0.0, 0.0])
         try:
-            for elem in transformed_elements:
+            for elem in elements:
                 rotation_center += elem.get_oriented_bounding_box().center
-            rotation_center /= len(transformed_elements)
+            rotation_center /= len(elements)
         except Exception:
             warnings.warn("Could not get center for transform.")
             traceback.print_exc()
@@ -104,35 +140,12 @@ def transform(
     if reverse_rotation:
         rotation = rotation.T
 
-    translate_to_origin = np.eye(4)
-    translate_to_origin[:3, 3] = -rotation_center
+    if reverse_translation:
+        vector = -vector
 
-    # Step 2: Apply rotation
-    rotation = np.eye(4)
-    rotation[:3, :3] = rotation_matrix
-
-    # Step 3: Translate back
-    translate_back = np.eye(4)
-    translate_back[:3, 3] = rotation_center
-
-    # Step 4: Apply final translation
-    translation = np.eye(4)
-    translation[:3, 3] = vector * 2 * (reverse_translation - 0.5)
-
-    # Combine transformations
-    transformation_matrix = (
-        translation @ translate_back @ rotation @ translate_to_origin
+    return _transform_with_rotation_matrix_and_translation(
+        elements, rotation_center, rotation_matrix, vector
     )
-
-    if isinstance(transformed_elements, list):
-        for elem in transformed_elements:
-            elem.transform(transformation_matrix)
-    else:
-        transformed_elements.transform(transformation_matrix)
-
-    print(transformation_matrix)
-
-    return transformed_elements
 
 
 # extensions.append(
@@ -154,7 +167,7 @@ def transform(
 extensions.append(
     {
         "name": "Transform Selected",
-        "function": transform,
+        "function": transform_with_angles,
         "menu": "Edit",
         "hotkey": "T",
         "lshift": "True",
@@ -165,6 +178,30 @@ extensions.append(
             "reverse_translation": {"type": bool},
             "reverse_rotation": {"type": bool},
         },
+    }
+)
+
+
+def _align_and_center_to_global_frame(elements):
+    if isinstance(elements, list):
+        bboxes = [element.get_oriented_bounding_box() for element in elements]
+        points = np.vstack([bbox.get_box_points() for bbox in bboxes])
+        bbox = OrientedBoundingBox.create_from_points(points)
+    else:
+        bbox = elements.get_oriented_bounding_box()
+
+    return _transform_with_rotation_matrix_and_translation(
+        elements, bbox.center, bbox.R.T, -bbox.center
+    )
+
+
+extensions.append(
+    {
+        "name": "Align and center elements to global frame",
+        "inputs": "selected",
+        "function": _align_and_center_to_global_frame,
+        "menu": "Edit",
+        "select_outputs": True,
     }
 )
 
