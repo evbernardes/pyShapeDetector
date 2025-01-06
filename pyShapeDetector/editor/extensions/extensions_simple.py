@@ -190,8 +190,11 @@ def _align_and_center_to_global_frame(elements):
     else:
         bbox = elements.get_oriented_bounding_box()
 
+    # TODO: make translation align element to above XY plane
+    translation = -bbox.center
+
     return _transform_with_rotation_matrix_and_translation(
-        elements, bbox.center, bbox.R.T, -bbox.center
+        elements, bbox.center, bbox.R.T, translation
     )
 
 
