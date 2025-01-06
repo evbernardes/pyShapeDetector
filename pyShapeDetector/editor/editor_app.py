@@ -396,7 +396,7 @@ class Editor:
         self._scene.scene.set_lighting(
             rendering.Open3DScene.LightingProfile.NO_SHADOWS, (0, 0, 0)
         )
-        self._scene.scene.show_axes(False)
+        self._scene.scene.show_axes(self._get_setting("show_global_axes"))
 
         self._info = gui.Label("")
         self._info.visible = True
@@ -602,15 +602,17 @@ class Editor:
         self._scene.setup_camera(60, bounds, center)
         self._scene.look_at(center, center - [0, 0, 3], [0, 1, 0])
 
-    def run(self):
+    def _startup(self):
+        """Runs all necessary startups, might be useful for testing."""
         self._settings.print_debug(f"Starting {type(self).__name__}.")
 
-        # Set up the gui
+        # Set up the scene
         self._setup_window_and_scene()
         self._settings._update_materials()
 
+        # Add initial elements
         self.elements.add_to_scene(self._scene.scene)
-        self._plane_boundaries.add_to_scene(self._scene.scene)
+        # self._plane_boundaries.add_to_scene(self._scene.scene)
         self.elements_fixed.add_to_scene(self._scene.scene)
 
         self._update_extra_elements()
@@ -618,6 +620,11 @@ class Editor:
 
         self._started = True
 
+    def run(self):
+        # This calls of of the necessary startups:
+        self._startup()
+
+        # And this runs the main gui loop:
         self.app.run()
 
         # try:

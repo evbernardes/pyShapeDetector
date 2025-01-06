@@ -47,6 +47,7 @@ _color_bbox_selected = gui.Color(*color_bbox_selected_DEFAULT)
 _color_bbox_unselected = gui.Color(*color_bbox_unselected_DEFAULT)
 _show_bbox = True
 _show_bbox_axes = False
+_show_global_axes = False
 _bbox_axes_width = 0.012
 _number_points_distance = 30
 _random_color_brightness = 0.5
@@ -208,6 +209,12 @@ class Settings:
                 label="Show BBOX's axes",
                 default=_show_bbox_axes,
                 on_update=self._cb_show_bbox_axes,
+                subpanel="Bounding Box and axes",
+            ),
+            "show_global_axes": ParameterBool(
+                label="Show global axes",
+                default=_show_global_axes,
+                on_update=self._cb_show_global_axes,
                 subpanel="Bounding Box and axes",
             ),
             "bbox_axes_width": ParameterNumeric(
@@ -403,6 +410,9 @@ class Settings:
 
     def _cb_show_bbox_axes(self, value):
         self._editor_instance._update_BBOX_and_axes()
+
+    def _cb_show_global_axes(self, value):
+        self._editor_instance._scene.scene.show_axes(value)
 
     def _cb_bbox_axes_width(self, value):
         self._editor_instance._update_BBOX_and_axes()
