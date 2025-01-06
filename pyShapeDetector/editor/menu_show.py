@@ -9,6 +9,8 @@ class MenuShow:
         self._editor_instance = editor_instance
 
         self._bindings = {
+            "ground": editor_instance._internal_functions._dict["Show Ground Plane"],
+            "axes": editor_instance._internal_functions._dict["Show Global Axes"],
             "hotkeys": editor_instance._internal_functions._dict["Show Hotkeys"],
             "info": editor_instance._internal_functions._dict["Show Info"],
             "about": Binding(
@@ -66,6 +68,38 @@ class MenuShow:
 
         menubar.set_checked(self._bindings["hotkeys"].menu_id, self._panel.visible)
         window.set_needs_layout()
+
+    def _on_ground_plane_toggle(self):
+        editor_instance = self._editor_instance
+        window = editor_instance._window
+        menubar = editor_instance._menubar
+
+        # editor_instance._info.visible = not editor_instance._info.visible
+        ground_plane_visible = not editor_instance._ground_plane_visible
+
+        editor_instance._scene.scene.show_ground_plane(
+            ground_plane_visible, editor_instance._ground_plane
+        )
+
+        menubar.set_checked(self._bindings["ground"].menu_id, ground_plane_visible)
+        window.set_needs_layout()
+
+        editor_instance._ground_plane_visible = ground_plane_visible
+
+    def _on_global_axes_toggle(self):
+        editor_instance = self._editor_instance
+        window = editor_instance._window
+        menubar = editor_instance._menubar
+
+        # editor_instance._info.visible = not editor_instance._info.visible
+        global_axes_visible = not editor_instance._global_axes_visible
+
+        editor_instance._scene.scene.show_axes(global_axes_visible)
+
+        menubar.set_checked(self._bindings["axes"].menu_id, global_axes_visible)
+        window.set_needs_layout()
+
+        editor_instance._global_axes_visible = global_axes_visible
 
     def _on_info_toggle(self):
         editor_instance = self._editor_instance

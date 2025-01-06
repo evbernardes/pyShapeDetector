@@ -139,6 +139,22 @@ class InternalFunctions:
                 menu="Edit",
             ),
             Binding(
+                key=gui.KeyName.G,
+                lctrl=False,
+                lshift=False,
+                description="Show Ground Plane",
+                callback=self._cb_toggle_ground_plane,
+                menu=None,  # This is added later
+            ),
+            Binding(
+                key=gui.KeyName.A,
+                lctrl=False,
+                lshift=False,
+                description="Show Global Axes",
+                callback=self._cb_toggle_global_axes,
+                menu=None,  # This is added later
+            ),
+            Binding(
                 key=gui.KeyName.H,
                 lctrl=False,
                 lshift=False,
@@ -767,6 +783,12 @@ class InternalFunctions:
                 f"Re-applying last function: {ext.name}"
             )
             ext._apply_to_elements()
+
+    def _cb_toggle_ground_plane(self):
+        self._editor_instance._menu_show._on_ground_plane_toggle()
+
+    def _cb_toggle_global_axes(self):
+        self._editor_instance._menu_show._on_global_axes_toggle()
 
     def _cb_toggle_hotkeys_panel(self):
         self._editor_instance._menu_show._on_hotkeys_toggle()
