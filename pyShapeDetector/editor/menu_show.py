@@ -8,6 +8,16 @@ class MenuShow:
         self._menu = menu
         self._editor_instance = editor_instance
 
+        self._bindings = {
+            "hotkeys": editor_instance._internal_functions._dict["Show Hotkeys"],
+            "info": editor_instance._internal_functions._dict["Show Info"],
+            "about": Binding(
+                description="About",
+                callback=self._on_menu_about,
+                creates_window=True,
+            ),
+        }
+
     def _create_panel(self):
         window = self._editor_instance._window
         em = window.theme.font_size
@@ -28,31 +38,11 @@ class MenuShow:
         self._text = text
 
     def _create_menu(self):
-        editor_instance = self._editor_instance
-
         self._create_panel()
 
-        self._hotkeys_binding = editor_instance._internal_functions._dict[
-            "Show Hotkeys"
-        ]
-        self._hotkeys_binding._menu = self._menu
-        self._hotkeys_binding.add_to_menu(self._editor_instance)
-
-        self._info_binding = editor_instance._internal_functions._dict["Show Info"]
-        self._info_binding._menu = self._menu
-        self._info_binding.add_to_menu(self._editor_instance)
-
-        self._about_binding = Binding(
-            description="About",
-            menu=self._menu,
-            callback=self._on_menu_about,
-            creates_window=True,
-        )
-        self._about_binding.add_to_menu(self._editor_instance)
-
-        editor_instance._menubar.set_checked(
-            self._info_binding.menu_id, editor_instance._info.visible
-        )
+        for binding in self._bindings.values():
+            binding._menu = self._menu
+            binding.add_to_menu(self._editor_instance)
 
     def _on_hotkeys_toggle(self):
         editor_instance = self._editor_instance
@@ -74,7 +64,7 @@ class MenuShow:
                 + "\n- Set current with mouse and toggle"
             )
 
-        menubar.set_checked(self._hotkeys_binding.menu_id, self._panel.visible)
+        menubar.set_checked(self._bindings["hotkeys"].menu_id, self._panel.visible)
         window.set_needs_layout()
 
     def _on_info_toggle(self):
@@ -84,7 +74,9 @@ class MenuShow:
 
         editor_instance._info.visible = not editor_instance._info.visible
 
-        menubar.set_checked(self._info_binding.menu_id, editor_instance._info.visible)
+        menubar.set_checked(
+            self._bindings["info"].menu_id, editor_instance._info.visible
+        )
         window.set_needs_layout()
 
     def _on_menu_about(self):
