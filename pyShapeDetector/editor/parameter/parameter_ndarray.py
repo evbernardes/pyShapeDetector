@@ -143,8 +143,6 @@ class ParameterNDArray(ParameterBase):
                         line, col, value, t
                     )
                 )
-                # elements_line.add_child(text_edit)
-                # elements_array.add_child(elements_line)
                 elements_array.add_child(text_edit)
 
         element = gui.VGrid(1, 0.5 * font_size)
