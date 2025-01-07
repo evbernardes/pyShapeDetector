@@ -266,14 +266,13 @@ class Extension:
         self.binding.add_to_menu(self._editor_instance)
 
     def run(self):
-        _on_panel = not self._editor_instance._settings.get_setting(
-            "extensions_on_window"
-        )
+        _on_window = self._editor_instance._settings.get_setting("extensions_on_window")
+        _on_panel = not _on_window
 
         if len(self.parameters) == 0:
             self._apply_to_elements_in_thread()
         else:
-            if self._extension_window_opened and not _on_panel:
+            if self._extension_window_opened and _on_window:
                 print(f"Tried opening extension '{self.name}' but it's already opened.")
                 return
 
@@ -420,7 +419,7 @@ class Extension:
         )
         editor_instance = self._editor_instance
 
-        if editor_instance._set_extension_panel_open(self.name, True):
+        if _on_panel and editor_instance._set_extension_panel_open(self.name, True):
             """ If True, it was already opened and set visibility to True."""
             return
 
@@ -450,8 +449,7 @@ class Extension:
             )
             temp_window.show_menu(False)
             self._editor_instance._temp_windows.append(temp_window)
-
-        self._extension_window_opened = True
+            self._extension_window_opened = True
 
         def _on_apply_button():
             self._ran_at_least_once = True
