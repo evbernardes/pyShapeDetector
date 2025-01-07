@@ -31,6 +31,9 @@ setup(
         "lines_to_plane_with_shapely": [
             "shapely>=2.0.2",
         ],
+        "copy_to_clipboard": [
+            "pyperclip>=1.9.0",
+        ],
     },
     author="Evandro Bernardes",
     author_email="evbernardes@gmail.com",

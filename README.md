@@ -14,7 +14,8 @@ Python 3 module to detect geometrical primitives in pointclouds.
 - `shapely`: can be used to glue concave planes
 
 ### Extra
-- `UnityPrimitiveLoader`: CSharp extension for the Unity Editor to create game objects for primitive descriptors. 
+- `UnityPrimitiveLoader`: C# extension for the Unity Editor to create game objects for primitive descriptors. 
+- If optional dependency `pyperclip` is installed, copying elements from the editor also copy their names to the clipboard. On Linux, `xclip` must be installed to assure proper behavior. 
 
 ## Installation
 

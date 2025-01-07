@@ -3,11 +3,16 @@ import copy
 import numpy as np
 import warnings
 import traceback
+from importlib.util import find_spec
 from typing import List, Union
 from pathlib import Path
 from open3d.visualization import gui
+from multiprocessing import Process
 from .editor_app import Editor
 from .binding import Binding
+
+if has_pyperclip := find_spec("pyperclip"):
+    import pyperclip
 
 
 class InternalFunctions:
@@ -618,6 +623,15 @@ class InternalFunctions:
             f"Copying {len(copied_elements)} elements."
         )
         editor_instance._copied_elements = copied_elements
+
+        if has_pyperclip:
+            try:
+                full_text = ",\n".join([str(elem) for elem in copied_elements])
+                pyperclip.copy(full_text)
+
+            except Exception:
+                # Not important
+                pass
 
     def _cb_paste(self):
         editor_instance = self._editor_instance
