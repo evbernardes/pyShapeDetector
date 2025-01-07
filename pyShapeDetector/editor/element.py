@@ -500,7 +500,7 @@ class ElementTriangleMesh(ElementGeometry):
         mesh = copy.copy(self.raw)
         if mesh_show_back_face:
             mesh.add_reverse_triangles()
-        return mesh.as_open3d
+        self._drawable = mesh.as_open3d
 
     def _get_distance_checker(self):
         number_points_distance = self._settings.get_setting("number_points_distance")
