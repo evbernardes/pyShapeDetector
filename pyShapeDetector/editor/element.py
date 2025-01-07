@@ -453,7 +453,7 @@ class ElementPointCloud(ElementGeometry):
                 "PointCloud does not have color, painting it with "
                 f"default color {DEFAULT_POINTCLOUD_COLOR}."
             )
-        drawable.paint_uniform_color(DEFAULT_POINTCLOUD_COLOR)
+            drawable.paint_uniform_color(DEFAULT_POINTCLOUD_COLOR)
 
         if PCD_use_Tensor:
             self._drawable = TensorPointCloud.from_legacy(drawable)
