@@ -632,7 +632,7 @@ class Editor:
         self._settings._update_materials()
 
         # Add initial elements
-        self.elements.add_to_scene(self._scene.scene)
+        self.elements.add_to_scene(self._scene.scene, startup=True)
         # self._plane_boundaries.add_to_scene(self._scene.scene)
         self.elements_fixed.add_to_scene(self._scene.scene)
 

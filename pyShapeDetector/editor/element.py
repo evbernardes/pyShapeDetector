@@ -136,6 +136,9 @@ class Element(ABC):
     @is_hidden.setter
     def is_hidden(self, value: bool):
         self._is_hidden = value
+        if self.scene is None:
+            # app did not start yet
+            return
         if value:
             self.remove_from_scene()
         else:
@@ -414,7 +417,8 @@ class ElementPointCloud(ElementGeometry):
 
         self._settings.print_debug(
             f"Painting Tensor-based PointCloud. Input color shape: {color.shape}. "
-            f"Prevous color shape: {drawable.point.colors.shape}."
+            f"Prevous color shape: {drawable.point.colors.shape}.",
+            require_verbose=True,
         )
 
         try:

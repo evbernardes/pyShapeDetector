@@ -201,6 +201,7 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
 
             new_elements = []
             new_elements_fixed = []
+            elements = editor_instance.elements
 
             if path_elements.exists():
                 for path in path_elements.glob("*"):
@@ -210,40 +211,59 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
                 for path in path_elements_fixed.glob("*"):
                     new_elements_fixed.append(_load_one_element(path))
 
-            if len(editor_instance.elements) > 0:
-                editor_instance.elements.pop_multiple(
-                    range(len(editor_instance.elements)), from_gui=True
-                )
+            # if len(elements) > 0:
+            #     elements.pop_multiple(range(len(elements)), from_gui=True)
 
-            editor_instance.elements.insert_multiple(new_elements, to_gui=True)
+            # json_path_info = Path(temp_dir) / "info.json"
+            # if not json_path_info.exists():
+            selected_indices = []
+            hidden_indices = []
+            # else:
+            #     try:
+            #         with open(json_path_info, "r") as json_file:
+            #             json_data_info = json.load(json_file)
+            #     except Exception:
+            #         warnings.warn("Could not load info file from '{input_path}'.")
+            #     selected_indices = json_data_info.get("selected_indices", [])
+            #     hidden_indices = json_data_info.get("hidden_indices", [])
+
+            is_selected = [idx in selected_indices for idx in range(len(new_elements))]
+
+            elements.insert_multiple(new_elements, is_selected=is_selected, to_gui=True)
+
+            for idx in hidden_indices:
+                editor_instance.elements[idx].is_hidden = True
+
             editor_instance._update_info()
             editor_instance._future_states = []
             editor_instance._past_states = []
 
-            json_path = Path(temp_dir) / "preferences.json"
-            if not json_path.exists():
+            json_path_preferences = Path(temp_dir) / "preferences.json"
+            if not json_path_preferences.exists():
                 return
 
             try:
-                with open(json_path, "r") as json_file:
-                    json_data = json.load(json_file)
+                with open(json_path_preferences, "r") as json_file:
+                    json_data_preferences = json.load(json_file)
             except Exception:
                 warnings.warn("Could not load preferences file from '{input_path}'.")
                 return
 
             keys = ["PointCloud_density"]
             for key in keys:
-                if key not in json_data:
+                if key not in json_data_preferences:
                     warnings.warn(
                         f"{key} not found in preferences from '{input_path}'."
                     )
                     continue
 
                 try:
-                    editor_instance._settings.set_setting(key, json_data[key])
+                    editor_instance._settings.set_setting(
+                        key, json_data_preferences[key]
+                    )
                 except Exception:
                     warnings.warn(
-                        f"Could set '{key}':{json_data[key]}  from preferences in "
+                        f"Could set '{key}':{json_data_preferences[key]}  from preferences in "
                         f"file '{input_path}' into settings."
                     )
                     traceback.print_exc()
@@ -268,22 +288,30 @@ def _save_scene(path: Union[Path, str], editor_instance: Editor):
 
     with tempfile.TemporaryDirectory() as temp_dir:
         with tarfile.open(path, "w") as tar:
+            # preferences file
             temp_dir = Path(temp_dir)
             json_file_name = "preferences.json"
             temp_json_file_path = temp_dir / json_file_name
-
             json_data = {}
             for key, param in editor_instance._settings._dict.items():
                 if isinstance(param.value, np.ndarray):
                     json_data[key] = param.value.tolist()
                 else:
                     json_data[key] = param.value
-
-            print(json_data)
-
             with open(temp_json_file_path, "w") as fp:
                 json.dump(json_data, fp, indent=4)
+            tar.add(temp_json_file_path, arcname=json_file_name)
 
+            # info file
+            temp_dir = Path(temp_dir)
+            json_file_name = "info.json"
+            temp_json_file_path = temp_dir / json_file_name
+            json_data = {
+                "selected_indices": elements.selected_indices,
+                "hidden_indices": elements.hidden_indices,
+            }
+            with open(temp_json_file_path, "w") as fp:
+                json.dump(json_data, fp, indent=4)
             tar.add(temp_json_file_path, arcname=json_file_name)
 
             if len(elements) > 0:

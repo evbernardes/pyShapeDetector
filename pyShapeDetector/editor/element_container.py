@@ -168,7 +168,7 @@ class ElementContainer(list):
     def unhidden_indices(self):
         return np.where(~np.array(self.is_hidden))[0].tolist()
 
-    def add_to_scene(self, scene: Open3DScene):
+    def add_to_scene(self, scene: Open3DScene, startup: bool = False):
         if self._scene is not None and self._scene != scene:
             warnings.warn("Remove from current scene before adding to another.")
             return
@@ -179,6 +179,8 @@ class ElementContainer(list):
             raise TypeError(f"Expected Open3DScene, got {scene}.")
 
         for elem in self:
+            if startup:
+                elem.update(is_current=False, update_scene=False)
             elem.add_to_scene(scene)
 
     def remove_from_scene(self):
