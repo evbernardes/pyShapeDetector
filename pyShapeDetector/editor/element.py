@@ -24,6 +24,8 @@ line_elements = (
     geometry.OrientedBoundingBox,
 )
 
+DEFAULT_POINTCLOUD_COLOR = (0.3, 0.3, 0.3)
+
 
 class Element(ABC):
     """
@@ -444,6 +446,12 @@ class ElementPointCloud(ElementGeometry):
         if downsample and len(drawable.points) > max_points:
             ratio = int(len(drawable.points) / max_points)
             drawable = drawable.uniform_down_sample(ratio)
+
+        has_color = len(drawable.colors) > 0
+        if not has_color:
+            print("PointCloud does not have color, painting it with "
+                  f"default color {DEFAULT_POINTCLOUD_COLOR}.")
+        drawable.paint_uniform_color(DEFAULT_POINTCLOUD_COLOR)
 
         if PCD_use_Tensor:
             self._drawable = TensorPointCloud.from_legacy(drawable)
