@@ -204,28 +204,32 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
             elements = editor_instance.elements
 
             if path_elements.exists():
-                for path in path_elements.glob("*"):
+                subpaths_elements = list(path_elements.glob("*"))
+                indices = [int(f.stem.split("_")[1]) for f in subpaths_elements]
+                subpaths_elements = np.array(subpaths_elements)[np.argsort(indices)]
+
+                for path in subpaths_elements:
                     new_elements.append(_load_one_element(path))
 
             if path_elements_fixed.exists():
                 for path in path_elements_fixed.glob("*"):
                     new_elements_fixed.append(_load_one_element(path))
 
-            # if len(elements) > 0:
-            #     elements.pop_multiple(range(len(elements)), from_gui=True)
+            if len(elements) > 0:
+                elements.pop_multiple(range(len(elements)), from_gui=True)
 
-            # json_path_info = Path(temp_dir) / "info.json"
-            # if not json_path_info.exists():
-            selected_indices = []
-            hidden_indices = []
-            # else:
-            #     try:
-            #         with open(json_path_info, "r") as json_file:
-            #             json_data_info = json.load(json_file)
-            #     except Exception:
-            #         warnings.warn("Could not load info file from '{input_path}'.")
-            #     selected_indices = json_data_info.get("selected_indices", [])
-            #     hidden_indices = json_data_info.get("hidden_indices", [])
+            json_path_info = Path(temp_dir) / "info.json"
+            if not json_path_info.exists():
+                selected_indices = []
+                hidden_indices = []
+            else:
+                try:
+                    with open(json_path_info, "r") as json_file:
+                        json_data_info = json.load(json_file)
+                except Exception:
+                    warnings.warn("Could not load info file from '{input_path}'.")
+                selected_indices = json_data_info.get("selected_indices", [])
+                hidden_indices = json_data_info.get("hidden_indices", [])
 
             is_selected = [idx in selected_indices for idx in range(len(new_elements))]
 

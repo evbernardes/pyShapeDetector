@@ -235,7 +235,9 @@ class Element(ABC):
 
     def add_to_scene(self, scene: Union[Open3DScene, None] = None):
         if scene is None:
+            # app did not start
             pass
+
         elif isinstance(scene, Open3DScene):
             self._scene = scene
         else:
@@ -248,7 +250,9 @@ class Element(ABC):
             material = self._settings.get_material("line")
         else:
             material = self._settings.get_material("regular")
-        self.scene.add_geometry(self.name, self.drawable, material)
+
+        if not self.is_hidden:
+            self.scene.add_geometry(self.name, self.drawable, material)
 
     def remove_from_scene(self):
         self.scene.remove_geometry(self.name)
