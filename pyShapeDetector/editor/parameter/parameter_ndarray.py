@@ -147,7 +147,7 @@ class ParameterNDArray(ParameterBase):
                 # elements_array.add_child(elements_line)
                 elements_array.add_child(text_edit)
 
-        element = gui.VGrid(2, 0.5 * font_size)
+        element = gui.VGrid(1, 0.5 * font_size)
         element.add_child(label)
         element.add_child(elements_array)
         self._enable_internal_element(not self.is_reference)
