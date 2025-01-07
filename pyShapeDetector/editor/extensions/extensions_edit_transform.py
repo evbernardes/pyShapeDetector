@@ -146,42 +146,39 @@ extensions.append(
 )
 
 
-# def _rotate_aligning_vectors(elements, vector_in, vector_out, reverse_rotation):
-#     R = get_rotation_from_axis(vector_in, vector_out)
-#     correction = Rotation.from_rotvec(
-#         180 * vector_in / np.linalg.norm(vector_in), degrees=True
-#     )
-#     R = R * correction.as_matrix()
+def _rotate_aligning_vectors(elements, vector_in, vector_out, reverse_rotation):
+    bbox = OrientedBoundingBox.from_multiple_elements(elements)
+    vector_in /= np.linalg.norm(vector_in)
+    vector_out /= np.linalg.norm(vector_out)
 
-#     if reverse_rotation:
-#         R = R.T
-#     return _transform_with_rotation_matrix_and_translation(
-#         elements, (0, 0, 0), R, (0, 0, 0)
-#     )
+    R = get_rotation_from_axis(vector_in, vector_out)
+    correction = Rotation.from_rotvec(180 * vector_in, degrees=True)
+    R = R @ correction.as_matrix()
+
+    if reverse_rotation:
+        R = R.T
+    return _transform_with_rotation_matrix_and_translation(
+        elements, bbox.center, R, (0, 0, 0)
+    )
 
 
-# extensions.append(
-#     {
-#         "name": "Rotate aligining vectors",
-#         "function": _rotate_aligning_vectors,
-#         "menu": MENU_NAME,
-#         "select_outputs": True,
-#         "parameters": {
-#             "vector_in": {"type": np.ndarray, "default": [0.0, 0.0, 1.0]},
-#             "vector_out": {"type": np.ndarray, "default": [0.0, 0.0, 1.0]},
-#             "reverse_rotation": {"type": bool},
-#         },
-#     }
-# )
+extensions.append(
+    {
+        "name": "Rotate aligining vectors",
+        "function": _rotate_aligning_vectors,
+        "menu": MENU_NAME,
+        "select_outputs": True,
+        "parameters": {
+            "vector_in": {"type": np.ndarray, "default": [0.0, 0.0, 1.0]},
+            "vector_out": {"type": np.ndarray, "default": [0.0, 0.0, 1.0]},
+            "reverse_rotation": {"type": bool},
+        },
+    }
+)
 
 
 def _align_and_center_to_global_frame(elements):
-    if isinstance(elements, list):
-        bboxes = [element.get_oriented_bounding_box() for element in elements]
-        points = np.vstack([bbox.get_box_points() for bbox in bboxes])
-        bbox = OrientedBoundingBox.create_from_points(points)
-    else:
-        bbox = elements.get_oriented_bounding_box()
+    bbox = OrientedBoundingBox.from_multiple_elements(elements)
 
     # align element but place above XY plane
     translation = (0, 0, bbox.extent[2] / 2) - bbox.center
