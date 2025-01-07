@@ -33,8 +33,9 @@ def remove_small_pcds(pcds_input, min_points):
 
 extensions.append(
     {
+        "name": "PCDs by number of points",
         "function": remove_small_pcds,
-        "menu": MENU_NAME,
+        "menu": MENU_NAME + "/Remove small...",
         "parameters": {
             "min_points": {
                 "type": int,
@@ -47,14 +48,36 @@ extensions.append(
 
 
 @_apply_to(Primitive)
-def remove_small_surfaces(shapes, min_area):
+def remove_small_shapes_by_surface_area(shapes, min_area):
     return [s for s in shapes if s.surface_area >= min_area]
 
 
 extensions.append(
     {
-        "function": remove_small_surfaces,
-        "menu": MENU_NAME,
+        "name": "Shapes per surface area",
+        "function": remove_small_shapes_by_surface_area,
+        "menu": MENU_NAME + "/Remove small...",
+        "parameters": {
+            "min_area": {
+                "type": float,
+                "limits": (1, 10000),
+                "limit_setter": _get_shape_areas,
+            }
+        },
+    }
+)
+
+
+@_apply_to(TriangleMesh)
+def remove_small_meshes_by_surface_area(meshes, min_area):
+    return [mesh for mesh in meshes if mesh.surface_area >= min_area]
+
+
+extensions.append(
+    {
+        "name": "Meshes per surface area",
+        "function": remove_small_meshes_by_surface_area,
+        "menu": MENU_NAME + "/Remove small...",
         "parameters": {
             "min_area": {
                 "type": float,

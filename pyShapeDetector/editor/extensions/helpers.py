@@ -17,7 +17,7 @@ from pyShapeDetector.primitives import (
     PlaneBounded,
     PlaneRectangular,
 )  # , Sphere, Plane, Cylinder
-from pyShapeDetector.geometry import PointCloud
+from pyShapeDetector.geometry import PointCloud, TriangleMesh
 from pyShapeDetector import utility as util
 from pyShapeDetector import methods
 from datetime import datetime
@@ -34,7 +34,11 @@ def _get_pointcloud_sizes(elements):
 
 
 def _get_shape_areas(elements):
-    areas = [elem.surface_area for elem in elements if isinstance(elem, Primitive)]
+    areas = [
+        elem.surface_area
+        for elem in elements
+        if isinstance(elem, (Primitive, TriangleMesh))
+    ]
     return (min(areas), max(areas))
 
 
