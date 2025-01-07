@@ -436,7 +436,7 @@ class Extension:
         separation_height = int(round(0.1 * em))
 
         parameter_panel = ParameterPanel(
-            self.parameters, separation_width, separation_height, "Enter parameters:"
+            self.parameters, separation_width, separation_height
         )
 
         panel = parameter_panel.panel
@@ -487,6 +487,12 @@ class Extension:
         refresh.set_on_clicked(_on_refresh_limits)
         refresh.vertical_padding_em = 0
 
+        callbacks = {
+            "apply": _on_apply_button,
+            "close": _on_close_button,
+            "refresh": _on_refresh_limits,
+        }
+
         h = gui.Horiz()
         h.add_stretch()
         h.add_child(apply)
@@ -503,6 +509,6 @@ class Extension:
             temp_window.set_on_close(_on_close_window)
 
         else:
-            editor_instance._add_extension_panel(self.name, panel)
+            editor_instance._add_extension_panel(self.name, panel, callbacks)
 
         _on_refresh_limits()

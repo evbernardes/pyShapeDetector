@@ -197,10 +197,10 @@ class Editor:
     def elements_fixed(self):
         return self._elements_fixed
 
-    def _add_extension_panel(self, name, panel):
+    def _add_extension_panel(self, name, panel, callbacks):
         if name in self._extensions_panels:
             self._extensions_panels.pop(name).visible = False
-            self._add_extension_panel(name, panel)
+            self._add_extension_panel(name, panel, callbacks)
             return
 
         N = len(self._extensions_panels)
@@ -210,8 +210,22 @@ class Editor:
         # self._extensions_panels[name] = panel
         panel_collapsable = gui.CollapsableVert(name, em, gui.Margins(0, 0, 0, 0))
         panel_collapsable.add_child(panel)
-        self._extension_tabs_panel.add_child(panel_collapsable)
-        self._extensions_panels[name] = panel_collapsable
+
+        # Small buttons
+        # ok = gui.Button("Ok")
+        # ok.set_on_clicked(callbacks["close"])
+        # ok.vertical_padding_em = 0
+        x = gui.Button("X")
+        x.set_on_clicked(callbacks["close"])
+        x.vertical_padding_em = 0
+
+        extension_line = gui.VGrid(2, 0)
+        # extension_line.add_child(ok)
+        extension_line.add_child(x)
+        extension_line.add_child(panel_collapsable)
+
+        self._extension_tabs_panel.add_child(extension_line)
+        self._extensions_panels[name] = extension_line
         self._window.set_needs_layout()
 
     def _set_extension_panel_open(self, name, is_open) -> bool:
