@@ -23,6 +23,7 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
 
     Extra Methods
     -------------
+    from_multiple_elements
     __add__
     contains_points
     intersects
@@ -35,6 +36,33 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
     as_planes
     as_lineset
     """
+
+    @classmethod
+    def from_multiple_elements(cls, elements):
+        """
+        Gets the axis aligned bounding box containing all elements.
+
+        Each element in list must have a "get_axis_aligned_bounding_box"
+        method implemented.
+
+        Parameters
+        ----------
+
+        elements : list
+            List containing Open3D geometries, Numpy Geometries or primitives
+
+        Returns
+        -------
+        OrientedBoundingBox
+        """
+        if isinstance(elements, list):
+            bboxes = [element.get_axis_aligned_bounding_box() for element in elements]
+            if len(bboxes) == 1:
+                return bboxes[0]
+            points = np.vstack([bbox.get_box_points() for bbox in bboxes])
+            return cls.create_from_points(points)
+        else:
+            return cls(elements.get_axis_aligned_bounding_box())
 
     def __add__(self, other_aabb):
         if not self.is_instance_or_open3d(other_aabb):
