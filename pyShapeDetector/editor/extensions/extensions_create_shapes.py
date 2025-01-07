@@ -21,7 +21,7 @@ from pyShapeDetector.utility import MultiDetector
 from .helpers import _apply_to
 
 
-MENU_NAME = "Create shapes"
+MENU_NAME = "Create Shapes"
 
 dict_methods = {method.__name__: method for method in list_methods_RANSAC}
 extensions = []
