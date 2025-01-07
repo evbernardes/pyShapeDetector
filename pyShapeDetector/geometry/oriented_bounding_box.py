@@ -23,12 +23,40 @@ class OrientedBoundingBox(Numpy_Geometry):
 
     Extra Methods
     -------------
+    from_multiple_elements
     contains_points
     expanded
     split
     as_planes
     as_lineset
     """
+
+    @classmethod
+    def from_multiple_elements(cls, elements):
+        """
+        Gets minimal oriented bounding box from all elements.
+
+        Each element in list must have a "get_oriented_bounding_box"
+        method implemented.
+
+        Parameters
+        ----------
+
+        elements : list
+            List containing Open3D geometries, Numpy Geometries or primitives
+
+        Returns
+        -------
+        OrientedBoundingBox
+        """
+        if isinstance(elements, list):
+            bboxes = [element.get_oriented_bounding_box() for element in elements]
+            if len(bboxes) == 1:
+                return bboxes[0]
+            points = np.vstack([bbox.get_box_points() for bbox in bboxes])
+            return cls.create_from_points(points)
+        else:
+            return cls(elements.get_oriented_bounding_box())
 
     def contains_points(self, points, inclusive=True, eps=1e-5):
         """
