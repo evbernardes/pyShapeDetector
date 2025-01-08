@@ -234,7 +234,9 @@ extensions.append(
 
 def _align_with_current_plane_as_ground(elements, ground_plane):
     if not isinstance(ground_plane, Plane):
-        raise TypeError("fExpected current element to be a Plane, got {ground_plane}.")
+        raise TypeError(
+            f"Current (target) element should be a Plane, got:\n'{ground_plane}'."
+        )
 
     vector_in = ground_plane.normal
     vector_out = np.array([0.0, 0.0, 1.0])

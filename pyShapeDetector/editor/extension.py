@@ -13,7 +13,7 @@ from .parameter import ParameterBase, ParameterPanel, ParameterCurrentElement
 from .binding import Binding
 from .settings import Settings
 
-
+# TODO: global not working yet
 # VALID_INPUTS = ("none", "current", "selected", "global")
 VALID_INPUTS = ("none", "current", "selected")
 
@@ -354,6 +354,11 @@ class Extension:
             )
             editor_instance._close_dialog()
             traceback.print_exc()
+
+            editor_instance._create_simple_dialog(
+                f"Extension '{self.name}' failed: \n\n{e}."
+            )
+
             return
 
         if self._cancelled:

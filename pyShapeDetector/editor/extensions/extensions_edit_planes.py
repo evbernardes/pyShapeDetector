@@ -415,7 +415,9 @@ extensions.append(
 @_apply_to(PlaneBounded)
 def extrude_to_current_plane(planes_input, target_plane, close, as_mesh):
     if not isinstance(target_plane, Plane):
-        raise TypeError(f"Expected plane, got {target_plane}.")
+        raise TypeError(
+            f"Current (target) element should be a Plane, got:\n'{target_plane}'."
+        )
 
     extrusions = []
     for plane in planes_input:
