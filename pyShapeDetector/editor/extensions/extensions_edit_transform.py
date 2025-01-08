@@ -245,6 +245,7 @@ def _align_with_current_plane_as_ground(elements, ground_plane):
         elements, vector_in, vector_out, False
     )
 
+    # rotate_aligning_vectors already copied them
     return _put_on_ground(transformed_elements, copy_elements=False)
 
 
