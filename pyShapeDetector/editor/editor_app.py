@@ -143,9 +143,9 @@ class Editor:
 
     def _get_submenu_from_path(self, path):
         if path in self._submenus:
+            if "Create Shapes" in path.as_posix():
+                pass
             return self._submenus[path]
-
-        fullpath = Path()
 
         if not hasattr(self, "_menubar"):
             self._menubar = self.app.menubar = gui.Menu()
@@ -155,17 +155,29 @@ class Editor:
             self._submenus = {}
             self._settings.print_debug("Initialized submenus dict.")
 
+        fullpath = Path()
         upper_menu = self._menubar
+
+        # for part in path.parts:
+        #     fullpath /= part
+        #     if fullpath in self._submenus:
+        #         upper_menu = self._submenus[fullpath]
+        #     menu = gui.Menu()
+        #     upper_menu.add_menu(part, menu)
+        #     self._submenus[path] = menu
 
         for part in path.parts:
             fullpath /= part
-            if fullpath in self._submenus:
-                upper_menu = self._submenus[fullpath]
-            menu = gui.Menu()
-            upper_menu.add_menu(part, menu)
-            self._submenus[path] = menu
+            if fullpath not in self._submenus:
+                menu = gui.Menu()
+                upper_menu.add_menu(part, menu)
+                self._submenus[fullpath] = menu
+                self._settings.print_debug(f"Submenu '{fullpath.as_posix()}' created.")
 
-        self._settings.print_debug(f"Submenu '{path.as_posix()}' created.")
+            upper_menu = self._submenus[fullpath]
+
+        self._submenus[path] = menu
+
         return self._submenus[path]
 
     @property

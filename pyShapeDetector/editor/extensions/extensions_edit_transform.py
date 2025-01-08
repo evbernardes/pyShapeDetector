@@ -25,7 +25,7 @@ from .helpers import (
     _get_shape_areas,
 )
 
-MENU_NAME = "Transform"
+MENU_NAME = "Edit/Transform..."
 
 extensions = []
 
