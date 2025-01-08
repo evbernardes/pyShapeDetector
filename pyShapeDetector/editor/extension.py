@@ -178,6 +178,10 @@ class Extension:
             if "label" not in parameter_descriptor:
                 parameter_descriptor["label"] = _get_pretty_name(key)
 
+            if parameter_descriptor["type"] == "current":
+                parsed_parameters[key] = "current"
+                continue
+
             if parameter_descriptor["type"] == "preference":
                 if key not in settings._dict:
                     raise KeyError(

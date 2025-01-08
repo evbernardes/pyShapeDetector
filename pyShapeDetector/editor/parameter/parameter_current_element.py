@@ -10,8 +10,8 @@ from open3d.visualization import gui
 from .parameter import ParameterBase
 
 
-class ParameterBool(ParameterBase[bool]):
-    """Parameter for boolean types
+class ParameterCurrentElement(ParameterBase[bool]):
+    """Convenienc Parameter current element
 
     Attributes
     ----------

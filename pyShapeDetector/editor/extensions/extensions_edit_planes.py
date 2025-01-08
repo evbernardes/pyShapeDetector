@@ -413,6 +413,36 @@ extensions.append(
 
 
 @_apply_to(PlaneBounded)
+def extrude_to_current_plane(planes_input, current_plane, close, as_mesh):
+    if not isinstance(current_plane, Plane):
+        raise TypeError("Expected plane.")
+
+    extrusions = []
+    for plane in planes_input:
+        new_extrusions = plane.extrude(current_plane, close)
+        if as_mesh:
+            extrusions += fuse_primitives_as_mesh(new_extrusions)
+        else:
+            extrusions += new_extrusions
+
+    return extrusions
+
+
+extensions.append(
+    {
+        "function": extrude_to_current_plane,
+        "menu": MENU_NAME,
+        "keep_inputs": True,
+        "parameters": {
+            "current_plane": {"type": "current"},
+            "close": {"type": bool, "default": True},
+            "as_mesh": {"type": bool, "default": True},
+        },
+    }
+)
+
+
+@_apply_to(PlaneBounded)
 def simplify_vertices(planes_input, angle_colinear_degrees, min_point_dist):
     new_planes = [p.copy() for p in planes_input]
     for plane in new_planes:
