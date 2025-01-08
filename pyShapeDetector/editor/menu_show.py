@@ -20,40 +20,52 @@ class MenuShow:
             ),
         }
 
-    def _create_panel(self):
+    def _create_hotkeys_panel(self):
         window = self._editor_instance._window
         em = window.theme.font_size
 
-        _panel_collapsable = gui.CollapsableVert(
+        hotkeys_panel_collapsable = gui.CollapsableVert(
             self._menu, em, gui.Margins(0, 0, 0, 0)
         )
 
         dlg_layout = gui.Vert(em, gui.Margins(0, 0, 0, 0))
-        text = gui.Label("")
-        dlg_layout.add_child(text)
+        hotkeys_panel_text = gui.Label("")
+        dlg_layout.add_child(hotkeys_panel_text)
 
-        _panel_collapsable.add_child(dlg_layout)
+        hotkeys_panel_collapsable.add_child(dlg_layout)
 
-        _panel_collapsable.visible = False
-        self._editor_instance._right_side_panel.add_child(_panel_collapsable)
-        self._panel = _panel_collapsable
-        self._text = text
+        hotkeys_panel_collapsable.visible = False
+        self._editor_instance._right_side_panel.add_child(hotkeys_panel_collapsable)
+        self._hotkeys_panel = hotkeys_panel_collapsable
+        self._hotkeys_panel_text = hotkeys_panel_text
 
     def _create_menu(self):
-        self._create_panel()
+        self._create_hotkeys_panel()
 
         for binding in self._bindings.values():
             binding._menu = self._menu
             binding.add_to_menu(self._editor_instance)
 
+        editor_instance = self._editor_instance
+        menubar = editor_instance._menubar
+        menubar.set_checked(
+            self._bindings["ground"].menu_id, editor_instance._ground_plane_visible
+        )
+        menubar.set_checked(
+            self._bindings["axes"].menu_id, editor_instance._global_axes_visible
+        )
+        menubar.set_checked(
+            self._bindings["info"].menu_id, editor_instance._info.visible
+        )
+
     def _on_hotkeys_toggle(self):
         editor_instance = self._editor_instance
         window = editor_instance._window
         menubar = editor_instance._menubar
-        self._panel.visible = not self._panel.visible
+        self._hotkeys_panel.visible = not self._hotkeys_panel.visible
 
-        if self._panel.visible:
-            self._text.text = (
+        if self._hotkeys_panel.visible:
+            self._hotkeys_panel_text.text = (
                 "\n\n".join(
                     [
                         f"({binding.key_instruction}):\n- {binding.description}"
@@ -66,7 +78,9 @@ class MenuShow:
                 + "\n- Set current with mouse and toggle"
             )
 
-        menubar.set_checked(self._bindings["hotkeys"].menu_id, self._panel.visible)
+        menubar.set_checked(
+            self._bindings["hotkeys"].menu_id, self._hotkeys_panel.visible
+        )
         window.set_needs_layout()
 
     def _on_ground_plane_toggle(self):

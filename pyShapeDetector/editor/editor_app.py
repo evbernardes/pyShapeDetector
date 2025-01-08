@@ -425,7 +425,7 @@ class Editor:
         self._global_axes_visible = False
         self._scene.scene.show_axes(self._global_axes_visible)
 
-        self._ground_plane_visible = False
+        self._ground_plane_visible = True
         self._ground_plane = rendering.Scene.GroundPlane.XY
         self._scene.scene.show_ground_plane(
             self._ground_plane_visible, self._ground_plane
