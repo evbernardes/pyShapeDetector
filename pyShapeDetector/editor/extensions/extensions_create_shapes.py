@@ -9,6 +9,7 @@ import warnings
 import numpy as np
 from pyShapeDetector.geometry import PointCloud
 from pyShapeDetector.primitives import (
+    Plane,
     PlaneBounded,
     PlaneTriangulated,
     PlaneRectangular,
@@ -19,6 +20,7 @@ from pyShapeDetector.primitives import (
 from pyShapeDetector.methods import list_methods_RANSAC
 from pyShapeDetector.utility import MultiDetector
 from .helpers import _apply_to
+from .extensions_simple import fuse_primitives_as_mesh
 
 
 MENU_NAME = "Create Shapes"
@@ -233,6 +235,119 @@ def detect_shapes(
 
     return shape_detector.shapes + shape_detector.pcds_rest
 
+
+@_apply_to(PlaneBounded)
+def extrude_with_vector(planes_input, vector, close, as_mesh):
+    extrusions = []
+    for plane in planes_input:
+        new_extrusions = plane.extrude(vector, close)
+        if as_mesh:
+            extrusions += fuse_primitives_as_mesh(new_extrusions)
+        else:
+            extrusions += new_extrusions
+
+    return planes_input + extrusions
+
+
+extensions.append(
+    {
+        "function": extrude_with_vector,
+        "menu": MENU_NAME + "/Extrude Plane...",
+        "parameters": {
+            "vector": {"type": np.ndarray, "default": (0.0, 0.0, 0.1)},
+            "close": {"type": bool, "default": True},
+            "as_mesh": {"type": bool, "default": True},
+        },
+    }
+)
+
+
+@_apply_to(PlaneBounded)
+def extrude_along_normal(planes_input, scale, close, as_mesh):
+    extrusions = []
+    for plane in planes_input:
+        new_extrusions = plane.extrude(scale * plane.normal, close)
+        if as_mesh:
+            extrusions += fuse_primitives_as_mesh(new_extrusions)
+        else:
+            extrusions += new_extrusions
+
+    return extrusions
+
+
+extensions.append(
+    {
+        "function": extrude_along_normal,
+        "menu": MENU_NAME + "/Extrude Plane...",
+        "keep_inputs": True,
+        "parameters": {
+            "scale": {"type": float, "default": 1},
+            "close": {"type": bool, "default": True},
+            "as_mesh": {"type": bool, "default": True},
+        },
+    }
+)
+
+
+# @_apply_to(PlaneBounded)
+# def extrude_to_biggest_plane(planes_input, close, as_mesh):
+#     i = np.argmax([p.surface_area for p in planes_input])
+#     biggest_plane = planes_input.pop(i)
+
+#     extrusions = []
+#     for plane in planes_input:
+#         new_extrusions = plane.extrude(biggest_plane, close)
+#         if as_mesh:
+#             extrusions += fuse_primitives_as_mesh(new_extrusions)
+#         else:
+#             extrusions += new_extrusions
+
+#     return extrusions
+
+
+# extensions.append(
+#     {
+#         "function": extrude_to_biggest_plane,
+#         "menu": MENU_NAME + "/Extrude Plane...",
+#         "keep_inputs": True,
+#         "parameters": {
+#             "close": {"type": bool, "default": True},
+#             "as_mesh": {"type": bool, "default": True},
+#         },
+#     }
+# )
+
+
+@_apply_to(PlaneBounded)
+def extrude_to_current_plane(planes_input, target_plane, close, as_mesh):
+    if not isinstance(target_plane, Plane):
+        raise TypeError(
+            f"Current (target) element should be a Plane, got:\n'{target_plane}'."
+        )
+
+    extrusions = []
+    for plane in planes_input:
+        new_extrusions = plane.extrude(target_plane, close)
+        if as_mesh:
+            extrusions += fuse_primitives_as_mesh(new_extrusions)
+        else:
+            extrusions += new_extrusions
+
+    return extrusions
+
+
+extensions.append(
+    {
+        "function": extrude_to_current_plane,
+        "menu": MENU_NAME + "/Extrude Plane...",
+        "keep_inputs": True,
+        "parameters": {
+            "target_plane": {"type": "current"},
+            "close": {"type": bool, "default": True},
+            "as_mesh": {"type": bool, "default": True},
+        },
+    }
+)
 
 extensions.append(
     {
