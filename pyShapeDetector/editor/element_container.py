@@ -158,14 +158,20 @@ class ElementContainer(list):
 
     @property
     def selected_indices(self):
+        if len(self) == 0:
+            return []
         return np.where(self.is_selected)[0].tolist()
 
     @property
     def hidden_indices(self):
+        if len(self) == 0:
+            return []
         return np.where(self.is_hidden)[0].tolist()
 
     @property
     def unhidden_indices(self):
+        if len(self) == 0:
+            return []
         return np.where(~np.array(self.is_hidden))[0].tolist()
 
     def add_to_scene(self, scene: Open3DScene, startup: bool = False):

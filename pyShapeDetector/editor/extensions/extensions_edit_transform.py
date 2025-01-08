@@ -16,6 +16,7 @@ from pyShapeDetector.geometry import (
     AxisAlignedBoundingBox,
     OrientedBoundingBox,
 )
+from pyShapeDetector.primitives import Plane
 from pyShapeDetector.utility import get_rotation_from_axis
 from .helpers import (
     _apply_to,
@@ -159,6 +160,7 @@ def rotate_aligning_vectors(elements, vector_in, vector_out, reverse_rotation):
 
     if reverse_rotation:
         R = R.T
+
     return _transform_with_rotation_matrix_and_translation(
         elements, bbox.center, R, (0, 0, 0)
     )
@@ -179,12 +181,15 @@ extensions.append(
 )
 
 
-def put_on_ground(elements):
+def _put_on_ground(elements, copy_elements):
     bbox = AxisAlignedBoundingBox.from_multiple_elements(elements)
 
     translation = -np.array([0, 0, bbox.min_bound[2]])
 
-    transformed_elements = copy.deepcopy(elements)
+    if copy_elements:
+        transformed_elements = copy.deepcopy(elements)
+    else:
+        transformed_elements = elements
 
     if isinstance(transformed_elements, list):
         for elem in transformed_elements:
@@ -197,7 +202,8 @@ def put_on_ground(elements):
 
 extensions.append(
     {
-        "function": put_on_ground,
+        "name": "Put on ground",
+        "function": lambda elements: _put_on_ground(elements, copy_elements=True),
         "menu": MENU_NAME,
         "select_outputs": True,
     }
@@ -217,10 +223,38 @@ def _align_and_center_to_global_frame(elements):
 
 extensions.append(
     {
-        "name": "Align and center elements to global frame",
+        "name": "Align and center selected elements to global frame",
         "inputs": "selected",
         "function": _align_and_center_to_global_frame,
         "menu": MENU_NAME,
         "select_outputs": True,
+    }
+)
+
+
+def _align_with_current_plane_as_ground(elements, ground_plane):
+    if not isinstance(ground_plane, Plane):
+        raise TypeError("fExpected current element to be a Plane, got {ground_plane}.")
+
+    vector_in = ground_plane.normal
+    vector_out = np.array([0.0, 0.0, 1.0])
+
+    transformed_elements = rotate_aligning_vectors(
+        elements, vector_in, vector_out, False
+    )
+
+    return _put_on_ground(transformed_elements, copy_elements=False)
+
+
+extensions.append(
+    {
+        "name": "Align with current plane as ground",
+        "inputs": "selected",
+        "function": _align_with_current_plane_as_ground,
+        "menu": MENU_NAME,
+        "select_outputs": False,
+        "parameters": {
+            "ground_plane": {"type": "current"},
+        },
     }
 )
