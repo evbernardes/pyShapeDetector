@@ -12,8 +12,10 @@ import copy
 from scipy.spatial.transform import Rotation
 
 # from pyShapeDetector.utility import get_inputs, select_function_with_gui
-from pyShapeDetector.geometry import PointCloud, TriangleMesh, OrientedBoundingBox
-from pyShapeDetector.primitives import Primitive, PlaneBounded, Plane
+from pyShapeDetector.geometry import (
+    AxisAlignedBoundingBox,
+    OrientedBoundingBox,
+)
 from pyShapeDetector.utility import get_rotation_from_axis
 from .helpers import (
     _apply_to,
@@ -146,7 +148,7 @@ extensions.append(
 )
 
 
-def _rotate_aligning_vectors(elements, vector_in, vector_out, reverse_rotation):
+def rotate_aligning_vectors(elements, vector_in, vector_out, reverse_rotation):
     bbox = OrientedBoundingBox.from_multiple_elements(elements)
     vector_in /= np.linalg.norm(vector_in)
     vector_out /= np.linalg.norm(vector_out)
@@ -165,7 +167,7 @@ def _rotate_aligning_vectors(elements, vector_in, vector_out, reverse_rotation):
 extensions.append(
     {
         "name": "Rotate aligining vectors",
-        "function": _rotate_aligning_vectors,
+        "function": rotate_aligning_vectors,
         "menu": MENU_NAME,
         "select_outputs": True,
         "parameters": {
@@ -173,6 +175,31 @@ extensions.append(
             "vector_out": {"type": np.ndarray, "default": [0.0, 0.0, 1.0]},
             "reverse_rotation": {"type": bool},
         },
+    }
+)
+
+
+def put_on_ground(elements):
+    bbox = AxisAlignedBoundingBox.from_multiple_elements(elements)
+
+    translation = -np.array([0, 0, bbox.min_bound[2]])
+
+    transformed_elements = copy.deepcopy(elements)
+
+    if isinstance(transformed_elements, list):
+        for elem in transformed_elements:
+            elem.translate(translation)
+    else:
+        transformed_elements.translate(translation)
+
+    return transformed_elements
+
+
+extensions.append(
+    {
+        "function": put_on_ground,
+        "menu": MENU_NAME,
+        "select_outputs": True,
     }
 )
 
