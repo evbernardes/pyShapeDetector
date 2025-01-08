@@ -14,7 +14,8 @@ from .binding import Binding
 from .settings import Settings
 
 
-VALID_INPUTS = ("none", "current", "selected", "global")
+# VALID_INPUTS = ("none", "current", "selected", "global")
+VALID_INPUTS = ("none", "current", "selected")
 
 
 def _get_pretty_name(label: Union[Callable, str]):
