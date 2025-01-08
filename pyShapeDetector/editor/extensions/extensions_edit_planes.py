@@ -383,33 +383,33 @@ extensions.append(
 )
 
 
-@_apply_to(PlaneBounded)
-def extrude_to_biggest_plane(planes_input, close, as_mesh):
-    i = np.argmax([p.surface_area for p in planes_input])
-    biggest_plane = planes_input.pop(i)
+# @_apply_to(PlaneBounded)
+# def extrude_to_biggest_plane(planes_input, close, as_mesh):
+#     i = np.argmax([p.surface_area for p in planes_input])
+#     biggest_plane = planes_input.pop(i)
 
-    extrusions = []
-    for plane in planes_input:
-        new_extrusions = plane.extrude(biggest_plane, close)
-        if as_mesh:
-            extrusions += fuse_primitives_as_mesh(new_extrusions)
-        else:
-            extrusions += new_extrusions
+#     extrusions = []
+#     for plane in planes_input:
+#         new_extrusions = plane.extrude(biggest_plane, close)
+#         if as_mesh:
+#             extrusions += fuse_primitives_as_mesh(new_extrusions)
+#         else:
+#             extrusions += new_extrusions
 
-    return extrusions
+#     return extrusions
 
 
-extensions.append(
-    {
-        "function": extrude_to_biggest_plane,
-        "menu": MENU_NAME,
-        "keep_inputs": True,
-        "parameters": {
-            "close": {"type": bool, "default": True},
-            "as_mesh": {"type": bool, "default": True},
-        },
-    }
-)
+# extensions.append(
+#     {
+#         "function": extrude_to_biggest_plane,
+#         "menu": MENU_NAME,
+#         "keep_inputs": True,
+#         "parameters": {
+#             "close": {"type": bool, "default": True},
+#             "as_mesh": {"type": bool, "default": True},
+#         },
+#     }
+# )
 
 
 @_apply_to(PlaneBounded)
