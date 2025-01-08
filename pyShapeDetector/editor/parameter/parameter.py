@@ -49,7 +49,6 @@ class ParameterBase(ABC, Generic[T]):
     get_gui_widget
     create_reference
     create_from_dict
-
     """
 
     _type = None.__class__

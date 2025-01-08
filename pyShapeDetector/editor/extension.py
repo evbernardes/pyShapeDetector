@@ -9,7 +9,7 @@ from typing import Union, Callable
 from open3d.visualization import gui
 
 from .editor_app import Editor
-from .parameter import ParameterBase, ParameterPanel
+from .parameter import ParameterBase, ParameterPanel, ParameterCurrentElement
 from .binding import Binding
 from .settings import Settings
 
@@ -68,7 +68,13 @@ class Extension:
 
     @property
     def parameters_kwargs(self):
-        return {key: param.value for key, param in self.parameters.items()}
+        kwargs = {}
+        for key, param in self.parameters.items():
+            if isinstance(param, ParameterCurrentElement):
+                kwargs[key] = self._editor_instance.elements.current_element.raw
+            else:
+                kwargs[key] = param.value
+        return kwargs
 
     @property
     def hotkey(self):
@@ -177,10 +183,6 @@ class Extension:
         for key, parameter_descriptor in parameter_descriptors.items():
             if "label" not in parameter_descriptor:
                 parameter_descriptor["label"] = _get_pretty_name(key)
-
-            if parameter_descriptor["type"] == "current":
-                parsed_parameters[key] = "current"
-                continue
 
             if parameter_descriptor["type"] == "preference":
                 if key not in settings._dict:

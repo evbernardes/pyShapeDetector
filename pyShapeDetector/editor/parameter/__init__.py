@@ -15,6 +15,7 @@ from .parameter_options import ParameterOptions
 from .parameter_numeric import ParameterNumeric
 from .parameter_color import ParameterColor
 from .parameter_ndarray import ParameterNDArray
+from .parameter_current_element import ParameterCurrentElement
 from .parameter_panel import ParameterPanel
 
 PARAMETER_TYPE_DICTIONARY = {
@@ -31,4 +32,5 @@ PARAMETER_TYPE_DICTIONARY = {
     "array": ParameterNDArray,
     Color: ParameterColor,
     "color": ParameterColor,
+    "current": ParameterCurrentElement,
 }

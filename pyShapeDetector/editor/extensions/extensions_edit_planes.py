@@ -413,13 +413,13 @@ extensions.append(
 
 
 @_apply_to(PlaneBounded)
-def extrude_to_current_plane(planes_input, current_plane, close, as_mesh):
-    if not isinstance(current_plane, Plane):
-        raise TypeError("Expected plane.")
+def extrude_to_current_plane(planes_input, target_plane, close, as_mesh):
+    if not isinstance(target_plane, Plane):
+        raise TypeError(f"Expected plane, got {target_plane}.")
 
     extrusions = []
     for plane in planes_input:
-        new_extrusions = plane.extrude(current_plane, close)
+        new_extrusions = plane.extrude(target_plane, close)
         if as_mesh:
             extrusions += fuse_primitives_as_mesh(new_extrusions)
         else:
@@ -434,7 +434,7 @@ extensions.append(
         "menu": MENU_NAME,
         "keep_inputs": True,
         "parameters": {
-            "current_plane": {"type": "current"},
+            "target_plane": {"type": "current"},
             "close": {"type": bool, "default": True},
             "as_mesh": {"type": bool, "default": True},
         },

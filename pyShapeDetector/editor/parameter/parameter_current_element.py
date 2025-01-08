@@ -37,34 +37,30 @@ class ParameterCurrentElement(ParameterBase[bool]):
     create_from_dict
     """
 
-    _type = bool
-
-    @ParameterBase.value.setter
-    def value(self, new_value):
-        self._value = bool(new_value)
-        # if self.is_reference:
-        self._update_internal_element()
+    _value = None
+    _type = type
+    _valid_arguments = ["label", "type", "subpanel"]
 
     def _update_internal_element(self):
-        if self.internal_element is None:
-            return
-        self.internal_element.checked = self.value
+        pass
+
+    def create_reference(self):
+        raise TypeError("Cannot reference instance ot ParameterCurrentElement.")
 
     def get_gui_widget(self, font_size):
-        checkbox = self._internal_element = gui.Checkbox(self.label + "?")
-        self._update_internal_element()
-        checkbox.set_on_checked(self._callback)
-        self._enable_internal_element(not self.is_reference)
-        return checkbox
+        element = gui.VGrid(1, 0.25 * font_size)
+        element.add_child(gui.Label(self.label))
+        text_edit = gui.TextEdit()
+        text_edit.placeholder_text = "CURRENT ELEMENT"
+        text_edit.enabled = False
+        element.add_child(text_edit)
+        return element
 
     def __init__(
         self,
         label: str,
-        default: bool = False,
-        on_update: Callable = None,
         subpanel: Union[str, None] = None,
         **other_kwargs,
     ):
-        super().__init__(label=label, on_update=on_update, subpanel=subpanel)
-        self.value = default
+        super().__init__(label=label, on_update=None, subpanel=subpanel)
         self._warn_unused_parameters(other_kwargs)
