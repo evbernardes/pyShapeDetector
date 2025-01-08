@@ -250,8 +250,8 @@ def _align_with_current_plane_as_ground(elements, ground_plane):
 
 extensions.append(
     {
-        "name": "Align with current plane as ground",
-        "inputs": "selected",
+        "name": "Align all elements with current plane as ground",
+        "inputs": "global",
         "function": _align_with_current_plane_as_ground,
         "menu": MENU_NAME,
         "select_outputs": False,

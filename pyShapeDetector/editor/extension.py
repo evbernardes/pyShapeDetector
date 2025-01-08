@@ -13,9 +13,7 @@ from .parameter import ParameterBase, ParameterPanel, ParameterCurrentElement
 from .binding import Binding
 from .settings import Settings
 
-# TODO: global not working yet
-# VALID_INPUTS = ("none", "current", "selected", "global")
-VALID_INPUTS = ("none", "current", "selected")
+VALID_INPUTS = ("none", "current", "selected", "global")
 
 
 def _get_pretty_name(label: Union[Callable, str]):
@@ -319,7 +317,7 @@ class Extension:
         elif self.inputs == "selected":
             indices = editor_instance.elements.selected_indices
             input_elements = [editor_instance.elements[i].raw for i in indices]
-        elif self.inputs == "current":
+        elif self.inputs == "global":
             indices = list(range(len(editor_instance.elements)))
             input_elements = [editor_instance.elements[i].raw for i in indices]
         else:
