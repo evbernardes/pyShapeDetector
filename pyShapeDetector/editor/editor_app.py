@@ -45,9 +45,15 @@ class Editor:
 
     Parameters
     ----------
+    width : int, optional
+        Default width of window. Default: 1024.
+    height : int, optional
+        Default height of window. Default: 768.
     window_name : str, optional
         Name of window. If empty, just gives the number of elements.
         Default: "Shape Detector".
+    load_default_extensions : bool, optional.
+        Load default extensions. Default: True.
 
     Preferences
     -----------
@@ -61,8 +67,9 @@ class Editor:
         self,
         width: int = 1024,
         height: int = 768,
-        window_name="Shape Detector",
-        return_finish_flag=False,
+        window_name: str = "Shape Detector",
+        load_default_extensions: bool = True,
+        return_finish_flag: bool = False,
         **kwargs,
     ):
         from .internal_functions import InternalFunctions
@@ -98,8 +105,9 @@ class Editor:
 
         self._internal_functions = InternalFunctions(self)
 
-        for extension in default_extensions:
-            self.add_extension(extension)
+        if load_default_extensions:
+            for extension in default_extensions:
+                self.add_extension(extension)
 
     def _create_simple_dialog(
         self,
