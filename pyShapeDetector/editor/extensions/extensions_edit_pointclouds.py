@@ -23,20 +23,41 @@ MENU_NAME = "Edit Pointclouds"
 
 
 @_apply_to(PointCloud)
-def uniform_downsample(pcds_input, every_k_points):
+def uniform_down_sample(pcds_input: list[PointCloud], every_k_points):
     return [pcd.uniform_down_sample(every_k_points) for pcd in pcds_input]
 
 
 extensions.append(
     {
-        "function": uniform_downsample,
-        "menu": MENU_NAME,
+        "function": uniform_down_sample,
+        "menu": MENU_NAME + "/Downsample...",
         "parameters": {
             "every_k_points": {
                 "type": int,
-                "default": 5,
-                "limits": (1, 500),
+                "default": 1,
+                "limits": (1, 100),
             },
+        },
+    }
+)
+
+
+@_apply_to(PointCloud)
+def voxel_sample(pcds_input: list[PointCloud], voxel_ratio, pcd_density):
+    return [pcd.voxel_down_sample(voxel_ratio * pcd_density) for pcd in pcds_input]
+
+
+extensions.append(
+    {
+        "function": voxel_sample,
+        "menu": MENU_NAME + "/Downsample...",
+        "parameters": {
+            "voxel_ratio": {
+                "type": float,
+                "default": 5,
+                "limits": (1, 100),
+            },
+            "PointCloud_density": {"type": "preference"},
         },
     }
 )
@@ -319,26 +340,6 @@ extensions.append(
 #         },
 #     }
 # )
-
-
-@_apply_to(PointCloud)
-def uniform_down_sample(pcds_input: list[PointCloud], every_k_points):
-    return [pcd.uniform_down_sample(every_k_points) for pcd in pcds_input]
-
-
-extensions.append(
-    {
-        "function": uniform_down_sample,
-        "menu": MENU_NAME,
-        "parameters": {
-            "every_k_points": {
-                "type": int,
-                "default": 1,
-                "limits": (1, 100),
-            },
-        },
-    }
-)
 
 
 @_apply_to(PointCloud)

@@ -140,7 +140,7 @@ class Settings:
                 subpanel="PointCloud options",
             ),
             "PCD_downsample_voxel_ratio": ParameterNumeric(
-                type=int,
+                type=float,
                 label="Downsample Voxel Ratio",
                 default=_PCD_voxel_downsample_ratio,
                 on_update=self._cb_PCD_downsample_voxel_ratio,
