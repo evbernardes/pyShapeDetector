@@ -479,7 +479,15 @@ class InternalFunctions:
             elements = [_load_one_element(subpath) for subpath in subpaths]
             elements = [element for element in elements if element is not None]
             try:
-                self._editor_instance.elements.insert_multiple(elements, to_gui=True)
+
+                elements_flattened = []
+                for element in elements:
+                    if isinstance(element, list):
+                        elements_flattened += element
+                    else:
+                        elements_flattened.append(element)
+
+                self._editor_instance.elements.insert_multiple(elements_flattened, to_gui=True)
             except Exception:
                 warnings.warn("Failed to insert imported files.")
                 traceback.print_exc()
