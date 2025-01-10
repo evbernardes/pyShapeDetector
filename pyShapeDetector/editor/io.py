@@ -222,6 +222,7 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
             if not json_path_info.exists():
                 selected_indices = []
                 hidden_indices = []
+                current_index = 0
             else:
                 try:
                     with open(json_path_info, "r") as json_file:
@@ -230,6 +231,7 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
                     warnings.warn("Could not load info file from '{input_path}'.")
                 selected_indices = json_data_info.get("selected_indices", [])
                 hidden_indices = json_data_info.get("hidden_indices", [])
+                current_index = json_data_info.get("current_index", 0)
 
             is_selected = [idx in selected_indices for idx in range(len(new_elements))]
 
@@ -241,6 +243,9 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
             editor_instance._update_info()
             editor_instance._future_states = []
             editor_instance._past_states = []
+
+            if current_index in editor_instance.elements.unhidden_indices:
+                editor_instance.elements.update_current_index(current_index)
 
             json_path_preferences = Path(temp_dir) / "preferences.json"
             if not json_path_preferences.exists():
@@ -313,6 +318,7 @@ def _save_scene(path: Union[Path, str], editor_instance: Editor):
             json_data = {
                 "selected_indices": elements.selected_indices,
                 "hidden_indices": elements.hidden_indices,
+                "current_index": elements.current_index,
             }
             with open(temp_json_file_path, "w") as fp:
                 json.dump(json_data, fp, indent=4)
