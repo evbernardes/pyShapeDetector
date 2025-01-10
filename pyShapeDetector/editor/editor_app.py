@@ -18,6 +18,7 @@ import numpy as np
 from typing import Callable, Union, Literal
 from pathlib import Path
 from open3d.visualization import gui, rendering
+from pyShapeDetector.primitives import Primitive
 # from .element import Element, ElementGeometry
 
 from .element_container import ElementContainer
@@ -593,7 +594,11 @@ class Editor:
                 self._info.text = f"Current: {self.elements.current_index + 1} / {len(self.elements)} | "
 
                 if self._get_setting("show_current"):
-                    self._info.text += f"{self.elements.current_element.raw} | "
+                    element_raw = self.elements.current_element.raw
+                    self._info.text += f"{element_raw}"
+                    if isinstance(element_raw, Primitive):
+                        self._info.text += f", {len(element_raw.inliers.points)} inliers, area = {element_raw.surface_area}"
+                    self._info.text += " | "
 
                 self._info.text += (
                     f"selected: {'YES' if self.elements.is_current_selected else 'NO'}"
