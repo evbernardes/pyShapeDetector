@@ -67,9 +67,9 @@ def _get_concave_alpha_shapes_with_alpha(
 
 extensions.append(
     {
-        "name": "With alpha",
+        "name": "AlphaShapes with alpha",
         "function": _get_concave_alpha_shapes_with_alpha,
-        "menu": MENU_NAME + "/Get concave alpha shapes...",
+        "menu": MENU_NAME + "/Get concave planes...",
         "parameters": {
             "alpha": {
                 "type": float,
@@ -100,6 +100,7 @@ extensions.append(
                 "type": int,
                 "default": 1,
                 "limits": (1, 50),
+                "subpanel": "Extra",
             },
         },
     }
@@ -137,9 +138,9 @@ def _get_concave_alpha_shapes_with_radius_ratio(
 
 extensions.append(
     {
-        "name": "With radius ratio",
+        "name": "AlphaShapes with radius ratio",
         "function": _get_concave_alpha_shapes_with_radius_ratio,
-        "menu": MENU_NAME + "/Get concave alpha shapes...",
+        "menu": MENU_NAME + "/Get concave planes...",
         "parameters": {
             "PointCloud_density": {"type": "preference"},
             "radius_ratio": {
@@ -171,6 +172,7 @@ extensions.append(
                 "type": int,
                 "default": 1,
                 "limits": (1, 50),
+                "subpanel": "Extra",
             },
         },
     }
@@ -216,9 +218,9 @@ def _get_concave_alpha_shapes_with_area_percentage(
 
 extensions.append(
     {
-        "name": "With Area Percentage",
+        "name": "AlphaShapes with Area Percentage",
         "function": _get_concave_alpha_shapes_with_area_percentage,
-        "menu": MENU_NAME + "/Get concave alpha shapes...",
+        "menu": MENU_NAME + "/Get concave planes...",
         "parameters": {
             "area_percentage": {
                 "type": float,
@@ -249,6 +251,7 @@ extensions.append(
                 "type": int,
                 "default": 1,
                 "limits": (1, 50),
+                "subpanel": "Extra",
             },
         },
     }
