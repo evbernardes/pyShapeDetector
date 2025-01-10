@@ -10,13 +10,13 @@ import numpy as np
 from pyShapeDetector.primitives import Plane, PlaneBounded
 from .helpers import _apply_to
 
-MENU_NAME = "Edit planes"
+MENU_NAME = "Edit Planes"
 
 extensions = []
 
 
 @_apply_to(PlaneBounded)
-def get_concave_alpha_shapes(
+def _get_concave_alpha_shapes_with_alpha(
     shapes,
     alpha,
     angle_colinear_degrees,
@@ -25,6 +25,7 @@ def get_concave_alpha_shapes(
     add_inliers,
     min_inliers,
     min_area,
+    every_k_points,
 ):
     convex_shapes = [shape for shape in shapes if shape.is_convex]
     concave_shapes = [shape for shape in shapes if not shape.is_convex]
@@ -41,8 +42,17 @@ def get_concave_alpha_shapes(
         "min_area": min_area,  # 0.0035,
     }
 
+    if every_k_points != 1:
+        shapes_downsampled = []
+        for s in shapes:
+            shape_downsampled = s.copy()
+            shape_downsampled._inliers = s._inliers.uniform_down_sample(every_k_points)
+            shapes_downsampled.append(shape_downsampled)
+    else:
+        shape_downsampled = shapes
+
     planes_bounded_alpha_groups = []
-    for s in shapes:
+    for s in shapes_downsampled:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
 
@@ -59,8 +69,9 @@ def get_concave_alpha_shapes(
 
 extensions.append(
     {
-        "function": get_concave_alpha_shapes,
-        "menu": MENU_NAME,
+        "name": "With alpha",
+        "function": _get_concave_alpha_shapes_with_alpha,
+        "menu": MENU_NAME + "/Get concave alpha shapes...",
         "parameters": {
             "alpha": {
                 "type": float,
@@ -87,13 +98,18 @@ extensions.append(
                 "limits": (0.0001, 100),
                 "subpanel": "Extra",
             },
+            "every_k_points": {
+                "type": int,
+                "default": 1,
+                "limits": (1, 50),
+            },
         },
     }
 )
 
 
 @_apply_to(PlaneBounded)
-def get_concave_alpha_shapes_with_radius_ratio(
+def _get_concave_alpha_shapes_with_radius_ratio(
     shapes,
     PointCloud_density,
     radius_ratio,
@@ -103,11 +119,12 @@ def get_concave_alpha_shapes_with_radius_ratio(
     add_inliers,
     min_inliers,
     min_area,
+    every_k_points,
 ):
     alpha_inv = PointCloud_density * radius_ratio
     alpha = 1 / alpha_inv
 
-    return get_concave_alpha_shapes(
+    return _get_concave_alpha_shapes_with_alpha(
         shapes,
         alpha,
         angle_colinear_degrees,
@@ -116,13 +133,15 @@ def get_concave_alpha_shapes_with_radius_ratio(
         add_inliers,
         min_inliers,
         min_area,
+        every_k_points,
     )
 
 
 extensions.append(
     {
-        "function": get_concave_alpha_shapes_with_radius_ratio,
-        "menu": MENU_NAME,
+        "name": "With radius ratio",
+        "function": _get_concave_alpha_shapes_with_radius_ratio,
+        "menu": MENU_NAME + "/Get concave alpha shapes...",
         "parameters": {
             "PointCloud_density": {"type": "preference"},
             "radius_ratio": {
@@ -150,13 +169,18 @@ extensions.append(
                 "limits": (0.0001, 100),
                 "subpanel": "Extra",
             },
+            "every_k_points": {
+                "type": int,
+                "default": 1,
+                "limits": (1, 50),
+            },
         },
     }
 )
 
 
 @_apply_to(PlaneBounded)
-def get_concave_alpha_shapes_with_area_percentage(
+def _get_concave_alpha_shapes_with_area_percentage(
     shapes,
     area_percentage,
     angle_colinear_degrees,
@@ -165,6 +189,7 @@ def get_concave_alpha_shapes_with_area_percentage(
     add_inliers,
     min_inliers,
     min_area,
+    every_k_points,
 ):
     convex_shapes = [shape for shape in shapes if shape.is_convex]
     concave_shapes = [shape for shape in shapes if not shape.is_convex]
@@ -177,7 +202,7 @@ def get_concave_alpha_shapes_with_area_percentage(
         alpha_inv = area * area_percentage / 100
         alpha = 1 / alpha_inv
 
-        output_shapes += get_concave_alpha_shapes(
+        output_shapes += _get_concave_alpha_shapes_with_alpha(
             [shape],
             alpha,
             angle_colinear_degrees,
@@ -186,14 +211,16 @@ def get_concave_alpha_shapes_with_area_percentage(
             add_inliers,
             min_inliers,
             min_area,
+            every_k_points,
         )
     return output_shapes
 
 
 extensions.append(
     {
-        "function": get_concave_alpha_shapes_with_area_percentage,
-        "menu": MENU_NAME,
+        "name": "With Area Percentage",
+        "function": _get_concave_alpha_shapes_with_area_percentage,
+        "menu": MENU_NAME + "/Get concave alpha shapes...",
         "parameters": {
             "area_percentage": {
                 "type": float,
@@ -219,6 +246,11 @@ extensions.append(
                 "default": 0.0035,
                 "limits": (0.0001, 100),
                 "subpanel": "Extra",
+            },
+            "every_k_points": {
+                "type": int,
+                "default": 1,
+                "limits": (1, 50),
             },
         },
     }
