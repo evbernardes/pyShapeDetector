@@ -25,7 +25,7 @@ def _get_concave_alpha_shapes_with_alpha(
     add_inliers,
     min_inliers,
     min_area,
-    every_k_points,
+    downsample_k,
 ):
     convex_shapes = [shape for shape in shapes if shape.is_convex]
     concave_shapes = [shape for shape in shapes if not shape.is_convex]
@@ -42,21 +42,17 @@ def _get_concave_alpha_shapes_with_alpha(
         "min_area": min_area,  # 0.0035,
     }
 
-    if every_k_points != 1:
-        shapes_downsampled = []
-        for s in shapes:
-            shape_downsampled = s.copy()
-            shape_downsampled._inliers = s._inliers.uniform_down_sample(every_k_points)
-            shapes_downsampled.append(shape_downsampled)
-    else:
-        shape_downsampled = shapes
+    if downsample_k == 1:
+        downsample_k = None
 
     planes_bounded_alpha_groups = []
-    for s in shapes_downsampled:
+    for s in shapes:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
 
-            plane_triangulated = s.get_triangulated_plane_from_alpha_shape(alpha)
+            plane_triangulated = s.get_triangulated_plane_from_alpha_shape(
+                alpha, downsample_k=downsample_k
+            )
             plane_triangulated.color = s.color
             plane_triangulated._inliers = s._inliers
 
@@ -64,7 +60,9 @@ def _get_concave_alpha_shapes_with_alpha(
                 plane_triangulated.get_bounded_planes_from_boundaries(**extra_options)
             )
 
-    return [p for group in planes_bounded_alpha_groups for p in group]
+    concave_planes = [p for group in planes_bounded_alpha_groups for p in group]
+    print(f"Number of planes: {len(concave_planes)}")
+    return concave_planes
 
 
 extensions.append(
@@ -98,7 +96,7 @@ extensions.append(
                 "limits": (0.0001, 100),
                 "subpanel": "Extra",
             },
-            "every_k_points": {
+            "downsample_k": {
                 "type": int,
                 "default": 1,
                 "limits": (1, 50),
@@ -119,7 +117,7 @@ def _get_concave_alpha_shapes_with_radius_ratio(
     add_inliers,
     min_inliers,
     min_area,
-    every_k_points,
+    downsample_k,
 ):
     alpha_inv = PointCloud_density * radius_ratio
     alpha = 1 / alpha_inv
@@ -133,7 +131,7 @@ def _get_concave_alpha_shapes_with_radius_ratio(
         add_inliers,
         min_inliers,
         min_area,
-        every_k_points,
+        downsample_k,
     )
 
 
@@ -169,7 +167,7 @@ extensions.append(
                 "limits": (0.0001, 100),
                 "subpanel": "Extra",
             },
-            "every_k_points": {
+            "downsample_k": {
                 "type": int,
                 "default": 1,
                 "limits": (1, 50),
@@ -189,7 +187,7 @@ def _get_concave_alpha_shapes_with_area_percentage(
     add_inliers,
     min_inliers,
     min_area,
-    every_k_points,
+    downsample_k,
 ):
     convex_shapes = [shape for shape in shapes if shape.is_convex]
     concave_shapes = [shape for shape in shapes if not shape.is_convex]
@@ -211,7 +209,7 @@ def _get_concave_alpha_shapes_with_area_percentage(
             add_inliers,
             min_inliers,
             min_area,
-            every_k_points,
+            downsample_k,
         )
     return output_shapes
 
@@ -247,7 +245,7 @@ extensions.append(
                 "limits": (0.0001, 100),
                 "subpanel": "Extra",
             },
-            "every_k_points": {
+            "downsample_k": {
                 "type": int,
                 "default": 1,
                 "limits": (1, 50),

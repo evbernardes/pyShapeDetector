@@ -1001,7 +1001,9 @@ class Plane(Primitive):
 
         return self.get_rectangular_plane(np.array(vectors) * length, center)
 
-    def get_triangulated_plane_from_alpha_shape(self, alpha, points=None):
+    def get_triangulated_plane_from_alpha_shape(
+        self, alpha, points=None, downsample_k=None
+    ):
         """
         Parameters
         ----------
@@ -1009,6 +1011,8 @@ class Plane(Primitive):
             Argument for alpha shape (TODO: Better Doc.).
         points : N x 3 array, optional
             Points for triangulation. If None, use inliers.
+        downsample_k : int, optional
+            If a value is given, downsample points first.
 
         Return
         ------
@@ -1018,9 +1022,20 @@ class Plane(Primitive):
         from .planetriangulated import PlaneTriangulated
 
         if points is None:
-            points = self.inliers.points
+            pcd = self.inliers
+        else:
+            pcd = PointCloud(points)
 
-        projections = self.get_projections(self.inliers.points)
+        if downsample_k:
+            pcd = pcd.uniform_down_sample(downsample_k)
+
+        points = pcd.points
+
+        if len(points) < 3:
+            raise RuntimeError(f"Expected at least 3 points, got {len(points)}.")
+        print(len(points))
+
+        projections = self.get_projections(points)
 
         triangles = Delaunay(projections).simplices
         mesh = TriangleMesh(points, triangles)
