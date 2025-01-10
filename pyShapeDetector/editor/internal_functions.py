@@ -366,7 +366,7 @@ class InternalFunctions:
                 pass
 
         dlg.add_filter(
-            f"{SCENE_FILE_EXTENSION}", "Shape Detector Scene ({SCENE_FILE_EXTENSION})"
+            f"{SCENE_FILE_EXTENSION}", f"Shape Detector Scene ({SCENE_FILE_EXTENSION})"
         )
 
         def _on_cancel():
@@ -424,7 +424,7 @@ class InternalFunctions:
                 pass
 
         dlg.add_filter(
-            f"{SCENE_FILE_EXTENSION}", "Shape Detector Scene ({SCENE_FILE_EXTENSION})"
+            f"{SCENE_FILE_EXTENSION}", f"Shape Detector Scene ({SCENE_FILE_EXTENSION})"
         )
 
         def _on_cancel():
@@ -479,7 +479,6 @@ class InternalFunctions:
             elements = [_load_one_element(subpath) for subpath in subpaths]
             elements = [element for element in elements if element is not None]
             try:
-
                 elements_flattened = []
                 for element in elements:
                     if isinstance(element, list):
@@ -487,7 +486,9 @@ class InternalFunctions:
                     else:
                         elements_flattened.append(element)
 
-                self._editor_instance.elements.insert_multiple(elements_flattened, to_gui=True)
+                self._editor_instance.elements.insert_multiple(
+                    elements_flattened, to_gui=True
+                )
             except Exception:
                 warnings.warn("Failed to insert imported files.")
                 traceback.print_exc()

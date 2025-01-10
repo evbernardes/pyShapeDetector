@@ -339,7 +339,7 @@ class Element(ABC):
         elif isinstance(raw, (geometry.Numpy_Geometry, Open3d_Geometry)):
             element_class = ElementGeometry
         else:
-            raise TypeError("Expected primitive or geometry, got {type(raw)}.")
+            raise TypeError(f"Expected primitive or geometry, got {type(raw)}.")
 
         return element_class(settings, raw, is_selected, current, is_color_fixed)
 
