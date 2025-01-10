@@ -245,7 +245,10 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
             editor_instance._past_states = []
 
             if current_index in editor_instance.elements.unhidden_indices:
-                editor_instance.elements.update_current_index(current_index)
+                if editor_instance._started:
+                    editor_instance.elements.update_current_index(current_index)
+                else:
+                    editor_instance.elements._current_index = current_index
 
             json_path_preferences = Path(temp_dir) / "preferences.json"
             if not json_path_preferences.exists():
