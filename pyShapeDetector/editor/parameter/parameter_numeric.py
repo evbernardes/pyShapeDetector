@@ -182,7 +182,7 @@ class ParameterNumeric(ParameterBase[type]):
 
         label = gui.Label(self.label)
 
-        element = gui.VGrid(2, 0.25 * font_size)
+        element = gui.VGrid(1, 0.25 * font_size)
         element.add_child(label)
         element.add_child(self.internal_element)
 
