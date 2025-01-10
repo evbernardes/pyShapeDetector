@@ -33,7 +33,9 @@ _draw_boundary_lines = True
 _line_width = 7
 _PointCloud_point_size = 5
 _PCD_downsample_when_drawing = True
+_PCD_downsample_mode = "Voxel"
 _PCD_max_points = 50000
+_PCD_voxel_downsample_ratio = 5
 _PCD_use_Tensor = True
 _mesh_show_back_face = True
 _paint_selected = True
@@ -122,12 +124,27 @@ class Settings:
                 on_update=self._cb_PCD_downsample_when_drawing,
                 subpanel="PointCloud options",
             ),
+            "PCD_downsample_mode": ParameterOptions(
+                options=["Uniform", "Voxel"],
+                label="Downsample mode",
+                default=_PCD_downsample_mode,
+                on_update=self._cb_PCD_downsample_mode,
+                subpanel="PointCloud options",
+            ),
             "PCD_max_points": ParameterNumeric(
                 type=int,
-                label="Max points",
+                label="Downsample Max points",
                 default=_PCD_max_points,
                 on_update=self._cb_PCD_max_points,
                 limits=(50000, 10000000),
+                subpanel="PointCloud options",
+            ),
+            "PCD_downsample_voxel_ratio": ParameterNumeric(
+                type=int,
+                label="Downsample Voxel Ratio",
+                default=_PCD_voxel_downsample_ratio,
+                on_update=self._cb_PCD_downsample_voxel_ratio,
+                limits=(1, 100),
                 subpanel="PointCloud options",
             ),
             "PCD_use_Tensor": ParameterBool(
@@ -345,7 +362,13 @@ class Settings:
             elem._init_colors()
             elem.update(is_current=elem.current, update_scene=True, reset=True)
 
+    def _cb_PCD_downsample_mode(self, value):
+        self._cb_PCD_downsample_when_drawing(value)
+
     def _cb_PCD_max_points(self, value):
+        self._cb_PCD_downsample_when_drawing(value)
+
+    def _cb_PCD_downsample_voxel_ratio(self, value):
         self._cb_PCD_downsample_when_drawing(value)
 
     def _cb_PCD_use_Tensor(self, value):

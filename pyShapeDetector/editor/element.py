@@ -444,12 +444,22 @@ class ElementPointCloud(ElementGeometry):
         settings = self._settings
         drawable = copy.deepcopy(self.raw).as_open3d
         downsample = settings.get_setting("PCD_downsample_when_drawing")
-        max_points = settings.get_setting("PCD_max_points")
+
         PCD_use_Tensor = settings.get_setting("PCD_use_Tensor")
 
-        if downsample and len(drawable.points) > max_points:
-            ratio = int(len(drawable.points) / max_points)
-            drawable = drawable.uniform_down_sample(ratio)
+        if downsample:
+            max_points = settings.get_setting("PCD_max_points")
+            if len(drawable.points) > max_points:
+                downsample_mode = settings.get_setting("PCD_downsample_mode")
+                if downsample_mode == "Uniform":
+                    ratio = int(len(drawable.points) / max_points)
+                    drawable = drawable.uniform_down_sample(ratio)
+                elif downsample_mode == "Voxel":
+                    voxel_ratio = settings.get_setting("PCD_downsample_voxel_ratio")
+                    PointCloud_density = settings.get_setting("PointCloud_density")
+                    drawable = drawable.voxel_down_sample(
+                        voxel_ratio * PointCloud_density
+                    )
 
         has_color = len(drawable.colors) > 0
         if not has_color:
