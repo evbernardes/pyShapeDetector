@@ -415,7 +415,7 @@ class ElementContainer(list):
 
         elif indices_or_slice is None:
             # if indices are not given, update everything
-            indices = range(len(self))
+            indices = self.unhidden_indices
 
         elif isinstance(indices_or_slice, slice):
             start, stop, stride = indices_or_slice.indices(len(self))
