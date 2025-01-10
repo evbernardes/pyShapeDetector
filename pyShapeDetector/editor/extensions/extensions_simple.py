@@ -149,6 +149,8 @@ def add_pcds_as_inliers(elements):
     shapes, other = _extract_element_by_type(elements, Primitive)
     pcds, other = _extract_element_by_type(other, PointCloud)
 
+    shapes = [shape.copy() for shape in shapes]
+
     if len(shapes) != 1:
         raise ValueError(f"Only one primitive should be given, got {len(shapes)}.")
 
