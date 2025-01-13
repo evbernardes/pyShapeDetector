@@ -43,8 +43,10 @@ extensions.append(
 
 
 @_apply_to(PointCloud)
-def voxel_sample(pcds_input: list[PointCloud], voxel_ratio, pcd_density):
-    return [pcd.voxel_down_sample(voxel_ratio * pcd_density) for pcd in pcds_input]
+def voxel_sample(pcds_input: list[PointCloud], voxel_ratio, PointCloud_density):
+    return [
+        pcd.voxel_down_sample(voxel_ratio * PointCloud_density) for pcd in pcds_input
+    ]
 
 
 extensions.append(
