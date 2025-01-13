@@ -8,7 +8,14 @@ Created on Fri Nov  8 14:01:29 2024
 
 # from pyShapeDetector.utility import get_inputs, select_function_with_gui
 from pyShapeDetector.geometry import PointCloud, TriangleMesh
-from pyShapeDetector.primitives import Primitive, PlaneBounded, Plane
+from pyShapeDetector.primitives import (
+    Primitive,
+    PlaneBounded,
+    Plane,
+    Cylinder,
+    Sphere,
+    Cone,
+)
 from .helpers import (
     _apply_to,
     _extract_element_by_type,
@@ -85,11 +92,19 @@ extensions.append(
 
 
 def fuse_elements(elements):
-    shapes, other = _extract_element_by_type(elements, PlaneBounded)
+    primitives = [PlaneBounded, Cylinder, Sphere, Cone]
+
+    shapes_per_type = {}
+    for primitive in primitives:
+        shapes_per_type[primitive], other = _extract_element_by_type(
+            elements, primitive
+        )
     pcds, other = _extract_element_by_type(other, PointCloud)
 
     try:
-        shapes = [PlaneBounded.fuse(shapes)]
+        shapes = []
+        for primitive, input_shapes in shapes_per_type.items():
+            shapes.append(primitive.fuse(input_shapes))
         print(len(shapes))
     except Exception as e:
         shapes = shapes
@@ -121,6 +136,20 @@ def fuse_primitives_as_mesh(shapes_input):
 
 
 extensions.append({"function": fuse_primitives_as_mesh, "menu": MENU_NAME})
+
+
+@_apply_to(Primitive)
+def extract_inliers(shapes_input):
+    shapes_empty = []
+    for shape in shapes_input:
+        shape = shape.copy()
+        shape._inliers = PointCloud()
+        shapes_empty.append(shape)
+
+    return shapes_empty + [s.inliers for s in shapes_input]
+
+
+extensions.append({"function": extract_inliers, "menu": MENU_NAME})
 
 
 @_apply_to(Primitive)
