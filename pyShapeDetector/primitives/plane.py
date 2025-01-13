@@ -1059,6 +1059,7 @@ class Plane(Primitive):
         only_inside=False,
         add_boundary=False,
         max_grid_points=100000,
+        downsample_k=None,
     ):
         """
         Experimental method of triangulating plane with a grid.
@@ -1146,9 +1147,14 @@ class Plane(Primitive):
         # flattening, just in case
         grid.points = self.flatten_points(grid.points)
 
+        pcd_test = self.inliers_flattened
+        if downsample_k is not None and downsample_k > 1:
+            pcd_test = pcd_test.uniform_down_sample(downsample_k)
+        points_test = pcd_test.points
+
         # TODO: slowest thing here is this:
         grid_points_selected = grid.select_nearby_points(
-            self.inlier_points_flattened, max_point_dist
+            points_test, max_point_dist
         ).points
 
         if only_inside:
