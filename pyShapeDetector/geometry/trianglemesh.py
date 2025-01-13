@@ -726,9 +726,12 @@ class TriangleMesh(Numpy_Geometry):
 
         See: Open3D.io.write_triangle_mesh
         """
-        if isinstance(filepath, Path):
-            filepath = filepath.as_posix()
-        io.write_triangle_mesh(filepath, self.as_open3d, **options)
+
+        filepath = Path(filepath)
+        if filepath.suffix == ".stl":
+            self.compute_vertex_normals()
+
+        io.write_triangle_mesh(filepath.as_posix(), self.as_open3d, **options)
 
     @classmethod
     def read_triangle_mesh(cls, filepath):
