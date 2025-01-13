@@ -259,6 +259,138 @@ extensions.append(
 
 
 @_apply_to(PlaneBounded)
+def _get_concave_planes_with_grid_method(
+    shapes,
+    PointCloud_density,
+    grid_width_ratio,
+    max_point_dist_ratio,
+    max_grid_points,
+    grid_type,
+    perimeter_multiplier,
+    angle_colinear_degrees,
+    contract_boundary,
+    only_inside,
+    add_boundary,
+    detect_holes,
+    add_inliers,
+    # colinear_recursive,
+    min_inliers,
+    downsample_k,
+    perimeter_eps,
+):
+    eps = PointCloud_density
+
+    if abs(max_point_dist_ratio) < 1e-5:
+        max_point_dist = None
+    else:
+        max_point_dist = max_point_dist_ratio * eps
+
+    extra_options = {
+        "detect_holes": detect_holes,
+        "add_inliers": add_inliers,
+        "angle_colinear": np.deg2rad(angle_colinear_degrees),
+        # "min_point_dist": (1 / alpha) * 2,
+        "contract_boundary": contract_boundary,
+        "min_inliers": min_inliers,
+        # "min_area": min_area,  # 0.0035,
+    }
+
+    planes_bounded_concave = []
+    for s in shapes:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            plane_triangulated = s.get_triangulated_plane_from_grid(
+                grid_width_ratio * eps,
+                max_point_dist=max_point_dist,
+                grid_type=grid_type,
+                perimeter_multiplier=perimeter_multiplier,
+                return_rect_grid=False,
+                perimeter_eps=perimeter_eps,
+                only_inside=only_inside,
+                add_boundary=add_boundary,
+                max_grid_points=max_grid_points,
+                downsample_k=downsample_k,
+            )
+
+            plane_triangulated.color = s.color
+            plane_triangulated._inliers = s._inliers
+
+            planes_bounded_concave.append(
+                plane_triangulated.get_bounded_planes_from_boundaries(**extra_options)
+            )
+
+    concave_planes = [p for group in planes_bounded_concave for p in group]
+    print(f"Number of planes: {len(concave_planes)}")
+    return concave_planes
+
+
+# extensions.append(
+#     {
+#         "name": "Get concave planes with Grid Method",
+#         "function": _get_concave_planes_with_grid_method,
+#         "menu": MENU_NAME + "/Get concave planes...",
+#         "parameters": {
+#             "PointCloud_density": {"type": "preference"},
+#             "grid_width_ratio": {
+#                 "type": float,
+#                 "default": 1 / 4,
+#                 "limits": (0.001, 100),
+#             },
+#             "max_point_dist_ratio": {
+#                 "type": float,
+#                 "default": 2,
+#                 "limits": (0.001, 100),
+#             },
+#             "max_grid_points": {
+#                 "type": int,
+#                 "default": 100000,
+#                 "limits": (10000, 10000000),
+#             },
+#             "grid_type": {
+#                 "type": list,
+#                 "options": ["regular", "hexagonal"],
+#             },
+#             "perimeter_multiplier": {
+#                 "type": float,
+#                 "default": 1,
+#                 "limits": (1, 10),
+#             },
+#             "angle_colinear_degrees": {
+#                 "type": float,
+#                 "default": 0,
+#                 "limits": (0, 180),
+#             },
+#             "contract_boundary": {"type": bool},
+#             "only_inside": {"type": bool, "default": False, "subpanel": "Extra"},
+#             "add_boundary": {"type": bool, "default": False, "subpanel": "Extra"},
+#             "detect_holes": {"type": bool, "default": True, "subpanel": "Extra"},
+#             "add_inliers": {"type": bool, "default": True, "subpanel": "Extra"},
+#             # "colinear_recursive": {"type": bool, "default": True, "subpanel": "Extra"},
+#             "min_inliers": {
+#                 "type": int,
+#                 "default": 1,
+#                 "limits": (1, 1000),
+#                 "subpanel": "Extra",
+#             },
+#             "downsample_k": {
+#                 "type": int,
+#                 "default": 1,
+#                 "limits": (1, 50),
+#                 "subpanel": "Extra",
+#             },
+#             "perimeter_eps": {
+#                 "type": float,
+#                 "default": 1e-3,
+#                 "limits": (1e-10, 1e-1),
+#                 "subpanel": "Extra",
+#             },
+#         },
+#     }
+# )
+
+
+@_apply_to(PlaneBounded)
 def get_convex(shapes):
     convex_shapes = []
     for shape in shapes:
