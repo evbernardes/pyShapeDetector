@@ -241,9 +241,16 @@ def _align_with_current_plane_as_ground(elements, ground_plane):
     vector_in = ground_plane.normal
     vector_out = np.array([0.0, 0.0, 1.0])
 
+    idx = elements.index(ground_plane)
+
     transformed_elements = rotate_aligning_vectors(
         elements, vector_in, vector_out, False
     )
+
+    translation = -np.array([0, 0, elements[idx].get_distances((0, 0, 0))])
+
+    for elem in transformed_elements:
+        elem.translate(translation)
 
     # rotate_aligning_vectors already copied them
     return _put_on_ground(transformed_elements, copy_elements=False)
