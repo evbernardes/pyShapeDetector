@@ -263,6 +263,11 @@ class Element(ABC):
         if not self.is_hidden:
             self.add_to_scene()
 
+    def transform(self, transformation_matrix):
+        self.raw.transform(transformation_matrix)
+        self.drawable.transform(transformation_matrix)
+        self.update_on_scene()
+
     def update(self, is_current: bool, update_scene: bool = True, reset: bool = False):
         if self.is_color_fixed:
             return
@@ -499,6 +504,11 @@ class ElementPointCloud(ElementGeometry):
                 self.name, self.drawable, Scene.UPDATE_POINTS_FLAG
             )
             self._points_updated = True
+
+    def transform(self, transformation_matrix):
+        self._points_updated = False
+        # self._normals_updated = False
+        super().transform(transformation_matrix)
 
 
 class ElementTriangleMesh(ElementGeometry):

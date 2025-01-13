@@ -13,7 +13,7 @@ from .parameter import ParameterBase, ParameterPanel, ParameterCurrentElement
 from .binding import Binding
 from .settings import Settings
 
-VALID_INPUTS = ("none", "current", "selected", "global")
+VALID_INPUTS = ("none", "current", "selected", "global", "internal")
 
 
 def _get_pretty_name(label: Union[Callable, str]):
@@ -320,6 +320,9 @@ class Extension:
         elif self.inputs == "global":
             indices = list(range(len(editor_instance.elements)))
             input_elements = [editor_instance.elements[i].raw for i in indices]
+        elif self.inputs == "internal":
+            indices = None
+            input_elements = editor_instance
         else:
             raise RuntimeError(
                 f"Invalid input instruction {self.inputs} "
@@ -328,11 +331,16 @@ class Extension:
 
         # Debug lines
         settings = editor_instance._settings
-        settings.print_debug(
-            f"Applying {self.name} to {len(indices)} elements",
-        )
-        settings.print_debug(f"Extension has input type {self.inputs}")
-        settings.print_debug(f"Indices: {indices}.", require_verbose=True)
+        if self.inputs == "internal":
+            settings.print_debug(
+                f"Applying internal extension {self.name}",
+            )
+        else:
+            settings.print_debug(
+                f"Applying {self.name} to {len(indices)} elements",
+            )
+            settings.print_debug(f"Extension has input type {self.inputs}")
+            settings.print_debug(f"Indices: {indices}.", require_verbose=True)
         if len(self.parameters) > 0:
             settings.print_debug(f"Parameters: {self.parameters}.")
 
@@ -346,10 +354,15 @@ class Extension:
             editor_instance._close_dialog()
             return
         except Exception as e:
-            warnings.warn(
-                f"Failed to apply {self.name} extension to "
-                f"elements in indices {indices}, got:"
-            )
+            if self.inputs == "internal":
+                warnings.warn(
+                    f"Failed to apply {self.name} internal extension to, got:"
+                )
+            else:
+                warnings.warn(
+                    f"Failed to apply {self.name} extension to "
+                    f"elements in indices {indices}, got:"
+                )
             editor_instance._close_dialog()
             traceback.print_exc()
 
@@ -380,14 +393,15 @@ class Extension:
             return
 
         # Saving state for undoing purposes
-        current_state = {
-            "indices": copy.deepcopy(indices),
-            "elements": copy.deepcopy(input_elements),
-            "num_outputs": len(output_elements),
-            "current_index": editor_instance.elements.current_index,
-            "operation": "extension",
-        }
-        editor_instance._save_state(current_state)
+        if self.inputs != "internal":
+            current_state = {
+                "indices": copy.deepcopy(indices),
+                "elements": copy.deepcopy(input_elements),
+                "num_outputs": len(output_elements),
+                "current_index": editor_instance.elements.current_index,
+                "operation": "extension",
+            }
+            editor_instance._save_state(current_state)
 
         if self.inputs == "current":
             # editor_instance._insert_elements(
@@ -399,13 +413,13 @@ class Extension:
             editor_instance.elements.update_current_index(
                 len(editor_instance.elements) - 1
             )
-        else:
+        elif self.inputs != "internal":
             # editor_instance._insert_elements(
             editor_instance.elements.insert_multiple(
                 output_elements, to_gui=True, is_selected=self.select_outputs
             )
 
-        if not self.keep_inputs:
+        if self.inputs != "internal" and not self.keep_inputs:
             # assert (
             #     editor_instance._pop_elements(indices, from_gui=True) == input_elements
             # )

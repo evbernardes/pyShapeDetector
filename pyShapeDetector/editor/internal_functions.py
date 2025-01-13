@@ -986,6 +986,17 @@ class InternalFunctions:
             self._cb_unhide(indices, to_future=True)
             return
 
+        if last_state["operation"] == "transformation":
+            indices = last_state["indices"]
+            transformation_matrix = last_state["transformation_matrix"]
+            transformation_matrix_inverse = np.linalg.inv(transformation_matrix)
+            for index in indices:
+                editor_instance.elements[index].transform(transformation_matrix_inverse)
+            editor_instance._save_state(last_state, to_future=True, delete_future=False)
+            editor_instance.elements.update_current_index(last_state["current_index"])
+            editor_instance._update_extra_elements(planes_boundaries=True)
+            return
+
         elements = last_state["elements"]
         num_outputs = last_state["num_outputs"]
         num_elems = len(editor_instance.elements)
@@ -1034,6 +1045,18 @@ class InternalFunctions:
 
         if future_state["operation"] == "hide":
             self._cb_unhide(indices, delete_future=False)
+            return
+
+        if future_state["operation"] == "transformation":
+            indices = future_state["indices"]
+            transformation_matrix = future_state["transformation_matrix"]
+            for index in indices:
+                editor_instance.elements[index].transform(transformation_matrix)
+            editor_instance._save_state(
+                future_state, to_future=False, delete_future=False
+            )
+            editor_instance.elements.update_current_index(future_state["current_index"])
+            editor_instance._update_extra_elements(planes_boundaries=True)
             return
 
         modified_elements = future_state["modified_elements"]
