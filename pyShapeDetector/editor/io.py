@@ -68,7 +68,7 @@ RECOGNIZED_EXTENSION = {
         ".glb": "OpenGL binary transfer files (.glb)",
         "loader": TriangleMesh.read_triangle_mesh,
         "writer": TriangleMesh.write_triangle_mesh,
-        "default": ".stl",
+        "default": ".obj",
     },
 }
 
