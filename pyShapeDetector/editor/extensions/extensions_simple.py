@@ -141,12 +141,15 @@ extensions.append({"function": fuse_primitives_as_mesh, "menu": MENU_NAME})
 @_apply_to(Primitive)
 def extract_inliers(shapes_input):
     shapes_empty = []
+    inliers = []
     for shape in shapes_input:
+        if len(shape.inliers.points) > 0:
+            inliers.append(shape.inliers)
         shape = shape.copy()
         shape._inliers = PointCloud()
         shapes_empty.append(shape)
 
-    return shapes_empty + [s.inliers for s in shapes_input]
+    return shapes_empty + inliers
 
 
 extensions.append({"function": extract_inliers, "menu": MENU_NAME})
@@ -154,7 +157,7 @@ extensions.append({"function": extract_inliers, "menu": MENU_NAME})
 
 @_apply_to(Primitive)
 def revert_to_inliers(shapes_input):
-    return [s.inliers for s in shapes_input]
+    return [s.inliers for s in shapes_input if len(s.inliers.points) > 0]
 
 
 extensions.append({"function": revert_to_inliers, "menu": MENU_NAME})
