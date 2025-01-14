@@ -293,7 +293,7 @@ class Extension:
         def _on_cancel():
             self._cancelled = True
             editor_instance._close_dialog()
-            print("Cancel!")
+            print(f"User cancelled extension {self.name}.")
 
         self._cancelled = False
         editor_instance._create_simple_dialog(
@@ -303,6 +303,7 @@ class Extension:
             button_callback=_on_cancel,
         )
 
+        editor_instance._settings.print_debug("Running extension in thread...")
         editor_instance.app.run_in_thread(self._apply_to_elements)
 
     def _apply_to_elements(self):
@@ -329,27 +330,26 @@ class Extension:
                 f"found in extension {self.name}."
             )
 
-        # Debug lines
+        # DEBUG LINES
         settings = editor_instance._settings
         if self.inputs == "internal":
-            settings.print_debug(
-                f"Applying internal extension {self.name}",
-            )
+            settings.print_debug(f"Applying internal extension {self.name}")
         else:
-            settings.print_debug(
-                f"Applying {self.name} to {len(indices)} elements",
-            )
+            settings.print_debug(f"Applying {self.name} to {len(indices)} elements")
             settings.print_debug(f"Extension has input type {self.inputs}")
             settings.print_debug(f"Indices: {indices}.", require_verbose=True)
         if len(self.parameters) > 0:
             settings.print_debug(f"Parameters: {self.parameters}.")
 
+        # MAIN FUNCTION EXECUTION
         try:
+            editor_instance._settings.print_debug("Trying to run extension function...")
             kwargs = self.parameters_kwargs
             if self.inputs == "none":
                 output_elements = self.function(**kwargs)
             else:
                 output_elements = self.function(input_elements, **kwargs)
+            editor_instance._settings.print_debug("Extension function complete!")
         except KeyboardInterrupt:
             editor_instance._close_dialog()
             return
@@ -369,7 +369,6 @@ class Extension:
             editor_instance._create_simple_dialog(
                 f"Extension '{self.name}' failed: \n\n{e}."
             )
-
             return
 
         if self._cancelled:
@@ -379,12 +378,13 @@ class Extension:
             )
             return
 
-        # assures it's a list
-        if isinstance(output_elements, tuple):
+        # Assuring output is a list
+        if self.inputs == "internal":
+            pass
+        elif isinstance(output_elements, tuple):
             output_elements = list(output_elements)
         elif not isinstance(output_elements, list):
             output_elements = [output_elements]
-
         if self.inputs == "current" and len(output_elements) != 1:
             warnings.warn(
                 "Only one output expected for extensions with "
@@ -403,6 +403,7 @@ class Extension:
             }
             editor_instance._save_state(current_state)
 
+        # print("D")
         if self.inputs == "current":
             # editor_instance._insert_elements(
             editor_instance.elements.insert_multiple(
@@ -419,17 +420,16 @@ class Extension:
                 output_elements, to_gui=True, is_selected=self.select_outputs
             )
 
+        # print("E")
+
         if self.inputs != "internal" and not self.keep_inputs:
-            # assert (
-            #     editor_instance._pop_elements(indices, from_gui=True) == input_elements
-            # )
             assert (
                 editor_instance.elements.pop_multiple(indices, from_gui=True)
                 == input_elements
             )
 
         editor_instance._last_used_extension = self
-        editor_instance._future_states = []
+        # editor_instance._future_states = []
         editor_instance._update_plane_boundaries()
         editor_instance._update_info()
         editor_instance.elements.update_current_index()
