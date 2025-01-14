@@ -6,6 +6,10 @@ from typing import List, Union
 from open3d.visualization.rendering import Open3DScene
 from .element import Element
 
+import psutil
+
+process = psutil.Process()
+
 
 class ElementContainer(list):
     """
@@ -283,12 +287,18 @@ class ElementContainer(list):
 
         if self.scene is not None:
             for idx in tested_indices:
-                print(f"idx={idx}, keb")
+                self._settings.print_debug(
+                    f"Adding element of index = {idx} to scene.", require_verbose=True
+                )
                 self[idx]._scene = self.scene
                 # Updating vis explicitly in order not to remove it
                 self.update_indices(idx, update_gui=False)
                 if to_gui:
                     self[idx].add_to_scene()
+
+            self._settings.print_debug(
+                f"Added {len(tested_indices)} elements to scene."
+            )
 
             self._settings.print_debug(
                 f"{len(self)} now.",
@@ -299,6 +309,8 @@ class ElementContainer(list):
             self.update_current_index(idx_new, update_old=self.scene is not None)
             self._previous_index = self.current_index
 
+        self._settings.print_debug(f"Used memory: {process.memory_info().rss}")
+
     def pop_multiple(self, indices, from_gui=False):
         # update_old = self.i in indices
         # idx_new = self.i
@@ -307,18 +319,19 @@ class ElementContainer(list):
         )
 
         for n, i in enumerate(indices):
-            elem = self.pop(i - n)
-            if from_gui:
-                elem.remove_from_scene()
-            elements_popped.append(elem.raw)
-            del elem._drawable
+            try:
+                elem = self.pop(i - n)
+                if from_gui:
+                    elem.remove_from_scene()
+                elements_popped.append(elem.raw)
+                del elem._drawable
+            except Exception:
+                print(f"Could not remove index {i}!")
 
         idx_new = self.current_index - sum(
             [idx < self.current_index for idx in indices]
         )
-        self._settings.print_debug(
-            f"popped: {indices}",
-        )
+        self._settings.print_debug(f"popped: {indices}", require_verbose=True)
         self._settings.print_debug(
             f"old index: {self.current_index}, new index: {idx_new}",
         )

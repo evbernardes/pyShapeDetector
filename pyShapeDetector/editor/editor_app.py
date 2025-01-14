@@ -283,9 +283,15 @@ class Editor:
     ):
         """Save state for undoing."""
 
+        state_printable = copy.copy(current_state)
+        if "indices" in state_printable:
+            state_printable["num_inputs"] = len(state_printable["indices"])
+            state_printable.pop("indices", None)
+            state_printable.pop("elements", None)
+
         if to_future:
             self._future_states.append(current_state)
-            self._settings.print_debug(f"Saving future state {current_state}.")
+            self._settings.print_debug(f"Saving future state {state_printable}.")
 
             max_states = self._settings.get_setting("number_redo_states")
             while len(self._future_states) > max_states:
@@ -294,7 +300,7 @@ class Editor:
 
         else:
             self._past_states.append(current_state)
-            self._settings.print_debug(f"Saving past state {current_state}.")
+            self._settings.print_debug(f"Saving past state {state_printable}.")
 
             max_states = self._settings.get_setting("number_undo_states")
             while len(self._past_states) > max_states:
