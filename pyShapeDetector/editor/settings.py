@@ -363,16 +363,20 @@ class Settings:
             elem.update(is_current=elem.current, update_scene=True, reset=True)
 
     def _cb_PCD_downsample_mode(self, value):
-        self._cb_PCD_downsample_when_drawing(value)
+        if self.get_setting("PCD_downsample_when_drawing"):
+            self._cb_PCD_downsample_when_drawing(True)
 
     def _cb_PCD_max_points(self, value):
-        self._cb_PCD_downsample_when_drawing(value)
+        if self.get_setting("PCD_downsample_when_drawing"):
+            self._cb_PCD_downsample_when_drawing(True)
 
     def _cb_PCD_downsample_voxel_ratio(self, value):
-        self._cb_PCD_downsample_when_drawing(value)
+        if self.get_setting("PCD_downsample_when_drawing"):
+            self._cb_PCD_downsample_when_drawing(True)
 
     def _cb_PCD_use_Tensor(self, value):
-        self._cb_PCD_downsample_when_drawing(value)
+        if self.get_setting("PCD_downsample_when_drawing"):
+            self._cb_PCD_downsample_when_drawing(True)
 
     def _cb_PointCloud_point_size(self, value):
         from .element import ElementPointCloud
