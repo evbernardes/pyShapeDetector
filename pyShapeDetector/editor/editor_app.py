@@ -597,8 +597,18 @@ class Editor:
                 if self._get_setting("show_current"):
                     element_raw = self.elements.current_element.raw
                     self._info.text += f"{element_raw}"
+
                     if isinstance(element_raw, Primitive):
                         self._info.text += f", {len(element_raw.inliers.points)} inliers, area = {element_raw.surface_area}"
+
+                    try:
+                        extent = element_raw.get_oriented_bounding_box().extent
+                        extent = np.trunc(10e7 * extent) / 10e7
+                        self._info.text += f" | BBOX extent: {extent.tolist()}"
+
+                    except Exception:
+                        pass  # not important
+
                     self._info.text += " | "
 
                 self._info.text += (
