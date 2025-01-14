@@ -325,6 +325,9 @@ class ElementContainer(list):
                     elem.remove_from_scene()
                 elements_popped.append(elem.raw)
                 del elem._drawable
+                del elem._distance_checker
+                del elem._color_original
+                del elem._color
             except Exception:
                 print(f"Could not remove index {i}!")
 
