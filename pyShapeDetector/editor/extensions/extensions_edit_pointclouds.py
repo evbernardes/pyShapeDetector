@@ -389,15 +389,15 @@ extensions.append(
 )
 
 
-def separate_pointclouds_with_planes(elements: list[Union[Plane, PointCloud]]):
-    planes, other = _extract_element_by_type(elements, Plane)
+def separate_pointclouds_with_primitives(elements: list[Union[Primitive, PointCloud]]):
+    shapes, other = _extract_element_by_type(elements, Primitive)
     pcds, other = _extract_element_by_type(other, PointCloud)
 
     new_pcds = []
 
-    for plane in planes:
+    for shape in shapes:
         for pcd in pcds:
-            indices = np.where(plane.get_signed_distances(pcd.points) > 0)[0]
+            indices = np.where(shape.get_signed_distances(pcd.points) > 0)[0]
 
             pcd1 = pcd.select_by_index(indices)
             pcd2 = pcd.select_by_index(indices, invert=True)
@@ -405,10 +405,10 @@ def separate_pointclouds_with_planes(elements: list[Union[Plane, PointCloud]]):
                 new_pcds.append(pcd1)
             if len(pcd2.points) > 0:
                 new_pcds.append(pcd2)
-    return new_pcds + planes + other
+    return new_pcds + shapes + other
 
 
-extensions.append({"function": separate_pointclouds_with_planes, "menu": MENU_NAME})
+extensions.append({"function": separate_pointclouds_with_primitives, "menu": MENU_NAME})
 
 
 def flatten_pointclouds_to_shape(elements: list[Union[Plane, PointCloud]]):
