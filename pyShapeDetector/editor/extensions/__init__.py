@@ -6,7 +6,7 @@ Created on 2024-12-17 16:54:48
 @author: evbernardes
 """
 
-
+from .extensions_internals import extensions as extensions_internals
 from .extensions_simple import extensions as extensions_simple
 from .extensions_edit_transform import extensions as extensions_edit_transform
 from .extensions_create_shapes import extensions as extensions_create_shapes
@@ -14,6 +14,7 @@ from .extensions_edit_pointclouds import extensions as extensions_edit_pointclou
 from .extensions_edit_planes import extensions as extensions_edit_planes
 
 default_extensions = []
+default_extensions += extensions_internals
 default_extensions += extensions_edit_transform
 default_extensions += extensions_simple
 default_extensions += extensions_create_shapes
