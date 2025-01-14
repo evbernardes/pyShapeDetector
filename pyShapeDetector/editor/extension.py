@@ -379,54 +379,70 @@ class Extension:
             return
 
         # Assuring output is a list
-        if self.inputs == "internal":
-            pass
-        elif isinstance(output_elements, tuple):
-            output_elements = list(output_elements)
-        elif not isinstance(output_elements, list):
-            output_elements = [output_elements]
-        if self.inputs == "current" and len(output_elements) != 1:
-            warnings.warn(
-                "Only one output expected for extensions with "
-                f"'current' input type, got {len(output_elements)}."
-            )
+        try:
+            if self.inputs == "internal":
+                pass
+            elif isinstance(output_elements, tuple):
+                output_elements = list(output_elements)
+            elif not isinstance(output_elements, list):
+                output_elements = [output_elements]
+            if self.inputs == "current" and len(output_elements) != 1:
+                warnings.warn(
+                    "Only one output expected for extensions with "
+                    f"'current' input type, got {len(output_elements)}."
+                )
+                return
+        except Exception:
+            print("Error with output elements {output_elements}.")
+            traceback.print_exc()
             return
 
         # Saving state for undoing purposes
-        if self.inputs != "internal":
-            current_state = {
-                "indices": copy.deepcopy(indices),
-                "elements": copy.deepcopy(input_elements),
-                "num_outputs": len(output_elements),
-                "current_index": editor_instance.elements.current_index,
-                "operation": "extension",
-            }
-            editor_instance._save_state(current_state)
+        try:
+            if self.inputs != "internal":
+                current_state = {
+                    "indices": copy.deepcopy(indices),
+                    "elements": copy.deepcopy(input_elements),
+                    "num_outputs": len(output_elements),
+                    "current_index": editor_instance.elements.current_index,
+                    "operation": "extension",
+                }
+                editor_instance._save_state(current_state)
+        except Exception:
+            print("Could not save state! Ignoring extension output.")
+            traceback.print_exc()
+            return
 
-        # print("D")
-        if self.inputs == "current":
-            # editor_instance._insert_elements(
-            editor_instance.elements.insert_multiple(
-                output_elements,
-                to_gui=True,
-                is_selected=editor_instance.elements.current_element.selected,
-            )
-            editor_instance.elements.update_current_index(
-                len(editor_instance.elements) - 1
-            )
-        elif self.inputs != "internal":
-            # editor_instance._insert_elements(
-            editor_instance.elements.insert_multiple(
-                output_elements, to_gui=True, is_selected=self.select_outputs
-            )
+        try:
+            if self.inputs == "current":
+                editor_instance.elements.insert_multiple(
+                    output_elements,
+                    to_gui=True,
+                    is_selected=editor_instance.elements.current_element.selected,
+                )
+                editor_instance.elements.update_current_index(
+                    len(editor_instance.elements) - 1
+                )
+            elif self.inputs != "internal":
+                # editor_instance._insert_elements(
+                editor_instance.elements.insert_multiple(
+                    output_elements, to_gui=True, is_selected=self.select_outputs
+                )
+        except Exception:
+            print("Could not insert output elements!")
+            traceback.print_exc()
+            return
 
-        # print("E")
-
-        if self.inputs != "internal" and not self.keep_inputs:
-            assert (
-                editor_instance.elements.pop_multiple(indices, from_gui=True)
-                == input_elements
-            )
+        try:
+            if self.inputs != "internal" and not self.keep_inputs:
+                assert (
+                    editor_instance.elements.pop_multiple(indices, from_gui=True)
+                    == input_elements
+                )
+        except Exception:
+            print("Could not remove input elements!")
+            traceback.print_exc()
+            return
 
         editor_instance._last_used_extension = self
         # editor_instance._future_states = []
