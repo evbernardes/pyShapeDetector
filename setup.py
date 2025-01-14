@@ -6,6 +6,11 @@ setup(
     name="pyShapeDetector",
     version="0.0.1dev",
     packages=find_packages(),
+    entry_points={
+        "console_scripts": [
+            "ShapeDetector = pyShapeDetector.editor:__main__",
+        ],
+    },
     install_requires=[
         "numpy>=1.21.0,<2.0.0",  # Scipy cannot use Numpy 2.0.0 yet
         "open3d>=0.17.0",

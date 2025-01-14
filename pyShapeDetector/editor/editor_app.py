@@ -699,6 +699,6 @@ class Editor:
         # pass
 
 
-# if __name__ == "__main__":
-#     editor = Editor()
-#     editor.run()
+def __main__():
+    editor = Editor()
+    editor.run()
