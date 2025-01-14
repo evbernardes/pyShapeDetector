@@ -101,7 +101,7 @@ extensions.append(
     {
         "name": "Segment distances (DBSCAN)",
         "function": segment_distances_with_DBSCAN,
-        "menu": MENU_NAME,
+        "menu": MENU_NAME + "/Segment",
         "parameters": {
             "PointCloud_density": {"type": "preference"},
             "dbscan_ratio": {
@@ -137,7 +137,7 @@ extensions.append(
     {
         "name": "Segment colors (DBSCAN)",
         "function": segment_colors_with_DBSCAN,
-        "menu": MENU_NAME,
+        "menu": MENU_NAME + "/Segment",
         "parameters": {
             "num_clusters": {
                 "type": int,
@@ -177,7 +177,7 @@ extensions.append(
     {
         "name": "Segment with Region Growing",
         "function": segment_region_growing,
-        "menu": MENU_NAME,
+        "menu": MENU_NAME + "/Segment",
         "parameters": {
             "PointCloud_density": {"type": "preference"},
             "dbscan_ratio": {
@@ -223,7 +223,7 @@ extensions.append(
     {
         "name": "Segment curvature (DBSCAN)",
         "function": segment_curvature_with_DBSCAN,
-        "menu": MENU_NAME,
+        "menu": MENU_NAME + "/Segment",
         "parameters": {
             "PointCloud_density": {"type": "preference"},
             "dbscan_ratio": {
@@ -263,7 +263,7 @@ extensions.append(
     {
         "name": "Separate edges with curvature DBSCAN",
         "function": separate_edges_with_curvature,
-        "menu": MENU_NAME,
+        "menu": MENU_NAME + "/Segment",
         "parameters": {
             "PointCloud_density": {"type": "preference"},
             "dbscan_ratio": {
