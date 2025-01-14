@@ -95,11 +95,10 @@ def fuse_elements(elements):
     primitives = [PlaneBounded, Cylinder, Sphere, Cone]
 
     shapes_per_type = {}
+    rest = elements
     for primitive in primitives:
-        shapes_per_type[primitive], other = _extract_element_by_type(
-            elements, primitive
-        )
-    pcds, other = _extract_element_by_type(other, PointCloud)
+        shapes_per_type[primitive], rest = _extract_element_by_type(rest, primitive)
+    pcds, rest = _extract_element_by_type(rest, PointCloud)
 
     try:
         shapes = []
@@ -112,8 +111,8 @@ def fuse_elements(elements):
 
     pcd = PointCloud.fuse_pointclouds(pcds)
     if len(pcd.points) > 0:
-        return shapes + [pcd] + other
-    return shapes + other
+        return shapes + [pcd] + rest
+    return shapes + rest
 
 
 extensions.append(
