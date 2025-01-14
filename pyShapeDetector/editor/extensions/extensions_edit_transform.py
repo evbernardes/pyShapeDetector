@@ -72,21 +72,6 @@ def _transform_elements_and_save_state(editor_instance, indices, transformation_
     editor_instance._save_state(current_state)
 
 
-def _transform_elements(elements, transformation_matrix, copy=True):
-    if copy:
-        transformed_elements = copy.deepcopy(elements)
-    else:
-        transformed_elements = elements
-
-    if isinstance(transformed_elements, list):
-        for elem in transformed_elements:
-            elem.transform(transformation_matrix)
-    else:
-        transformed_elements.transform(transformation_matrix)
-
-    return transformed_elements
-
-
 def transform_with_angles(
     editor_instance, vector, angles_ZYX_degrees, reverse_translation, reverse_rotation
 ):
@@ -138,22 +123,6 @@ def transform_with_angles(
 
     _transform_elements_and_save_state(editor_instance, indices, transformation_matrix)
 
-
-# extensions.append(
-#     {
-#         "name": "Transform Current",
-#         "function": transform,
-#         "inputs": "current",
-#         "menu": MENU_NAME,
-#         "hotkey": "T",
-#         "parameters": {
-#             "vector": {"type": np.ndarray, "default": [0.0, 0.0, 0.0]},
-#             "angles_ZYX_degrees": {"type": np.ndarray, "default": [0, 0, 0.0]},
-#             "reverse_translation": {"type": bool},
-#             "reverse_rotation": {"type": bool},
-#         },
-#     }
-# )
 
 extensions.append(
     {
@@ -289,14 +258,23 @@ def _align_with_current_plane_as_ground(editor_instance, ground_plane):
 
     vector_in = ground_plane.normal
     vector_out = np.array([0.0, 0.0, 1.0])
-    translation = -np.array([0, 0, ground_plane.get_distances((0, 0, 0))])
+
+    # R = get_rotation_from_axis(vector_in, vector_out)
+    # translation = -np.array([0, 0, ground_plane.get_signed_distances((0, 0, 0))])
+
+    # print(f"R: {R}")
+    # print(f"translation: {translation}")
+
+    # translation = R @ translation
+    # print(f"R x translation: {translation}")
 
     rotate_aligning_vectors(
         editor_instance,
         vector_in,
         vector_out,
         reverse_rotation=False,
-        translation=translation,
+        # translation=translation,
+        translation=(0, 0, 0),
         indices=list(range(N)),
     )
 
