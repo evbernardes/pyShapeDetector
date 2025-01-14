@@ -285,26 +285,27 @@ class Editor:
 
         if to_future:
             self._future_states.append(current_state)
-            self._settings.print_debug(
-                f"Saving state {current_state} to future states."
-            )
+            self._settings.print_debug(f"Saving future state {current_state}.")
 
-            while len(self._future_states) > self._settings.get_setting(
-                "number_redo_states"
-            ):
-                self._future_states.pop(0)
+            max_states = self._settings.get_setting("number_redo_states")
+            while len(self._future_states) > max_states:
+                state = self._future_states.pop(0)
+                del state
 
         else:
             self._past_states.append(current_state)
-            self._settings.print_debug(f"Saving state {current_state} to past states.")
+            self._settings.print_debug(f"Saving past state {current_state}.")
 
-            while len(self._past_states) > self._settings.get_setting(
-                "number_undo_states"
-            ):
-                self._past_states.pop(0)
+            max_states = self._settings.get_setting("number_undo_states")
+            while len(self._past_states) > max_states:
+                state = self._past_states.pop(0)
+                del state
 
             if delete_future:
                 self._future_states = []
+
+        self._settings.print_debug(f"{len(self._past_states)} states for undoing.")
+        self._settings.print_debug(f"{len(self._future_states)} states for redoing.")
 
     def _on_layout(self, layout_context):
         r = self._window.content_rect
