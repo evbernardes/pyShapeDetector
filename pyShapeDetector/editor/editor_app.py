@@ -448,8 +448,9 @@ class Editor:
             self._ground_plane_visible, self._ground_plane
         )
 
+        self._info_visible = False
         self._info = gui.Label("")
-        self._info.visible = True
+        self._info.visible = self._info_visible
 
         self._window.add_child(self._scene)
         self._window.add_child(self._info)
@@ -596,6 +597,12 @@ class Editor:
         def update_label():
             # This is not called on the main thread, so we need to
             # post to the main thread to safely access UI items.
+
+            self._info.visible = self._info_visible
+
+            if not self._info_visible:
+                return
+
             if self.elements.current_index is None or len(self.elements) == 0:
                 self._info.text = ""
             else:

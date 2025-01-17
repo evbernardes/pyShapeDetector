@@ -120,12 +120,12 @@ class MenuShow:
         window = editor_instance._window
         menubar = editor_instance._menubar
 
-        editor_instance._info.visible = not editor_instance._info.visible
+        editor_instance._info_visible = not editor_instance._info_visible
 
         menubar.set_checked(
-            self._bindings["info"].menu_id, editor_instance._info.visible
+            self._bindings["info"].menu_id, editor_instance._info_visible
         )
-        window.set_needs_layout()
+        editor_instance._update_info()
 
     def _on_menu_about(self):
         window = self._editor_instance._window
