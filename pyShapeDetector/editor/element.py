@@ -358,10 +358,16 @@ class ElementPrimitive(Element):
             raise ValueError("Expected Primitive instance, got {raw}.")
 
     def _get_drawable(self):
-        self._drawable = self.raw.copy().mesh.as_open3d
+        # self._drawable = self.raw.copy().mesh.as_open3d
+        self._drawable = self.raw.mesh.as_open3d
 
     def _get_distance_checker(self):
         self._distance_checker = self.raw
+
+    def transform(self, transformation_matrix):
+        # Translating raw already translates the internal mesh
+        self.raw.transform(transformation_matrix)
+        self.update_on_scene()
 
 
 class ElementGeometry(Element):
