@@ -1,7 +1,9 @@
 from open3d.visualization import gui
-from typing import Union, Callable
-from .editor_app import Editor
+from typing import Union, Callable, TYPE_CHECKING
 from pathlib import Path
+
+if TYPE_CHECKING:
+    from .editor_app import Editor
 
 KEY_LEFT_CONTROL = gui.KeyName.LEFT_CONTROL
 KEY_LEFT_SHIFT = gui.KeyName.LEFT_SHIFT
@@ -79,7 +81,7 @@ class Binding:
         else:
             return description + " (" + self.key_instruction + ")"
 
-    def add_to_menu(self, editor_instance: Editor, set_checked=False):
+    def add_to_menu(self, editor_instance: "Editor", set_checked=False):
         if self.menu_id is None:
             self._menu_id = next(editor_instance._submenu_id_generator)
 

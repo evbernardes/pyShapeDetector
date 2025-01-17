@@ -7,7 +7,8 @@ Created on Tur Oct 17 13:17:55 2024
 """
 # import time
 import copy
-import inspect
+
+# import inspect
 import traceback
 
 # import signal
@@ -15,11 +16,13 @@ import traceback
 import warnings
 import itertools
 import numpy as np
-from typing import Callable, Union, Literal
+from typing import Callable, Union
 from pathlib import Path
 from open3d.visualization import gui, rendering
 from pyShapeDetector.primitives import Primitive
 # from .element import Element, ElementGeometry
+
+from .extension import Extension
 
 from .element_container import ElementContainer
 from .settings import Settings
@@ -190,12 +193,10 @@ class Editor:
         return self._submenus[path]
 
     @property
-    def extensions(self):
+    def extensions(self) -> list[Extension]:
         return self._extensions
 
     def add_extension(self, function_or_descriptor):
-        from .extension import Extension
-
         try:
             extension = Extension(function_or_descriptor, self._settings)
             extension.add_to_application(self)
@@ -211,11 +212,11 @@ class Editor:
         return elements.raw
 
     @property
-    def elements(self):
+    def elements(self) -> ElementContainer:
         return self._elements
 
     @property
-    def elements_fixed(self):
+    def elements_fixed(self) -> ElementContainer:
         return self._elements_fixed
 
     def _add_extension_panel(self, name, panel, callbacks):

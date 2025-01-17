@@ -5,11 +5,12 @@ import copy
 import warnings
 import inspect
 import traceback
-from typing import Union, Callable
+from typing import Union, Callable, TYPE_CHECKING
 
 from open3d.visualization import gui
 
-from .editor_app import Editor
+if TYPE_CHECKING:
+    from .editor_app import Editor
 from .parameter import ParameterBase, ParameterPanel, ParameterCurrentElement
 from .binding import Binding
 from .settings import Settings
@@ -35,35 +36,43 @@ class Extension:
     DEFAULT_MENU_NAME = "Misc functions"
 
     @property
-    def binding(self):
+    def binding(self) -> Binding:
+        "Binding linking extension to menu item and hotkey"
         return self._binding
 
     @property
-    def function(self):
+    def function(self) -> Callable:
+        "Extension's main function"
         return self._function
 
     @property
-    def name(self):
+    def name(self) -> str:
+        "Name and description of extension"
         return self._name
 
     @property
-    def menu(self):
+    def menu(self) -> Union[str, None]:
+        "Path of the extension menu item"
         return self._menu
 
     @property
-    def parameters(self):
+    def parameters(self) -> dict[ParameterBase]:
+        "Dictionary of parameters for panel creation"
         return self._parameters
 
     @property
-    def inputs(self):
+    def inputs(self) -> str:
+        "Type of inputs that should be inputed in extension"
         return self._inputs
 
     @property
-    def keep_inputs(self):
+    def keep_inputs(self) -> bool:
+        "If False, remove inputs from elements"
         return self._keep_inputs
 
     @property
-    def select_outputs(self):
+    def select_outputs(self) -> bool:
+        "If True, new output elements will be pre-selected"
         return self._select_outputs
 
     @property
@@ -260,7 +269,7 @@ class Extension:
 
         self._extension_window_opened: bool = False
 
-    def add_to_application(self, editor_instance: Editor):
+    def add_to_application(self, editor_instance: "Editor"):
         self._editor_instance = editor_instance
 
         if editor_instance._extensions is None:
