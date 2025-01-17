@@ -304,9 +304,11 @@ class Extension:
         )
 
         editor_instance._settings.print_debug("Running extension in thread...")
-        editor_instance.app.run_in_thread(self._apply_to_elements)
+        # for i in range(10):
+        #     editor_instance._settings.print_debug(f"thread {i}")
+        editor_instance.app.run_in_thread(self._worker)
 
-    def _apply_to_elements(self):
+    def _worker(self):
         editor_instance = self._editor_instance
 
         if self.inputs == "none":
@@ -325,6 +327,7 @@ class Extension:
             indices = None
             input_elements = editor_instance
         else:
+            # This should never happen
             raise RuntimeError(
                 f"Invalid input instruction {self.inputs} "
                 f"found in extension {self.name}."
@@ -369,6 +372,7 @@ class Extension:
             editor_instance._create_simple_dialog(
                 f"Extension '{self.name}' failed: \n\n{e}."
             )
+            editor_instance._close_dialog()
             return
 
         if self._cancelled:
@@ -376,6 +380,7 @@ class Extension:
                 f"Extensions '{self.name}' thread ended, but call was canceled. "
                 "Ignoring output."
             )
+            editor_instance._close_dialog()
             return
 
         # Assuring output is a list
@@ -395,6 +400,7 @@ class Extension:
         except Exception:
             print("Error with output elements {output_elements}.")
             traceback.print_exc()
+            editor_instance._close_dialog()
             return
 
         # Saving state for undoing purposes
@@ -411,6 +417,7 @@ class Extension:
         except Exception:
             print("Could not save state! Ignoring extension output.")
             traceback.print_exc()
+            editor_instance._close_dialog()
             return
 
         try:
@@ -431,6 +438,7 @@ class Extension:
         except Exception:
             print("Could not insert output elements!")
             traceback.print_exc()
+            editor_instance._close_dialog()
             return
 
         try:
@@ -442,6 +450,7 @@ class Extension:
         except Exception:
             print("Could not remove input elements!")
             traceback.print_exc()
+            editor_instance._close_dialog()
             return
 
         editor_instance._last_used_extension = self
