@@ -273,9 +273,11 @@ class Extension:
 
     def run(self):
         _on_window = self._editor_instance._settings.get_setting("extensions_on_window")
-        _on_panel = not _on_window
+        _empty_extensions_on_panel_window = self._editor_instance._settings.get_setting(
+            "empty_extensions_on_panel_window"
+        )
 
-        if len(self.parameters) == 0:
+        if len(self.parameters) == 0 and not _empty_extensions_on_panel_window:
             self._apply_to_elements_in_thread()
         else:
             if self._extension_window_opened and _on_window:
@@ -310,9 +312,10 @@ class Extension:
     def _worker(self):
         editor_instance = self._editor_instance
 
-        # TODO: for some rason, this stops Segmentation faults when calling
-        # extensions repeatedly:
-        time.sleep(0.05)
+        # TODO: without this time sleep, a Segmentation fault might happen
+        # running extensions repeatedly and fast
+        # I have no idea why :)
+        time.sleep(0.1)
 
         if self.inputs == "none":
             indices = []
