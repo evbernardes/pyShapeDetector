@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import time
 import copy
 import warnings
 import inspect
@@ -304,12 +305,14 @@ class Extension:
         )
 
         editor_instance._settings.print_debug("Running extension in thread...")
-        # for i in range(10):
-        #     editor_instance._settings.print_debug(f"thread {i}")
         editor_instance.app.run_in_thread(self._worker)
 
     def _worker(self):
         editor_instance = self._editor_instance
+
+        # TODO: for some rason, this stops Segmentation faults when calling
+        # extensions repeatedly:
+        time.sleep(0.05)
 
         if self.inputs == "none":
             indices = []
