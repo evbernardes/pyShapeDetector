@@ -28,6 +28,7 @@ COLOR_UNSELECTED_DEFAULT = np.array([76.5, 76.5, 76.5]) / 255
 
 # DEFAULT VALUES
 _extensions_on_panel = False
+_empty_extensions_on_panel_window = False
 _PointCloud_density = 0.00224
 _draw_boundary_lines = True
 _line_width = 7
@@ -110,6 +111,13 @@ class Settings:
                 label="Open extensions on window",
                 default=_extensions_on_panel,
                 on_update=self._cb_extensions_on_panel,
+                subpanel="Extensions",
+            ),
+            "empty_extensions_on_panel_window": ParameterBool(
+                label="Open extensions without parameters on window/panel",
+                default=_empty_extensions_on_panel_window,
+                on_update=self._cb_empty_extensions_on_panel_window,
+                subpanel="Extensions",
             ),
             "PointCloud_density": ParameterNumeric(
                 type=float,
@@ -347,6 +355,9 @@ class Settings:
         else:
             for name in self._editor_instance._extensions_panels:
                 self._editor_instance._set_extension_panel_open(name, False)
+
+    def _cb_empty_extensions_on_panel_window(self, value):
+        pass
 
     def _cb_PointCloud_density(self, value):
         pass
