@@ -600,6 +600,8 @@ class InternalFunctions:
         # Implementing as an extension to save state
         editor_instance = self._editor_instance
         indices = editor_instance.elements.selected_indices
+        if len(indices) == 0:
+            return
         input_elements = [editor_instance.elements[i].raw for i in indices]
 
         try:
