@@ -20,10 +20,8 @@ from typing import Callable, Union
 from pathlib import Path
 from open3d.visualization import gui, rendering
 from pyShapeDetector.primitives import Primitive
-# from .element import Element, ElementGeometry
 
 from .extension import Extension
-
 from .element_container import ElementContainer
 from .settings import Settings
 from .extensions import default_extensions
