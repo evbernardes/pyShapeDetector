@@ -97,17 +97,25 @@ def fuse_elements(elements):
     shapes_per_type = {}
     rest = elements
     for primitive in primitives:
-        shapes_per_type[primitive], rest = _extract_element_by_type(rest, primitive)
+        input_shapes, rest = _extract_element_by_type(rest, primitive)
+        if len(input_shapes) > 0:
+            # print(f"Found {len(input_shapes)} instances of {primitive}.")
+            shapes_per_type[primitive] = input_shapes
     pcds, rest = _extract_element_by_type(rest, PointCloud)
 
-    try:
-        shapes = []
-        for primitive, input_shapes in shapes_per_type.items():
-            shapes.append(primitive.fuse(input_shapes))
-        print(len(shapes))
-    except Exception as e:
-        shapes = shapes
-        print(e)
+    shapes = []
+    for primitive, input_shapes in shapes_per_type.items():
+        try:
+            # print(f"Fusing {primitive}:")
+            shape = primitive.fuse(input_shapes)
+            shapes.append(shape)
+            # print(f"Found fused primitive: {shape}")
+        except Exception as e:
+            print(f"Could not fuse {len(input_shapes)} elements of type {primitive}:")
+            print(e)
+            shapes += input_shapes
+
+    # print(f"Returning {len(shapes)} shapes.")
 
     pcd = PointCloud.fuse_pointclouds(pcds)
     if len(pcd.points) > 0:

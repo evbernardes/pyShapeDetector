@@ -1011,6 +1011,24 @@ def test_fuse_cylinder():
     assert_allclose(abs(cylinder_ac.axis.dot(cylinder_c.axis)), np.cos(angle / 2))
     # assert_allclose(cylinder_ab.height, 3)
 
+    # test with real fitted cylinders
+    fit_1 = Cylinder(
+        [-9.55521, -0.78227, 3.37236, -0.53883, -0.07079, -0.01342, 0.29669]
+    )
+    fit_2 = Cylinder(
+        [-10.04858, -0.84975, 3.34872, -0.23474, -0.03423, 0.00427, 0.29137]
+    )
+    fit_fuse = Cylinder.fuse([fit_1, fit_2])
+
+    assert_allclose(fit_fuse.radius, (fit_1.radius + fit_2.radius) / 2)
+    assert_allclose(abs(fit_fuse.axis.dot(fit_1.axis)), 1, atol=1e-2)
+    assert_allclose(abs(fit_fuse.axis.dot(fit_2.axis)), 1, atol=1e-2)
+    assert_allclose(
+        fit_fuse.center,
+        (fit_1.center + fit_2.center) / 2,
+        atol=1e-1,
+    )
+
 
 def test_line_checks():
     points = np.random.random([50, 3]) * 10

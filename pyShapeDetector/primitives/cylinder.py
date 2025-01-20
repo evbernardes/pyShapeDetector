@@ -263,31 +263,34 @@ class Cylinder(Primitive):
             fitness = [1] * len(shapes)
 
         points = []
-        axes = []
+        # axes = []
+        axis = np.array([0.0, 0.0, 0.0])
+        center = np.array([0.0, 0.0, 0.0])
         radii = []
-        for cylinder in shapes:
+        for weight, cylinder in zip(fitness, shapes):
             radii.append(cylinder.radius)
             points.append(cylinder.base)
             points.append(cylinder.top)
-            if cylinder.axis[2] < 0:
-                axes.append(-cylinder.axis)
+            if cylinder.axis.dot(axis) < 0:
+                axis += -weight * cylinder.axis / sum(fitness)
             else:
-                axes.append(cylinder.axis)
-        axis = np.average(axes, axis=0, weights=fitness)
+                axis += weight * cylinder.axis / sum(fitness)
+            center += cylinder.center / sum(fitness)
+        # axis = np.average(axes, axis=0, weights=fitness)
         axis /= np.linalg.norm(axis)
         radius = np.average(radii, weights=fitness)
         points = np.asarray(points)
 
-        projections = axis.dot(points.T)
-        base = axis * min(projections)
-        top = axis * max(projections)
+        projections = axis.dot((points - center).T)
+        base = center + axis * min(projections)
+        top = center + axis * max(projections)
 
-        shape = Cylinder.from_base_top_radius(axis * base, axis * top, radius)
+        shape = Cylinder.from_base_top_radius(base, top, radius)
 
         if not ignore_extra_data:
             pcd = PointCloud.fuse_pointclouds([shape.inliers for shape in shapes])
             shape.set_inliers(pcd)
-            shape.color = np.mean([s.color for s in shapes], axis=0)
+            shape.color = np.average([s.color for s in shapes], axis=0, weights=fitness)
 
             if detector is not None:
                 num_points = sum([shape.metrics["num_points"] for shape in shapes])
@@ -296,8 +299,6 @@ class Cylinder(Primitive):
                 shape.metrics = detector.get_metrics(
                     num_points, num_inliers, distances, angles
                 )
-
-        print(f"fused cylinder: {shape}")
 
         return shape
 
