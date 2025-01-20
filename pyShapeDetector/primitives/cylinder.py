@@ -11,6 +11,7 @@ from pyShapeDetector.geometry import TriangleMesh
 # from skspatial.objects.cylinder import Cylinder as skcylinder
 
 from pyShapeDetector import utility
+from pyShapeDetector.geometry import PointCloud
 from .primitivebase import Primitive
 from .plane import Plane
 from .planebounded import PlaneBounded
@@ -225,6 +226,80 @@ class Cylinder(Primitive):
             Generated shape.
         """
         return cls(list(base) + list(vector) + [radius])
+
+    @staticmethod
+    def fuse(
+        shapes: list["Cylinder"],
+        detector=None,
+        ignore_extra_data=False,
+        **extra_options,
+    ):
+        """Find weigthed average of shapes, where the weight is the fitness
+        metric.
+
+        If a detector is given, use it to compute the metrics of the resulting
+        average shapes.
+
+        When fusing Cylinders, find base and top such that it constructs a full
+        cylinder containing all the other instances.
+
+        Parameters
+        ----------
+        shapes : list
+            Grouped shapes. All shapes must be of the same type.
+        detector : instance of some Detector, optional
+            Used to recompute metrics. Default: None.
+        ignore_extra_data : boolean, optional
+            If True, ignore everything and only fuse model. Default: False.
+
+        Returns
+        -------
+        Cylinder
+            Averaged Cylinder instance.
+        """
+        try:
+            fitness = [shape.metrics["fitness"] for shape in shapes]
+        except Exception:
+            fitness = [1] * len(shapes)
+
+        points = []
+        axes = []
+        radii = []
+        for cylinder in shapes:
+            radii.append(cylinder.radius)
+            points.append(cylinder.base)
+            points.append(cylinder.top)
+            if cylinder.axis[2] < 0:
+                axes.append(-cylinder.axis)
+            else:
+                axes.append(cylinder.axis)
+        axis = np.average(axes, axis=0, weights=fitness)
+        axis /= np.linalg.norm(axis)
+        radius = np.average(radii, weights=fitness)
+        points = np.asarray(points)
+
+        projections = axis.dot(points.T)
+        base = axis * min(projections)
+        top = axis * max(projections)
+
+        shape = Cylinder.from_base_top_radius(axis * base, axis * top, radius)
+
+        if not ignore_extra_data:
+            pcd = PointCloud.fuse_pointclouds([shape.inliers for shape in shapes])
+            shape.set_inliers(pcd)
+            shape.color = np.mean([s.color for s in shapes], axis=0)
+
+            if detector is not None:
+                num_points = sum([shape.metrics["num_points"] for shape in shapes])
+                num_inliers = len(pcd.points)
+                distances, angles = shape.get_residuals(pcd.points, pcd.normals)
+                shape.metrics = detector.get_metrics(
+                    num_points, num_inliers, distances, angles
+                )
+
+        print(f"fused cylinder: {shape}")
+
+        return shape
 
     @staticmethod
     def fit(points, normals=None):

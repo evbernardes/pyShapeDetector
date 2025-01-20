@@ -966,6 +966,52 @@ def test_fuse():
         # assert_allclose(shape_fused.model, np.mean(models, axis=0))
 
 
+def test_fuse_cylinder():
+    axis = np.array([0.0, 0.0, 1.0])
+    axis_c = np.array([0.0, 1.0, 0.0])
+    angle = np.arccos(abs(axis.dot(axis_c)))
+    origin = (0.0, 0.0, 0.0)
+
+    a_base = origin + 0 * axis
+    a_top = origin + 1 * axis
+    b_base = origin + 2 * axis
+    b_top = origin + 3 * axis
+    c_base = a_base
+    c_top = origin + 1 * axis_c
+
+    ra = 1
+    rb = 2
+    rc = 3
+
+    cylinder_a = Cylinder.from_base_top_radius(a_base, a_top, ra)
+    cylinder_b = Cylinder.from_base_top_radius(b_base, b_top, rb)
+    cylinder_ab = Cylinder.fuse([cylinder_a, cylinder_b])
+
+    assert_allclose(cylinder_ab.radius, (cylinder_a.radius + cylinder_b.radius) / 2)
+    assert_allclose(abs(cylinder_ab.axis.dot(cylinder_a.axis)), 1)
+    assert_allclose(abs(cylinder_ab.axis.dot(cylinder_b.axis)), 1)
+    assert_allclose(cylinder_ab.height, 3)
+
+    cylinder_b_reverse = Cylinder.from_base_top_radius(b_top, b_base, rb)
+    cylinder_ab_reverse = Cylinder.fuse([cylinder_a, cylinder_b_reverse])
+
+    assert_allclose(
+        cylinder_ab_reverse.radius, (cylinder_a.radius + cylinder_b_reverse.radius) / 2
+    )
+
+    assert_allclose(abs(cylinder_ab_reverse.axis.dot(cylinder_a.axis)), 1)
+    assert_allclose(abs(cylinder_ab_reverse.axis.dot(cylinder_b_reverse.axis)), 1)
+    assert_allclose(cylinder_ab_reverse.height, 3)
+
+    cylinder_c = Cylinder.from_base_top_radius(c_base, c_top, rc)
+    cylinder_ac = Cylinder.fuse([cylinder_a, cylinder_c])
+
+    assert_allclose(cylinder_ac.radius, (cylinder_a.radius + cylinder_c.radius) / 2)
+    assert_allclose(abs(cylinder_ac.axis.dot(cylinder_a.axis)), np.cos(angle / 2))
+    assert_allclose(abs(cylinder_ac.axis.dot(cylinder_c.axis)), np.cos(angle / 2))
+    # assert_allclose(cylinder_ab.height, 3)
+
+
 def test_line_checks():
     points = np.random.random([50, 3]) * 10
 
