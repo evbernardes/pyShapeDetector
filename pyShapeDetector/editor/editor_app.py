@@ -166,14 +166,6 @@ class Editor:
         fullpath = Path()
         upper_menu = self.app.menubar
 
-        # for part in path.parts:
-        #     fullpath /= part
-        #     if fullpath in self._submenus:
-        #         upper_menu = self._submenus[fullpath]
-        #     menu = gui.Menu()
-        #     upper_menu.add_menu(part, menu)
-        #     self._submenus[path] = menu
-
         for part in path.parts:
             fullpath /= part
             if fullpath not in self._submenus:
