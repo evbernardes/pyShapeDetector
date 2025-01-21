@@ -209,6 +209,9 @@ class Primitive(ABC):
     __get_attributes_from_dict__
     load
     get_obj_description
+    _get_weights_from_shapes
+    _fuse_models
+    _fuse_extra_data
     fuse
     group_similar_shapes
     fuse_shape_groups
@@ -1440,12 +1443,116 @@ class Primitive(ABC):
             name, self.mesh, shading=shading, mtl=mtl, **kwargs
         )
 
+    @classmethod
+    def _get_weights_from_shapes(
+        cls, shapes: list["Primitive"], weight_variable: str = "inliers"
+    ) -> list[float]:
+        """Get weights to correctly calculate the average of shapes.
+
+        `weight_variable` can be:
+            "surface_area": uses area of each surface, if all finite.
+            "fitness": takes fitness of each fit, if available.
+            "volume": uses volume of each surface, if all finite.
+            "ones": uses array of ones, equivalent to non-weighted average.
+            "inliers": uses number of inliers.
+
+        If the desired weight cannot be used, returns a list of `1`s.
+
+        Parameters
+        ----------
+        weight_variable : str
+            Defines variable used as weight. Can be "ones" (non-weighed averate),
+            "surface_area", "fitness", "volume" or "inliers". Default: "inliers".
+
+        Returns
+        -------
+        list
+            Weights for each value.
+        """
+        valid_types = ["surface_area", "fitness", "volume", "ones", "inliers"]
+        if weight_variable not in valid_types:
+            raise ValueError(
+                f"Valid values for 'weight_variable' are {valid_types}, "
+                "got {weight_variable}."
+            )
+
+        if weight_variable == "ones":
+            return [1] * len(shapes)
+
+        elif weight_variable == "surface_area":
+            weights = [shape.surface_area for shape in shapes]
+
+        elif weight_variable == "volume":
+            weights = [shape.volume for shape in shapes]
+
+        elif weight_variable == "inliers":
+            weights = [len(shape.inliers.points) for shape in shapes]
+
+        elif weight_variable == "fitness":
+            try:
+                weights = [shape.metrics["fitness"] for shape in shapes]
+            except Exception:
+                warnings.warn("Fitness not found, returning array of '1's.")
+                return [1] * len(shapes)
+
+        else:
+            # Should never run
+            assert False
+
+        if not np.all(np.isfinite(weights)):
+            warnings.warn("Non-finite value found, returning array of '1's.")
+            return [1] * len(shapes)
+
+        eps = 1e-7
+        if abs(sum(weights)) < eps:
+            warnings.warn("Total sum of weights is too small, returning array of '1's.")
+            return [1] * len(shapes)
+
+        return weights
+
+    @classmethod
+    def _fuse_models(cls, shapes: list["Primitive"], weights: list[float]):
+        """Find weighted average of models.
+
+        Parameters
+        ----------
+        shapes : list
+            Grouped shapes. All shapes must be of the same type.
+        weights : list
+            Weights for average model.
+        """
+        models = np.vstack([shape.model for shape in shapes])
+        return np.average(models, axis=0, weights=weights)
+
+    def _fuse_extra_data(self, shapes: list["Primitive"], detector):
+        """Fuse extra data from input shapes into self, like color, inliers and metrics.
+
+        Parameters
+        ----------
+        shapes : list
+            Grouped shapes. All shapes must be of the same type.
+        detector : instance of some Detector, optional
+
+        """
+        pcd = geometry.PointCloud.fuse_pointclouds([shape.inliers for shape in shapes])
+        self.set_inliers(pcd)
+        self.color = np.mean([s.color for s in shapes], axis=0)
+
+        if detector is not None:
+            num_points = sum([shape.metrics["num_points"] for shape in shapes])
+            num_inliers = len(pcd.points)
+            distances, angles = self.get_residuals(pcd.points, pcd.normals)
+            self.metrics = detector.get_metrics(
+                num_points, num_inliers, distances, angles
+            )
+
     @staticmethod
     def fuse(
-        shapes,
+        shapes: list["Primitive"],
         detector=None,
         ignore_extra_data=False,
         line_intersection_eps=None,
+        weight_variable: str = "inliers",
         **extra_options,
     ):
         """Find weigthed average of shapes, where the weight is the fitness
@@ -1453,6 +1560,13 @@ class Primitive(ABC):
 
         If a detector is given, use it to compute the metrics of the resulting
         average shapes.
+
+        `weight_variable` can be:
+            "surface_area": uses area of each surface, if all finite.
+            "fitness": takes fitness of each fit, if available.
+            "volume": uses volume of each surface, if all finite.
+            "ones": uses array of ones, equivalent to non-weighted average.
+            "inliers": uses number of inliers.
 
         Parameters
         ----------
@@ -1462,29 +1576,30 @@ class Primitive(ABC):
             Used to recompute metrics. Default: None.
         ignore_extra_data : boolean, optional
             If True, ignore everything and only fuse model. Default: False.
+        weight_variable : str
+            Defines variable used as weight. Can be "ones" (non-weighed averate),
+            "surface_area", "fitness", "volume" or "inliers". Default: "inliers".
 
         Returns
         -------
         Primitive
             Averaged shape.
         """
-        if len(shapes) == 1:
-            return shapes[0]
-        elif isinstance(shapes, Primitive):
+        if isinstance(shapes, Primitive):
             return shapes
+        elif len(shapes) == 1:
+            return shapes[0].copy()
 
         primitive = type(shapes[0])
         for shape in shapes[1:]:
             if not isinstance(shape, primitive):
                 raise ValueError("Shapes in input must all have the same type.")
 
-        try:
-            fitness = [shape.metrics["fitness"] for shape in shapes]
-        except Exception:
-            fitness = [1] * len(shapes)
+        weights = primitive._get_weights_from_shapes(
+            shapes, weight_variable=weight_variable
+        )
 
-        model = np.vstack([shape.model for shape in shapes])
-        model = np.average(model, axis=0, weights=fitness)
+        model = primitive._fuse_models(shapes=shapes, weights=weights)
 
         # Catch warning in case shape is a PlaneBounded
         with warnings.catch_warnings():
@@ -1492,19 +1607,7 @@ class Primitive(ABC):
             shape = primitive(model)
 
         if not ignore_extra_data:
-            pcd = geometry.PointCloud.fuse_pointclouds(
-                [shape.inliers for shape in shapes]
-            )
-            shape.set_inliers(pcd)
-            shape.color = np.mean([s.color for s in shapes], axis=0)
-
-            if detector is not None:
-                num_points = sum([shape.metrics["num_points"] for shape in shapes])
-                num_inliers = len(pcd.points)
-                distances, angles = shape.get_residuals(pcd.points, pcd.normals)
-                shape.metrics = detector.get_metrics(
-                    num_points, num_inliers, distances, angles
-                )
+            shape._fuse_extra_data(shapes=shapes, detector=detector)
 
         return shape
 

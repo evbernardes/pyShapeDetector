@@ -105,6 +105,9 @@ class Line(Primitive):
     save
     load
     get_obj_description
+    _get_weights_from_shapes
+    _fuse_models
+    _fuse_extra_data
     fuse
     group_similar_shapes
     fuse_shape_groups
