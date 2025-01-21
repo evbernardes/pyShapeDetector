@@ -12,7 +12,7 @@ KEY_TEXT_LEFT_CONTROL = "LCtrl"
 KEY_TEXT_LEFT_SHIFT = "LShift"
 
 
-def _get_key_name(key):
+def _get_key_name(key) -> str:
     if isinstance(key, gui.KeyName):
         return str(key).split(".")[1]
     elif isinstance(key, int):
@@ -21,39 +21,40 @@ def _get_key_name(key):
 
 class Binding:
     @property
-    def menu_id(self):
+    def menu_id(self) -> Union[None, int]:
         return self._menu_id
 
     @property
-    def key(self):
+    def key(self) -> Union[gui.KeyName, int]:
         return self._key
 
     @property
-    def lctrl(self):
+    def lctrl(self) -> bool:
         return self._lctrl
 
     @property
-    def lshift(self):
+    def lshift(self) -> bool:
         return self._lshift
 
     @property
-    def description(self):
+    def description(self) -> str:
         return self._description
 
     @property
-    def callback(self):
+    def callback(self) -> Callable:
         return self._callback
 
     @property
-    def menu(self):
+    def menu(self) -> str:
         return self._menu
 
     @property
-    def creates_window(self):
+    def creates_window(self) -> bool:
         return self._creates_window
 
     @property
-    def key_instruction(self):
+    def key_instruction(self) -> str:
+        """Creates detailed instruction line with item name and hotkeys"""
         if self.key is None:
             return None
 
@@ -69,7 +70,7 @@ class Binding:
         return " + ".join(sequence)
 
     @property
-    def menu_item_description(self):
+    def menu_item_description(self) -> str:
         """Get line for menu item. If binding creates a window, a ... is added."""
         if self.creates_window:
             description = self.description + "..."
@@ -81,7 +82,7 @@ class Binding:
         else:
             return description + " (" + self.key_instruction + ")"
 
-    def add_to_menu(self, editor_instance: "Editor", set_checked=False):
+    def add_to_menu(self, editor_instance: "Editor", set_checked: bool = False):
         if self.menu_id is None:
             self._menu_id = next(editor_instance._submenu_id_generator)
 
@@ -101,7 +102,7 @@ class Binding:
         self,
         description: str,
         callback: Callable,
-        key=None,
+        key: Union[gui.KeyName, int] = None,
         lctrl: bool = False,
         lshift: bool = False,
         menu: Union[str, None] = None,
@@ -115,4 +116,4 @@ class Binding:
         self._lshift = lshift
         self._menu = menu
         self._creates_window = creates_window
-        self._menu_id = None
+        self._menu_id = menu_id
