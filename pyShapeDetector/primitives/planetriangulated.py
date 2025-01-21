@@ -372,9 +372,10 @@ class PlaneTriangulated(Plane):
 
     @staticmethod
     def fuse(
-        shapes,
+        shapes: list["Plane"],
         detector=None,
         ignore_extra_data=False,
+        weight_variable: str = "inliers",
         line_intersection_eps=1e-3,
         **extra_options,
     ):
@@ -392,6 +393,9 @@ class PlaneTriangulated(Plane):
             Used to recompute metrics. Default: None.
         ignore_extra_data : boolean, optional
             If True, ignore everything and only fuse model. Default: False.
+        weight_variable : str
+            Defines variable used as weight. Can be "ones" (non-weighed averate),
+            "surface_area", "fitness" or "inliers". Default: "inliers".
         line_intersection_eps : float, optional
             Distance for detection of intersection between planes. Default: 0.001.
         force_concave : boolean, optional.
@@ -407,7 +411,22 @@ class PlaneTriangulated(Plane):
         PlaneTriangulated
             Averaged PlaneTriangulated instance.
         """
-        plane_unbounded = Plane.fuse(shapes, detector, ignore_extra_data)
+        # if not np.all([isinstance(s, PlaneTriangulated) for s in shapes]):
+        #     raise ValueError("Shapes should all be instances of PlaneTriangulated.")
+
+        valid_types = ["fitness", "surface_area", "ones", "inliers"]
+        if weight_variable not in valid_types:
+            raise ValueError(
+                f"For bounded planes, valid values for 'weight_variable' are "
+                f"{valid_types}, got {weight_variable}."
+            )
+
+        plane_unbounded = Plane.fuse(
+            shapes=shapes,
+            detector=detector,
+            ignore_extra_data=True,
+            weight_variable=weight_variable,
+        )
 
         vertices_list = [plane_unbounded.flatten_points(s.vertices) for s in shapes]
         triangles_list = [s.triangles for s in shapes]
@@ -419,9 +438,7 @@ class PlaneTriangulated(Plane):
         shape = PlaneTriangulated(plane_unbounded.model, vertices, triangles)
 
         if not ignore_extra_data:
-            shape._inliers = plane_unbounded._inliers
-            shape.color = plane_unbounded.color
-            shape.metrics = plane_unbounded.metrics
+            shape._fuse_extra_data(shapes=shapes, detector=detector)
 
         return shape
 

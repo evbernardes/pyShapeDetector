@@ -9,6 +9,7 @@ import warnings
 from itertools import permutations, product, combinations
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
+from typing import TYPE_CHECKING
 # from scipy.spatial.transform import Rotation
 
 from pyShapeDetector.geometry import (
@@ -19,6 +20,9 @@ from pyShapeDetector.geometry import (
 )
 from pyShapeDetector import utility
 from .primitivebase import Primitive, _check_distance
+
+if TYPE_CHECKING:
+    from .planebounded import PlaneBounded
 
 
 def _fuse_loops(loop1, loop2):
@@ -244,7 +248,7 @@ class Plane(Primitive):
         return -self.normal * self.dist
 
     @property
-    def holes(self):
+    def holes(self) -> list["PlaneBounded"]:
         """Existing holes in plane."""
         return self._holes
 
@@ -559,7 +563,13 @@ class Plane(Primitive):
     #     return meshes
 
     @staticmethod
-    def fuse(shapes, detector=None, ignore_extra_data=False, **extra_options):
+    def fuse(
+        shapes: list["Plane"],
+        detector=None,
+        ignore_extra_data=False,
+        weight_variable: str = "inliers",
+        **extra_options,
+    ):
         """Find weigthed average of shapes, where the weight is the fitness
         metric.
 
@@ -567,6 +577,14 @@ class Plane(Primitive):
         average shapes.
 
         Also copies holes.
+
+        `weight_variable` can be:
+            "fitness": takes fitness of each fit, if available.
+            "ones": uses array of ones, equivalent to non-weighted average.
+            "inliers": uses number of inliers.
+
+        "surface_area" is not valid for non-bounded planes, and "volume" is not
+        valid for any kind of plane.
 
         Parameters
         ----------
@@ -576,18 +594,36 @@ class Plane(Primitive):
             Used to recompute metrics. Default: None.
         ignore_extra_data : boolean, optional
             If True, ignore everything and only fuse model. Default: False.
+        weight_variable : str
+            Defines variable used as weight. Can be "ones" (non-weighed averate),
+            "fitness" or "inliers". Default: "inliers".
 
         Returns
         -------
         Plane
             Averaged Plane instance.
         """
-        fused_plane = Primitive.fuse(shapes, detector, ignore_extra_data)
-        model = fused_plane.model
+        if not np.all([isinstance(s, Plane) for s in shapes]):
+            raise ValueError("Shapes should all be Planes.")
+
+        valid_types = ["fitness", "ones", "inliers"]
+        if weight_variable not in valid_types:
+            raise ValueError(
+                f"For unbounded planes, valid values for 'weight_variable' are "
+                f"{valid_types}, got {weight_variable}."
+            )
+
+        fused_plane = Primitive.fuse(
+            shapes=shapes,
+            detector=detector,
+            ignore_extra_data=ignore_extra_data,
+            weight_variable=weight_variable,
+        )
 
         from .planebounded import PlaneBounded
 
         all_holes = []
+        model = fused_plane.model
         for shape in shapes:
             for hole in shape._holes:
                 new_hole = PlaneBounded(model, hole.vertices, convex=hole.is_convex)
@@ -671,7 +707,7 @@ class Plane(Primitive):
         plane = cls.from_normal_point(normal, center)
         return plane
 
-    def add_holes(self, holes, remove_points=True):
+    def add_holes(self, holes: list["PlaneBounded"], remove_points: bool = True):
         """Add one or more holes to plane.
 
         Parameters

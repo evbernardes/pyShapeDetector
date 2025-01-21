@@ -433,12 +433,28 @@ class PlaneRectangular(Plane):
         return AxisAlignedBoundingBox(min_bound - slack, max_bound + slack)
 
     @staticmethod
-    def fuse(shapes, detector=None, ignore_extra_data=False, **extra_options):
+    def fuse(
+        shapes: list["Plane"],
+        detector=None,
+        ignore_extra_data=False,
+        weight_variable: str = "inliers",
+        **extra_options,
+    ):
         """Find weigthed average of shapes, where the weight is the fitness
         metric.
 
         If a detector is given, use it to compute the metrics of the resulting
         average shapes.
+
+        Also copies holes.
+
+        `weight_variable` can be:
+            "surface_area": uses area of each surface, if all finite.
+            "fitness": takes fitness of each fit, if available.
+            "ones": uses array of ones, equivalent to non-weighted average.
+            "inliers": uses number of inliers.
+
+        "volume" is not valid for planes.
 
         Parameters
         ----------
@@ -448,17 +464,33 @@ class PlaneRectangular(Plane):
             Used to recompute metrics. Default: None.
         ignore_extra_data : boolean, optional
             If True, ignore everything and only fuse model. Default: False.
+        weight_variable : str
+            Defines variable used as weight. Can be "ones" (non-weighed averate),
+            "surface_area", "fitness" or "inliers". Default: "inliers".
 
         Returns
         -------
-        PlaneBounded
-            Averaged PlaneBounded instance.
+        PlaneRectangular
+            Averaged PlaneRectangular instance.
         """
+        # if not np.all([isinstance(s, PlaneRectangular) for s in shapes]):
+        #     raise ValueError("Shapes should all be instances of PlaneRectangular.")
+
+        valid_types = ["fitness", "surface_area", "ones", "inliers"]
+        if weight_variable not in valid_types:
+            raise ValueError(
+                f"For bounded planes, valid values for 'weight_variable' are "
+                f"{valid_types}, got {weight_variable}."
+            )
+
         from .planebounded import PlaneBounded
 
-        shapes_bounded = [PlaneBounded(shape.model, shape.vertices) for shape in shapes]
-
-        plane_bounded = PlaneBounded.fuse(shapes_bounded, detector, ignore_extra_data)
+        plane_bounded = PlaneBounded.fuse(
+            shapes=[PlaneBounded(shape.model, shape.vertices) for shape in shapes],
+            detector=detector,
+            ignore_extra_data=True,
+            weight_variable=weight_variable,
+        )
 
         vectors, center = plane_bounded.get_rectangular_vectors_from_points(
             return_center=True,
@@ -469,10 +501,7 @@ class PlaneRectangular(Plane):
         shape = PlaneRectangular(plane_bounded.model, vectors, center)
 
         if not ignore_extra_data:
-            shape._inliers = plane_bounded._inliers
-            # TODO: This is ugly
-            shape.color = np.mean([s.color for s in shapes], axis=0)
-            shape.metrics = plane_bounded.metrics
+            shape._fuse_extra_data(shapes=shapes, detector=detector)
 
         return shape
 

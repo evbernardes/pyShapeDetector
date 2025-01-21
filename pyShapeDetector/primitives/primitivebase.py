@@ -1461,8 +1461,8 @@ class Primitive(ABC):
         Parameters
         ----------
         weight_variable : str
-            Defines variable used as weight. Can be "surface_area", "fitness",
-            "volume" or "inliers". Default: "inliers".
+            Defines variable used as weight. Can be "ones" (non-weighed averate),
+            "surface_area", "fitness", "volume" or "inliers". Default: "inliers".
 
         Returns
         -------
@@ -1577,8 +1577,8 @@ class Primitive(ABC):
         ignore_extra_data : boolean, optional
             If True, ignore everything and only fuse model. Default: False.
         weight_variable : str
-            Defines variable used as weight. Can be "surface_area", "fitness",
-            "volume" or "inliers". Default: "inliers".
+            Defines variable used as weight. Can be "ones" (non-weighed averate),
+            "surface_area", "fitness", "volume" or "inliers". Default: "inliers".
 
         Returns
         -------
