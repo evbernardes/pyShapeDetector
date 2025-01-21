@@ -459,7 +459,7 @@ class Extension:
             return
 
         try:
-            if self.inputs != "internal" and not self.keep_inputs:
+            if self.inputs != "internal" and not self.keep_inputs and len(indices) > 0:
                 assert (
                     editor_instance.element_container.pop_multiple(
                         indices, from_gui=True

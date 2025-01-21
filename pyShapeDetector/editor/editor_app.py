@@ -89,7 +89,7 @@ class Editor:
         self._element_container_fixed = ElementContainer(
             self._settings, is_color_fixed=True
         )
-        self._plane_boundaries = ElementContainer(self._settings, is_color_fixed=True)
+        self._plane_boundaries = []
         self._pre_selected = []
         self._current_bbox = None
         self._current_bbox_axes = None
@@ -488,9 +488,8 @@ class Editor:
     def _update_plane_boundaries(self):
         from .element import ElementGeometry
 
-        for plane_boundary in self._plane_boundaries.elements:
+        for plane_boundary in self._plane_boundaries:
             plane_boundary.remove_from_scene()
-            # self._remove_geometry_from_scene(plane_boundary)
 
         plane_boundaries = []
 
