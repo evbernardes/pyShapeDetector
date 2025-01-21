@@ -76,7 +76,7 @@ class Extension:
         return self._select_outputs
 
     @property
-    def parameters_kwargs(self):
+    def parameters_kwargs(self) -> dict[str]:
         kwargs = {}
         for key, param in self.parameters.items():
             if isinstance(param, ParameterCurrentElement):
@@ -86,19 +86,19 @@ class Extension:
         return kwargs
 
     @property
-    def hotkey(self):
+    def hotkey(self) -> Union[None, int, gui.KeyName]:
         return self._hotkey
 
     @property
-    def lctrl(self):
+    def lctrl(self) -> bool:
         return self._lctrl
 
     @property
-    def lshift(self):
+    def lshift(self) -> bool:
         return self._lshift
 
     @property
-    def hotkey_number(self):
+    def hotkey_number(self) -> int:
         if self.hotkey is None:
             return None
         return int(chr(self.hotkey))

@@ -2,10 +2,12 @@ import warnings
 import copy
 import traceback
 import numpy as np
-from typing import List, Union
+from typing import List, Union, TYPE_CHECKING
 from open3d.visualization.rendering import Open3DScene
 from .element import Element, ELEMENT_TYPE
-from .settings import Settings
+
+if TYPE_CHECKING:
+    from .settings import Settings
 
 import psutil
 
@@ -99,9 +101,9 @@ class ElementContainer(list):
 
     def __init__(
         self,
-        settings: Settings,
+        settings: "Settings",
         elements: list[ELEMENT_TYPE] = [],
-        is_color_fixed=False,
+        is_color_fixed: bool = False,
     ):
         super().__init__(elements)
         self._previous_index = None
@@ -111,11 +113,11 @@ class ElementContainer(list):
         self._scene = None
 
     @property
-    def raw(self):
+    def raw(self) -> list[ELEMENT_TYPE]:
         return [element.raw for element in self]
 
     @property
-    def drawable(self):
+    def drawable(self) -> list[ELEMENT_TYPE]:
         return [element.drawable for element in self]
 
     @property
@@ -167,19 +169,19 @@ class ElementContainer(list):
             elem._is_hidden = value
 
     @property
-    def selected_indices(self):
+    def selected_indices(self) -> list[int]:
         if len(self) == 0:
             return []
         return np.where(self.is_selected)[0].tolist()
 
     @property
-    def hidden_indices(self):
+    def hidden_indices(self) -> list[int]:
         if len(self) == 0:
             return []
         return np.where(self.is_hidden)[0].tolist()
 
     @property
-    def unhidden_indices(self):
+    def unhidden_indices(self) -> list[int]:
         if len(self) == 0:
             return []
         return np.where(~np.array(self.is_hidden))[0].tolist()
@@ -228,10 +230,12 @@ class ElementContainer(list):
             return None
 
     def insert_multiple(
-        self, elements_new, indices=None, is_selected=False, to_gui=False
+        self,
+        elements_new: Union[ELEMENT_TYPE, list[ELEMENT_TYPE]],
+        indices=None,
+        is_selected=False,
+        to_gui=False,
     ):
-        from .element import Element
-
         if not isinstance(elements_new, (tuple, list)):
             elements_new = [elements_new]
         if isinstance(elements_new, tuple):
@@ -317,7 +321,7 @@ class ElementContainer(list):
 
         self._settings.print_debug(f"Used memory: {process.memory_info().rss}")
 
-    def pop_multiple(self, indices, from_gui=False):
+    def pop_multiple(self, indices: list[int], from_gui: bool = False):
         # update_old = self.i in indices
         # idx_new = self.i
         elements_popped = ElementContainer(
@@ -356,7 +360,9 @@ class ElementContainer(list):
 
         return elements_popped
 
-    def get_distances_to_point(self, screen_point, screen_vector):
+    def get_distances_to_point(
+        self, screen_point: np.ndarray, screen_vector: np.ndarray
+    ):
         """Called by Mouse callback to get distances to point when clicked."""
         from pyShapeDetector.primitives import Plane
 
@@ -381,17 +387,21 @@ class ElementContainer(list):
             plane_bounded = plane.get_bounded_plane(boundary_points, convex=True)
             return plane_bounded.contains_projections(point)
 
-        def _distance_to_point(elem, point=screen_point, plane=screen_plane):
+        def _distance_to_point(
+            distance_checker,
+            point: np.ndarray = screen_point,
+            plane: Plane = screen_plane,
+        ):
             """Check if mouse-click was done inside of the element actual region."""
 
-            if not _is_point_in_convex_region(elem, point, plane):
+            if not _is_point_in_convex_region(distance_checker, point, plane):
                 return np.inf
 
             try:
-                return elem.get_distances(point)
+                return distance_checker.get_distances(point)
             except AttributeError:
                 warnings.warn(
-                    f"Element of type {type(elem)} "
+                    f"Element of type {type(distance_checker)} "
                     "found in distance elements, should not happen."
                 )
                 return np.inf
@@ -431,7 +441,11 @@ class ElementContainer(list):
 
             elem.update(is_current, update_gui)
 
-    def toggle_indices(self, indices_or_slice, to_value=None):
+    def toggle_indices(
+        self,
+        indices_or_slice: Union[range, list[int], np.ndarray[int, int]],
+        to_value=None,
+    ):
         if isinstance(indices_or_slice, (range, list, np.ndarray)):
             indices = indices_or_slice
 
@@ -460,7 +474,9 @@ class ElementContainer(list):
 
         self.update_indices(indices)
 
-    def update_current_index(self, idx=None, update_old=True):
+    def update_current_index(
+        self, idx: Union[None, int] = None, update_old: bool = True
+    ):
         if idx is not None:
             self._previous_index = self.current_index
             self._current_index = idx
