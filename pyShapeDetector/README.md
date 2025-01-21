@@ -5,3 +5,4 @@
  - `primitives`: Models of geometrical primitives.
  - `geometry`: Heavily decorated and modified versions of Open3D Geometry classes.
  - `utility`: Convenient utilities.
+ - `editor`: GUI Editor aplication.
