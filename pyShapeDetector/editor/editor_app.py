@@ -230,7 +230,7 @@ class Editor:
         extension_line.add_child(x)
         extension_line.add_child(panel_collapsable)
 
-        self._extension_tabs_panel.add_child(extension_line)
+        self._tools_panel.add_child(extension_line)
         self._extensions_panels[name] = extension_line
         self._main_window.set_needs_layout()
 
@@ -330,7 +330,7 @@ class Editor:
                 [False] + [widget.visible for widget in panel.get_children()]
             )
 
-        _adjust_panel(self._extension_tabs_panel, 17)
+        _adjust_panel(self._tools_panel, 17)
         _adjust_panel(self._right_side_panel, 25)
 
     def _on_close(self):
@@ -475,10 +475,10 @@ class Editor:
         self._menu_show = MenuShow(self)
         self._menu_show._create_menu()
 
-        self._extension_tabs_panel = gui.CollapsableVert(
+        self._tools_panel = gui.CollapsableVert(
             "Tools", em, gui.Margins(em, em, em, em)
         )
-        self._right_side_panel.add_child(self._extension_tabs_panel)
+        self._right_side_panel.add_child(self._tools_panel)
 
     # def _signal_handler(self, sig, frame):
     #     self._vis.destroy_window()
