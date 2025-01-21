@@ -67,8 +67,8 @@ class Element(ABC, Generic[T]):
     Methods
     -------
        `_parse_raw`: check if raw element is compatible
-       `_get_drawable`: set Open3D geometry
-       `_get_distance_checker`: gets element for distance checking
+       `_set_drawable`: set Open3D geometry
+       `_set_distance_checker`: gets element for distance checking
        `_get_bbox`: gets element's bounding box
        `_extract_drawable_color`: return current color of drawable, used at init
        `_update_drawable_color`: sets drawable for new color
@@ -155,15 +155,15 @@ class Element(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def _get_drawable(self):
+    def _set_drawable(self):
         pass
 
     @abstractmethod
-    def _get_distance_checker(self):
+    def _set_distance_checker(self):
         pass
 
     def _get_bbox(self):
-        if self.raw is None or isinstance(self.raw, geometry.LineSet):
+        if self.raw is None or isinstance(self.raw, ELEMENT_LINE_CLASSES):
             return None
 
         bbox_expand_ratio = self._settings.get_setting("bbox_expand_percentage") / 100.0
@@ -310,19 +310,19 @@ class Element(ABC, Generic[T]):
         current: bool = False,
         is_color_fixed: bool = False,
         brightness: float = 1,
-        _is_hidden: bool = False,
+        is_hidden: bool = False,
     ):
-        self._settings = settings
+        self._settings: Settings = settings
         self._raw = self._parse_raw(raw)
-        self._is_selected = is_selected
-        self._current = current
-        self._is_color_fixed = is_color_fixed
-        self._brightness = brightness
-        self._is_hidden = _is_hidden
+        self._is_selected: bool = is_selected
+        self._current: bool = current
+        self._is_color_fixed: bool = is_color_fixed
+        self._brightness: float = brightness
+        self._is_hidden: bool = is_hidden
         self._scene: Union[Open3DScene, None] = None
 
-        self._get_drawable()
-        self._get_distance_checker()
+        self._set_drawable()
+        self._set_distance_checker()
         self._init_colors()
 
         self._update_drawable_color(self._color)
@@ -360,11 +360,11 @@ class ElementPrimitive(Element[Primitive]):
         else:
             raise ValueError("Expected Primitive instance, got {raw}.")
 
-    def _get_drawable(self):
+    def _set_drawable(self):
         # self._drawable = self.raw.copy().mesh.as_open3d
         self._drawable = self.raw.mesh.as_open3d
 
-    def _get_distance_checker(self):
+    def _set_distance_checker(self):
         self._distance_checker = self.raw
 
     def transform(self, transformation_matrix):
@@ -387,10 +387,10 @@ class ElementGeometry(Element[geometry.Numpy_Geometry], Generic[T]):
         else:
             raise TypeError("Expected Numpy Geometry or Open3D geometry, got {raw}.")
 
-    def _get_drawable(self):
+    def _set_drawable(self):
         self._drawable = copy.copy(self.raw).as_open3d
 
-    def _get_distance_checker(self):
+    def _set_distance_checker(self):
         self._distance_checker = None
 
 
@@ -405,7 +405,7 @@ class ElementPointCloud(ElementGeometry[geometry.PointCloud]):
         else:
             raise ValueError(f"Expected PointCloud instance, got {raw}.")
 
-    def _get_distance_checker(self):
+    def _set_distance_checker(self):
         number_points_distance = self._settings.get_setting("number_points_distance")
         if len(self.raw.points) > number_points_distance:
             ratio = int(len(self.raw.points) / number_points_distance)
@@ -454,7 +454,7 @@ class ElementPointCloud(ElementGeometry[geometry.PointCloud]):
             warnings.warn(f"Could not update color of PointCloud element {self.raw}.")
             traceback.print_exc()
 
-    def _get_drawable(self):
+    def _set_drawable(self):
         settings = self._settings
         drawable = copy.deepcopy(self.raw).as_open3d
         downsample = settings.get_setting("PCD_downsample_when_drawing")
@@ -528,14 +528,14 @@ class ElementTriangleMesh(ElementGeometry[geometry.TriangleMesh]):
         else:
             raise ValueError("Expected TriangleMesh instance, got {raw}.")
 
-    def _get_drawable(self):
+    def _set_drawable(self):
         mesh_show_back_face = self._settings.get_setting("mesh_show_back_face")
         mesh = copy.copy(self.raw)
         if mesh_show_back_face:
             mesh.add_reverse_triangles()
         self._drawable = mesh.as_open3d
 
-    def _get_distance_checker(self):
+    def _set_distance_checker(self):
         number_points_distance = self._settings.get_setting("number_points_distance")
         self._distance_checker = geometry.PointCloud(
             self.raw.sample_points_uniformly(number_points_distance)
