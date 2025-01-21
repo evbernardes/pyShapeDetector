@@ -201,7 +201,7 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
 
             new_elements = []
             new_elements_fixed = []
-            elements = editor_instance.elements
+            elements = editor_instance.element_container
 
             if path_elements.exists():
                 subpaths_elements = list(path_elements.glob("*"))
@@ -238,17 +238,19 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
             elements.insert_multiple(new_elements, is_selected=is_selected, to_gui=True)
 
             for idx in hidden_indices:
-                editor_instance.elements[idx].is_hidden = True
+                editor_instance.element_container[idx].is_hidden = True
 
             editor_instance._update_info()
             editor_instance._future_states = []
             editor_instance._past_states = []
 
-            if current_index in editor_instance.elements.unhidden_indices:
+            if current_index in editor_instance.element_container.unhidden_indices:
                 if editor_instance._started:
-                    editor_instance.elements.update_current_index(current_index)
+                    editor_instance.element_container.update_current_index(
+                        current_index
+                    )
                 else:
-                    editor_instance.elements._current_index = current_index
+                    editor_instance.element_container._current_index = current_index
 
             json_path_preferences = Path(temp_dir) / "preferences.json"
             if not json_path_preferences.exists():
@@ -287,8 +289,8 @@ def _save_scene(path: Union[Path, str], editor_instance: Editor):
     if path.exists():
         path.unlink()
 
-    elements = editor_instance.elements
-    elements_fixed = editor_instance._elements_fixed
+    elements = editor_instance.element_container
+    elements_fixed = editor_instance._element_container_fixed
     # scene = editor_instance.scene
 
     if path.suffix == "":

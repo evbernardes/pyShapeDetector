@@ -80,7 +80,9 @@ class Extension:
         kwargs = {}
         for key, param in self.parameters.items():
             if isinstance(param, ParameterCurrentElement):
-                kwargs[key] = self._editor_instance.elements.current_element.raw
+                kwargs[
+                    key
+                ] = self._editor_instance.element_container.current_element.raw
             else:
                 kwargs[key] = param.value
         return kwargs
@@ -330,14 +332,14 @@ class Extension:
             indices = []
             input_elements = []
         elif self.inputs == "current":
-            indices = [editor_instance.elements.current_index]
-            input_elements = [editor_instance.elements.current_element.raw]
+            indices = [editor_instance.element_container.current_index]
+            input_elements = [editor_instance.element_container.current_element.raw]
         elif self.inputs == "selected":
-            indices = editor_instance.elements.selected_indices
-            input_elements = [editor_instance.elements[i].raw for i in indices]
+            indices = editor_instance.element_container.selected_indices
+            input_elements = [editor_instance.element_container[i].raw for i in indices]
         elif self.inputs == "global":
-            indices = list(range(len(editor_instance.elements)))
-            input_elements = [editor_instance.elements[i].raw for i in indices]
+            indices = list(range(len(editor_instance.element_container)))
+            input_elements = [editor_instance.element_container[i].raw for i in indices]
         elif self.inputs == "internal":
             indices = None
             input_elements = editor_instance
@@ -425,7 +427,7 @@ class Extension:
                     "indices": copy.deepcopy(indices),
                     "elements": copy.deepcopy(input_elements),
                     "num_outputs": len(output_elements),
-                    "current_index": editor_instance.elements.current_index,
+                    "current_index": editor_instance.element_container.current_index,
                     "operation": "extension",
                 }
                 editor_instance._save_state(current_state)
@@ -437,17 +439,17 @@ class Extension:
 
         try:
             if self.inputs == "current":
-                editor_instance.elements.insert_multiple(
+                editor_instance.element_container.insert_multiple(
                     output_elements,
                     to_gui=True,
-                    is_selected=editor_instance.elements.current_element.selected,
+                    is_selected=editor_instance.element_container.current_element.selected,
                 )
-                editor_instance.elements.update_current_index(
-                    len(editor_instance.elements) - 1
+                editor_instance.element_container.update_current_index(
+                    len(editor_instance.element_container) - 1
                 )
             elif self.inputs != "internal":
                 # editor_instance._insert_elements(
-                editor_instance.elements.insert_multiple(
+                editor_instance.element_container.insert_multiple(
                     output_elements, to_gui=True, is_selected=self.select_outputs
                 )
         except Exception:
@@ -459,7 +461,9 @@ class Extension:
         try:
             if self.inputs != "internal" and not self.keep_inputs:
                 assert (
-                    editor_instance.elements.pop_multiple(indices, from_gui=True)
+                    editor_instance.element_container.pop_multiple(
+                        indices, from_gui=True
+                    )
                     == input_elements
                 )
         except Exception:
@@ -472,7 +476,7 @@ class Extension:
         # editor_instance._future_states = []
         editor_instance._update_plane_boundaries()
         editor_instance._update_info()
-        editor_instance.elements.update_current_index()
+        editor_instance.element_container.update_current_index()
         editor_instance._update_BBOX_and_axes()
         editor_instance._close_dialog()
         # editor_instance._set_gray_overlay(False)
@@ -526,9 +530,9 @@ class Extension:
                 self._editor_instance._set_extension_panel_open(self.name, False)
 
         def _on_refresh_limits():
-            if len(editor_instance.elements.selected_indices) > 0:
+            if len(editor_instance.element_container.selected_indices) > 0:
                 for param in self.parameters.values():
-                    param._reset_values_and_limits(editor_instance.elements)
+                    param._reset_values_and_limits(editor_instance.element_container)
 
         def _on_close_window():
             if not self._ran_at_least_once:

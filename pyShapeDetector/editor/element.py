@@ -79,6 +79,7 @@ class Element(ABC, Generic[T]):
     -------
        `_parse_raw`: check if raw element is compatible
        `_set_extra_elements`: set drawable Open3D geometry and other elements if needed
+       `_delete_extra_elements`: remove extra elements from memory
        `_get_bbox`: gets element's bounding box
        `_extract_drawable_color`: return current color of drawable, used at init
        `_update_drawable_color`: sets drawable for new color
@@ -93,6 +94,10 @@ class Element(ABC, Generic[T]):
        `get_from_type`: gets an instance of appropriate type
 
     """
+
+    _drawable: Open3d_Geometry
+    _color_original: np.ndarray
+    _color: np.ndarray
 
     def __repr__(self):
         return f"{self.__class__.__name__}[{self.raw.__class__.__name__}]"
@@ -166,6 +171,11 @@ class Element(ABC, Generic[T]):
     @abstractmethod
     def _set_extra_elements(self):
         pass
+
+    def _delete_extra_elements(self):
+        del self._drawable
+        del self._color_original
+        del self._color
 
     @abstractmethod
     def _get_distance_to_screen_point(
@@ -390,6 +400,10 @@ class ElementPrimitive(Element[Primitive]):
 
 
 class ElementGeometry(Element[geometry.Numpy_Geometry], Generic[T]):
+    def _delete_extra_elements(self):
+        super()._delete_extra_elements()
+        del self._distance_checker
+
     @staticmethod
     def _parse_raw(raw: Union[geometry.Numpy_Geometry, Open3d_Geometry]):
         if isinstance(raw, geometry.Numpy_Geometry):

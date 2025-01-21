@@ -490,8 +490,11 @@ def select_manually(
         warnings.warn("To use a function, try 'apply_function_manually' instead.")
 
     if return_finish_flag:
-        return element_selector.elements.selected_indices, element_selector.finish
-    return element_selector.elements.selected_indices
+        return (
+            element_selector.element_container.selected_indices,
+            element_selector.finish,
+        )
+    return element_selector.element_container.selected_indices
 
 
 def apply_function_manually(
@@ -550,7 +553,7 @@ def apply_function_manually(
         warnings.warn("print_instructions option not used anymore")
 
     element_selector = Editor(**kwargs)
-    element_selector.elements.insert_multiple(
+    element_selector.element_container.insert_multiple(
         elements, is_selected=pre_selected, to_gui=False
     )
     element_selector.elements_fixed.insert_multiple(fixed_elements, to_gui=False)
@@ -568,7 +571,7 @@ def apply_function_manually(
         indices = [state["indices"] for state in element_selector._past_states]
         return element_selector.element_dicts, indices
 
-    return element_selector.elements.raw
+    return element_selector.element_container.raw
 
 
 # def draw_and_ask(elements, return_not_selected=False, **camera_options):

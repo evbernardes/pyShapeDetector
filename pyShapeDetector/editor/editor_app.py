@@ -85,9 +85,11 @@ class Editor:
         self._copied_elements = []
         self._past_states = []
         self._future_states = []
-        self._elements = ElementContainer(self._settings)
+        self._element_container = ElementContainer(self._settings)
+        self._element_container_fixed = ElementContainer(
+            self._settings, is_color_fixed=True
+        )
         self._plane_boundaries = ElementContainer(self._settings, is_color_fixed=True)
-        self._elements_fixed = ElementContainer(self._settings, is_color_fixed=True)
         self._pre_selected = []
         self._current_bbox = None
         self._current_bbox_axes = None
@@ -194,12 +196,12 @@ class Editor:
             traceback.print_exc()
 
     @property
-    def elements(self) -> ElementContainer:
-        return self._elements
+    def element_container(self) -> ElementContainer:
+        return self._element_container
 
     @property
     def elements_fixed(self) -> ElementContainer:
-        return self._elements_fixed
+        return self._element_container_fixed
 
     def _add_extension_panel(
         self, name: str, panel: gui.Vert, callbacks: dict[str, Callable]
@@ -376,7 +378,7 @@ class Editor:
             view_matrix = self._scene.scene.camera.get_view_matrix()
             camera_direction = -view_matrix[:3, 2]
 
-            distances = self.elements.get_distances_to_point(
+            distances = self.element_container.get_distances_to_point(
                 click_position, camera_direction
             )
 
@@ -384,11 +386,13 @@ class Editor:
             if distances[i_min_distance] is np.inf:
                 return gui.Widget.EventCallbackResult.IGNORED
 
-            self.elements._previous_index = self.elements.current_index
-            self.elements.current_index = i_min_distance
+            self.element_container._previous_index = (
+                self.element_container.current_index
+            )
+            self.element_container.current_index = i_min_distance
             if event.is_modifier_down(gui.KeyModifier.SHIFT):
                 self._internal_functions._cb_toggle()
-            self.elements.update_current_index()
+            self.element_container.update_current_index()
             self._update_extra_elements(planes_boundaries=False)
 
         self._scene.scene.scene.render_to_depth_image(depth_callback)
@@ -485,14 +489,14 @@ class Editor:
     def _update_plane_boundaries(self):
         from .element import ElementGeometry
 
-        for plane_boundary in self._plane_boundaries:
+        for plane_boundary in self._plane_boundaries.elements:
             plane_boundary.remove_from_scene()
             # self._remove_geometry_from_scene(plane_boundary)
 
         plane_boundaries = []
 
         if self._settings.get_setting("draw_boundary_lines"):
-            for elem in self.elements:
+            for elem in self.element_container.elements:
                 if elem.is_hidden:
                     continue
 
@@ -527,13 +531,16 @@ class Editor:
             self._scene.scene.remove_geometry("BBOXAxisZ")
             self._current_bbox_axes
 
-        if self.elements.current_element is None or not self._settings.get_setting(
-            "show_bbox"
+        if (
+            self.element_container.current_element is None
+            or not self._settings.get_setting("show_bbox")
         ):
             self._current_bbox = None
             return
 
-        self._current_bbox = self.elements.current_element._get_bbox().as_open3d
+        self._current_bbox = (
+            self.element_container.current_element._get_bbox().as_open3d
+        )
 
         if self._current_bbox is not None:
             self._scene.scene.add_geometry(
@@ -589,13 +596,16 @@ class Editor:
             if not self._info_visible:
                 return
 
-            if self.elements.current_index is None or len(self.elements) == 0:
+            if (
+                self.element_container.current_index is None
+                or len(self.element_container) == 0
+            ):
                 self._info.text = ""
             else:
-                self._info.text = f"Current: {self.elements.current_index + 1} / {len(self.elements)} | "
+                self._info.text = f"Current: {self.element_container.current_index + 1} / {len(self.element_container)} | "
 
                 if self._get_setting("show_current"):
-                    element_raw = self.elements.current_element.raw
+                    element_raw = self.element_container.current_element.raw
                     self._info.text += f"{element_raw}"
 
                     if isinstance(element_raw, Primitive):
@@ -611,16 +621,12 @@ class Editor:
 
                     self._info.text += " | "
 
-                self._info.text += (
-                    f"selected: {'YES' if self.elements.is_current_selected else 'NO'}"
-                )
+                self._info.text += f"selected: {'YES' if self.element_container.is_current_selected else 'NO'}"
 
                 if debug:
-                    self._info.text += (
-                        f" | {len(self.elements.selected_indices)} selected elements"
-                    )
+                    self._info.text += f" | {len(self.element_container.selected_indices)} selected elements"
 
-                if n := len(self.elements.hidden_indices):
+                if n := len(self.element_container.hidden_indices):
                     self._info.text += f" | {n} hidden elements"
 
                 if (ext := self._last_used_extension) is not None:
@@ -668,7 +674,7 @@ class Editor:
         self._settings._update_materials()
 
         # Add initial elements
-        self.elements.add_to_scene(self._scene.scene, startup=True)
+        self.element_container.add_to_scene(self._scene.scene, startup=True)
         # self._plane_boundaries.add_to_scene(self._scene.scene)
         self.elements_fixed.add_to_scene(self._scene.scene)
 

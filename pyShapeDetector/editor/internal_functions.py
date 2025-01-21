@@ -287,7 +287,9 @@ class InternalFunctions:
             self._editor_instance._settings.print_debug(f"Loaded element: {element}")
             if element is not None:
                 try:
-                    self._editor_instance.elements.insert_multiple(element, to_gui=True)
+                    self._editor_instance.element_container.insert_multiple(
+                        element, to_gui=True
+                    )
                     editor_instance._update_info()
                     editor_instance._reset_camera()
                 except Exception:
@@ -486,7 +488,7 @@ class InternalFunctions:
                     else:
                         elements_flattened.append(element)
 
-                self._editor_instance.elements.insert_multiple(
+                self._editor_instance.element_container.insert_multiple(
                     elements_flattened, to_gui=True
                 )
             except Exception:
@@ -521,7 +523,7 @@ class InternalFunctions:
             editor_instance._close_dialog()
 
         def _on_done(filename):
-            current_element = editor_instance.elements.current_element
+            current_element = editor_instance.element_container.current_element
             if current_element is None:
                 return
 
@@ -587,28 +589,28 @@ class InternalFunctions:
     def _cb_toggle(self):
         """Toggle the current highlighted element between selected/unselected."""
         editor_instance = self._editor_instance
-        elem = editor_instance.elements.current_element
+        elem = editor_instance.element_container.current_element
         if elem is None:
             return
 
         elem.is_selected = not elem.is_selected
-        editor_instance.elements.update_current_index()
+        editor_instance.element_container.update_current_index()
         editor_instance._update_extra_elements(planes_boundaries=False)
 
     def _cb_delete(self):
         """Delete selected elements."""
         # Implementing as an extension to save state
         editor_instance = self._editor_instance
-        indices = editor_instance.elements.selected_indices
+        indices = editor_instance.element_container.selected_indices
         if len(indices) == 0:
             return
-        input_elements = [editor_instance.elements[i].raw for i in indices]
+        input_elements = [editor_instance.element_container[i].raw for i in indices]
 
         try:
             self._editor_instance._settings.print_debug(
                 f"Deleting elements at indices {indices}."
             )
-            editor_instance.elements.pop_multiple(indices, from_gui=True)
+            editor_instance.element_container.pop_multiple(indices, from_gui=True)
         except Exception:
             warnings.warn(f"Could not delete elements at indices {indices}.")
             traceback.print_exc()
@@ -618,7 +620,7 @@ class InternalFunctions:
             "indices": copy.deepcopy(indices),
             "elements": copy.deepcopy(input_elements),
             "num_outputs": 0,
-            "current_index": editor_instance.elements.current_index,
+            "current_index": editor_instance.element_container.current_index,
             "operation": "delete",
         }
         editor_instance._save_state(current_state)
@@ -628,7 +630,7 @@ class InternalFunctions:
         """Save elements to be copied."""
         editor_instance = self._editor_instance
         copied_elements = copy.deepcopy(
-            [elem.raw for elem in editor_instance.elements if elem.is_selected]
+            [elem.raw for elem in editor_instance.element_container if elem.is_selected]
         )
         editor_instance._settings.print_debug(
             f"Copying {len(copied_elements)} elements."
@@ -651,7 +653,7 @@ class InternalFunctions:
             editor_instance._settings.print_debug(
                 f"Pasting {len(editor_instance._copied_elements)} elements.",
             )
-            editor_instance.elements.insert_multiple(
+            editor_instance.element_container.insert_multiple(
                 editor_instance._copied_elements, to_gui=True
             )
         except Exception:
@@ -664,7 +666,7 @@ class InternalFunctions:
             "indices": [],
             "elements": [],
             "num_outputs": len(editor_instance._copied_elements),
-            "current_index": editor_instance.elements.current_index,
+            "current_index": editor_instance.element_container.current_index,
             "operation": "paste",
         }
 
@@ -677,7 +679,7 @@ class InternalFunctions:
             # should not happen though
             return
 
-        elements = self._editor_instance.elements
+        elements = self._editor_instance.element_container
         unhidden_indices = elements.unhidden_indices
         current_index = elements.current_index
 
@@ -704,12 +706,12 @@ class InternalFunctions:
 
     def _cb_select_all(self):
         """Toggle the all elements to selected."""
-        self._editor_instance.elements.toggle_indices(None, to_value=True)
+        self._editor_instance.element_container.toggle_indices(None, to_value=True)
         self._editor_instance._update_info()
 
     def _cb_unselect_all(self):
         """Toggle the all elements between to unselected."""
-        self._editor_instance.elements.toggle_indices(None, to_value=False)
+        self._editor_instance.element_container.toggle_indices(None, to_value=False)
         self._editor_instance._update_info()
 
     def _cb_select_last(self):
@@ -725,7 +727,7 @@ class InternalFunctions:
         if (num_outputs := last_state["num_outputs"]) == 0:
             return
 
-        editor_instance.elements.toggle_indices(
+        editor_instance.element_container.toggle_indices(
             slice(-num_outputs, None), to_value=True
         )
 
@@ -742,7 +744,7 @@ class InternalFunctions:
 
         print(num_outputs)
 
-        editor_instance.elements.toggle_indices(
+        editor_instance.element_container.toggle_indices(
             slice(-num_outputs, None), to_value=False
         )
 
@@ -753,16 +755,19 @@ class InternalFunctions:
         window = editor_instance._window
         em = window.theme.font_size
         separation_height = int(round(0.5 * em))
-        elems_raw = [elem.raw for elem in editor_instance.elements]
+        elems_raw = [elem.raw for elem in editor_instance.element_container]
 
         temp_window = editor_instance.app.create_window("Select type", 200, 400)
         temp_window.show_menu(False)
         self._editor_instance._temp_windows.append(temp_window)
 
         def _callback(_type, value):
-            is_type = [isinstance(elem.raw, _type) for elem in editor_instance.elements]
+            is_type = [
+                isinstance(elem.raw, _type)
+                for elem in editor_instance.element_container
+            ]
             indices = np.where(is_type)[0].tolist()
-            editor_instance.elements.toggle_indices(indices, to_value=value)
+            editor_instance.element_container.toggle_indices(indices, to_value=value)
             self._editor_instance._update_info()
 
         dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
@@ -919,7 +924,7 @@ class InternalFunctions:
         """Hide selected elements."""
 
         editor_instance = self._editor_instance
-        elements = editor_instance.elements
+        elements = editor_instance.element_container
 
         if indices is None:
             indices = elements.selected_indices
@@ -927,7 +932,7 @@ class InternalFunctions:
             return
 
         for idx in indices:
-            elem = editor_instance.elements[idx]
+            elem = editor_instance.element_container[idx]
             elem.is_hidden = True
             elem.is_selected = False
 
@@ -955,12 +960,12 @@ class InternalFunctions:
         print(indices)
 
         if indices is None:
-            indices = editor_instance.elements.hidden_indices
+            indices = editor_instance.element_container.hidden_indices
         elif len(indices) == 0:
             return
 
         for idx in indices:
-            elem = editor_instance.elements[idx]
+            elem = editor_instance.element_container[idx]
             elem.is_hidden = False
 
         editor_instance._update_extra_elements(planes_boundaries=False)
@@ -993,15 +998,19 @@ class InternalFunctions:
             transformation_matrix = last_state["transformation_matrix"]
             transformation_matrix_inverse = np.linalg.inv(transformation_matrix)
             for index in indices:
-                editor_instance.elements[index].transform(transformation_matrix_inverse)
+                editor_instance.element_container[index].transform(
+                    transformation_matrix_inverse
+                )
             editor_instance._save_state(last_state, to_future=True, delete_future=False)
-            editor_instance.elements.update_current_index(last_state["current_index"])
+            editor_instance.element_container.update_current_index(
+                last_state["current_index"]
+            )
             editor_instance._update_extra_elements(planes_boundaries=True)
             return
 
         elements = last_state["elements"]
         num_outputs = last_state["num_outputs"]
-        num_elems = len(editor_instance.elements)
+        num_elems = len(editor_instance.element_container)
 
         editor_instance._settings.print_debug(
             f"Undoing last operation, removing {num_outputs} outputs and "
@@ -1010,11 +1019,11 @@ class InternalFunctions:
 
         indices_to_pop = range(num_elems - num_outputs, num_elems)
 
-        modified_elements = editor_instance.elements.pop_multiple(
+        modified_elements = editor_instance.element_container.pop_multiple(
             indices_to_pop, from_gui=True
         )
 
-        editor_instance.elements.insert_multiple(
+        editor_instance.element_container.insert_multiple(
             elements, indices, is_selected=True, to_gui=True
         )
 
@@ -1022,13 +1031,13 @@ class InternalFunctions:
         current_state = {
             "modified_elements": modified_elements,
             "indices": indices,
-            "current_index": editor_instance.elements.current_index,
+            "current_index": editor_instance.element_container.current_index,
             "operation": "undo",
         }
         editor_instance._save_state(current_state, to_future=True, delete_future=False)
 
         if len(indices) > 0:
-            editor_instance.elements.update_current_index(indices[-1])
+            editor_instance.element_container.update_current_index(indices[-1])
 
         editor_instance._update_extra_elements(planes_boundaries=True)
 
@@ -1053,11 +1062,15 @@ class InternalFunctions:
             indices = future_state["indices"]
             transformation_matrix = future_state["transformation_matrix"]
             for index in indices:
-                editor_instance.elements[index].transform(transformation_matrix)
+                editor_instance.element_container[index].transform(
+                    transformation_matrix
+                )
             editor_instance._save_state(
                 future_state, to_future=False, delete_future=False
             )
-            editor_instance.elements.update_current_index(future_state["current_index"])
+            editor_instance.element_container.update_current_index(
+                future_state["current_index"]
+            )
             editor_instance._update_extra_elements(planes_boundaries=True)
             return
 
@@ -1068,19 +1081,23 @@ class InternalFunctions:
             f"resetting {len(modified_elements)} inputs.",
         )
 
-        input_elements = [editor_instance.elements[i].raw for i in indices]
+        input_elements = [editor_instance.element_container[i].raw for i in indices]
 
         current_state = {
             "indices": copy.deepcopy(indices),
             "elements": copy.deepcopy(input_elements),
             "num_outputs": len(modified_elements),
-            "current_index": editor_instance.elements.current_index,
+            "current_index": editor_instance.element_container.current_index,
             "operation": "redo",
         }
         editor_instance._save_state(current_state, delete_future=False)
 
-        editor_instance.elements.current_index = future_state["current_index"]
-        editor_instance.elements.pop_multiple(indices, from_gui=True)
-        editor_instance.elements.insert_multiple(modified_elements, to_gui=True)
-        editor_instance.elements.update_current_index(len(editor_instance.elements) - 1)
+        editor_instance.element_container.current_index = future_state["current_index"]
+        editor_instance.element_container.pop_multiple(indices, from_gui=True)
+        editor_instance.element_container.insert_multiple(
+            modified_elements, to_gui=True
+        )
+        editor_instance.element_container.update_current_index(
+            len(editor_instance.element_container) - 1
+        )
         editor_instance._update_extra_elements(planes_boundaries=True)

@@ -14,25 +14,30 @@ import psutil
 process = psutil.Process()
 
 
-class ElementContainer(list):
+class ElementContainer:
     """
     Class implementing a specialized list for containing Element instances.
 
     Attributes
     ----------
+    elements
     previous_index
     current_index
     current_element
+    is_current_selected
     raw
     drawable
     is_selected
-    selected_indices
     is_hidden
+    selected_indices
     hidden_indices
     unhidden_indices
+    scene
 
     Methods
     -------
+    __len__
+    __repr__
     add_to_scene
     remove_from_scene
     get_closest_unhidden_index
@@ -44,6 +49,10 @@ class ElementContainer(list):
     update_current_index
     scene
     """
+
+    @property
+    def elements(self) -> list[Element]:
+        return self._elements
 
     @property
     def previous_index(self) -> int:
@@ -93,36 +102,16 @@ class ElementContainer(list):
         return self.current_element.is_selected
 
     @property
-    def scene(self) -> Union[Open3DScene, None]:
-        return self._scene
-
-    def __repr__(self):
-        return f"ElementContainer({len(self)} elements)"
-
-    def __init__(
-        self,
-        settings: "Settings",
-        elements: list[ELEMENT_TYPE] = [],
-        is_color_fixed: bool = False,
-    ):
-        super().__init__(elements)
-        self._previous_index = None
-        self._current_index = None
-        self._settings = settings
-        self._is_color_fixed = is_color_fixed
-        self._scene = None
-
-    @property
     def raw(self) -> list[ELEMENT_TYPE]:
-        return [element.raw for element in self]
+        return [element.raw for element in self.elements]
 
     @property
     def drawable(self) -> list[ELEMENT_TYPE]:
-        return [element.drawable for element in self]
+        return [element.drawable for element in self.elements]
 
     @property
     def is_selected(self) -> List[bool]:
-        return [element.is_selected for element in self]
+        return [element.is_selected for element in self.elements]
 
     @is_selected.setter
     def is_selected(self, values: Union[List[bool], bool]):
@@ -146,7 +135,7 @@ class ElementContainer(list):
 
     @property
     def is_hidden(self) -> List[bool]:
-        return [element.is_hidden for element in self]
+        return [element.is_hidden for element in self.elements]
 
     @is_hidden.setter
     def is_hidden(self, values: Union[List[bool], bool]):
@@ -186,6 +175,35 @@ class ElementContainer(list):
             return []
         return np.where(~np.array(self.is_hidden))[0].tolist()
 
+    @property
+    def scene(self) -> Union[Open3DScene, None]:
+        return self._scene
+
+    def __len__(self):
+        return len(self.elements)
+
+    def __getitem__(self, idx):
+        return self.elements[idx]
+
+    def __repr__(self):
+        return f"ElementContainer({len(self)} elements)"
+
+    def __init__(
+        self,
+        settings: "Settings",
+        elements: list[Element] = [],
+        is_color_fixed: bool = False,
+    ):
+        if not isinstance(elements, (list, tuple)):
+            raise ValueError(f"Expected elements to be list or tuple, got {elements}.")
+
+        self._elements = list(elements)
+        self._previous_index = None
+        self._current_index = None
+        self._settings = settings
+        self._is_color_fixed = is_color_fixed
+        self._scene = None
+
     def add_to_scene(self, scene: Open3DScene, startup: bool = False):
         if self._scene is not None and self._scene != scene:
             warnings.warn("Remove from current scene before adding to another.")
@@ -196,18 +214,18 @@ class ElementContainer(list):
         else:
             raise TypeError(f"Expected Open3DScene, got {scene}.")
 
-        for elem in self:
+        for element in self.elements:
             if startup:
-                elem.update(is_current=False, update_scene=False)
-            elem.add_to_scene(scene)
+                element.update(is_current=False, update_scene=False)
+            element.add_to_scene(scene)
 
     def remove_from_scene(self):
         if self._scene is None:
             warnings.warn("Cannot remove from scene: currently not in any scene.")
             return None
 
-        for elem in self:
-            elem.remove_from_scene()
+        for element in self.elements:
+            element.remove_from_scene()
         self._scene = None
 
     def get_closest_unhidden_index(self, index: Union[int, None] = None):
@@ -292,7 +310,7 @@ class ElementContainer(list):
                 f"Added {elem.raw} at index {idx}.",
                 require_verbose=True,
             )
-            self.insert(idx, elem)
+            self.elements.insert(idx, elem)
             tested_indices.append(idx)
 
         if self.scene is not None:
@@ -330,14 +348,11 @@ class ElementContainer(list):
 
         for n, i in enumerate(indices):
             try:
-                elem = self.pop(i - n)
+                element = self.elements.pop(i - n)
                 if from_gui:
-                    elem.remove_from_scene()
-                elements_popped.append(elem.raw)
-                del elem._drawable
-                del elem._distance_checker
-                del elem._color_original
-                del elem._color
+                    element.remove_from_scene()
+                elements_popped.append(element.raw)
+                element._delete_extra_elements()
             except Exception:
                 print(f"Could not remove index {i}!")
 
