@@ -94,14 +94,14 @@ class Editor:
         self._current_bbox = None
         self._current_bbox_axes = None
         self._last_used_extension = None
-        self.window_name = window_name
+        self._window_name = window_name
         self.return_finish_flag = return_finish_flag
         self._submenu_id_generator = itertools.count(1, 1)
         self._submenus = {}
         self._closing_app = False
         self._temp_windows = []
         self._scene_file_path = None
-        self._window = None
+        self._main_window = None
         self._extensions_panels = {}
         # self._extension_tabs = gui.TabControl()
         # self._gray_overlay = gui.Widget()
@@ -122,7 +122,7 @@ class Editor:
         button_text: str = "Close",
         button_callback: Union[Callable, None] = None,
     ):
-        window = self._window
+        window = self._main_window
         em = window.theme.font_size
         dlg = gui.Dialog(text)
 
@@ -211,7 +211,7 @@ class Editor:
             self._add_extension_panel(name, panel, callbacks)
             return
 
-        em = self._window.theme.font_size
+        em = self._main_window.theme.font_size
 
         # self._extensions_panels[name] = panel
         panel_collapsable = gui.CollapsableVert(name, em, gui.Margins(0, 0, 0, 0))
@@ -232,14 +232,14 @@ class Editor:
 
         self._extension_tabs_panel.add_child(extension_line)
         self._extensions_panels[name] = extension_line
-        self._window.set_needs_layout()
+        self._main_window.set_needs_layout()
 
     def _set_extension_panel_open(self, name: str, is_open: bool) -> bool:
         if name not in self._extensions_panels:
             return False
 
         self._extensions_panels[name].visible = is_open
-        self._window.set_needs_layout()
+        self._main_window.set_needs_layout()
         return True
 
     # def _set_gray_overlay(self, value: bool):
@@ -259,8 +259,8 @@ class Editor:
 
     def _close_dialog(self):
         """Closes dialog, if any, then resets keys to original hotkeys."""
-        self._window.set_on_key(None)
-        self._window.close_dialog()
+        self._main_window.set_on_key(None)
+        self._main_window.close_dialog()
         self._reset_on_key()
 
     def _save_state(
@@ -299,7 +299,7 @@ class Editor:
         self._settings.print_debug(f"{len(self._future_states)} states for redoing.")
 
     def _on_layout(self, layout_context):
-        r = self._window.content_rect
+        r = self._main_window.content_rect
 
         self._scene.frame = r
 
@@ -412,9 +412,11 @@ class Editor:
         self.app.initialize()
 
         # Create a window
-        self._window = self.app.create_window(self.window_name, *self._init_window_size)
-        self._window.set_on_layout(self._on_layout)
-        self._window.set_on_close(self._on_close)
+        self._main_window = self.app.create_window(
+            self._window_name, *self._init_window_size
+        )
+        self._main_window.set_on_layout(self._on_layout)
+        self._main_window.set_on_close(self._on_close)
 
         if self.app.menubar is None:
             self.app.menubar = gui.Menu()
@@ -425,7 +427,7 @@ class Editor:
 
         # Set up a scene as a 3D widget
         self._scene = gui.SceneWidget()
-        self._scene.scene = rendering.Open3DScene(self._window.renderer)
+        self._scene.scene = rendering.Open3DScene(self._main_window.renderer)
         self._scene.scene.set_lighting(
             rendering.Open3DScene.LightingProfile.NO_SHADOWS, (0, 0, 0)
         )
@@ -442,12 +444,12 @@ class Editor:
         self._info = gui.Label("")
         self._info.visible = self._info_visible
 
-        self._window.add_child(self._scene)
-        self._window.add_child(self._info)
+        self._main_window.add_child(self._scene)
+        self._main_window.add_child(self._info)
 
-        em = self._window.theme.font_size
+        em = self._main_window.theme.font_size
         self._right_side_panel = gui.Vert(em, gui.Margins(em, em, em, em))
-        self._window.add_child(self._right_side_panel)
+        self._main_window.add_child(self._right_side_panel)
         self._right_side_panel.visible = True
 
         # 1) Set internal functions and add menu items
@@ -556,7 +558,8 @@ class Editor:
             extent = self._current_bbox.extent
             R = self._current_bbox.R
             radius = (
-                self._settings.get_setting("bbox_axes_width") * self._window.scaling
+                self._settings.get_setting("bbox_axes_width")
+                * self._main_window.scaling
             )
 
             min_bound = center - extent.dot(R.T) / 2
@@ -581,7 +584,7 @@ class Editor:
             self._current_bbox_axes = (vx, vy, vz)
 
     def _update_info(self):
-        if self._window is None:
+        if self._main_window is None:
             """ Not initialized yet"""
             return
 
@@ -649,9 +652,9 @@ class Editor:
             # We are sizing the info label to be exactly the right size,
             # so since the text likely changed width, we need to
             # re-layout to set the new frame.
-            self._window.set_needs_layout()
+            self._main_window.set_needs_layout()
 
-        self.app.post_to_main_thread(self._window, update_label)
+        self.app.post_to_main_thread(self._main_window, update_label)
 
     def _update_extra_elements(self, planes_boundaries: bool = True):
         if planes_boundaries:

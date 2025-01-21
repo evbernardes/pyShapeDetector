@@ -95,7 +95,7 @@ def _create_overwrite_warning(
     editor_instance: Editor, path: str, quitting: bool = False
 ):
     """Creates Warning dialog when trying to save to existing file."""
-    window = editor_instance._window
+    window = editor_instance._main_window
 
     dlg = gui.Dialog("Warning")
 
@@ -116,7 +116,7 @@ def _create_overwrite_warning(
         editor_instance._internal_functions._cb_save_scene()
         if quitting:
             editor_instance._closing_app = True
-            editor_instance._window.close()
+            editor_instance._main_window.close()
 
     def _on_no():
         editor_instance._close_dialog()

@@ -491,7 +491,7 @@ class Extension:
             """ If True, it was already opened and set visibility to True."""
             return
 
-        em = editor_instance._window.theme.font_size
+        em = editor_instance._main_window.theme.font_size
 
         self._ran_at_least_once = False
 

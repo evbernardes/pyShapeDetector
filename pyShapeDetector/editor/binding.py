@@ -96,7 +96,9 @@ class Binding:
         )
         menu.add_item(self.menu_item_description, self.menu_id)
         menu.set_checked(self.menu_id, set_checked)
-        editor_instance._window.set_on_menu_item_activated(self.menu_id, self.callback)
+        editor_instance._main_window.set_on_menu_item_activated(
+            self.menu_id, self.callback
+        )
 
     def __init__(
         self,

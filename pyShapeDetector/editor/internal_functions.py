@@ -297,7 +297,7 @@ class InternalFunctions:
                     traceback.print_exc()
             return
 
-        window = self._editor_instance._window
+        window = self._editor_instance._main_window
 
         dlg = gui.FileDialog(gui.FileDialog.OPEN, "Choose file to load", window.theme)
         if editor_instance._scene_file_path is not None:
@@ -356,7 +356,7 @@ class InternalFunctions:
             # editor_instance._close_dialog()
             return
 
-        window = self._editor_instance._window
+        window = self._editor_instance._main_window
 
         dlg = gui.FileDialog(
             gui.FileDialog.OPEN, "Select scene file to open", window.theme
@@ -410,13 +410,13 @@ class InternalFunctions:
             editor_instance.app.run_in_thread(_save_thread)
             if quitting:
                 self._editor_instance._closing_app = True
-                self._editor_instance._window.close()
+                self._editor_instance._main_window.close()
 
     def _cb_save_scene_as(self, quitting=False):
         from .io import _create_overwrite_warning, SCENE_FILE_EXTENSION
 
         editor_instance = self._editor_instance
-        window = self._editor_instance._window
+        window = self._editor_instance._main_window
 
         dlg = gui.FileDialog(gui.FileDialog.SAVE, "Save scene to file", window.theme)
         if editor_instance._scene_file_path is not None:
@@ -442,7 +442,7 @@ class InternalFunctions:
 
                 if quitting:
                     self._editor_instance._closing_app = True
-                    self._editor_instance._window.close()
+                    self._editor_instance._main_window.close()
                 else:
                     editor_instance._close_dialog()
 
@@ -455,7 +455,7 @@ class InternalFunctions:
         from .io import RECOGNIZED_EXTENSION, _load_one_element
 
         editor_instance = self._editor_instance
-        window = self._editor_instance._window
+        window = self._editor_instance._main_window
 
         dlg = gui.FileDialog(
             gui.FileDialog.OPEN_DIR, "Choose directory to load everything", window.theme
@@ -506,7 +506,7 @@ class InternalFunctions:
         from .io import _write_one_element
 
         editor_instance = self._editor_instance
-        window = self._editor_instance._window
+        window = self._editor_instance._main_window
 
         dlg = gui.FileDialog(
             gui.FileDialog.SAVE,
@@ -536,7 +536,7 @@ class InternalFunctions:
         window.show_dialog(dlg)
 
     def _cb_quit_app(self):
-        window = self._editor_instance._window
+        window = self._editor_instance._main_window
         em = window.theme.font_size
         button_separation_width = 2 * int(round(0.5 * em))
 
@@ -752,7 +752,7 @@ class InternalFunctions:
 
     def _cb_toggle_type(self):
         editor_instance = self._editor_instance
-        window = editor_instance._window
+        window = editor_instance._main_window
         em = window.theme.font_size
         separation_height = int(round(0.5 * em))
         elems_raw = [elem.raw for elem in editor_instance.element_container]

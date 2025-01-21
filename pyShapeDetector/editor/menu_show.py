@@ -21,7 +21,7 @@ class MenuShow:
         }
 
     def _create_hotkeys_panel(self):
-        window = self._editor_instance._window
+        window = self._editor_instance._main_window
         em = window.theme.font_size
 
         hotkeys_panel_collapsable = gui.CollapsableVert(
@@ -60,7 +60,7 @@ class MenuShow:
 
     def _on_hotkeys_toggle(self):
         editor_instance = self._editor_instance
-        window = editor_instance._window
+        window = editor_instance._main_window
         menubar = editor_instance.app.menubar
         self._hotkeys_panel.visible = not self._hotkeys_panel.visible
 
@@ -85,7 +85,7 @@ class MenuShow:
 
     def _on_ground_plane_toggle(self):
         editor_instance = self._editor_instance
-        window = editor_instance._window
+        window = editor_instance._main_window
         menubar = editor_instance.app.menubar
 
         # editor_instance._info.visible = not editor_instance._info.visible
@@ -102,7 +102,7 @@ class MenuShow:
 
     def _on_global_axes_toggle(self):
         editor_instance = self._editor_instance
-        window = editor_instance._window
+        window = editor_instance._main_window
         menubar = editor_instance.app.menubar
 
         # editor_instance._info.visible = not editor_instance._info.visible
@@ -117,7 +117,7 @@ class MenuShow:
 
     def _on_info_toggle(self):
         editor_instance = self._editor_instance
-        window = editor_instance._window
+        window = editor_instance._main_window
         menubar = editor_instance.app.menubar
 
         editor_instance._info_visible = not editor_instance._info_visible
@@ -128,7 +128,7 @@ class MenuShow:
         editor_instance._update_info()
 
     def _on_menu_about(self):
-        window = self._editor_instance._window
+        window = self._editor_instance._main_window
         em = window.theme.font_size
         dlg = gui.Dialog("About")
 

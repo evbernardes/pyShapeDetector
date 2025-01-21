@@ -88,7 +88,7 @@ class Settings:
         return self._materials[key]
 
     def _update_materials(self):
-        scaling = self._editor_instance._window.scaling
+        scaling = self._editor_instance._main_window.scaling
         self._materials["regular"].point_size = (
             self.get_setting("PointCloud_point_size") * scaling
         )
@@ -520,7 +520,7 @@ class Settings:
             return self._dict["color_selected"].value  # / highlight
 
     def _create_panel(self):
-        window = self._editor_instance._window
+        window = self._editor_instance._main_window
         em = window.theme.font_size
         separation_height = int(round(0.5 * em))
 
@@ -548,7 +548,7 @@ class Settings:
         self._preferences_binding.add_to_menu(editor_instance)
 
     def _on_menu_toggle(self):
-        window = self._editor_instance._window
+        window = self._editor_instance._main_window
         menubar = self._editor_instance.app.menubar
         self._panel.visible = not self._panel.visible
         menubar.set_checked(self._preferences_binding._menu_id, self._panel.visible)
