@@ -1,7 +1,7 @@
 import warnings
 import traceback
 import copy
-from typing import Union, TYPE_CHECKING
+from typing import Union, TypeVar, Generic, TYPE_CHECKING
 from abc import ABC, abstractmethod
 import numpy as np
 
@@ -17,17 +17,20 @@ from pyShapeDetector import geometry
 if TYPE_CHECKING:
     from .settings import Settings
 
+# ELEMENT_TYPE = Union[Primitive, geometry.Numpy_Geometry, Open3d_Geometry]
+ELEMENT_TYPE = Union[Primitive, geometry.Numpy_Geometry]
 
-line_elements = (
+ELEMENT_LINE_CLASSES = (
     geometry.LineSet,
     geometry.AxisAlignedBoundingBox,
     geometry.OrientedBoundingBox,
 )
 
 DEFAULT_POINTCLOUD_COLOR = (0.3, 0.3, 0.3)
+T = TypeVar("T")
 
 
-class Element(ABC):
+class Element(ABC, Generic[T]):
     """
 
     Abstract class for encapsulation of elements.
@@ -86,11 +89,11 @@ class Element(ABC):
         return str(id(self))
 
     @property
-    def raw(self) -> Union[Primitive, geometry.Numpy_Geometry, Open3d_Geometry]:
+    def raw(self) -> T:
         return self._raw
 
     @property
-    def drawable(self) -> Union[geometry.Numpy_Geometry, Open3d_Geometry]:
+    def drawable(self) -> Union[geometry.TriangleMesh, geometry.PointCloud]:
         return self._drawable
 
     @property
@@ -108,7 +111,7 @@ class Element(ABC):
         return self._current
 
     @property
-    def distance_checker(self):
+    def distance_checker(self) -> Union[Primitive, geometry.PointCloud]:
         return self._distance_checker
 
     @property
@@ -246,7 +249,7 @@ class Element(ABC):
         if self.scene is None:
             raise RuntimeError("No scene was set for element!")
 
-        if isinstance(self.raw, line_elements):
+        if isinstance(self.raw, ELEMENT_LINE_CLASSES):
             material = self._settings.get_material("line")
         else:
             material = self._settings.get_material("regular")
@@ -349,7 +352,7 @@ class Element(ABC):
         return element_class(settings, raw, is_selected, current, is_color_fixed)
 
 
-class ElementPrimitive(Element):
+class ElementPrimitive(Element[Primitive]):
     @staticmethod
     def _parse_raw(raw: Primitive):
         if isinstance(raw, Primitive):
@@ -370,7 +373,7 @@ class ElementPrimitive(Element):
         self.update_on_scene()
 
 
-class ElementGeometry(Element):
+class ElementGeometry(Element[geometry.Numpy_Geometry], Generic[T]):
     @staticmethod
     def _parse_raw(raw: Union[geometry.Numpy_Geometry, Open3d_Geometry]):
         if isinstance(raw, geometry.Numpy_Geometry):
@@ -391,7 +394,7 @@ class ElementGeometry(Element):
         self._distance_checker = None
 
 
-class ElementPointCloud(ElementGeometry):
+class ElementPointCloud(ElementGeometry[geometry.PointCloud]):
     @staticmethod
     def _parse_raw(raw: geometry.PointCloud):
         if geometry.PointCloud.is_instance_or_open3d(raw):
@@ -517,7 +520,7 @@ class ElementPointCloud(ElementGeometry):
         super().transform(transformation_matrix)
 
 
-class ElementTriangleMesh(ElementGeometry):
+class ElementTriangleMesh(ElementGeometry[geometry.TriangleMesh]):
     @staticmethod
     def _parse_raw(raw: geometry.TriangleMesh):
         if geometry.TriangleMesh.is_instance_or_open3d(raw):

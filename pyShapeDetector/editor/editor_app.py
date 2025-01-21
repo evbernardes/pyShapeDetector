@@ -20,8 +20,10 @@ from typing import Callable, Union
 from pathlib import Path
 from open3d.visualization import gui, rendering
 from pyShapeDetector.primitives import Primitive
+from pyShapeDetector.geometry import Numpy_Geometry
 
 from .extension import Extension
+from .element import ELEMENT_TYPE
 from .element_container import ElementContainer
 from .settings import Settings
 from .extensions import default_extensions
@@ -113,7 +115,7 @@ class Editor:
 
     def _create_simple_dialog(
         self,
-        text,
+        text: str,
         create_button: bool = True,
         button_text: str = "Close",
         button_callback: Union[Callable, None] = None,
@@ -151,22 +153,18 @@ class Editor:
         dlg.add_child(dlg_layout)
         window.show_dialog(dlg)
 
-    def _get_submenu_from_path(self, path):
+    def _get_submenu_from_path(self, path: Union[str, Path]) -> gui.Menu:
         if path in self._submenus:
             if "Create Shapes" in path.as_posix():
                 pass
             return self._submenus[path]
-
-        if not hasattr(self, "_menubar"):
-            self._menubar = self.app.menubar = gui.Menu()
-            self._settings.print_debug("Created menubar.")
 
         if not hasattr(self, "_submenus"):
             self._submenus = {}
             self._settings.print_debug("Initialized submenus dict.")
 
         fullpath = Path()
-        upper_menu = self._menubar
+        upper_menu = self.app.menubar
 
         # for part in path.parts:
         #     fullpath /= part
@@ -194,7 +192,7 @@ class Editor:
     def extensions(self) -> list[Extension]:
         return self._extensions
 
-    def add_extension(self, function_or_descriptor):
+    def add_extension(self, function_or_descriptor: Union[Callable, Extension]):
         try:
             extension = Extension(function_or_descriptor, self._settings)
             extension.add_to_application(self)
@@ -202,12 +200,6 @@ class Editor:
         except Exception:
             warnings.warn(f"Could not create extension {function_or_descriptor}, got:")
             traceback.print_exc()
-
-    def get_elements(self, add_fixed: bool = False):
-        elements = self.elements
-        if add_fixed:
-            elements += self._elements_fixed
-        return elements.raw
 
     @property
     def elements(self) -> ElementContainer:
@@ -217,13 +209,13 @@ class Editor:
     def elements_fixed(self) -> ElementContainer:
         return self._elements_fixed
 
-    def _add_extension_panel(self, name, panel, callbacks):
+    def _add_extension_panel(
+        self, name: str, panel: gui.Vert, callbacks: dict[str, Callable]
+    ):
         if name in self._extensions_panels:
             self._extensions_panels.pop(name).visible = False
             self._add_extension_panel(name, panel, callbacks)
             return
-
-        N = len(self._extensions_panels)
 
         em = self._window.theme.font_size
 
@@ -248,7 +240,7 @@ class Editor:
         self._extensions_panels[name] = extension_line
         self._window.set_needs_layout()
 
-    def _set_extension_panel_open(self, name, is_open) -> bool:
+    def _set_extension_panel_open(self, name: str, is_open: bool) -> bool:
         if name not in self._extensions_panels:
             return False
 
@@ -427,6 +419,10 @@ class Editor:
         self._window = self.app.create_window(self.window_name, *self._init_window_size)
         self._window.set_on_layout(self._on_layout)
         self._window.set_on_close(self._on_close)
+
+        if self.app.menubar is None:
+            self.app.menubar = gui.Menu()
+            self._settings.print_debug("Created menubar.")
 
         # em = self.window.theme.font_size
         # separation_height = int(round(0.5 * em))

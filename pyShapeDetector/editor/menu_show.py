@@ -47,7 +47,7 @@ class MenuShow:
             binding.add_to_menu(self._editor_instance)
 
         editor_instance = self._editor_instance
-        menubar = editor_instance._menubar
+        menubar = editor_instance.app.menubar
         menubar.set_checked(
             self._bindings["ground"].menu_id, editor_instance._ground_plane_visible
         )
@@ -61,7 +61,7 @@ class MenuShow:
     def _on_hotkeys_toggle(self):
         editor_instance = self._editor_instance
         window = editor_instance._window
-        menubar = editor_instance._menubar
+        menubar = editor_instance.app.menubar
         self._hotkeys_panel.visible = not self._hotkeys_panel.visible
 
         if self._hotkeys_panel.visible:
@@ -86,7 +86,7 @@ class MenuShow:
     def _on_ground_plane_toggle(self):
         editor_instance = self._editor_instance
         window = editor_instance._window
-        menubar = editor_instance._menubar
+        menubar = editor_instance.app.menubar
 
         # editor_instance._info.visible = not editor_instance._info.visible
         ground_plane_visible = not editor_instance._ground_plane_visible
@@ -103,7 +103,7 @@ class MenuShow:
     def _on_global_axes_toggle(self):
         editor_instance = self._editor_instance
         window = editor_instance._window
-        menubar = editor_instance._menubar
+        menubar = editor_instance.app.menubar
 
         # editor_instance._info.visible = not editor_instance._info.visible
         global_axes_visible = not editor_instance._global_axes_visible
@@ -118,7 +118,7 @@ class MenuShow:
     def _on_info_toggle(self):
         editor_instance = self._editor_instance
         window = editor_instance._window
-        menubar = editor_instance._menubar
+        menubar = editor_instance.app.menubar
 
         editor_instance._info_visible = not editor_instance._info_visible
 

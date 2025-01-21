@@ -547,7 +547,7 @@ class Settings:
 
     def _on_menu_toggle(self):
         window = self._editor_instance._window
-        menubar = self._editor_instance._menubar
+        menubar = self._editor_instance.app.menubar
         self._panel.visible = not self._panel.visible
         menubar.set_checked(self._preferences_binding._menu_id, self._panel.visible)
         window.set_needs_layout()

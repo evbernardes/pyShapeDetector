@@ -453,22 +453,6 @@ def select_manually(
     """Plots elements on an interactive visualizer so that separate elements
     can be manually selected with the mouse and/or keyboard.
 
-    Keys:
-        (Space) Toggle
-        (<-) Previous
-        (->) Next
-        (F) Finish
-        (LCtrl) Enables mouse selection
-        (LCtrl) + (H) Print Help
-        (LCtrl) + (I) Print Info
-        (LCtrl) + (C) Center current
-        (LCtrl) + (Z) Undo
-        (LCtrl) + (Y) Redo
-        (LCtrl) + (A) Toggle all
-        (LCtrl) + (L) Toggle last
-        (LCtrl) + (T) Toggle type
-        (LCtrl) + (LShift) Toggle click
-
     See also:
         open3d.visualization.VisualizerWithKeyCallback
         utility.ElementSelector
@@ -506,8 +490,8 @@ def select_manually(
         warnings.warn("To use a function, try 'apply_function_manually' instead.")
 
     if return_finish_flag:
-        return element_selector.selected, element_selector.finish
-    return element_selector.selected
+        return element_selector.elements.selected_indices, element_selector.finish
+    return element_selector.elements.selected_indices
 
 
 def apply_function_manually(
@@ -526,23 +510,6 @@ def apply_function_manually(
     At each step, the selected elements are removed from the list, the input
     function is applied to the list of selected elements, and the list of
     output elements is appended at the end of the list.
-
-    Keys:
-        (Space) Toggle
-        (<-) Previous
-        (->) Next
-        (F) Finish
-        (LCtrl) Enables mouse selection
-        (LCtrl) + (H) Print Help
-        (LCtrl) + (I) Print Info
-        (LCtrl) + (C) Center current
-        (LCtrl) + (Z) Undo
-        (LCtrl) + (Y) Redo
-        (LCtrl) + (A) Toggle all
-        (LCtrl) + (L) Toggle last
-        (LCtrl) + (T) Toggle type
-        (LCtrl) + (LShift) Toggle click
-        (LCtrl) + (1...0) Apply one of the selected functions
 
     See also:
         open3d.visualization.VisualizerWithKeyCallback
@@ -601,7 +568,7 @@ def apply_function_manually(
         indices = [state["indices"] for state in element_selector._past_states]
         return element_selector.element_dicts, indices
 
-    return element_selector.get_elements()
+    return element_selector.elements.raw
 
 
 # def draw_and_ask(elements, return_not_selected=False, **camera_options):
