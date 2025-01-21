@@ -452,15 +452,12 @@ class Editor:
         self._main_window.add_child(self._right_side_panel)
         self._right_side_panel.visible = True
 
-        # 1) Set internal functions and add menu items
-        # self._internal_functions = InternalFunctions(self)
-
-        # 2) Add hotkeys for both internal functions and extensions
+        # 1) Add hotkeys for both internal functions and extensions
         self._hotkeys = Hotkeys(self)
         self._reset_on_key()
         self._scene.set_on_mouse(self._on_mouse)
 
-        # 3) Add extension menu items
+        # 2) Add extension menu items
         self._settings.print_debug(
             f"{len(self._internal_functions.bindings)} internal functions.",
         )
@@ -473,13 +470,13 @@ class Editor:
         for extension in self.extensions:
             extension.binding.add_to_menu(self)
 
-        # 4) Finally, other menus (so that they are at the end)
+        # 3) Finally, other menus that should be at the end
         self._settings._create_menu()
         self._menu_show = MenuShow(self)
         self._menu_show._create_menu()
 
         self._extension_tabs_panel = gui.CollapsableVert(
-            "Extensions", em, gui.Margins(em, em, em, em)
+            "Tools", em, gui.Margins(em, em, em, em)
         )
         self._right_side_panel.add_child(self._extension_tabs_panel)
 
