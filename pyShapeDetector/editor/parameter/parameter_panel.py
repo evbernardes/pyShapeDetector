@@ -16,7 +16,7 @@ class ParameterPanel:
         separation_width: float,
         separation_height: float,
         title: Union[str, None],
-    ):
+    ) -> gui.Vert:
         panel = gui.Vert(
             separation_width,
             gui.Margins(
@@ -55,20 +55,20 @@ class ParameterPanel:
         return panel
 
     @property
-    def panel(self):
+    def panel(self) -> gui.Vert:
         return self._panel
 
     @property
-    def parameters(self):
+    def parameters(self) -> dict[str, ParameterBase]:
         return self._parameters
 
     @property
-    def has_limit_setters(self):
+    def has_limit_setters(self) -> bool:
         return self._has_limit_setters
 
     def __init__(
         self,
-        parameters: dict[ParameterBase],
+        parameters: dict[str, ParameterBase],
         separation_width: float,
         separation_height: float,
         title: Union[str, None] = None,
