@@ -101,6 +101,8 @@ class Cylinder(Primitive):
     load
     get_obj_description
     _get_weights_from_shapes
+    _fuse_models
+    _fuse_extra_data
     fuse
     group_similar_shapes
     fuse_shape_groups
@@ -228,90 +230,38 @@ class Cylinder(Primitive):
         """
         return cls(list(base) + list(vector) + [radius])
 
-    @staticmethod
-    def fuse(
-        shapes: list["Cylinder"],
-        detector=None,
-        ignore_extra_data=False,
-        weight_variable: str = "inliers",
-        **extra_options,
-    ):
-        """Find weigthed average of shapes, where the weight is the fitness
-        metric.
-
-        If a detector is given, use it to compute the metrics of the resulting
-        average shapes.
-
-        When fusing Cylinders, find base and top such that it constructs a full
-        cylinder containing all the other instances.
-
-        `weight_variable` can be:
-            "surface_area": uses area of each surface, if all finite.
-            "fitness": takes fitness of each fit, if available.
-            "volume": uses volume of each surface, if all finite.
-            "ones": uses array of ones, equivalent to non-weighted average.
-            "inliers": uses number of inliers.
+    @classmethod
+    def _fuse_models(cls, shapes: list["Cylinder"], weights: list[float]):
+        """Find weighted average of models.
 
         Parameters
         ----------
         shapes : list
             Grouped shapes. All shapes must be of the same type.
-        detector : instance of some Detector, optional
-            Used to recompute metrics. Default: None.
-        ignore_extra_data : boolean, optional
-            If True, ignore everything and only fuse model. Default: False.
-        weight_variable : str
-            Defines variable used as weight. Can be "surface_area", "fitness",
-            "volume" or "inliers". Default: "inliers".
-
-        Returns
-        -------
-        Cylinder
-            Averaged Cylinder instance.
+        weights : list
+            Weights for average model.
         """
-        weights = Cylinder._get_weights_from_shapes(
-            shapes, weight_variable=weight_variable
-        )
-
         points = []
-        # axes = []
         axis = np.array([0.0, 0.0, 0.0])
-        center = np.array([0.0, 0.0, 0.0])
-        radii = []
+        sum_weights = sum(weights)
         for weight, cylinder in zip(weights, shapes):
-            radii.append(cylinder.radius)
             points.append(cylinder.base)
             points.append(cylinder.top)
             if cylinder.axis.dot(axis) < 0:
-                axis += -weight * cylinder.axis / sum(weights)
+                axis += -weight * cylinder.axis / sum_weights
             else:
-                axis += weight * cylinder.axis / sum(weights)
-            center += cylinder.center / sum(weights)
-        # axis = np.average(axes, axis=0, weights=fitness)
+                axis += weight * cylinder.axis / sum_weights
+
         axis /= np.linalg.norm(axis)
-        radius = np.average(radii, weights=weights)
+        radius = np.average([s.radius for s in shapes], weights=weights)
+        center = np.average([s.center for s in shapes], axis=0, weights=weights)
         points = np.asarray(points)
 
         projections = axis.dot((points - center).T)
         base = center + axis * min(projections)
         top = center + axis * max(projections)
 
-        shape = Cylinder.from_base_top_radius(base, top, radius)
-
-        if not ignore_extra_data:
-            pcd = PointCloud.fuse_pointclouds([shape.inliers for shape in shapes])
-            shape.set_inliers(pcd)
-            shape.color = np.average([s.color for s in shapes], axis=0, weights=weights)
-
-            if detector is not None:
-                num_points = sum([shape.metrics["num_points"] for shape in shapes])
-                num_inliers = len(pcd.points)
-                distances, angles = shape.get_residuals(pcd.points, pcd.normals)
-                shape.metrics = detector.get_metrics(
-                    num_points, num_inliers, distances, angles
-                )
-
-        return shape
+        return cls.from_base_top_radius(base, top, radius).model
 
     @staticmethod
     def fit(points, normals=None):

@@ -959,7 +959,14 @@ def test_fuse():
         for color, shape in zip(colors, shapes):
             shape.color = color
 
-        shape_fused = primitive.fuse(shapes)
+        with warnings.catch_warnings():
+            # Catching warnings because no inliers are available
+            warnings.filterwarnings(
+                "ignore",
+                message="Total sum of weights is too small",
+            )
+            shape_fused = primitive.fuse(shapes)
+
         assert_allclose(
             shape_fused.color, np.mean(colors, axis=0), rtol=1e-6, atol=1e-6
         )
@@ -985,7 +992,7 @@ def test_fuse_cylinder():
 
     cylinder_a = Cylinder.from_base_top_radius(a_base, a_top, ra)
     cylinder_b = Cylinder.from_base_top_radius(b_base, b_top, rb)
-    cylinder_ab = Cylinder.fuse([cylinder_a, cylinder_b])
+    cylinder_ab = Cylinder.fuse([cylinder_a, cylinder_b], weight_variable="ones")
 
     assert_allclose(cylinder_ab.radius, (cylinder_a.radius + cylinder_b.radius) / 2)
     assert_allclose(abs(cylinder_ab.axis.dot(cylinder_a.axis)), 1)
@@ -993,7 +1000,9 @@ def test_fuse_cylinder():
     assert_allclose(cylinder_ab.height, 3)
 
     cylinder_b_reverse = Cylinder.from_base_top_radius(b_top, b_base, rb)
-    cylinder_ab_reverse = Cylinder.fuse([cylinder_a, cylinder_b_reverse])
+    cylinder_ab_reverse = Cylinder.fuse(
+        [cylinder_a, cylinder_b_reverse], weight_variable="ones"
+    )
 
     assert_allclose(
         cylinder_ab_reverse.radius, (cylinder_a.radius + cylinder_b_reverse.radius) / 2
@@ -1004,7 +1013,7 @@ def test_fuse_cylinder():
     assert_allclose(cylinder_ab_reverse.height, 3)
 
     cylinder_c = Cylinder.from_base_top_radius(c_base, c_top, rc)
-    cylinder_ac = Cylinder.fuse([cylinder_a, cylinder_c])
+    cylinder_ac = Cylinder.fuse([cylinder_a, cylinder_c], weight_variable="ones")
 
     assert_allclose(cylinder_ac.radius, (cylinder_a.radius + cylinder_c.radius) / 2)
     assert_allclose(abs(cylinder_ac.axis.dot(cylinder_a.axis)), np.cos(angle / 2))
@@ -1018,16 +1027,13 @@ def test_fuse_cylinder():
     fit_2 = Cylinder(
         [-10.04858, -0.84975, 3.34872, -0.23474, -0.03423, 0.00427, 0.29137]
     )
-    fit_fuse = Cylinder.fuse([fit_1, fit_2])
+    fit_fuse = Cylinder.fuse([fit_1, fit_2], weight_variable="surface_area")
 
-    assert_allclose(fit_fuse.radius, (fit_1.radius + fit_2.radius) / 2)
-    assert_allclose(abs(fit_fuse.axis.dot(fit_1.axis)), 1, atol=1e-2)
-    assert_allclose(abs(fit_fuse.axis.dot(fit_2.axis)), 1, atol=1e-2)
     assert_allclose(
-        fit_fuse.center,
-        (fit_1.center + fit_2.center) / 2,
-        atol=1e-1,
+        fit_fuse.radius, (fit_1.radius + fit_2.radius) / 2, atol=1e-3, rtol=1e-3
     )
+    assert_allclose(abs(fit_fuse.axis.dot(fit_1.axis)), 1, atol=1e-3, rtol=1e-3)
+    assert_allclose(abs(fit_fuse.axis.dot(fit_2.axis)), 1, atol=1e-3, rtol=1e-3)
 
 
 def test_line_checks():

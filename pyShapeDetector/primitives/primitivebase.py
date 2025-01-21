@@ -210,6 +210,8 @@ class Primitive(ABC):
     load
     get_obj_description
     _get_weights_from_shapes
+    _fuse_models
+    _fuse_extra_data
     fuse
     group_similar_shapes
     fuse_shape_groups
@@ -1501,12 +1503,48 @@ class Primitive(ABC):
             warnings.warn("Non-finite value found, returning array of '1's.")
             return [1] * len(shapes)
 
-        abs = 1e-7
-        if abs(sum(weights)) < abs:
+        eps = 1e-7
+        if abs(sum(weights)) < eps:
             warnings.warn("Total sum of weights is too small, returning array of '1's.")
             return [1] * len(shapes)
 
         return weights
+
+    @classmethod
+    def _fuse_models(cls, shapes: list["Primitive"], weights: list[float]):
+        """Find weighted average of models.
+
+        Parameters
+        ----------
+        shapes : list
+            Grouped shapes. All shapes must be of the same type.
+        weights : list
+            Weights for average model.
+        """
+        models = np.vstack([shape.model for shape in shapes])
+        return np.average(models, axis=0, weights=weights)
+
+    def _fuse_extra_data(self, shapes: list["Primitive"], detector):
+        """Fuse extra data from input shapes into self, like color, inliers and metrics.
+
+        Parameters
+        ----------
+        shapes : list
+            Grouped shapes. All shapes must be of the same type.
+        detector : instance of some Detector, optional
+
+        """
+        pcd = geometry.PointCloud.fuse_pointclouds([shape.inliers for shape in shapes])
+        self.set_inliers(pcd)
+        self.color = np.mean([s.color for s in shapes], axis=0)
+
+        if detector is not None:
+            num_points = sum([shape.metrics["num_points"] for shape in shapes])
+            num_inliers = len(pcd.points)
+            distances, angles = self.get_residuals(pcd.points, pcd.normals)
+            self.metrics = detector.get_metrics(
+                num_points, num_inliers, distances, angles
+            )
 
     @staticmethod
     def fuse(
@@ -1547,10 +1585,10 @@ class Primitive(ABC):
         Primitive
             Averaged shape.
         """
-        if len(shapes) == 1:
-            return shapes[0]
-        elif isinstance(shapes, Primitive):
+        if isinstance(shapes, Primitive):
             return shapes
+        elif len(shapes) == 1:
+            return shapes[0].copy()
 
         primitive = type(shapes[0])
         for shape in shapes[1:]:
@@ -1561,8 +1599,7 @@ class Primitive(ABC):
             shapes, weight_variable=weight_variable
         )
 
-        model = np.vstack([shape.model for shape in shapes])
-        model = np.average(model, axis=0, weights=weights)
+        model = primitive._fuse_models(shapes=shapes, weights=weights)
 
         # Catch warning in case shape is a PlaneBounded
         with warnings.catch_warnings():
@@ -1570,19 +1607,7 @@ class Primitive(ABC):
             shape = primitive(model)
 
         if not ignore_extra_data:
-            pcd = geometry.PointCloud.fuse_pointclouds(
-                [shape.inliers for shape in shapes]
-            )
-            shape.set_inliers(pcd)
-            shape.color = np.mean([s.color for s in shapes], axis=0)
-
-            if detector is not None:
-                num_points = sum([shape.metrics["num_points"] for shape in shapes])
-                num_inliers = len(pcd.points)
-                distances, angles = shape.get_residuals(pcd.points, pcd.normals)
-                shape.metrics = detector.get_metrics(
-                    num_points, num_inliers, distances, angles
-                )
+            shape._fuse_extra_data(shapes=shapes, detector=detector)
 
         return shape
 
