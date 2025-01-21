@@ -30,7 +30,46 @@ extensions = []
 
 extensions.append(
     {
-        "name": "From center and radius",
+        "name": "Create Rectangular Plane",
+        "function": lambda center, vectors, scale: PlaneBounded.from_vectors_center(
+            scale * vectors, center
+        ),
+        "menu": MENU_NAME + "/Create Plane...",
+        "inputs": None,
+        "parameters": {
+            "vectors": {
+                "type": np.ndarray,
+                "default": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+            },
+            "center": {"type": np.ndarray, "default": [0.0, 0.0, 0.0]},
+            "scale": {"type": float, "default": 1},
+        },
+    }
+)
+
+extensions.append(
+    {
+        "name": "Create Polygon Plane",
+        "function": lambda vectors, center, sides, radius: Plane.from_vectors_center(
+            vectors, center
+        ).get_polygon_plane(sides, radius, center),
+        "menu": MENU_NAME + "/Create Plane...",
+        "inputs": None,
+        "parameters": {
+            "vectors": {
+                "type": np.ndarray,
+                "default": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+            },
+            "center": {"type": np.ndarray, "default": [0.0, 0.0, 0.0]},
+            "sides": {"type": int, "default": 5, "limits": [3, 20]},
+            "radius": {"type": float, "default": 1},
+        },
+    }
+)
+
+extensions.append(
+    {
+        "name": "Create Sphere from center and radius",
         "function": lambda center, radius: Sphere.from_center_radius(center, radius),
         "menu": MENU_NAME + "/Create Sphere...",
         "inputs": None,
@@ -47,7 +86,7 @@ extensions.append(
 
 extensions.append(
     {
-        "name": "From center, half vector and radius",
+        "name": "Create Cylinder from center, half vector and radius",
         "function": lambda center,
         vector,
         radius: Cylinder.from_center_half_vector_radius(center, vector, radius),
@@ -73,7 +112,7 @@ extensions.append(
 
 extensions.append(
     {
-        "name": "From base, top and radius",
+        "name": "Create Cylinder from base, top and radius",
         "function": lambda base, top, radius: Cylinder.from_base_top_radius(
             base, top, radius
         ),
@@ -99,7 +138,7 @@ extensions.append(
 
 extensions.append(
     {
-        "name": "From base, vector and radius",
+        "name": "Create Cylinder from base, vector and radius",
         "function": lambda base, vector, radius: Cylinder.from_base_vector_radius(
             base, vector, radius
         ),
@@ -126,13 +165,13 @@ extensions.append(
 
 extensions.append(
     {
-        "name": "Create Cone",
+        "name": "Create Cone from appex, vector and half angle",
         "function": lambda appex,
         vector,
         half_angle_degrees: Cone.from_appex_vector_half_angle(
             appex, vector, np.deg2rad(half_angle_degrees)
         ),
-        "menu": MENU_NAME,
+        "menu": MENU_NAME + "/Create Cone...",
         "inputs": None,
         "parameters": {
             "half_angle_degrees": {

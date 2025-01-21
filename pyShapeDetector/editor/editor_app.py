@@ -26,7 +26,7 @@ from .extension import Extension
 from .element import ELEMENT_TYPE
 from .element_container import ElementContainer
 from .settings import Settings
-from .extensions import default_extensions
+from .default_extensions import default_extensions
 
 
 class Editor:
