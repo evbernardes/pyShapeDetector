@@ -368,44 +368,6 @@ class ElementContainer(list):
 
         screen_plane = Plane.from_normal_point(screen_vector, screen_point)
 
-        def _is_point_in_convex_region(elem, point=screen_point, plane=screen_plane):
-            """Check if mouse-click was done inside of the element actual region."""
-
-            if hasattr(elem, "points"):
-                boundary_points = elem.points
-            elif hasattr(elem, "vertices"):
-                boundary_points = elem.vertices
-            elif hasattr(elem, "mesh"):
-                boundary_points = elem.mesh.vertices
-            else:
-                return False
-
-            boundary_points = np.asarray(boundary_points)
-            if len(boundary_points) < 3:
-                return False
-
-            plane_bounded = plane.get_bounded_plane(boundary_points, convex=True)
-            return plane_bounded.contains_projections(point)
-
-        def _distance_to_point(
-            distance_checker,
-            point: np.ndarray = screen_point,
-            plane: Plane = screen_plane,
-        ):
-            """Check if mouse-click was done inside of the element actual region."""
-
-            if not _is_point_in_convex_region(distance_checker, point, plane):
-                return np.inf
-
-            try:
-                return distance_checker.get_distances(point)
-            except AttributeError:
-                warnings.warn(
-                    f"Element of type {type(distance_checker)} "
-                    "found in distance elements, should not happen."
-                )
-                return np.inf
-
         distances = []
         for i, elem in enumerate(self):
             if i == self.current_index or elem.is_hidden:
@@ -413,7 +375,9 @@ class ElementContainer(list):
                 # ignores currently selected one
                 distances.append(np.inf)
             else:
-                distances.append(_distance_to_point(elem.distance_checker))
+                distances.append(
+                    elem._get_distance_to_screen_point(screen_point, screen_plane)
+                )
         return distances
 
     def update_indices(self, indices, update_gui=True):

@@ -11,7 +11,7 @@ from open3d.geometry import Geometry as Open3d_Geometry
 from open3d.core import Tensor
 from open3d.t.geometry import PointCloud as TensorPointCloud
 
-from pyShapeDetector.primitives import Primitive
+from pyShapeDetector.primitives import Primitive, Plane
 from pyShapeDetector import geometry
 
 if TYPE_CHECKING:
@@ -28,6 +28,17 @@ ELEMENT_LINE_CLASSES = (
 
 DEFAULT_POINTCLOUD_COLOR = (0.3, 0.3, 0.3)
 T = TypeVar("T")
+
+
+def _is_point_in_convex_region(screen_point, screen_plane, points):
+    """Check if mouse-click was done inside of the element actual region."""
+
+    points = np.asarray(points)
+    if len(points) < 3:
+        return False
+
+    plane_bounded = screen_plane.get_bounded_plane(points, convex=True)
+    return plane_bounded.contains_projections(screen_point)
 
 
 class Element(ABC, Generic[T]):
@@ -67,8 +78,7 @@ class Element(ABC, Generic[T]):
     Methods
     -------
        `_parse_raw`: check if raw element is compatible
-       `_set_drawable`: set Open3D geometry
-       `_set_distance_checker`: gets element for distance checking
+       `_set_extra_elements`: set drawable Open3D geometry and other elements if needed
        `_get_bbox`: gets element's bounding box
        `_extract_drawable_color`: return current color of drawable, used at init
        `_update_drawable_color`: sets drawable for new color
@@ -83,6 +93,9 @@ class Element(ABC, Generic[T]):
        `get_from_type`: gets an instance of appropriate type
 
     """
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}[{self.raw.__class__.__name__}]"
 
     @property
     def name(self) -> str:
@@ -109,10 +122,6 @@ class Element(ABC, Generic[T]):
     @property
     def current(self) -> bool:
         return self._current
-
-    @property
-    def distance_checker(self) -> Union[Primitive, geometry.PointCloud]:
-        return self._distance_checker
 
     @property
     def brightness(self) -> float:
@@ -155,11 +164,13 @@ class Element(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def _set_drawable(self):
+    def _set_extra_elements(self):
         pass
 
     @abstractmethod
-    def _set_distance_checker(self):
+    def _get_distance_to_screen_point(
+        self, screen_point: np.ndarray, screen_plane: Plane
+    ):
         pass
 
     def _get_bbox(self):
@@ -199,7 +210,7 @@ class Element(ABC, Generic[T]):
         elif hasattr(drawable, "colors"):
             return np.asarray(drawable.colors).copy()
         # else:
-        warnings.warn("Could not get color from element {self}.")
+        warnings.warn(f"Could not get color from element {self}.")
         return self._color_original
         # self._color = np.array([0, 0, 0])
 
@@ -321,8 +332,7 @@ class Element(ABC, Generic[T]):
         self._is_hidden: bool = is_hidden
         self._scene: Union[Open3DScene, None] = None
 
-        self._set_drawable()
-        self._set_distance_checker()
+        self._set_extra_elements()
         self._init_colors()
 
         self._update_drawable_color(self._color)
@@ -353,6 +363,15 @@ class Element(ABC, Generic[T]):
 
 
 class ElementPrimitive(Element[Primitive]):
+    def _get_distance_to_screen_point(
+        self, screen_point: np.ndarray, screen_plane: Plane
+    ):
+        points = self.raw.mesh.vertices
+        if not _is_point_in_convex_region(screen_point, screen_plane, points):
+            return np.inf
+
+        return self.raw.get_distances(screen_point)
+
     @staticmethod
     def _parse_raw(raw: Primitive):
         if isinstance(raw, Primitive):
@@ -360,12 +379,9 @@ class ElementPrimitive(Element[Primitive]):
         else:
             raise ValueError("Expected Primitive instance, got {raw}.")
 
-    def _set_drawable(self):
+    def _set_extra_elements(self):
         # self._drawable = self.raw.copy().mesh.as_open3d
         self._drawable = self.raw.mesh.as_open3d
-
-    def _set_distance_checker(self):
-        self._distance_checker = self.raw
 
     def transform(self, transformation_matrix):
         # Translating raw already translates the internal mesh
@@ -387,11 +403,35 @@ class ElementGeometry(Element[geometry.Numpy_Geometry], Generic[T]):
         else:
             raise TypeError("Expected Numpy Geometry or Open3D geometry, got {raw}.")
 
-    def _set_drawable(self):
+    def _set_extra_elements(self):
         self._drawable = copy.copy(self.raw).as_open3d
+        self._set_distance_checker()
 
     def _set_distance_checker(self):
-        self._distance_checker = None
+        if isinstance(self.raw, ELEMENT_LINE_CLASSES):
+            self._distance_checker = None
+            return
+
+        try:
+            bbox = self.raw.get_oriented_bounding_box()
+            self._distance_checker = geometry.PointCloud(bbox.points)
+        except Exception:
+            self._distance_checker = None
+            print(f"Could not get distance checker for {self}.")
+            # traceback.print_exc()
+
+    def _get_distance_to_screen_point(
+        self, screen_point: np.ndarray, screen_plane: Plane
+    ):
+        if self._distance_checker is None:
+            return np.inf
+
+        if not _is_point_in_convex_region(
+            screen_point, screen_plane, self._distance_checker.points
+        ):
+            return np.inf
+
+        return self._distance_checker.get_distances(screen_point)
 
 
 class ElementPointCloud(ElementGeometry[geometry.PointCloud]):
@@ -404,15 +444,6 @@ class ElementPointCloud(ElementGeometry[geometry.PointCloud]):
             return pcd
         else:
             raise ValueError(f"Expected PointCloud instance, got {raw}.")
-
-    def _set_distance_checker(self):
-        number_points_distance = self._settings.get_setting("number_points_distance")
-        if len(self.raw.points) > number_points_distance:
-            ratio = int(len(self.raw.points) / number_points_distance)
-            pcd = self.raw.uniform_down_sample(ratio)
-        else:
-            pcd = self.raw
-        self._distance_checker = geometry.PointCloud(pcd)
 
     def _extract_drawable_color(self):
         PCD_use_Tensor = self._settings.get_setting("PCD_use_Tensor")
@@ -454,7 +485,17 @@ class ElementPointCloud(ElementGeometry[geometry.PointCloud]):
             warnings.warn(f"Could not update color of PointCloud element {self.raw}.")
             traceback.print_exc()
 
-    def _set_drawable(self):
+    def _set_distance_checker(self):
+        """Creates small pointcloud for distance checking"""
+        number_points_distance = self._settings.get_setting("number_points_distance")
+        if len(self.raw.points) > number_points_distance:
+            ratio = int(len(self.raw.points) / number_points_distance)
+            pcd = self.raw.uniform_down_sample(ratio)
+        else:
+            pcd = self.raw
+        self._distance_checker = geometry.PointCloud(pcd)
+
+    def _set_extra_elements(self):
         settings = self._settings
         drawable = copy.deepcopy(self.raw).as_open3d
         downsample = settings.get_setting("PCD_downsample_when_drawing")
@@ -493,6 +534,8 @@ class ElementPointCloud(ElementGeometry[geometry.PointCloud]):
         self._normals_updated = True
         self._points_updated = True
 
+        self._set_distance_checker()
+
     def update_on_scene(self, reset: bool = False):
         if reset or not self._settings.get_setting("PCD_use_Tensor"):
             super().update_on_scene()
@@ -528,15 +571,17 @@ class ElementTriangleMesh(ElementGeometry[geometry.TriangleMesh]):
         else:
             raise ValueError("Expected TriangleMesh instance, got {raw}.")
 
-    def _set_drawable(self):
+    def _set_distance_checker(self):
+        number_points_distance = self._settings.get_setting("number_points_distance")
+        self._distance_checker = geometry.PointCloud(
+            self.raw.sample_points_uniformly(number_points_distance)
+        )
+
+    def _set_extra_elements(self):
         mesh_show_back_face = self._settings.get_setting("mesh_show_back_face")
         mesh = copy.copy(self.raw)
         if mesh_show_back_face:
             mesh.add_reverse_triangles()
         self._drawable = mesh.as_open3d
 
-    def _set_distance_checker(self):
-        number_points_distance = self._settings.get_setting("number_points_distance")
-        self._distance_checker = geometry.PointCloud(
-            self.raw.sample_points_uniformly(number_points_distance)
-        )
+        self._set_distance_checker()
