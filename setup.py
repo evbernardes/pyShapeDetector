@@ -6,6 +6,7 @@ setup(
     name="pyShapeDetector",
     version="0.0.1dev",
     packages=find_packages(),
+    python_requires=">=3.10.0",
     entry_points={
         "console_scripts": [
             "ShapeDetector = pyShapeDetector.editor:__main__",
