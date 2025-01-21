@@ -4,7 +4,8 @@ import traceback
 import numpy as np
 from typing import List, Union
 from open3d.visualization.rendering import Open3DScene
-from .element import Element
+from .element import Element, ELEMENT_TYPE
+from .settings import Settings
 
 import psutil
 
@@ -96,7 +97,12 @@ class ElementContainer(list):
     def __repr__(self):
         return f"ElementContainer({len(self)} elements)"
 
-    def __init__(self, settings, elements=[], is_color_fixed=False):
+    def __init__(
+        self,
+        settings: Settings,
+        elements: list[ELEMENT_TYPE] = [],
+        is_color_fixed=False,
+    ):
         super().__init__(elements)
         self._previous_index = None
         self._current_index = None
