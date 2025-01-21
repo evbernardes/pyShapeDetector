@@ -98,6 +98,7 @@ class PlaneTriangulated(Plane):
     __get_attributes_from_dict__
     load
     get_obj_description
+    _get_weights_from_shapes
     fuse
     group_similar_shapes
     fuse_shape_groups

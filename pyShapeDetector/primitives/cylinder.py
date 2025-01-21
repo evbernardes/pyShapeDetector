@@ -100,6 +100,7 @@ class Cylinder(Primitive):
     save
     load
     get_obj_description
+    _get_weights_from_shapes
     fuse
     group_similar_shapes
     fuse_shape_groups
@@ -232,6 +233,7 @@ class Cylinder(Primitive):
         shapes: list["Cylinder"],
         detector=None,
         ignore_extra_data=False,
+        weight_variable: str = "inliers",
         **extra_options,
     ):
         """Find weigthed average of shapes, where the weight is the fitness
@@ -243,6 +245,13 @@ class Cylinder(Primitive):
         When fusing Cylinders, find base and top such that it constructs a full
         cylinder containing all the other instances.
 
+        `weight_variable` can be:
+            "surface_area": uses area of each surface, if all finite.
+            "fitness": takes fitness of each fit, if available.
+            "volume": uses volume of each surface, if all finite.
+            "ones": uses array of ones, equivalent to non-weighted average.
+            "inliers": uses number of inliers.
+
         Parameters
         ----------
         shapes : list
@@ -251,34 +260,36 @@ class Cylinder(Primitive):
             Used to recompute metrics. Default: None.
         ignore_extra_data : boolean, optional
             If True, ignore everything and only fuse model. Default: False.
+        weight_variable : str
+            Defines variable used as weight. Can be "surface_area", "fitness",
+            "volume" or "inliers". Default: "inliers".
 
         Returns
         -------
         Cylinder
             Averaged Cylinder instance.
         """
-        try:
-            fitness = [shape.metrics["fitness"] for shape in shapes]
-        except Exception:
-            fitness = [1] * len(shapes)
+        weights = Cylinder._get_weights_from_shapes(
+            shapes, weight_variable=weight_variable
+        )
 
         points = []
         # axes = []
         axis = np.array([0.0, 0.0, 0.0])
         center = np.array([0.0, 0.0, 0.0])
         radii = []
-        for weight, cylinder in zip(fitness, shapes):
+        for weight, cylinder in zip(weights, shapes):
             radii.append(cylinder.radius)
             points.append(cylinder.base)
             points.append(cylinder.top)
             if cylinder.axis.dot(axis) < 0:
-                axis += -weight * cylinder.axis / sum(fitness)
+                axis += -weight * cylinder.axis / sum(weights)
             else:
-                axis += weight * cylinder.axis / sum(fitness)
-            center += cylinder.center / sum(fitness)
+                axis += weight * cylinder.axis / sum(weights)
+            center += cylinder.center / sum(weights)
         # axis = np.average(axes, axis=0, weights=fitness)
         axis /= np.linalg.norm(axis)
-        radius = np.average(radii, weights=fitness)
+        radius = np.average(radii, weights=weights)
         points = np.asarray(points)
 
         projections = axis.dot((points - center).T)
@@ -290,7 +301,7 @@ class Cylinder(Primitive):
         if not ignore_extra_data:
             pcd = PointCloud.fuse_pointclouds([shape.inliers for shape in shapes])
             shape.set_inliers(pcd)
-            shape.color = np.average([s.color for s in shapes], axis=0, weights=fitness)
+            shape.color = np.average([s.color for s in shapes], axis=0, weights=weights)
 
             if detector is not None:
                 num_points = sum([shape.metrics["num_points"] for shape in shapes])
