@@ -40,6 +40,9 @@ setup(
         "copy_to_clipboard": [
             "pyperclip>=1.9.0",
         ],
+        "debug_memory_usage": [
+            "psutil>=5.9.5",
+        ],
     },
     author="Evandro Bernardes",
     author_email="evbernardes@gmail.com",

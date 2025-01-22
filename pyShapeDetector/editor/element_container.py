@@ -2,16 +2,18 @@ import warnings
 import copy
 import traceback
 import numpy as np
+from importlib.util import find_spec
 from typing import List, Union, TYPE_CHECKING
 from open3d.visualization.rendering import Open3DScene
 from .element import Element, ELEMENT_TYPE
 
+if has_psutil := find_spec("psutil"):
+    import psutil
+
+    process = psutil.Process()
+
 if TYPE_CHECKING:
     from .settings import Settings
-
-import psutil
-
-process = psutil.Process()
 
 
 class ElementContainer:
@@ -337,7 +339,8 @@ class ElementContainer:
             self.update_current_index(idx_new, update_old=self.scene is not None)
             self._previous_index = self.current_index
 
-        self._settings.print_debug(f"Used memory: {process.memory_info().rss}")
+        if has_psutil:
+            self._settings.print_debug(f"Used memory: {process.memory_info().rss}")
 
     def pop_multiple(self, indices: list[int], from_gui: bool = False):
         # update_old = self.i in indices
