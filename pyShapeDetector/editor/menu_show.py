@@ -1,10 +1,13 @@
 from open3d.visualization import gui
-from .editor_app import Editor
+from typing import TYPE_CHECKING
 from .binding import Binding
+
+if TYPE_CHECKING:
+    from .editor_app import Editor
 
 
 class MenuShow:
-    def __init__(self, editor_instance: Editor, menu="Show"):
+    def __init__(self, editor_instance: "Editor", menu="Show"):
         self._menu = menu
         self._editor_instance = editor_instance
 

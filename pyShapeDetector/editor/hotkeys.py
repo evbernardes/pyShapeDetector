@@ -1,7 +1,10 @@
 import warnings
+from typing import TYPE_CHECKING
 from open3d.visualization import gui
-from .editor_app import Editor
 from .binding import Binding, KEY_LEFT_CONTROL, KEY_LEFT_SHIFT
+
+if TYPE_CHECKING:
+    from .editor_app import Editor
 
 
 class Hotkeys:
@@ -22,7 +25,7 @@ class Hotkeys:
 
         self._bindings_map[key] = binding
 
-    def __init__(self, editor_instance: Editor):
+    def __init__(self, editor_instance: "Editor"):
         self._editor_instance = editor_instance
         self._is_lctrl_pressed = False
         self._is_lshift_pressed = False

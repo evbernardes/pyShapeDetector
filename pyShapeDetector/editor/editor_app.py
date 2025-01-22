@@ -29,6 +29,9 @@ from .settings import Settings
 from .internal_functions import InternalFunctions
 from .default_extensions import default_extensions
 
+from .menu_show import MenuShow
+from .hotkeys import Hotkeys
+
 
 class Editor:
     """
@@ -402,10 +405,6 @@ class Editor:
         return self._settings.get_setting(key)
 
     def _setup_window_and_scene(self):
-        from .menu_show import MenuShow
-        from .hotkeys import Hotkeys
-        # from .internal_functions import InternalFunctions
-
         # Set up the application
         self.app = gui.Application.instance
         self.app.initialize()
