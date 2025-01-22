@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 # ELEMENT_TYPE = Union[Primitive, geometry.Numpy_Geometry, Open3d_Geometry]
 ELEMENT_TYPE = Union[Primitive, geometry.Numpy_Geometry]
+T = TypeVar("T", *ELEMENT_TYPE.__args__)
 
 ELEMENT_LINE_CLASSES = (
     geometry.LineSet,
@@ -27,7 +28,6 @@ ELEMENT_LINE_CLASSES = (
 )
 
 DEFAULT_POINTCLOUD_COLOR = (0.3, 0.3, 0.3)
-T = TypeVar("T")
 
 
 def _is_point_in_convex_region(screen_point, screen_plane, points):
