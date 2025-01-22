@@ -345,19 +345,10 @@ class ElementContainer:
     def pop_multiple(
         self, indices: list[int], from_gui: bool = False
     ) -> list[ELEMENT_TYPE]:
-        # update_old = self.i in indices
-        # idx_new = self.i
         elements_popped = []
 
         for n, i in enumerate(indices):
-            try:
-                element = self.elements.pop(i - n)
-
-            except Exception:
-                print(f"Could not pop element at index {i}!")
-                traceback.print_exc()
-                continue
-
+            element = self.elements.pop(i - n)
             elements_popped.append(element.raw)
 
             try:
