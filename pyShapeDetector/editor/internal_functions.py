@@ -4,15 +4,17 @@ import numpy as np
 import warnings
 import traceback
 from importlib.util import find_spec
-from typing import List, Union
+from typing import List, Union, TYPE_CHECKING
 from pathlib import Path
 from open3d.visualization import gui
 from multiprocessing import Process
-from .editor_app import Editor
 from .binding import Binding
 
 if has_pyperclip := find_spec("pyperclip"):
     import pyperclip
+
+if TYPE_CHECKING:
+    from .editor_app import Editor
 
 
 class InternalFunctions:
@@ -20,7 +22,7 @@ class InternalFunctions:
     def bindings(self):
         return self._bindings
 
-    def __init__(self, editor_instance: Editor):
+    def __init__(self, editor_instance: "Editor"):
         self._editor_instance = editor_instance
         self._bindings = [
             Binding(

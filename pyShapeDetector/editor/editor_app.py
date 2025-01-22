@@ -26,6 +26,7 @@ from .extension import Extension
 from .element import ELEMENT_TYPE
 from .element_container import ElementContainer
 from .settings import Settings
+from .internal_functions import InternalFunctions
 from .default_extensions import default_extensions
 
 
@@ -76,8 +77,6 @@ class Editor:
         return_finish_flag: bool = False,
         **kwargs,
     ):
-        from .internal_functions import InternalFunctions
-
         self._extensions = []
         self._settings = Settings(self, **kwargs)
 
