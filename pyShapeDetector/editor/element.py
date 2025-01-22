@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 # ELEMENT_TYPE = Union[Primitive, geometry.Numpy_Geometry, Open3d_Geometry]
 ELEMENT_TYPE = Union[Primitive, geometry.Numpy_Geometry]
-T = TypeVar("T", *ELEMENT_TYPE.__args__)
+T = TypeVar("T", Primitive, geometry.Numpy_Geometry)
 
 ELEMENT_LINE_CLASSES = (
     geometry.LineSet,
@@ -203,13 +203,13 @@ class Element(ABC, Generic[T]):
                 traceback.print_exc()
 
             try:
-                if (volume := bbox.volume()) < eps:
-                    volume += eps
+                if bbox.volume() < eps:
+                    bbox = bbox.expanded(eps)
                     self._settings.print_debug(
                         "Bounding box with zero volume found, correcting..."
                     )
 
-                bbox_expand = bbox_expand_ratio * (volume ** (1 / 3))
+                bbox_expand = bbox_expand_ratio * (bbox.volume() ** (1 / 3))
                 bbox = bbox.expanded(bbox_expand)
             except Exception:
                 warnings.warn("Could not extend bounding box.")

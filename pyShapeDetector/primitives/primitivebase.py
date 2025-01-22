@@ -879,7 +879,9 @@ class Primitive(ABC):
         """
         return self.inliers.average_nearest_dist(k, leaf_size)
 
-    def get_axis_aligned_bounding_box(self, slack=0):
+    def get_axis_aligned_bounding_box(
+        self, slack: float = 0
+    ) -> geometry.AxisAlignedBoundingBox:
         """Returns an axis-aligned bounding box of the primitive.
 
         Parameters
@@ -902,7 +904,9 @@ class Primitive(ABC):
             return bbox.expanded(slack)
         return bbox
 
-    def get_oriented_bounding_box(self, slack=0):
+    def get_oriented_bounding_box(
+        self, slack: float = 0
+    ) -> geometry.OrientedBoundingBox:
         """Returns an oriented bounding box of the primitive.
 
         Parameters
