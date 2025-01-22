@@ -342,22 +342,36 @@ class ElementContainer:
         if has_psutil:
             self._settings.print_debug(f"Used memory: {process.memory_info().rss}")
 
-    def pop_multiple(self, indices: list[int], from_gui: bool = False):
+    def pop_multiple(
+        self, indices: list[int], from_gui: bool = False
+    ) -> list[ELEMENT_TYPE]:
         # update_old = self.i in indices
         # idx_new = self.i
-        elements_popped = ElementContainer(
-            self._settings, is_color_fixed=self._is_color_fixed
-        )
+        elements_popped = []
 
         for n, i in enumerate(indices):
             try:
                 element = self.elements.pop(i - n)
+
+            except Exception:
+                print(f"Could not pop element at index {i}!")
+                traceback.print_exc()
+                continue
+
+            elements_popped.append(element.raw)
+
+            try:
                 if from_gui:
                     element.remove_from_scene()
-                elements_popped.append(element.raw)
+            except Exception:
+                print(f"Could not remove element at index {i} from scene!")
+                traceback.print_exc()
+
+            try:
                 element._delete_extra_elements()
             except Exception:
-                print(f"Could not remove index {i}!")
+                print(f"Could not delete extra elements from index {i}!")
+                traceback.print_exc()
 
         idx_new = self.current_index - sum(
             [idx < self.current_index for idx in indices]
