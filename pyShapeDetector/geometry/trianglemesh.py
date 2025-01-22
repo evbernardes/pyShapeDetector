@@ -9,12 +9,17 @@ import copy
 import warnings
 import numpy as np
 from pathlib import Path
+from typing import Union, TYPE_CHECKING
 from open3d.geometry import TriangleMesh as open3d_TriangleMesh
 from open3d import io
 
 from pyShapeDetector.utility import mesh_to_obj_description
 from .numpy_geometry import link_to_open3d_geometry, Numpy_Geometry
 from .lineset import LineSet
+from .axis_aligned_bounding_box import AxisAlignedBoundingBox
+
+if TYPE_CHECKING:
+    from pyShapeDetector.primitives import Line
 
 
 @link_to_open3d_geometry(open3d_TriangleMesh)
@@ -58,22 +63,22 @@ class TriangleMesh(Numpy_Geometry):
     """
 
     @property
-    def surface_area(self):
+    def surface_area(self) -> float:
         return self.get_surface_area()
 
     @property
-    def center(self):
+    def center(self) -> np.ndarray[float]:
         return self.get_center()
 
     @classmethod
     def create_arrow_from_points(
         cls,
-        from_point,
-        to_point,
-        radius=0.01,
-        arrow_head_length=0.05,
-        arrow_head_radius=0.02,
-    ):
+        from_point: np.ndarray[float],
+        to_point: np.ndarray[float],
+        radius: float = 0.01,
+        arrow_head_length: float = 0.05,
+        arrow_head_radius: float = 0.02,
+    ) -> "TriangleMesh":
         """
         Create an arrow mesh defined by a cylinder (shaft) and a cone (head).
 
@@ -148,7 +153,7 @@ class TriangleMesh(Numpy_Geometry):
         one_side = np.vstack(list(triangles_set))
         self.triangles = np.vstack([one_side, one_side[:, ::-1]])
 
-    def get_triangle_points(self):
+    def get_triangle_points(self) -> np.ndarray:
         """Get positions of each triangle points.
 
         Returns
@@ -158,7 +163,7 @@ class TriangleMesh(Numpy_Geometry):
         """
         return self.vertices[self.triangles]
 
-    def get_triangle_sides(self):
+    def get_triangle_sides(self) -> np.ndarray:
         """Get side lengths of each triangle.
 
         Returns
@@ -173,7 +178,7 @@ class TriangleMesh(Numpy_Geometry):
         triangle_points_diff = np.diff(triangle_points_wrap, axis=1)
         return np.linalg.norm(triangle_points_diff, axis=2)
 
-    def get_triangle_perimeters(self):
+    def get_triangle_perimeters(self) -> np.ndarray:
         """Get perimeter of each triangle.
 
         Returns
@@ -183,7 +188,7 @@ class TriangleMesh(Numpy_Geometry):
         """
         return self.get_triangle_sides().sum(axis=1)
 
-    def get_triangle_surface_areas(self):
+    def get_triangle_surface_areas(self) -> np.ndarray:
         """Get surface area of each triangle.
 
         Returns
@@ -196,7 +201,7 @@ class TriangleMesh(Numpy_Geometry):
         s = sides.sum(axis=1) / 2
         return np.sqrt(s * np.prod(s[:, np.newaxis] - sides, axis=1))
 
-    def get_triangle_circumradius(self):
+    def get_triangle_circumradius(self) -> np.ndarray:
         """Get circumradius of each triangle.
 
         Returns
@@ -211,7 +216,7 @@ class TriangleMesh(Numpy_Geometry):
             perimeters * (perimeters[:, np.newaxis] - 2 * sides).prod(axis=1)
         )
 
-    def get_triangle_lines(self):
+    def get_triangle_lines(self) -> list["Line"]:
         """Get pyShapeDetector.primitives.Line instances for every line in every
         triangle.
 
@@ -230,7 +235,7 @@ class TriangleMesh(Numpy_Geometry):
             lines.append(Line.from_two_points(p3, p1))
         return lines
 
-    def get_triangle_LineSet(self):
+    def get_triangle_LineSet(self) -> LineSet:
         """Get a Open3D.geomery.LineSet instance containing every line in every
         triangle.
 
@@ -248,7 +253,7 @@ class TriangleMesh(Numpy_Geometry):
 
         return lineset
 
-    def get_triangle_boundary_indexes(self):
+    def get_triangle_boundary_indexes(self) -> list[tuple]:
         """Get tuples defining edge lines in boundary of mesh.
 
         Edges are detected as lines which only belong to a single triangle.
@@ -408,7 +413,9 @@ class TriangleMesh(Numpy_Geometry):
         # TODO remap indices and remove unused
         return TriangleMesh(new_vertices, new_triangles)
 
-    def clean_crop(self, axis_aligned_bounding_box):
+    def clean_crop(
+        self, axis_aligned_bounding_box: AxisAlignedBoundingBox
+    ) -> "TriangleMesh":
         """Crops mesh by slicing facets instead of completely removing them, as
         seen on [1].
 
@@ -455,7 +462,9 @@ class TriangleMesh(Numpy_Geometry):
             )
         return "\n".join(obj_content)
 
-    def get_obj_description(self, shading="off", mtl="Material", **kwargs):
+    def get_obj_description(
+        self, shading: str = "off", mtl: str = "Material", **kwargs
+    ) -> str:
         """
         Converts the TriangleMesh to an OBJ file content string.
 
@@ -478,7 +487,9 @@ class TriangleMesh(Numpy_Geometry):
         )
 
     @staticmethod
-    def get_loop_indexes_from_boundary_indexes(boundary_indexes):
+    def get_loop_indexes_from_boundary_indexes(
+        boundary_indexes: list[tuple]
+    ) -> list[list]:
         """Detect loops in list of tuples.
 
         See: get_triangle_boundary_indexes
@@ -532,7 +543,7 @@ class TriangleMesh(Numpy_Geometry):
         return loop_indexes
 
     @classmethod
-    def get_fused_mesh(cls, meshes):
+    def get_fused_mesh(cls, meshes: list["TriangleMesh"]) -> "TriangleMesh":
         """Fuse TriangleMesh instances into single mesh.
 
         Parameters
@@ -551,7 +562,7 @@ class TriangleMesh(Numpy_Geometry):
         return cls(vertices, np.vstack(triangles))
 
     @classmethod
-    def triangulate_earclipping(cls, polygon):
+    def triangulate_earclipping(cls, polygon: np.ndarray) -> np.ndarray:
         """
         Shamelessly copied from tripy:
             https://github.com/linuxlewis/tripy/blob/master/tripy.py
@@ -698,7 +709,9 @@ class TriangleMesh(Numpy_Geometry):
         return triangles
 
     @staticmethod
-    def fuse_vertices_triangles(vertices_list, triangles_list):
+    def fuse_vertices_triangles(
+        vertices_list: list[np.ndarray[float]], triangles_list: list[np.ndarray[int]]
+    ) -> tuple[np.ndarray[float], np.ndarray[int]]:
         if len(vertices_list) != len(triangles_list):
             raise ValueError(
                 f"{len(vertices_list)} vertices lists and "
@@ -714,7 +727,7 @@ class TriangleMesh(Numpy_Geometry):
             L += len(vertices_list[i])
         return vertices, np.vstack(triangles)
 
-    def write_triangle_mesh(self, filepath, **options):
+    def write_triangle_mesh(self, filepath: Union[Path, str], **options):
         """Write triangle mesh to file.
 
         Internal call to Open3D.io.write_triangle_mesh
@@ -734,7 +747,7 @@ class TriangleMesh(Numpy_Geometry):
         io.write_triangle_mesh(filepath.as_posix(), self.as_open3d, **options)
 
     @classmethod
-    def read_triangle_mesh(cls, filepath):
+    def read_triangle_mesh(cls, filepath: Union[Path, str]) -> "TriangleMesh":
         """Read file to triangle mesh.
 
         Internal call to Open3D.io.read_triangle_mesh.
