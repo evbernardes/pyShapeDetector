@@ -184,6 +184,8 @@ class Element(ABC, Generic[T]):
         pass
 
     def _get_bbox(self):
+        eps = 1e-5
+
         if self.raw is None or isinstance(self.raw, ELEMENT_LINE_CLASSES):
             return None
 
@@ -192,20 +194,36 @@ class Element(ABC, Generic[T]):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             try:
-                bbox_original = self.raw.get_oriented_bounding_box()
-                bbox_expand = bbox_expand_ratio * (bbox_original.volume() ** (1 / 3))
-                bbox = geometry.OrientedBoundingBox(bbox_original).expanded(bbox_expand)
+                bbox = self.raw.get_oriented_bounding_box()
             except Exception:
-                bbox_original = self.raw.get_axis_aligned_bounding_box()
-                bbox_expand = bbox_expand_ratio * (bbox_original.volume() ** (1 / 3))
-                bbox = geometry.AxisAlignedBoundingBox(bbox_original).expanded(
-                    bbox_expand
+                warnings.warn(
+                    "Could not get oriented bounding box, getting axis aligned box instead."
                 )
+                bbox = self.raw.get_axis_aligned_bounding_box()
+                traceback.print_exc()
+
+            try:
+                if (volume := bbox.volume()) < eps:
+                    volume += eps
+                    self._settings.print_debug(
+                        "Bounding box with zero volume found, correcting..."
+                    )
+
+                bbox_expand = bbox_expand_ratio * (volume ** (1 / 3))
+                bbox = bbox.expanded(bbox_expand)
+            except Exception:
+                warnings.warn("Could not extend bounding box.")
+                traceback.print_exc()
 
         if self.is_selected:
             bbox.color = self._settings.get_setting("color_bbox_selected")
         else:
             bbox.color = self._settings.get_setting("color_bbox_unselected")
+
+        self._settings.print_debug(
+            f"Final printed {bbox.__class__.__name__}: volume={bbox.volume()}, extend={bbox.extent}",
+            require_verbose=True,
+        )
 
         return bbox
 
