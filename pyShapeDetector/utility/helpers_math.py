@@ -24,7 +24,7 @@ RGB_TO_XYZ = np.array(
 )
 
 
-def midrange(points):
+def midrange(points: np.ndarray) -> np.ndarray:
     return (np.max(points, axis=0) + np.min(points, axis=0)) / 2
 
 

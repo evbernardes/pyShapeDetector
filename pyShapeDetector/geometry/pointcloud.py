@@ -11,6 +11,7 @@ import numpy as np
 import multiprocessing
 import time
 import warnings
+from typing import Union
 from importlib.util import find_spec
 
 from open3d.geometry import PointCloud as open3d_PointCloud
@@ -21,18 +22,16 @@ from .axis_aligned_bounding_box import AxisAlignedBoundingBox
 from .oriented_bounding_box import OrientedBoundingBox
 
 from scipy.spatial.distance import cdist
-
-if has_h5py := find_spec("h5py") is not None:
-    import h5py
-has_pye57 = find_spec("pye57")
-
-
 from sklearn.neighbors import KDTree
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
 from pyShapeDetector import utility
 from .numpy_geometry import link_to_open3d_geometry, Numpy_Geometry
+
+if has_h5py := find_spec("h5py") is not None:
+    import h5py
+has_pye57 = find_spec("pye57")
 
 
 @link_to_open3d_geometry(open3d_PointCloud)
@@ -76,11 +75,11 @@ class PointCloud(Numpy_Geometry):
     _curvature = np.empty(0)
 
     @property
-    def midrange(self):
+    def midrange(self) -> np.ndarray:
         return utility.midrange(self.points)
 
     @property
-    def volume(self):
+    def volume(self) -> float:
         return np.product(self.get_oriented_bounding_box().extent)
 
     @property
@@ -98,18 +97,20 @@ class PointCloud(Numpy_Geometry):
         self._curvature = values
 
     # @property
-    def has_curvature(self):
+    def has_curvature(self) -> bool:
         return len(self.curvature) > 0
 
     @property
-    def colors_cielab(self):
+    def colors_cielab(self) -> np.ndarray:
         return utility.rgb_to_cielab(self.colors.copy())
 
     @colors_cielab.setter
-    def colors_cielab(self, lab):
+    def colors_cielab(self, lab: np.ndarray):
         self.colors = utility.cielab_to_rgb(lab)
 
-    def from_points_normals_colors(element, normals=[], colors=[]):
+    def from_points_normals_colors(
+        element, normals: np.ndarray = [], colors: np.ndarray = []
+    ) -> "PointCloud":
         """Creates PointCloud instance from points, normals or colors.
 
         Parameters
@@ -146,7 +147,7 @@ class PointCloud(Numpy_Geometry):
         return pcd
 
     @utility.accept_one_or_multiple_elements(3)
-    def get_distances(self, points):
+    def get_distances(self, points: np.ndarray) -> np.ndarray:
         """Gives the distance between each input point to the original pointcloud.
 
         Parameters
@@ -162,7 +163,7 @@ class PointCloud(Numpy_Geometry):
         pcd = PointCloud(points)
         return pcd.compute_point_cloud_distance(self)
 
-    def get_oriented_bounding_box(self):
+    def get_oriented_bounding_box(self) -> OrientedBoundingBox:
         try:
             if len(self.points) == 0:
                 warnings.warn("PointCloud is empty, retuning None.")
@@ -191,7 +192,7 @@ class PointCloud(Numpy_Geometry):
 
         return oriented_bbox
 
-    def distribute_to_closest(self, pcds):
+    def distribute_to_closest(self, pcds: list["PointCloud"]):
         """Add each point to the closest of the input pointclouds.
 
         Parameters
@@ -208,7 +209,7 @@ class PointCloud(Numpy_Geometry):
         for pcd, distributed in zip(pcds, pcds_separated):
             pcd._open3d += distributed._open3d
 
-    def estimate_curvature(self, k=15, cores=10):
+    def estimate_curvature(self, k: int = 15, cores: int = 10):
         """Estimate curvature of points by getting the mean value of angles between
         the neighbors.
 
@@ -249,7 +250,9 @@ class PointCloud(Numpy_Geometry):
 
         self.curvature = _get_normals(np.arange(len(points)))
 
-    def average_nearest_dist(self, k=15, leaf_size=40, split=1):
+    def average_nearest_dist(
+        self, k: int = 15, leaf_size: int = 40, split: int = 1
+    ) -> float:
         """Calculates the K nearest neighbors and returns the average distance
         between them.
 
@@ -290,7 +293,7 @@ class PointCloud(Numpy_Geometry):
         nearest_dist, nearest_ind = tree.query(pcd.points, k=k)
         return np.mean(nearest_dist[:, 1:])
 
-    def write_point_cloud(self, filepath, **options):
+    def write_point_cloud(self, filepath: Union[str, Path], **options):
         """Write pointcloud to file.
 
         Internal call to Open3D.io.write_point_cloud
@@ -307,7 +310,12 @@ class PointCloud(Numpy_Geometry):
         io.write_point_cloud(filepath, self.as_open3d, **options)
 
     @classmethod
-    def read_point_cloud(cls, filepath, down_sample=None, estimate_normals=False):
+    def read_point_cloud(
+        cls,
+        filepath: Union[str, Path],
+        down_sample: Union[int, None] = None,
+        estimate_normals: bool = False,
+    ) -> "PointCloud":
         """Read file to pointcloud. Can also read .h5 files from traceparts
         database.
 
@@ -388,7 +396,12 @@ class PointCloud(Numpy_Geometry):
 
         return pcds
 
-    def split(self, num_boxes, dim=None, return_only_indices=False):
+    def split(
+        self,
+        num_boxes: int,
+        dim: Union[int, None] = None,
+        return_only_indices: bool = False,
+    ) -> list["PointCloud"]:
         """Split the bounding box of the pointcloud in multiple sub boxes and
         return a list of sub pointclouds.
 
@@ -462,7 +475,9 @@ class PointCloud(Numpy_Geometry):
 
     #     return [self.select_by_index(list(subset)) for subset in subsets]
 
-    def split_in_half(self, resolution=5, dim=None):
+    def split_in_half(
+        self, resolution: int = 5, dim: Union[int, None] = None
+    ) -> tuple["PointCloud", "PointCloud"]:
         """Divide pointcloud in two sub clouds, each one occupying roughly the
         same volume.
 
@@ -496,7 +511,9 @@ class PointCloud(Numpy_Geometry):
 
         return left, right
 
-    def split_until_small(self, max_points=1000000, resolution=30, debug=False):
+    def split_until_small(
+        self, max_points: int = 1000000, resolution: int = 30, debug: bool = False
+    ) -> list["PointCloud"]:
         """Recursively divide pointcloud in two, until each pointcloud has
         less points than `max_points`.
 
@@ -535,7 +552,9 @@ class PointCloud(Numpy_Geometry):
 
         return [pcd for pcd in pcds if len(pcd.points) != 0]
 
-    def separate_with_labels(self, labels, return_ungroupped=False):
+    def separate_with_labels(
+        self, labels: list[int], return_ungroupped: bool = False
+    ) -> list["PointCloud"]:
         """Separate pcd with labels.
 
         Each distinct value of `labels` correspond to a separate cluster.
@@ -567,7 +586,9 @@ class PointCloud(Numpy_Geometry):
 
         return pcd_separated
 
-    def segment_by_position(self, shape, min_points=1):
+    def segment_by_position(
+        self, shape: tuple[int, int, int], min_points: int = 1
+    ) -> list["PointCloud"]:
         """Uniformly divide pcd into different subsets based purely on position.
 
         Parameters
@@ -608,7 +629,9 @@ class PointCloud(Numpy_Geometry):
                 pcds.append(pcd_sub)
         return pcds
 
-    def separate_by_curvature(self, std_ratio=0.1, distance_threshold=0):
+    def separate_by_curvature(
+        self, std_ratio: float = 0.1, distance_threshold: float = 0
+    ) -> tuple["PointCloud", "PointCloud"]:
         """Remove borders by separating points with high and low curvature.
 
         The cutoff threshold used to separate points of high and low curvature
@@ -629,7 +652,7 @@ class PointCloud(Numpy_Geometry):
 
         Returns
         -------
-        list
+        tuple of two pointclouds
             Segmented pointclouds.
         """
 
@@ -662,7 +685,9 @@ class PointCloud(Numpy_Geometry):
 
         return pcd_low, pcd_high
 
-    def segment_kmeans_colors(self, n_clusters=2, n_init="auto", **options):
+    def segment_kmeans_colors(
+        self, n_clusters: int = 2, n_init: str = "auto", **options
+    ) -> list["PointCloud"]:
         """Segment pointcloud according to the colors by using KMeans.
 
         For other options, see:
@@ -695,8 +720,12 @@ class PointCloud(Numpy_Geometry):
         return self.separate_with_labels(kmeans.labels_)
 
     def segment_dbscan(
-        self, eps, min_points=1, print_progress=False, color_based=False
-    ):
+        self,
+        eps: float,
+        min_points: int = 1,
+        print_progress: bool = False,
+        color_based: bool = False,
+    ) -> list["PointCloud"]:
         """Get PointCloud points, label it according to Open3D's cluster_dbscan
         implementation and then return a list of segmented pointclouds.
 
@@ -729,8 +758,8 @@ class PointCloud(Numpy_Geometry):
         return self.separate_with_labels(labels)
 
     def segment_with_curvature_threshold(
-        self, std_ratio, distance_threshold, min_points=5
-    ):
+        self, std_ratio: float, distance_threshold: float, min_points: int = 5
+    ) -> list["PointCloud"]:
         """Remove borders by separating points with high and low curvature, and
         then segment the remaining points with DBSCAN,
 
@@ -770,18 +799,18 @@ class PointCloud(Numpy_Geometry):
 
     def segment_with_region_growing(
         self,
-        residuals=None,
-        mode="knn",
-        k=20,
-        radius=0,
-        k_retest=10,
-        threshold_angle=np.radians(10),
-        min_points=10,
-        cores=1,
-        seeds_max=150,
-        debug=False,
-        old_divide=False,
-    ):
+        residuals: Union[None, np.ndarray] = None,
+        mode: str = "knn",
+        k: int = 20,
+        radius: float = 0,
+        k_retest: int = 10,
+        threshold_angle: float = np.radians(10),
+        min_points: int = 10,
+        cores: int = 1,
+        seeds_max: int = 150,
+        debug: bool = False,
+        old_divide: bool = False,
+    ) -> list["PointCloud"]:
         """Segment point cloud into multiple sub clouds according to their
         curvature by analying normals of neighboring points.
 
@@ -1069,7 +1098,9 @@ class PointCloud(Numpy_Geometry):
 
         assert False  # shouldn't happen
 
-    def find_closest_points_indices(self, other_points, n=1):
+    def find_closest_points_indices(
+        self, other_points: Union["PointCloud", np.ndarray], n: int = 1
+    ) -> list[tuple]:
         """Finds pairs of closest points and returns indices.
 
         Parameters
@@ -1094,7 +1125,9 @@ class PointCloud(Numpy_Geometry):
 
         return min_distance_indices
 
-    def find_closest_points(self, other_points, n=1):
+    def find_closest_points(
+        self, other_points: Union["PointCloud", np.ndarray], n: int = 1
+    ) -> tuple[list[tuple], np.ndarray]:
         """Fuses list of pointclouds into a single open3d.geometry.PointCloud
         instance.
 
@@ -1135,7 +1168,9 @@ class PointCloud(Numpy_Geometry):
 
         return closest_points, min_distances
 
-    def select_nearby_points(self, pcd, max_distance, cores=6):
+    def select_nearby_points(
+        self, pcd: Union["PointCloud", np.ndarray], max_distance: float, cores: int = 6
+    ) -> np.ndarray:
         """
         Return PointCloud containing points that are close enough to at
         least some point in the inlier_points points array.
@@ -1166,8 +1201,13 @@ class PointCloud(Numpy_Geometry):
 
     @classmethod
     def get_rectangular_grid(
-        cls, vectors, center, grid_width, return_perimeter=False, grid_type="hexagonal"
-    ):
+        cls,
+        vectors: np.ndarray,
+        center: np.ndarray,
+        grid_width: float,
+        return_perimeter: bool = False,
+        grid_type: str = "hexagonal",
+    ) -> Union["PointCloud", tuple["PointCloud", float]]:
         """Gives rectangular grid defined two vectors and its center.
 
         Vectors v1 and v2 should not be unit, and instead have lengths equivalent
@@ -1272,7 +1312,7 @@ class PointCloud(Numpy_Geometry):
         return pcd
 
     @classmethod
-    def fuse_pointclouds(cls, pcds):
+    def fuse_pointclouds(cls, pcds: list["PointCloud"]) -> "PointCloud":
         """Fuses list of pointclouds into a single PointCloud instance.
 
         Parameters
