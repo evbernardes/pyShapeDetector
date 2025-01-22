@@ -7,11 +7,16 @@ Created on Wed Jun  5 15:27:03 2024
 """
 import copy
 import numpy as np
+from typing import Union, TYPE_CHECKING
 from open3d.geometry import OrientedBoundingBox as open3d_OrientedBoundingBox
 
 from pyShapeDetector.utility import _set_and_check_3d_array
 from .numpy_geometry import link_to_open3d_geometry, Numpy_Geometry
 from .axis_aligned_bounding_box import AxisAlignedBoundingBox
+
+if TYPE_CHECKING:
+    from pyShapeDetector.primitives import PlaneBounded
+    from pyShapeDetector.geometry import LineSet
 
 
 @link_to_open3d_geometry(open3d_OrientedBoundingBox)
@@ -32,7 +37,9 @@ class OrientedBoundingBox(Numpy_Geometry):
     """
 
     @classmethod
-    def from_multiple_elements(cls, elements):
+    def from_multiple_elements(
+        cls, elements: list[Numpy_Geometry]
+    ) -> "OrientedBoundingBox":
         """
         Gets minimal oriented bounding box from all elements.
 
@@ -58,7 +65,9 @@ class OrientedBoundingBox(Numpy_Geometry):
         else:
             return cls(elements.get_oriented_bounding_box())
 
-    def contains_points(self, points, inclusive=True, eps=1e-5):
+    def contains_points(
+        self, points: np.ndarray, inclusive: bool = True, eps: float = 1e-5
+    ) -> np.ndarray[bool]:
         """
         Check which points are inside of the bounding box.
 
@@ -67,6 +76,8 @@ class OrientedBoundingBox(Numpy_Geometry):
 
         points : N x 3 array
             N input points
+        inclusive : bool, optional
+            If True, includes points exactly in the border. Default: True.
 
         Returns
         -------
@@ -80,7 +91,7 @@ class OrientedBoundingBox(Numpy_Geometry):
 
         return aabb.contains_points(points, inclusive=inclusive)
 
-    def expanded(self, slack=0):
+    def expanded(self, slack: float = 0) -> "OrientedBoundingBox":
         """Return expanded version with bounds expanded in all directions.
 
         Parameters
@@ -99,7 +110,9 @@ class OrientedBoundingBox(Numpy_Geometry):
         obb.color = self.color
         return obb
 
-    def split(self, num_boxes, dim=None):
+    def split(
+        self, num_boxes: int, dim: Union[None, int] = None
+    ) -> list["OrientedBoundingBox"]:
         """Separates bounding boxes into multiple sub-boxes.
 
         Parameters
@@ -131,7 +144,7 @@ class OrientedBoundingBox(Numpy_Geometry):
 
         return bboxes
 
-    def as_planes(self):
+    def as_planes(self) -> list["PlaneBounded"]:
         """
         Get the bounded planes for the faces of the bounding box.
 
@@ -179,7 +192,7 @@ class OrientedBoundingBox(Numpy_Geometry):
 
         return planes
 
-    def as_lineset(self):
+    def as_lineset(self) -> "LineSet":
         """
         Convert bounding box to lineset instance.
 
