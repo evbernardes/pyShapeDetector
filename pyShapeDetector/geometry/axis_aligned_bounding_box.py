@@ -7,11 +7,16 @@ Created on Wed Jun  5 15:27:03 2024
 """
 import copy
 import numpy as np
+from typing import Union, TYPE_CHECKING
 from open3d.geometry import AxisAlignedBoundingBox as open3d_AxisAlignedBoundingBox
 
 from pyShapeDetector.utility import _set_and_check_3d_array
 from .numpy_geometry import link_to_open3d_geometry, Numpy_Geometry
 # from .pointcloud import PointCloud
+
+if TYPE_CHECKING:
+    from pyShapeDetector.geometry import PointCloud, LineSet
+    from pyShapeDetector.primitives import PlaneBounded
 
 
 @link_to_open3d_geometry(open3d_AxisAlignedBoundingBox)
@@ -38,7 +43,9 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
     """
 
     @classmethod
-    def from_multiple_elements(cls, elements):
+    def from_multiple_elements(
+        cls, elements: list[Numpy_Geometry]
+    ) -> "AxisAlignedBoundingBox":
         """
         Gets the axis aligned bounding box containing all elements.
 
@@ -64,7 +71,7 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
         else:
             return cls(elements.get_axis_aligned_bounding_box())
 
-    def __add__(self, other_aabb):
+    def __add__(self, other_aabb: "AxisAlignedBoundingBox") -> "AxisAlignedBoundingBox":
         if not self.is_instance_or_open3d(other_aabb):
             raise ValueError(
                 f"Can only add to other axis aligned bounding boxes, got {other_aabb.__class__}."
@@ -76,7 +83,9 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
         aabb.color = self.color
         return aabb
 
-    def contains_points(self, points, inclusive=True):
+    def contains_points(
+        self, points: np.ndarray, inclusive: bool = True
+    ) -> np.ndarray[bool]:
         """
         Check which points are inside of the bounding box.
 
@@ -85,6 +94,8 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
 
         points : N x 3 array
             N input points
+        inclusive : bool, optional
+            If True, includes points exactly in the border. Default: True.
 
         Returns
         -------
@@ -103,7 +114,9 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
 
         return np.logical_and(min_check, max_check)  # .tolist()
 
-    def intersects(self, other_aabb, distance=0):
+    def intersects(
+        self, other_aabb: "AxisAlignedBoundingBox", distance: float = 0
+    ) -> bool:
         """Check if minimal distance of the inlier points bounding box
         is below a given distance.
 
@@ -148,7 +161,7 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
         test_intersect = bb1.max_bound - bb2.min_bound >= 0
         return test_intersect.all()
 
-    def expanded(self, slack=0):
+    def expanded(self, slack: float = 0) -> "AxisAlignedBoundingBox":
         """Return expanded version with bounds expanded in all directions.
 
         Parameters
@@ -165,7 +178,9 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
         aabb.color = self.color
         return aabb
 
-    def split(self, num_boxes, dim=None):
+    def split(
+        self, num_boxes: int, dim: Union[None, int] = None
+    ) -> list["AxisAlignedBoundingBox"]:
         """Separates bounding boxes into multiple sub-boxes.
 
         Parameters
@@ -214,7 +229,7 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
 
         return bboxes
 
-    def sample_points_uniformly(self, number_of_points=100):
+    def sample_points_uniformly(self, number_of_points: int = 100) -> np.ndarray:
         """Sample points inside bounding box.
 
         Parameters
@@ -233,7 +248,7 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
             size=(number_of_points, 3), low=self.min_bound, high=self.max_bound
         )
 
-    def sample_points_density(self, density=1):
+    def sample_points_density(self, density: float = 1) -> np.ndarray:
         """Sample points inside bounding box.
 
         Parameters
@@ -252,7 +267,7 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
         number_of_points = int(density * self.volume())
         return self.sample_points_uniformly(number_of_points)
 
-    def sample_PointCloud_uniformly(self, number_of_points=100):
+    def sample_PointCloud_uniformly(self, number_of_points: int = 100) -> "PointCloud":
         """Sample points inside bounding box and return PointCloud.
 
         Parameters
@@ -273,7 +288,7 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
 
         return PointCloud(self.sample_points_uniformly(number_of_points))
 
-    def sample_PointCloud_density(self, density=1):
+    def sample_PointCloud_density(self, density: float = 1) -> "PointCloud":
         """Sample points inside bounding box and return PointCloud.
 
         See: sample_points_uniformly, sample_points_density,
@@ -297,7 +312,7 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
 
         return PointCloud(self.sample_points_density(density))
 
-    def as_planes(self):
+    def as_planes(self) -> list["PlaneBounded"]:
         """
         Get the bounded planes for the faces of the bounding box.
 
@@ -307,7 +322,7 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
         """
         return self.obb.as_planes()
 
-    def as_lineset(self):
+    def as_lineset(self) -> "LineSet":
         """
         Convert bounding box to lineset instance.
 
