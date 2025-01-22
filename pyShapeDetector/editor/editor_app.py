@@ -20,10 +20,10 @@ from typing import Callable, Union
 from pathlib import Path
 from open3d.visualization import gui, rendering
 from pyShapeDetector.primitives import Primitive
-from pyShapeDetector.geometry import Numpy_Geometry
+from pyShapeDetector.geometry import TriangleMesh
 
 from .extension import Extension
-from .element import ELEMENT_TYPE
+from .element import ElementGeometry
 from .element_container import ElementContainer
 from .settings import Settings
 from .internal_functions import InternalFunctions
@@ -484,8 +484,6 @@ class Editor:
     #     sys.exit(0)
 
     def _update_plane_boundaries(self):
-        from .element import ElementGeometry
-
         for plane_boundary in self._plane_boundaries:
             plane_boundary.remove_from_scene()
 
@@ -513,7 +511,6 @@ class Editor:
 
     def _update_BBOX_and_axes(self):
         """Remove bounding box and get new one for current element."""
-        from pyShapeDetector.geometry import TriangleMesh
 
         self._settings.print_debug("Updating bounding box...", require_verbose=True)
 
