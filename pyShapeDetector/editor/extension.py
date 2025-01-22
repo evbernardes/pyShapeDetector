@@ -474,9 +474,9 @@ class Extension:
 
         editor_instance._last_used_extension = self
         # editor_instance._future_states = []
+        editor_instance.element_container.update_current_index()
         editor_instance._update_plane_boundaries()
         editor_instance._update_info()
-        editor_instance.element_container.update_current_index()
         editor_instance._update_BBOX_and_axes()
         editor_instance._close_dialog()
         # editor_instance._set_gray_overlay(False)
