@@ -8,6 +8,7 @@ Created on 2024-12-12 09:48:24
 
 from numpy import ndarray
 from open3d.visualization.gui import Color
+from pathlib import Path
 
 from .parameter import ParameterBase
 from .parameter_bool import ParameterBool
@@ -16,6 +17,7 @@ from .parameter_numeric import ParameterNumeric
 from .parameter_color import ParameterColor
 from .parameter_ndarray import ParameterNDArray
 from .parameter_current_element import ParameterCurrentElement
+from .parameter_path import ParameterPath
 from .parameter_panel import ParameterPanel
 
 PARAMETER_TYPE_DICTIONARY = {
@@ -33,4 +35,6 @@ PARAMETER_TYPE_DICTIONARY = {
     Color: ParameterColor,
     "color": ParameterColor,
     "current": ParameterCurrentElement,
+    Path: ParameterPath,
+    "path": ParameterPath,
 }
