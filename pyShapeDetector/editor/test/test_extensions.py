@@ -8,7 +8,7 @@ Created on 2025-01-23 09:44:19
 from pyShapeDetector.editor import Editor, Extension
 import pytest
 
-param_radius = {"radius": {"type": float, "default": 1}}
+param_radius = {"radius": {"type": float, "default": 0}}
 
 editor_instance = Editor(load_default_extensions=False)
 default_settings = editor_instance._settings
