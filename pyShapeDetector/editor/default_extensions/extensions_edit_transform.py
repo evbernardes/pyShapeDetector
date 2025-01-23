@@ -9,6 +9,7 @@ import traceback
 import warnings
 import numpy as np
 import copy
+from typing import TYPE_CHECKING
 from scipy.spatial.transform import Rotation
 
 # from pyShapeDetector.utility import get_inputs, select_function_with_gui
@@ -18,12 +19,9 @@ from pyShapeDetector.geometry import (
 )
 from pyShapeDetector.primitives import Plane
 from pyShapeDetector.utility import get_rotation_from_axis
-from .helpers import (
-    _apply_to,
-    _extract_element_by_type,
-    _get_pointcloud_sizes,
-    _get_shape_areas,
-)
+
+if TYPE_CHECKING:
+    from pyShapeDetector.editor import Editor
 
 MENU_NAME = "Edit/Transform..."
 
@@ -57,14 +55,16 @@ def _get_tranformation_matrix(rotation_center, rotation_matrix, translation_vect
     return transformation_matrix
 
 
-def _transform_elements_and_save_state(editor_instance, indices, transformation_matrix):
+def _transform_elements_and_save_state(
+    editor_instance: "Editor", indices, transformation_matrix
+):
     for index in indices:
-        element = editor_instance.elements[index]
+        element = editor_instance.element_container.elements[index]
         element.transform(transformation_matrix)
 
     current_state = {
         "indices": copy.deepcopy(indices),
-        "current_index": editor_instance.elements.current_index,
+        "current_index": editor_instance.element_container.current_index,
         "operation": "transformation",
         "transformation_matrix": transformation_matrix,
     }
@@ -73,12 +73,16 @@ def _transform_elements_and_save_state(editor_instance, indices, transformation_
 
 
 def transform_with_angles(
-    editor_instance, vector, angles_ZYX_degrees, reverse_translation, reverse_rotation
+    editor_instance: "Editor",
+    vector,
+    angles_ZYX_degrees,
+    reverse_translation,
+    reverse_rotation,
 ):
-    indices = editor_instance.elements.selected_indices
+    indices = editor_instance.element_container.selected_indices
     if len(indices) == 0:
         return
-    elements = [editor_instance.elements[i] for i in indices]
+    elements = [editor_instance.element_container[i] for i in indices]
     elements_raw = [element.raw for element in elements]
 
     if not isinstance(elements_raw, list):
@@ -144,15 +148,20 @@ extensions.append(
 
 
 def rotate_aligning_vectors(
-    editor_instance, vector_in, vector_out, reverse_rotation, translation, indices
+    editor_instance: "Editor",
+    vector_in,
+    vector_out,
+    reverse_rotation,
+    translation,
+    indices,
 ):
     if indices is None:
-        indices = editor_instance.elements.selected_indices
+        indices = editor_instance.element_container.selected_indices
 
     if len(indices) == 0:
         return
 
-    elements = [editor_instance.elements[idx].raw for idx in indices]
+    elements = [editor_instance.element_container[idx].raw for idx in indices]
 
     bbox = OrientedBoundingBox.from_multiple_elements(elements)
     vector_in /= np.linalg.norm(vector_in)
@@ -193,11 +202,11 @@ extensions.append(
 )
 
 
-def _put_on_ground(editor_instance):
-    indices = editor_instance.elements.selected_indices
+def _put_on_ground(editor_instance: "Editor"):
+    indices = editor_instance.element_container.selected_indices
     if len(indices) == 0:
         return
-    elements_raw = [editor_instance.elements[i].raw for i in indices]
+    elements_raw = [editor_instance.element_container[i].raw for i in indices]
 
     bbox = AxisAlignedBoundingBox.from_multiple_elements(elements_raw)
 
@@ -219,11 +228,11 @@ extensions.append(
 )
 
 
-def _align_and_center_to_global_frame(editor_instance):
-    indices = editor_instance.elements.selected_indices
+def _align_and_center_to_global_frame(editor_instance: "Editor"):
+    indices = editor_instance.element_container.selected_indices
     if len(indices) == 0:
         return
-    elements = [editor_instance.elements[idx].raw for idx in indices]
+    elements = [editor_instance.element_container[idx].raw for idx in indices]
     bbox = OrientedBoundingBox.from_multiple_elements(elements)
 
     # align element but place above XY plane
@@ -247,13 +256,13 @@ extensions.append(
 )
 
 
-def _align_with_current_plane_as_ground(editor_instance, ground_plane):
+def _align_with_current_plane_as_ground(editor_instance: "Editor", ground_plane):
     if not isinstance(ground_plane, Plane):
         raise TypeError(
             f"Current (target) element should be a Plane, got:\n'{ground_plane}'."
         )
 
-    if (N := len(editor_instance.elements)) == 0:
+    if (N := len(editor_instance.element_container)) == 0:
         return
 
     vector_in = ground_plane.normal
