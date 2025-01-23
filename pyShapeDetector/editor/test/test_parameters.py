@@ -7,6 +7,7 @@ Created on 2025-01-23 14:52:02
 """
 import pytest
 import numpy as np
+from pathlib import Path
 from numpy.testing import assert_array_equal
 from open3d.visualization import gui
 from pyShapeDetector.editor import Editor, Extension
@@ -218,3 +219,70 @@ def test_parameter_ndarray():
         with pytest.warns(UserWarning, match="unexpected 'options' descriptor"):
             descriptor = {"type": type_, "default": (0, 0, 0), "options": [1]}
             parameter = ParameterBase.create_from_dict("param_name", descriptor)
+
+
+def test_parameter_path():
+    for type_ in (Path, "path"):
+        # Correct with default value
+        descriptor = {"type": type_, "default": "a/b"}
+        parameter = ParameterBase.create_from_dict("param_name", descriptor)
+        assert isinstance(parameter, ParameterPath)
+        assert parameter.value == Path("a/b")
+        assert parameter.path_type == "open"  # default path_type is "open"
+        extension = {
+            "function": lambda var: [],
+            "inputs": None,
+            "parameters": {"var": descriptor},
+        }
+        Extension(extension, default_settings)
+
+        # No default value, defaults to ""
+        descriptor = {"type": type_}
+        parameter = ParameterBase.create_from_dict("param_name", descriptor)
+        assert isinstance(parameter, ParameterPath)
+        assert parameter.value == Path()
+
+        descriptor = {"type": type_, "path_type": "open"}
+        parameter = ParameterBase.create_from_dict("var", descriptor)
+        assert parameter.path_type == "open"
+
+        descriptor = {"type": type_, "path_type": "open_dir"}
+        parameter = ParameterBase.create_from_dict("var", descriptor)
+        assert parameter.path_type == "open_dir"
+
+        descriptor = {"type": type_, "path_type": "save"}
+        parameter = ParameterBase.create_from_dict("var", descriptor)
+        assert parameter.path_type == "save"
+
+        with pytest.raises(ValueError, match="Valid path types are"):
+            descriptor = {"type": type_, "path_type": "load"}
+            ParameterBase.create_from_dict("radius", descriptor)
+
+        with pytest.raises(ValueError, match="suffixes expected to be dict"):
+            descriptor = {"type": type_, "suffixes": []}
+            ParameterBase.create_from_dict("radius", descriptor)
+
+        with pytest.raises(ValueError, match="expected to be dict mapping str->str"):
+            descriptor = {"type": type_, "suffixes": {1: 2}}
+            ParameterBase.create_from_dict("radius", descriptor)
+
+        with pytest.raises(ValueError, match="expected to be dict mapping str->str"):
+            descriptor = {"type": type_, "suffixes": {"1": 2}}
+            ParameterBase.create_from_dict("radius", descriptor)
+
+        with pytest.raises(ValueError, match="expected to be dict mapping str->str"):
+            descriptor = {"type": type_, "suffixes": {1: "2"}}
+            ParameterBase.create_from_dict("radius", descriptor)
+
+        with pytest.raises(ValueError, match="Invalid suffix"):
+            descriptor = {"type": type_, "suffixes": {"1": "2"}}
+            ParameterBase.create_from_dict("radius", descriptor)
+
+        descriptor = {"type": type_, "suffixes": {".tar": "tar files"}}
+        parameter = ParameterBase.create_from_dict("radius", descriptor)
+        assert parameter.suffixes == {".tar": "tar files"}
+
+        # Testing valid descriptors with useless parameters
+        with pytest.warns(UserWarning, match="unexpected 'options' descriptor"):
+            descriptor = {"type": type_, "options": [1, 2]}
+            ParameterBase.create_from_dict("var", descriptor)

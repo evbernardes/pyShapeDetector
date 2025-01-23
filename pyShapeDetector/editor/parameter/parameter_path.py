@@ -93,14 +93,14 @@ class ParameterPath(ParameterBase[Path]):
         self._suffixes = suffixes
 
     @property
-    def editor_instance(self) -> "Editor":
+    def editor_instance(self) -> Union[None, "Editor"]:
         return self._editor_instance
 
     @editor_instance.setter
-    def editor_instance(self, editor_instance: "Editor"):
+    def editor_instance(self, editor_instance: Union[None, "Editor"]):
         from ..editor_app import Editor
 
-        if not isinstance(editor_instance, Editor):
+        if editor_instance is not None and not isinstance(editor_instance, Editor):
             raise TypeError(f"Expected Editor, got {editor_instance}.")
         self._editor_instance = editor_instance
 
@@ -193,7 +193,7 @@ class ParameterPath(ParameterBase[Path]):
     def __init__(
         self,
         label: str,
-        path_type: str = "file",
+        path_type: str = "open",
         suffixes: dict[str, str] = {},
         default: Union[str, Path] = "",
         on_update: Callable = None,
@@ -204,4 +204,5 @@ class ParameterPath(ParameterBase[Path]):
         self.value = default
         self.path_type = path_type
         self.suffixes = suffixes
+        self.editor_instance = None
         self._warn_unused_parameters(other_kwargs)
