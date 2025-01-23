@@ -183,20 +183,20 @@ class Extension:
         expected_args_len = len(parameter_descriptors)
 
         expects_elements_as_input = self.inputs in INPUT_TYPES_WITH_ELEMENTS
-        print(f"{self.name=}")
+        # print(f"{self.name=}")
         # print(f"{self.inputs =}")
         # print(f"{INPUT_TYPES_WITH_ELEMENTS=}")
-        print(f"{expects_elements_as_input=}")
+        # print(f"{expects_elements_as_input=}")
 
         if expects_elements_as_input:
             expected_args_len += 1
             # function_params_set.remove(list(signature.parameters)[0])
 
-        print(f"{function_params=}")
-        print(f"{descriptor_params=}")
+        # print(f"{function_params=}")
+        # print(f"{descriptor_params=}")
 
         missing_in_function = set(descriptor_params).difference(set(function_params))
-        print(f"{missing_in_function=}")
+        # print(f"{missing_in_function=}")
         if len(missing_in_function) > 0:
             raise ValueError(
                 f"Extension '{self.name}'s descriptor contains following "
@@ -206,7 +206,7 @@ class Extension:
         # missing_in_descriptor = descriptor_params_set.difference(function_params_set)
         # missing_in_descriptor = function_params.difference(descriptor_params)
         missing_in_descriptor = set(function_params).difference(set(descriptor_params))
-        print(f"{missing_in_descriptor=}")
+        # print(f"{missing_in_descriptor=}")
         if len(missing_in_descriptor) > int(expects_elements_as_input):
             # first_argument = list(signature.parameters)[0]
             # if first_argument not in descriptor_params_set:
@@ -325,7 +325,9 @@ class Extension:
             self._apply_to_elements_in_thread()
         else:
             if self._extension_window_opened and _on_window:
-                print(f"Tried opening extension '{self.name}' but it's already opened.")
+                warnings.warn(
+                    f"Tried opening extension '{self.name}' but it's already opened."
+                )
                 return
 
             try:
@@ -340,7 +342,7 @@ class Extension:
         def _on_cancel():
             self._cancelled = True
             editor_instance._close_dialog()
-            print(f"User cancelled extension {self.name}.")
+            warnings.warn(f"User cancelled extension {self.name}.")
 
         self._cancelled = False
         editor_instance._create_simple_dialog(
@@ -448,7 +450,7 @@ class Extension:
                 )
                 return
         except Exception:
-            print("Error with output elements {output_elements}.")
+            warnings.warn("Error with output elements {output_elements}.")
             traceback.print_exc()
             editor_instance._close_dialog()
             return
@@ -465,7 +467,7 @@ class Extension:
                 }
                 editor_instance._save_state(current_state)
         except Exception:
-            print("Could not save state! Ignoring extension output.")
+            warnings.warn("Could not save state! Ignoring extension output.")
             traceback.print_exc()
             editor_instance._close_dialog()
             return
@@ -486,7 +488,7 @@ class Extension:
                     output_elements, to_gui=True, is_selected=self.select_outputs
                 )
         except Exception:
-            print("Could not insert output elements!")
+            warnings.warn("Could not insert output elements!")
             traceback.print_exc()
             editor_instance._close_dialog()
             return
@@ -500,7 +502,7 @@ class Extension:
                     == input_elements
                 )
         except Exception:
-            print("Could not remove input elements!")
+            warnings.warn("Could not remove input elements!")
             traceback.print_exc()
             editor_instance._close_dialog()
             return
