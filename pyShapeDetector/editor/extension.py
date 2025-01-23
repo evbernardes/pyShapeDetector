@@ -33,7 +33,7 @@ def _get_pretty_name(label: Union[Callable, str]):
 
 
 class Extension:
-    DEFAULT_MENU_NAME = "Misc functions"
+    DEFAULT_MENU_NAME = "Misc extensions"
 
     @property
     def binding(self) -> Binding:
