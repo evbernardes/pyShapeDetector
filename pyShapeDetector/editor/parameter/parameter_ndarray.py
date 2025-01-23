@@ -88,8 +88,8 @@ class ParameterNDArray(ParameterBase):
 
         if new_value.ndim > 2:
             raise ValueError(
-                "Only shapes up to 2 dimentions are accepted, got "
-                f"{new_value.shape} for parameter {self.label}"
+                "Only shapes up to 2 dimensions are accepted, got "
+                f"shape {new_value.shape} for parameter {self.label}"
             )
         self._ndim = new_value.ndim
         self._shape = new_value.shape

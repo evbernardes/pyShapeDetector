@@ -32,6 +32,7 @@ PARAMETER_TYPE_DICTIONARY = {
     "list": ParameterOptions,
     "options": ParameterOptions,
     ndarray: ParameterNDArray,
+    "ndarray": ParameterNDArray,
     "array": ParameterNDArray,
     Color: ParameterColor,
     "color": ParameterColor,

@@ -6,6 +6,8 @@ Created on 2025-01-23 14:52:02
 @author: evbernardes
 """
 import pytest
+import numpy as np
+from numpy.testing import assert_array_equal
 from open3d.visualization import gui
 from pyShapeDetector.editor import Editor, Extension
 from pyShapeDetector.editor.parameter import (
@@ -14,6 +16,8 @@ from pyShapeDetector.editor.parameter import (
     ParameterBool,
     ParameterColor,
     ParameterOptions,
+    ParameterNDArray,
+    ParameterPath,
 )
 
 editor_instance = Editor(load_default_extensions=False)
@@ -94,7 +98,7 @@ def test_parameter_bool():
 def test_parameter_color():
     for type_ in ("color", gui.Color):
         # Correct with input color
-        descriptor = {"type": type_, "default": (0, 0, 0)}
+        descriptor = {"type": type_, "default": (1, 2, 3)}
         parameter = ParameterBase.create_from_dict("param_name", descriptor)
         assert isinstance(parameter, ParameterColor)
         extension = {
@@ -106,7 +110,7 @@ def test_parameter_color():
 
         # Correct without input color, defaults to (0, 0, 0)
         descriptor = {"type": type_}
-        ParameterBase.create_from_dict("var", descriptor)
+        parameter = ParameterBase.create_from_dict("var", descriptor)
         assert isinstance(parameter, ParameterColor)
         assert parameter.red == 0
         assert parameter.blue == 0
@@ -160,3 +164,57 @@ def test_parameter_options():
         with pytest.warns(UserWarning, match="unexpected 'invalid_name' descriptor"):
             descriptor = {"type": type_, "invalid_name": 0, "options": [1, 2]}
             ParameterBase.create_from_dict("var", descriptor)
+
+
+def test_parameter_ndarray():
+    for type_ in (np.ndarray, "ndarray", "array"):
+        # Correct with tuple
+        descriptor = {"type": type_, "default": (0, 0, 0)}
+        parameter = ParameterBase.create_from_dict("param_name", descriptor)
+        assert isinstance(parameter, ParameterNDArray)
+        extension = {
+            "function": lambda var: [],
+            "inputs": None,
+            "parameters": {"var": descriptor},
+        }
+        Extension(extension, default_settings)
+
+        # Correct with complex tuple
+        value = ((0, 0, 0), (2, 3, 1))
+        descriptor = {"type": type_, "default": value}
+        parameter = ParameterBase.create_from_dict("var", descriptor)
+        assert isinstance(parameter, ParameterNDArray)
+        assert_array_equal(parameter.value, np.asarray(value))
+
+        # Correct with complex list
+        value = [(0, 5, 0), (2, 3, 1)]
+        descriptor = {"type": type_, "default": value}
+        parameter = ParameterBase.create_from_dict("var", descriptor)
+        assert isinstance(parameter, ParameterNDArray)
+        assert_array_equal(parameter.value, np.asarray(value))
+
+        # Correct with array
+        value = np.array([(0, 5, 0), (2, 3, 1)])
+        descriptor = {"type": type_, "default": value}
+        parameter = ParameterBase.create_from_dict("var", descriptor)
+        assert isinstance(parameter, ParameterNDArray)
+        assert_array_equal(parameter.value, value)
+
+        with pytest.raises(TypeError, match="requires default value"):
+            descriptor = {"type": type_}
+            ParameterBase.create_from_dict("var", descriptor)
+
+        with pytest.raises(
+            TypeError, match="Supported values for dtype are 'int' and 'float'"
+        ):
+            descriptor = {"type": type_, "default": ["a", "b"]}
+            ParameterBase.create_from_dict("var", descriptor)
+
+        with pytest.raises(ValueError, match="shapes up to 2 dimensions are accepted"):
+            descriptor = {"type": type_, "default": np.random.random((2, 2, 2))}
+            ParameterBase.create_from_dict("var", descriptor)
+
+        # Testing valid descriptors with useless parameters
+        with pytest.warns(UserWarning, match="unexpected 'options' descriptor"):
+            descriptor = {"type": type_, "default": (0, 0, 0), "options": [1]}
+            parameter = ParameterBase.create_from_dict("param_name", descriptor)
