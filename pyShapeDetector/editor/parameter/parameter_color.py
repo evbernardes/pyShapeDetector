@@ -67,11 +67,11 @@ class ParameterColor(ParameterBase):
         elif isinstance(values, (tuple, list, np.ndarray)) and len(values) == 3:
             self._value = gui.Color(*np.clip(values, 0, 1))
         elif values is None:
-            self._value = gui.Color((0, 0, 0, 1))
+            self._value = gui.Color(0, 0, 0, 1)
         else:
             raise TypeError(
-                f"Value of parameter {self.label} of type {self.type_name} should "
-                f"be a gui.Color, a list or tuple of 3 values, got {values}."
+                f"Value of parameter {self.label} of type color should "
+                f"be a gui.Color, list or tuple of 3 values, got {values}."
             )
         self._update_internal_element()
 
