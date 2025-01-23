@@ -5,6 +5,7 @@ Created on 2024-12-12 09:54:34
 
 @author: evbernardes
 """
+import warnings
 from typing import Callable, Union
 from open3d.visualization import gui
 from .parameter import ParameterBase
@@ -41,7 +42,14 @@ class ParameterBool(ParameterBase[bool]):
 
     @ParameterBase.value.setter
     def value(self, new_value):
-        self._value = bool(new_value)
+        if not isinstance(new_value, bool):
+            corrected = bool(new_value)
+            warnings.warn(
+                f"Value {new_value} is not a boolean, automatically converting "
+                f"as {corrected}."
+            )
+            new_value = corrected
+        self._value = new_value
         # if self.is_reference:
         self._update_internal_element()
 
