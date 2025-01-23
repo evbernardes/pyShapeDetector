@@ -15,9 +15,9 @@ from .parameter import ParameterBase, ParameterPanel, ParameterCurrentElement
 from .binding import Binding
 from .settings import Settings
 
-INPUT_TYPES_WITH_ELEMENTS = ("current", "selected", "global")
-INPUT_TYPES_WITHOUT_ELEMENTS = ("none", "internal")
-ALL_VALID_INPUT_TYPES = INPUT_TYPES_WITH_ELEMENTS + INPUT_TYPES_WITHOUT_ELEMENTS
+INPUT_TYPES_WITH_ELEMENTS = ("current", "selected", "global", "internal")
+INPUT_TYPES_ONLY_PARAMETERS = ("none",)
+ALL_VALID_INPUT_TYPES = INPUT_TYPES_WITH_ELEMENTS + INPUT_TYPES_ONLY_PARAMETERS
 
 
 def _get_pretty_name(label: Union[Callable, str]):
@@ -178,11 +178,12 @@ class Extension:
         if not isinstance(parameter_descriptors, dict):
             raise TypeError("parameters expected to be dict.")
 
-        function_params_set = set(signature.parameters)
-        descriptor_params_set = set(parameter_descriptors)
+        function_params = list(signature.parameters)
+        descriptor_params = list(parameter_descriptors)
         expected_args_len = len(parameter_descriptors)
 
         expects_elements_as_input = self.inputs in INPUT_TYPES_WITH_ELEMENTS
+        print(f"{self.name=}")
         # print(f"{self.inputs =}")
         # print(f"{INPUT_TYPES_WITH_ELEMENTS=}")
         print(f"{expects_elements_as_input=}")
@@ -191,11 +192,10 @@ class Extension:
             expected_args_len += 1
             # function_params_set.remove(list(signature.parameters)[0])
 
-        print(f"{function_params_set=}")
-        print(f"{descriptor_params_set=}")
+        print(f"{function_params=}")
+        print(f"{descriptor_params=}")
 
-        # missing_in_function = function_params_set.difference(descriptor_params_set)
-        missing_in_function = descriptor_params_set.difference(function_params_set)
+        missing_in_function = set(descriptor_params).difference(set(function_params))
         print(f"{missing_in_function=}")
         if len(missing_in_function) > 0:
             raise ValueError(
@@ -204,7 +204,8 @@ class Extension:
             )
 
         # missing_in_descriptor = descriptor_params_set.difference(function_params_set)
-        missing_in_descriptor = function_params_set.difference(descriptor_params_set)
+        # missing_in_descriptor = function_params.difference(descriptor_params)
+        missing_in_descriptor = set(function_params).difference(set(descriptor_params))
         print(f"{missing_in_descriptor=}")
         if len(missing_in_descriptor) > int(expects_elements_as_input):
             # first_argument = list(signature.parameters)[0]

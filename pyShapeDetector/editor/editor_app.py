@@ -78,6 +78,7 @@ class Editor:
         window_name: str = "Shape Detector",
         load_default_extensions: bool = True,
         return_finish_flag: bool = False,
+        testing: bool = False,
         **kwargs,
     ):
         self._extensions = []
@@ -115,7 +116,7 @@ class Editor:
 
         if load_default_extensions:
             for extension in default_extensions:
-                self.add_extension(extension)
+                self.add_extension(extension, testing=testing)
 
     def _create_simple_dialog(
         self,
