@@ -25,7 +25,6 @@ class ParameterOptions(ParameterBase[list]):
     label
     subpanel
     on_update
-
     options
 
     Methods
