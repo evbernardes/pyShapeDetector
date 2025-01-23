@@ -11,13 +11,14 @@ from pyShapeDetector.editor.parameter import (
     ParameterBase,
     ParameterNumeric,
     ParameterBool,
+    ParameterColor,
 )
 
 editor_instance = Editor(load_default_extensions=False)
 default_settings = editor_instance._settings
 
 
-def test_param_numeric():
+def test_parameter_numeric():
     for type_ in (int, float):
         # Correct with limits
         descriptor = {"type": type_, "default": 0}
@@ -58,7 +59,7 @@ def test_param_numeric():
             ParameterBase.create_from_dict("var", descriptor)
 
 
-def test_param_bool():
+def test_parameter_bool():
     # Correct with limits
     good_descriptor = {"type": bool, "default": False}
     parameter = ParameterBase.create_from_dict("param_name", good_descriptor)
@@ -78,3 +79,25 @@ def test_param_bool():
     descriptor = {"type": bool, "options": [1, 2]}
     with pytest.warns(UserWarning, match="unexpected 'options' descriptor"):
         ParameterBase.create_from_dict("var", descriptor)
+
+
+def test_parameter_color():
+    # Correct with limits
+    good_descriptor = {"type": "color", "default": (0, 0, 0)}
+    parameter = ParameterBase.create_from_dict("param_name", good_descriptor)
+    assert isinstance(parameter, ParameterColor)
+    extension = {
+        "function": lambda var: [],
+        "inputs": None,
+        "parameters": {"var": good_descriptor},
+    }
+    Extension(extension, default_settings)
+
+    # descriptor = {"type": bool, "default": "false"}
+    # with pytest.warns(UserWarning, match="not a boolean, automatically converting"):
+    #     ParameterBase.create_from_dict("var", descriptor)
+
+    # # Testing valid descriptors with useless parameters
+    # descriptor = {"type": bool, "options": [1, 2]}
+    # with pytest.warns(UserWarning, match="unexpected 'options' descriptor"):
+    #     ParameterBase.create_from_dict("var", descriptor)
