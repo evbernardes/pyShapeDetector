@@ -188,12 +188,16 @@ class Editor:
     def extensions(self) -> list[Extension]:
         return self._extensions
 
-    def add_extension(self, function_or_descriptor: Union[Callable, Extension]):
+    def add_extension(
+        self, function_or_descriptor: Union[Callable, Extension], testing=False
+    ):
         try:
             extension = Extension(function_or_descriptor, self._settings)
             extension.add_to_application(self)
 
-        except Exception:
+        except Exception as e:
+            if testing:
+                raise e
             warnings.warn(f"Could not create extension {function_or_descriptor}, got:")
             traceback.print_exc()
 

@@ -15,7 +15,9 @@ from .parameter import ParameterBase, ParameterPanel, ParameterCurrentElement
 from .binding import Binding
 from .settings import Settings
 
-VALID_INPUTS = ("none", "current", "selected", "global", "internal")
+INPUT_TYPES_WITH_ELEMENTS = ("current", "selected", "global")
+INPUT_TYPES_WITHOUT_ELEMENTS = ("none", "internal")
+ALL_VALID_INPUT_TYPES = INPUT_TYPES_WITH_ELEMENTS + INPUT_TYPES_WITHOUT_ELEMENTS
 
 
 def _get_pretty_name(label: Union[Callable, str]):
@@ -169,27 +171,57 @@ class Extension:
 
     def _set_parameters(self, descriptor: dict, settings: Settings):
         signature = inspect.signature(self.function)
+
         parsed_parameters = {}
         parameter_descriptors = descriptor.get("parameters", {})
 
         if not isinstance(parameter_descriptors, dict):
             raise TypeError("parameters expected to be dict.")
 
-        expected_args_len = len(parameter_descriptors) + int(self.inputs != "none")
+        function_params_set = set(signature.parameters)
+        descriptor_params_set = set(parameter_descriptors)
+        expected_args_len = len(parameter_descriptors)
+
+        expects_elements_as_input = self.inputs in INPUT_TYPES_WITH_ELEMENTS
+        # print(f"{self.inputs =}")
+        # print(f"{INPUT_TYPES_WITH_ELEMENTS=}")
+        print(f"{expects_elements_as_input=}")
+
+        if expects_elements_as_input:
+            expected_args_len += 1
+            # function_params_set.remove(list(signature.parameters)[0])
+
+        print(f"{function_params_set=}")
+        print(f"{descriptor_params_set=}")
+
+        # missing_in_function = function_params_set.difference(descriptor_params_set)
+        missing_in_function = descriptor_params_set.difference(function_params_set)
+        print(f"{missing_in_function=}")
+        if len(missing_in_function) > 0:
+            raise ValueError(
+                f"Extension '{self.name}'s descriptor contains following "
+                f"missing parameters from function signature: {missing_in_function}."
+            )
+
+        # missing_in_descriptor = descriptor_params_set.difference(function_params_set)
+        missing_in_descriptor = function_params_set.difference(descriptor_params_set)
+        print(f"{missing_in_descriptor=}")
+        if len(missing_in_descriptor) > int(expects_elements_as_input):
+            # first_argument = list(signature.parameters)[0]
+            # if first_argument not in descriptor_params_set:
+            #     missing_in_descriptor.remove(first_argument)
+
+            raise ValueError(
+                f"Extension '{self.name}'s function signature expects following "
+                f"missing parameters from descriptor: {missing_in_descriptor}."
+            )
 
         if len(signature.parameters) != expected_args_len:
-            if self.inputs == "none":
-                raise ValueError(
-                    f"Invalid number of arguments for function in Extension '{self.name}', with "
-                    f"input type '{self.inputs}'. Expected {len(parameter_descriptors)} "
-                    f"parameters, got '{len(signature.parameters)}'."
-                )
-            else:
-                raise ValueError(
-                    f"Invalid number of arguments for function in Extension '{self.name}', with "
-                    f"input type '{self.inputs}'. Expected main input + {len(parameter_descriptors)-1} "
-                    f"parameters, got '{len(signature.parameters)}'."
-                )
+            raise ValueError(
+                f"Invalid number of arguments for function in Extension '{self.name}', with "
+                f"input type '{self.inputs}'. Expected {expected_args_len} "
+                f"parameters, got '{len(signature.parameters)}'. Maybe missing elements?"
+            )
 
         for key, parameter_descriptor in parameter_descriptors.items():
             if "label" not in parameter_descriptor:
@@ -225,9 +257,9 @@ class Extension:
         if inputs is None:
             inputs = "none"
 
-        if inputs not in VALID_INPUTS:
+        if inputs not in ALL_VALID_INPUT_TYPES:
             raise ValueError(
-                f"Possible values for 'inputs' are {VALID_INPUTS}, got {inputs}."
+                f"Possible values for 'inputs' are {ALL_VALID_INPUT_TYPES}, got {inputs}."
             )
 
         self._inputs = inputs
