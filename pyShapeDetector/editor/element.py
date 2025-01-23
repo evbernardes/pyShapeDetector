@@ -5,7 +5,6 @@ from typing import Union, TypeVar, Generic, TYPE_CHECKING
 from abc import ABC, abstractmethod
 import numpy as np
 
-
 from open3d.visualization.rendering import Scene, Open3DScene
 from open3d.geometry import Geometry as Open3d_Geometry
 from open3d.core import Tensor
