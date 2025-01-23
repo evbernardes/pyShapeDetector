@@ -30,6 +30,7 @@ PARAMETER_TYPE_DICTIONARY = {
     "float": ParameterNumeric,
     list: ParameterOptions,
     "list": ParameterOptions,
+    "options": ParameterOptions,
     ndarray: ParameterNDArray,
     "array": ParameterNDArray,
     Color: ParameterColor,

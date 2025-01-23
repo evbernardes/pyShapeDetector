@@ -51,8 +51,8 @@ class ParameterOptions(ParameterBase[list]):
     def options(self, new_options):
         if not isinstance(new_options, (tuple, list)) or len(new_options) == 0:
             raise ValueError(
-                f"Parameter {self.label} requires non-empty of values for "
-                f"options, got {new_options}."
+                f"Parameter {self.label}'s requires non-empty list of options, "
+                f"got {new_options}."
             )
 
         self._options = list(new_options)

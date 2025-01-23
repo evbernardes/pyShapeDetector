@@ -13,6 +13,7 @@ from pyShapeDetector.editor.parameter import (
     ParameterNumeric,
     ParameterBool,
     ParameterColor,
+    ParameterOptions,
 )
 
 editor_instance = Editor(load_default_extensions=False)
@@ -61,17 +62,24 @@ def test_parameter_numeric():
 
 
 def test_parameter_bool():
-    # Correct with limits
     for type_ in (bool, "bool"):
-        good_descriptor = {"type": type_, "default": False}
-        parameter = ParameterBase.create_from_dict("param_name", good_descriptor)
+        # Correct with default value
+        descriptor = {"type": type_, "default": True}
+        parameter = ParameterBase.create_from_dict("param_name", descriptor)
         assert isinstance(parameter, ParameterBool)
+        assert parameter.value
         extension = {
             "function": lambda var: [],
             "inputs": None,
-            "parameters": {"var": good_descriptor},
+            "parameters": {"var": descriptor},
         }
         Extension(extension, default_settings)
+
+        # No default value, defaults to False
+        descriptor = {"type": type_}
+        parameter = ParameterBase.create_from_dict("param_name", descriptor)
+        assert isinstance(parameter, ParameterBool)
+        assert not parameter.value
 
         with pytest.warns(UserWarning, match="not a boolean, automatically converting"):
             descriptor = {"type": type_, "default": "false"}
@@ -86,13 +94,13 @@ def test_parameter_bool():
 def test_parameter_color():
     for type_ in ("color", gui.Color):
         # Correct with input color
-        good_descriptor = {"type": type_, "default": (0, 0, 0)}
-        parameter = ParameterBase.create_from_dict("param_name", good_descriptor)
+        descriptor = {"type": type_, "default": (0, 0, 0)}
+        parameter = ParameterBase.create_from_dict("param_name", descriptor)
         assert isinstance(parameter, ParameterColor)
         extension = {
             "function": lambda var: [],
             "inputs": None,
-            "parameters": {"var": good_descriptor},
+            "parameters": {"var": descriptor},
         }
         Extension(extension, default_settings)
 
@@ -113,4 +121,42 @@ def test_parameter_color():
         # Testing valid descriptors with useless parameters
         with pytest.warns(UserWarning, match="unexpected 'options' descriptor"):
             descriptor = {"type": type_, "options": [1, 2]}
+            ParameterBase.create_from_dict("var", descriptor)
+
+
+def test_parameter_options():
+    for type_ in (list, "list", "options"):
+        # Correct with options and default value
+        descriptor = {"type": type_, "default": "s", "options": [10, "s", 3]}
+        parameter = ParameterBase.create_from_dict("param_name", descriptor)
+        assert isinstance(parameter, ParameterOptions)
+        assert parameter.value == "s"
+        extension = {
+            "function": lambda var: [],
+            "inputs": None,
+            "parameters": {"var": descriptor},
+        }
+        Extension(extension, default_settings)
+
+        # Correct without default value, defaults to first option
+        descriptor = {"type": type_, "options": [10, "s", 3]}
+        parameter = ParameterBase.create_from_dict("param_name", descriptor)
+        assert isinstance(parameter, ParameterOptions)
+        assert parameter.value == 10
+
+        with pytest.raises(ValueError, match="requires non-empty list of options"):
+            descriptor = {"type": type_, "options": []}
+            ParameterBase.create_from_dict("var", descriptor)
+
+        with pytest.raises(ValueError, match="requires non-empty list of options"):
+            descriptor = {"type": type_, "options": 5}
+            ParameterBase.create_from_dict("var", descriptor)
+
+        with pytest.raises(ValueError, match="is not in options list"):
+            descriptor = {"type": type_, "default": 3, "options": [1, 2]}
+            ParameterBase.create_from_dict("var", descriptor)
+
+        # Testing valid descriptors with useless parameters
+        with pytest.warns(UserWarning, match="unexpected 'invalid_name' descriptor"):
+            descriptor = {"type": type_, "invalid_name": 0, "options": [1, 2]}
             ParameterBase.create_from_dict("var", descriptor)
