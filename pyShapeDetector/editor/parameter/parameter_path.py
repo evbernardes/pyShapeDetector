@@ -14,6 +14,9 @@ if TYPE_CHECKING:
     from ..editor_app import Editor
 
 
+VALID_PATH_TYPES = ("open", "open_dir", "save")
+
+
 class ParameterPath(ParameterBase[Path]):
     """Parameter for Paths
 
@@ -30,6 +33,8 @@ class ParameterPath(ParameterBase[Path]):
     subpanel
     on_update
     editor_instance
+    path_type
+    suffixes
 
     Methods
     -------
@@ -44,8 +49,48 @@ class ParameterPath(ParameterBase[Path]):
     create_from_dict
     """
 
+    _path_type: str
+    _suffixes: dict[str, str]
     _type = Path
     _editor_instance = None
+    _valid_arguments = ParameterBase._valid_arguments + ["path_type", "suffixes"]
+
+    @property
+    def path_type(self) -> str:
+        return self._path_type
+
+    @path_type.setter
+    def path_type(self, path_type: str):
+        if path_type not in VALID_PATH_TYPES:
+            raise ValueError(
+                f"Valid path types are {VALID_PATH_TYPES}, got {path_type}."
+            )
+        self._path_type = path_type
+
+    @property
+    def suffixes(self) -> dict[str, str]:
+        return self._suffixes
+
+    @suffixes.setter
+    def suffixes(self, suffixes: dict[str, str]):
+        if suffixes is None:
+            self._suffixes = suffixes
+            return
+
+        if not isinstance(suffixes, dict):
+            raise ValueError(f"suffixes expected to be dict, got {suffixes}.")
+
+        for suffix, description in suffixes.items():
+            if not isinstance(suffix, str) or not isinstance(description, str):
+                raise ValueError(
+                    f"suffixes expected to be dict mapping str->str, got {suffix}: {description}."
+                )
+
+            for single_suffix in suffix.split():
+                if single_suffix[0] != ".":
+                    raise ValueError(f"Invalid suffix '{single_suffix}' in '{suffix}'.")
+
+        self._suffixes = suffixes
 
     @property
     def editor_instance(self) -> "Editor":
@@ -79,9 +124,26 @@ class ParameterPath(ParameterBase[Path]):
         editor_instance = self.editor_instance
         window = editor_instance._main_window
 
-        dlg = gui.FileDialog(
-            gui.FileDialog.OPEN_DIR, "Chose Directory to export...", window.theme
-        )
+        if self.path_type == "open":
+            dlg = gui.FileDialog(
+                gui.FileDialog.OPEN, "Chose Directory to export...", window.theme
+            )
+        elif self.path_type == "open_dir":
+            dlg = gui.FileDialog(
+                gui.FileDialog.OPEN_DIR, "Chose Directory to export...", window.theme
+            )
+        elif self.path_type == "save":
+            dlg = gui.FileDialog(
+                gui.FileDialog.SAVE, "Chose Directory to export...", window.theme
+            )
+        else:
+            # Should never happen
+            assert False
+
+        if len(self.suffixes) > 0:
+            for suffix, description in self.suffixes.items():
+                dlg.add_filter(suffix, description)
+
         if self.value is not Path():
             try:
                 dlg.set_path(Path(self.value).parent.as_posix())
@@ -131,6 +193,8 @@ class ParameterPath(ParameterBase[Path]):
     def __init__(
         self,
         label: str,
+        path_type: str = "file",
+        suffixes: dict[str, str] = {},
         default: Union[str, Path] = "",
         on_update: Callable = None,
         subpanel: Union[str, None] = None,
@@ -138,4 +202,6 @@ class ParameterPath(ParameterBase[Path]):
     ):
         super().__init__(label=label, on_update=on_update, subpanel=subpanel)
         self.value = default
+        self.path_type = path_type
+        self.suffixes = suffixes
         self._warn_unused_parameters(other_kwargs)
