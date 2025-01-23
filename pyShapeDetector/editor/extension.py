@@ -41,6 +41,7 @@ def _get_pretty_name(label: Union[Callable, str]):
 
 class Extension:
     DEFAULT_MENU_NAME = "Misc extensions"
+    _editor_instance = None
 
     @property
     def binding(self) -> Binding:
@@ -285,9 +286,10 @@ class Extension:
         self,
         function_or_descriptor: Union[Callable, dict],
         settings: Settings,
-        editor_instance: "Editor",
+        editor_instance: "Editor" = None,
     ):
-        self._editor_instance = editor_instance
+        if editor_instance is not None:
+            self._editor_instance = editor_instance
 
         if isinstance(function_or_descriptor, dict):
             if "function" not in function_or_descriptor:
@@ -317,7 +319,16 @@ class Extension:
 
         self._extension_window_opened: bool = False
 
-    def add_to_application(self):
+    def add_to_application(self, editor_instance: Union[None, "Editor"] = None):
+        if editor_instance is None and self._editor_instance is None:
+            raise RuntimeError("No editor instance to add extension to.")
+
+        if editor_instance is not None and self._editor_instance is not None:
+            warnings.warn(
+                "Assigning new editor instance to extension with pre-defined instance."
+            )
+            self._editor_instance = editor_instance
+
         editor_instance = self._editor_instance
 
         if editor_instance._extensions is None:
