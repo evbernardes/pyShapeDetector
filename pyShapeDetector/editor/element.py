@@ -17,7 +17,6 @@ from pyShapeDetector import geometry
 if TYPE_CHECKING:
     from .settings import Settings
 
-# ELEMENT_TYPE = Union[Primitive, geometry.Numpy_Geometry, Open3d_Geometry]
 ELEMENT_TYPE = Union[Primitive, geometry.Numpy_Geometry]
 T = TypeVar("T", Primitive, geometry.Numpy_Geometry)
 
