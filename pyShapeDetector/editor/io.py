@@ -27,13 +27,15 @@ import tempfile
 import tarfile
 import json
 import numpy as np
-from typing import Union
+from typing import Union, TYPE_CHECKING
 from pathlib import Path
 from importlib.util import find_spec
 from open3d.visualization import gui
 from pyShapeDetector.geometry import PointCloud, TriangleMesh
 from pyShapeDetector.primitives import Primitive
-from pyShapeDetector.editor import Editor
+
+if TYPE_CHECKING:
+    from pyShapeDetector.editor import Editor
 
 has_pye57 = find_spec("pye57")
 has_h5py = find_spec("h5py")
@@ -92,7 +94,7 @@ RECOGNIZED_EXTENSION["all"] = " ".join(
 
 
 def _create_overwrite_warning(
-    editor_instance: Editor, path: str, quitting: bool = False
+    editor_instance: "Editor", path: str, quitting: bool = False
 ):
     """Creates Warning dialog when trying to save to existing file."""
     window = editor_instance._main_window
@@ -163,7 +165,9 @@ def _write_one_element(element, filename):
         type_name = type(element.raw).__name__
 
     if type_name not in RECOGNIZED_EXTENSION:
-        warnings.warn(f"Cannot export elements of type '{type_name}'.")
+        warnings.warn(
+            f"Cannot export element {element}, writer for type '{type_name}' undefined."
+        )
         return None
 
     extensions = RECOGNIZED_EXTENSION[type_name]
@@ -188,7 +192,7 @@ def _write_one_element(element, filename):
         return None
 
 
-def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
+def _open_scene(input_path: Union[Path, str], editor_instance: "Editor"):
     """Replace all elements from the current ElementContainer with elements from a file."""
     input_path = Path(input_path)
 
@@ -283,7 +287,7 @@ def _open_scene(input_path: Union[Path, str], editor_instance: Editor):
                     traceback.print_exc()
 
 
-def _save_scene(path: Union[Path, str], editor_instance: Editor):
+def _save_scene(path: Union[Path, str], editor_instance: "Editor"):
     """Save all elements from the current ElementContainer into a file, overwriting."""
     path = Path(path)
     if path.exists():

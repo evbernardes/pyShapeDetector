@@ -71,7 +71,7 @@ class InternalFunctions:
                 lshift=False,
                 description="Export current element",
                 callback=self._cb_export_current_element,
-                menu="File",
+                menu="File/Export",
             ),
             Binding(
                 key=gui.KeyName.ESCAPE,
