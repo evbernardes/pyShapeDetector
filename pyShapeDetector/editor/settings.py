@@ -345,8 +345,8 @@ class Settings:
         if TEST_PARAMETER_REFERENCES:
             from .extension import Extension
 
-            extension = Extension(test_extension, self)
-            extension.add_to_application(editor_instance)
+            extension = Extension(test_extension, self, editor_instance)
+            extension.add_to_application()
 
     def _cb_extensions_on_panel(self, value):
         if value is False:

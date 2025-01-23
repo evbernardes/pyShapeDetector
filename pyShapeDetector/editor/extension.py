@@ -11,7 +11,12 @@ from open3d.visualization import gui
 
 if TYPE_CHECKING:
     from .editor_app import Editor
-from .parameter import ParameterBase, ParameterPanel, ParameterCurrentElement
+from .parameter import (
+    ParameterBase,
+    ParameterPath,
+    ParameterPanel,
+    ParameterCurrentElement,
+)
 from .binding import Binding
 from .settings import Settings
 
@@ -250,6 +255,9 @@ class Extension:
                 key, parameter_descriptor
             )
 
+            if isinstance(parsed_parameters[key], ParameterPath):
+                parsed_parameters[key].editor_instance = self._editor_instance
+
         self._parameters = parsed_parameters
 
     def _set_misc(self, descriptor: dict):
@@ -274,8 +282,13 @@ class Extension:
         self._select_outputs = select_outputs
 
     def __init__(
-        self, function_or_descriptor: Union[Callable, dict], settings: Settings
+        self,
+        function_or_descriptor: Union[Callable, dict],
+        settings: Settings,
+        editor_instance: "Editor",
     ):
+        self._editor_instance = editor_instance
+
         if isinstance(function_or_descriptor, dict):
             if "function" not in function_or_descriptor:
                 raise ValueError("Dict descriptor does not contain 'function'.")
@@ -304,8 +317,8 @@ class Extension:
 
         self._extension_window_opened: bool = False
 
-    def add_to_application(self, editor_instance: "Editor"):
-        self._editor_instance = editor_instance
+    def add_to_application(self):
+        editor_instance = self._editor_instance
 
         if editor_instance._extensions is None:
             editor_instance._extensions = []

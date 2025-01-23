@@ -193,8 +193,8 @@ class Editor:
         self, function_or_descriptor: Union[Callable, Extension], testing=False
     ):
         try:
-            extension = Extension(function_or_descriptor, self._settings)
-            extension.add_to_application(self)
+            extension = Extension(function_or_descriptor, self._settings, self)
+            extension.add_to_application()
 
         except Exception as e:
             if testing:
