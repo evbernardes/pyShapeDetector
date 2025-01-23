@@ -10,6 +10,7 @@ from open3d.visualization.rendering import Scene, Open3DScene
 from open3d.geometry import Geometry as Open3d_Geometry
 from open3d.core import Tensor
 from open3d.t.geometry import PointCloud as TensorPointCloud
+from open3d.utility import Vector3dVector
 
 from pyShapeDetector.primitives import Primitive, Plane
 from pyShapeDetector import geometry
@@ -206,7 +207,8 @@ class Element(ABC, Generic[T]):
                 if bbox.volume() < eps:
                     bbox = bbox.expanded(eps)
                     self._settings.print_debug(
-                        "Bounding box with zero volume found, correcting..."
+                        "Bounding box with zero volume found, correcting...",
+                        require_verbose=True,
                     )
 
                 bbox_expand = bbox_expand_ratio * (bbox.volume() ** (1 / 3))
@@ -243,8 +245,6 @@ class Element(ABC, Generic[T]):
         # self._color = np.array([0, 0, 0])
 
     def _update_drawable_color(self, color_input):
-        from open3d.utility import Vector3dVector
-
         color = self._get_dimmed_color(color_input)
 
         if hasattr(self.drawable, "vertex_colors"):
