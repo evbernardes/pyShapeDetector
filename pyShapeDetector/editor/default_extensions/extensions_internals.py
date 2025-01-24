@@ -5,18 +5,22 @@ Created on 2025-01-14 10:13:36
 
 @author: evbernardes
 """
+from typing import TYPE_CHECKING
 import numpy as np
 from pyShapeDetector.primitives import Primitive
 from pyShapeDetector.geometry import PointCloud
+
+if TYPE_CHECKING:
+    from pyShapeDetector.editor import Editor
 
 extensions = []
 
 
 def estimate_pointcloud_density(
-    editor_instance, PointCloud_density, number_of_neighbors, split
+    editor_instance: "Editor", PointCloud_density, number_of_neighbors, split
 ):
     pcds = []
-    for element in editor_instance.elements:
+    for element in editor_instance.element_container.elements:
         if not element.is_selected:
             continue
 
