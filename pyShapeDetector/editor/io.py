@@ -82,7 +82,7 @@ if has_h5py:
 if has_pye57:
     RECOGNIZED_EXTENSION["PointCloud"][
         ".e57"
-    ] = "Point Cloud in ASTM E57 file format (.h5)"
+    ] = "Point Cloud in ASTM E57 file format (.e57)"
 
 for type_name, extensions in RECOGNIZED_EXTENSION.items():
     extensions["all"] = " ".join([key for key in extensions.keys() if key[0] == "."])
