@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Created on 2024-12-03 10:42:00
+
+@author: evbernardes
+"""
 import time
 import copy
 import warnings
