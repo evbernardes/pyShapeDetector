@@ -20,7 +20,6 @@ import copy
 import warnings
 from importlib.util import find_spec
 import numpy as np
-from multiprocessing import Manager, Process
 from open3d import visualization
 
 if has_matplotlib := find_spec("matplotlib") is not None:
@@ -31,129 +30,10 @@ if not has_matplotlib:
     )
 
 # from .interactive_window import InteractiveWindow
-from .input_selector import InputSelector, SingleChoiceSelector
 
 
 GLFW_KEY_LEFT_SHIFT = 340
 GLFW_KEY_LEFT_CONTROL = 341
-
-
-def get_inputs(specs, window_name="Enter values", as_dict=False):
-    """Get values from user with a graphical interface, using a dictionary that
-    defines values to get.
-
-    Runs in a separate process for comatibility with Open3D.Visualizer.
-
-    For example, defining the specs dictionary for two different variables:
-        specs = {
-           'name': (str, 'default string'),
-           'number': (int, 1)}
-
-    And then entering the dict as input:
-        get_inputs(specs)
-
-    Opens a window asking for both "name" and "number", with "default string"
-    and "1" pre-entered.
-
-
-    Parameters
-    ----------
-    specs : dict
-        A dictionary where each key is the variable name, and each value is a
-        tuple (expected_type, default_value), specifying the type and default
-        value for the input variable.
-
-    window_name : string, optional
-        Name of window. Default: "Enter values".
-
-    as_dict : boolean, optional
-        If True, get results as dictionary. Else, get them as list. Default: False.
-
-    Returns
-    -------
-    list
-
-    """
-    manager = Manager()
-    results = manager.list()
-
-    def _get_inputs_worker(specs, results):
-        try:
-            for result in InputSelector(specs, window_name=window_name).get_results():
-                results.append(result)
-        except KeyboardInterrupt:
-            results.append(None)
-
-    process = Process(target=_get_inputs_worker, args=(specs, results))
-    process.start()
-    process.join()
-    results = list(results)
-
-    if results == [None]:
-        raise KeyboardInterrupt
-
-    if as_dict:
-        results = {name: value for name, value in zip(specs.keys(), results)}
-
-    return results
-
-
-def select_function_with_gui(functions, default_function=None):
-    """Make user select from a list of functions with a GUI window.
-
-    Parameters
-    ----------
-    functions : list
-        List of functions.
-    default_function : function, optional
-        Default function.
-
-    Returns
-    -------
-    function
-        The selected function.
-    """
-    for func in functions:
-        if not callable(func):
-            raise ValueError(f"Expected functions, got {type(func)}.")
-
-    if default_function is None or default_function not in functions:
-        default_function = functions[0]
-
-    # Get function names for display
-    function_names = [f.__name__ for f in functions]
-
-    # Create a multiprocessing Manager for safely sharing data between processes
-    manager = Manager()
-    results = manager.list()
-
-    def _get_choice_selector_worker(results):
-        try:
-            # Initialize the selector with function names
-            selector = SingleChoiceSelector(
-                choices=function_names,
-                default_value=default_function.__name__,  # Default to the first function
-                window_name="Choose a Function",
-            )
-            # Get the selected result and store it
-            results.append(selector.get_result())
-        except KeyboardInterrupt:
-            results.append(None)  # Append None if the process is interrupted
-
-    # Start a separate process for the GUI
-    process = Process(target=_get_choice_selector_worker, args=(results,))
-    process.start()
-    process.join()
-
-    # Handle the result after the process ends
-    if not results or results[0] is None:
-        raise KeyboardInterrupt("No function selected.")
-
-    # Get the index of the selected function
-    selected_function_name = results[0]
-    idx = function_names.index(selected_function_name)
-
-    return functions[idx]
 
 
 def get_painted(elements, color="random"):

@@ -9,7 +9,6 @@ import warnings
 import numpy as np
 from typing import Union
 from multiprocessing import cpu_count
-from pyShapeDetector.utility import get_inputs, select_function_with_gui
 from pyShapeDetector.geometry import PointCloud
 from pyShapeDetector.primitives import Primitive, Plane
 from .helpers import (

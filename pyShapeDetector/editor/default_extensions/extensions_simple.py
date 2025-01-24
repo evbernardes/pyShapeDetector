@@ -6,7 +6,6 @@ Created on Fri Nov  8 14:01:29 2024
 @author: ebernardes
 """
 
-# from pyShapeDetector.utility import get_inputs, select_function_with_gui
 from pyShapeDetector.geometry import PointCloud, TriangleMesh
 from pyShapeDetector.primitives import (
     Primitive,
