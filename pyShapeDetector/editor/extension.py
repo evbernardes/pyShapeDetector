@@ -64,7 +64,7 @@ class Extension:
         return self._menu
 
     @property
-    def parameters(self) -> dict[ParameterBase]:
+    def parameters(self) -> dict[str, ParameterBase]:
         "Dictionary of parameters for panel creation"
         return self._parameters
 
@@ -82,6 +82,11 @@ class Extension:
     def select_outputs(self) -> bool:
         "If True, new output elements will be pre-selected"
         return self._select_outputs
+
+    @property
+    def cancellable(self) -> bool:
+        "If True, function can be cancelled"
+        return self._cancellable
 
     @property
     def parameters_kwargs(self) -> dict[str]:
@@ -272,15 +277,33 @@ class Extension:
                 f"Possible values for 'inputs' are {ALL_VALID_INPUT_TYPES}, got {inputs}."
             )
 
-        self._inputs = inputs
-        self._keep_inputs = bool(descriptor.get("keep_inputs", False))
+        is_internal = inputs == "internal"
+
         select_outputs = bool(descriptor.get("select_outputs", False))
 
-        if select_outputs and inputs == "current":
-            raise ValueError(
-                "'select_outputs' should not be True for inputs of type 'current'."
+        # TODO: Discover yhy I put this here before:
+        # if select_outputs and inputs == "current":
+        #     raise ValueError(
+        #         "'select_outputs' should not be True for inputs of type 'current'."
+        #     )
+
+        if (cancellable := descriptor.get("cancellable")) is None:
+            cancellable = not is_internal
+        else:
+            cancellable = bool(cancellable)
+
+        if cancellable and is_internal:
+            warnings.warn(
+                "Cancellable set to 'True' for internal extension, "
+                "this might create undefined behaviour."
             )
+
+        self._cancellable = cancellable
+        self._inputs = inputs
+        self._keep_inputs = bool(descriptor.get("keep_inputs", False))
         self._select_outputs = select_outputs
+
+        # if self._cancellable and self.type
 
     def __init__(
         self,
@@ -371,7 +394,7 @@ class Extension:
         self._cancelled = False
         editor_instance._create_simple_dialog(
             f"Applying {self.name}...",
-            create_button=True,
+            create_button=self.cancellable,
             button_text="Cancel",
             button_callback=_on_cancel,
         )

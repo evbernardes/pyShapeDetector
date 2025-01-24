@@ -91,3 +91,43 @@ def test_extension_none():
             Extension(extension, default_settings)
         # with pytest.raises(ValueError, match="Invalid number of arguments"):
         #     Extension(extension, settings)
+
+
+def test_extension_internal():
+    for inputs in ("internal",):
+        extension = {
+            "name": "Missing in function signature",
+            "function": lambda: [],
+            "inputs": inputs,
+            "parameters": param_radius,
+        }
+        with pytest.raises(
+            ValueError, match="missing parameters from function signature: {'radius'}"
+        ):
+            Extension(extension, default_settings)
+
+        extension = {
+            "name": "Radius interpreted as editor_instance, take care!",
+            "function": lambda radius: [],
+            "inputs": inputs,
+        }
+        Extension(extension, default_settings)
+
+        extension = {
+            "name": "Missing editor_instance",
+            "function": lambda radius: [],
+            "inputs": inputs,
+            "parameters": param_radius,
+        }
+        with pytest.raises(ValueError, match="Invalid number of arguments"):
+            Extension(extension, default_settings)
+
+        extension = {
+            "name": "Internal and cancellable",
+            "function": lambda editor_instance, radius: [],
+            "inputs": inputs,
+            "cancellable": True,
+            "parameters": param_radius,
+        }
+        with pytest.warns(UserWarning, match="Cancellable set to 'True' for internal"):
+            Extension(extension, default_settings)
