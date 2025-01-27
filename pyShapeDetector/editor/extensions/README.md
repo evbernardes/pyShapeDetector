@@ -28,7 +28,7 @@ Many attributes can be set when defining a new extension.
 - `lctrl` (`bool`, optional): If `True`, the hotkey requires `[LEFT CONTROL]` to be pressed. Default: `False`.
 - `lshift` (`bool`, optional): If `True`, the hotkey requires `[LEFT SHIFT]` to be pressed. Default: `False`.
 
-#### Parameters:
+### Parameters:
 
 A special dictionary mapping `str` parameter keys to subdicts defining different parameters. These parameters define gui widgets to retrieve values used for the function.
 
@@ -56,15 +56,25 @@ parameters = {
 }
 ```
 
-And then the whole extension descriptor can be defined as:
+### Adding extension to editor
+In order to add the extension, define extension descriptor dict and add it to the extension before running it.
+For the `create_sphere` example:
+
 ```python
+from pyShapeDetector.editor import Editor
+
 extension = {
     "function": create_sphere,
     "inputs": "none",
     "parameters": parameters,
 }
+
+editor_instance = Editor()
+editor_instance.add_extension(extension)
+editor_instance.run()
 ```
 
+### Examples
 For a complete set of possible parameters, see: [Parameter](https://github.com/evbernardes/pyShapeDetector/tree/main/pyShapeDetector/editor/README.md).
 For more examples of extension descriptor definitions, see: [Default Extensions](https://github.com/evbernardes/pyShapeDetector/tree/main/pyShapeDetector/editor/extensions/default_extensions)
 

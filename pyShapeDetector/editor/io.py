@@ -295,7 +295,6 @@ def _save_scene(path: Union[Path, str], editor_instance: "Editor"):
 
     elements = editor_instance.element_container
     elements_fixed = editor_instance._element_container_fixed
-    # scene = editor_instance.scene
 
     if path.suffix == "":
         path = path.with_suffix(SCENE_FILE_EXTENSION)
