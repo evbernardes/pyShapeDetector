@@ -28,6 +28,7 @@ from .element_container import ElementContainer
 from .settings import Settings
 from .internal_functions import InternalFunctions
 
+from .binding import Binding
 from .menu_show import MenuShow
 from .hotkeys import Hotkeys
 
@@ -460,10 +461,19 @@ class Editor:
         self._reset_on_key()
         self._scene.set_on_mouse(self._on_mouse)
 
+        all_bindings = self._internal_functions.bindings + [
+            ext.binding for ext in self.extensions
+        ]
+
+        Binding._set_binding_ids_with_generator(
+            all_bindings, self._submenu_id_generator
+        )
+
         # 2) Add extension menu items
         self._settings.print_debug(
             f"{len(self._internal_functions.bindings)} internal functions.",
         )
+
         for binding in self._internal_functions.bindings:
             binding.add_to_menu(self)
 

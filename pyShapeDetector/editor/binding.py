@@ -1,6 +1,14 @@
-from open3d.visualization import gui
-from typing import Union, Callable, TYPE_CHECKING
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on 2025-01-27 14:38:17
+
+@author: evbernardes
+"""
+import warnings
+from typing import Union, Callable, TYPE_CHECKING, Generator
 from pathlib import Path
+from open3d.visualization import gui
 
 if TYPE_CHECKING:
     from .editor_app import Editor
@@ -99,6 +107,39 @@ class Binding:
         editor_instance._main_window.set_on_menu_item_activated(
             self.menu_id, self.callback
         )
+
+    @staticmethod
+    def _set_binding_ids_with_generator(
+        bindings: list["Binding"], id_generator: Generator[int, None, None]
+    ) -> dict[int, "Binding"]:
+        bindings_per_id: dict[int, Binding] = {}
+
+        for binding in bindings:
+            menu_id = binding.menu_id
+
+            if menu_id is None:
+                menu_id = next(id_generator)
+                if not isinstance(menu_id, int):
+                    raise TypeError(
+                        f"Id generator yielded {menu_id}, expected integer. "
+                    )
+            elif not isinstance(menu_id, int):
+                raise TypeError(f"Pre-defined menu id {menu_id} is not an integer. ")
+
+            binding_existant = bindings_per_id.get(menu_id, None)
+
+            if binding_existant is not None:
+                if binding_existant == binding:
+                    continue
+                else:
+                    warnings.warn(
+                        f"Pre-defined menu id {menu_id} already set to binding "
+                        f"{binding_existant}. Resetting it to {binding}."
+                    )
+                    binding_existant._menu_id = None
+            binding._menu_id = menu_id
+            bindings_per_id[menu_id] = binding
+        return bindings_per_id
 
     def __init__(
         self,
