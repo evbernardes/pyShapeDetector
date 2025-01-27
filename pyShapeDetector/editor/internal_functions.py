@@ -66,6 +66,7 @@ class InternalFunctions:
                 menu="File",
             ),
             Binding(
+                # menu_id=100,
                 key=gui.KeyName.E,
                 lctrl=True,
                 lshift=False,
@@ -74,6 +75,7 @@ class InternalFunctions:
                 menu="File/Export",
             ),
             Binding(
+                # menu_id=101,
                 key=gui.KeyName.ESCAPE,
                 lctrl=False,
                 lshift=False,

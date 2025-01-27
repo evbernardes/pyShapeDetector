@@ -190,6 +190,10 @@ class Editor:
     def extensions(self) -> list[Extension]:
         return self._extensions
 
+    @property
+    def extension_bindings(self) -> list[Binding]:
+        return [ext.binding for ext in self.extensions]
+
     def add_extension(
         self, function_or_descriptor: Union[Callable, Extension], testing=False
     ):
@@ -461,27 +465,27 @@ class Editor:
         self._reset_on_key()
         self._scene.set_on_mouse(self._on_mouse)
 
-        all_bindings = self._internal_functions.bindings + [
-            ext.binding for ext in self.extensions
-        ]
+        internal_functions_bindings = self._internal_functions.bindings
+        extension_bindings = self.extension_bindings
 
-        Binding._set_binding_ids_with_generator(
-            all_bindings, self._submenu_id_generator
+        bindings_per_id = Binding._set_binding_ids_with_generator(
+            internal_functions_bindings + extension_bindings, self._submenu_id_generator
         )
 
-        # 2) Add extension menu items
-        self._settings.print_debug(
-            f"{len(self._internal_functions.bindings)} internal functions.",
-        )
-
-        for binding in self._internal_functions.bindings:
+        number_internal_functions = 0
+        number_extensions = 0
+        for idx in np.sort(list(bindings_per_id.keys())):
+            binding = bindings_per_id[idx]
             binding.add_to_menu(self)
+            if binding in internal_functions_bindings:
+                number_internal_functions += 1
+            elif binding in extension_bindings:
+                number_extensions += 1
 
         self._settings.print_debug(
-            f"{len(self.extensions) if self.extensions else 0} extensions loaded.",
+            f"{number_internal_functions} internal functions and "
+            f"{number_extensions} extensions loaded.",
         )
-        for extension in self.extensions:
-            extension.binding.add_to_menu(self)
 
         # 3) Finally, other menus that should be at the end
         self._settings._create_menu()
