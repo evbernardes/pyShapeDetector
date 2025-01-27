@@ -307,7 +307,7 @@ extensions.append(
 
 
 @_apply_to(PointCloud)
-def detect_shapes(
+def detect_shapes_with_RANSAC(
     pcds_input,
     PointCloud_density,
     method,
@@ -392,7 +392,7 @@ def detect_shapes(
 extensions.append(
     {
         "name": "Detect shapes with RANSAC-based method",
-        "function": detect_shapes,
+        "function": detect_shapes_with_RANSAC,
         "menu": MENU_NAME,
         "parameters": {
             "method": {
@@ -481,7 +481,7 @@ extensions.append(
             "detect_Cone": {"type": bool, "subpanel": "Primitives"},
             # "detect_PlaneTriangulated": {"type": bool, "subpanel": "Primitives"},
             # "detect_PlaneRectangular": {"type": bool, "subpanel": "Primitives"},
-            # "debug": {"type": "preference"},
+            "debug": {"type": "preference"},
         },
     }
 )
