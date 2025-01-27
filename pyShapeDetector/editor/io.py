@@ -290,8 +290,6 @@ def _open_scene(input_path: Union[Path, str], editor_instance: "Editor"):
 def _save_scene(path: Union[Path, str], editor_instance: "Editor"):
     """Save all elements from the current ElementContainer into a file, overwriting."""
     path = Path(path)
-    if path.exists():
-        path.unlink()
 
     elements = editor_instance.element_container
     elements_fixed = editor_instance._element_container_fixed
@@ -304,9 +302,12 @@ def _save_scene(path: Union[Path, str], editor_instance: "Editor"):
         return False
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        with tarfile.open(path, "w") as tar:
+        temp_dir = Path(temp_dir)
+        temp_scene_file = temp_dir / "scene.sdscene"
+
+        with tarfile.open(temp_scene_file, "w") as tar:
             # preferences file
-            temp_dir = Path(temp_dir)
+
             json_file_name = "preferences.json"
             temp_json_file_path = temp_dir / json_file_name
             json_data = {}
@@ -361,6 +362,10 @@ def _save_scene(path: Union[Path, str], editor_instance: "Editor"):
                     except Exception:
                         pass
 
+        if path.exists():
+            path.unlink()
+
+        temp_scene_file.rename(path)
     # else:
     #     raise ValueError(
     #         f"Acceptable extensions are 'tar' and 'json', got {path.suffix}."
