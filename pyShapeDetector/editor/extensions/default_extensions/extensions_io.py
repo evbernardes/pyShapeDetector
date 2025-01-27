@@ -17,6 +17,7 @@ from pyShapeDetector.geometry import PointCloud, TriangleMesh
 
 if TYPE_CHECKING:
     from pyShapeDetector.editor import Editor
+    from pyShapeDetector.editor.element import Element
 
 extensions = []
 MENU_NAME = "File/Export"
@@ -35,12 +36,12 @@ for type_name, file_extensions in RECOGNIZED_EXTENSION.items():
 
 def _export_multiple(
     editor_instance: "Editor",
+    indices: list["Element"],
     directory: Path,
     extension_primitive,
     extension_pointcloud,
     extension_trianglemesh,
 ):
-    indices = editor_instance.element_container.selected_indices
     filenames = []
     for idx in indices:
         element = editor_instance.element_container.elements[idx]
@@ -70,7 +71,18 @@ def export_current(
     editor_instance: "Editor",
     path: Path,
 ):
-    pass
+    directory = path.parent
+
+    if not directory.exists():
+        directory.mkdir()
+
+    element = editor_instance.element_container.current_element
+    idx = editor_instance.element_container.current_index
+
+    if path.stem == "":
+        path = path.with_stem(f"element_{idx}")
+
+    _write_one_element(element, path, raise_error=True)
 
 
 def export_selected_to_directory(
@@ -85,6 +97,7 @@ def export_selected_to_directory(
 
     _export_multiple(
         editor_instance,
+        editor_instance.element_container.selected_indices,
         directory,
         extension_primitive,
         extension_pointcloud,
@@ -110,6 +123,7 @@ def export_selected_to_tar_file(
 
         filenames = _export_multiple(
             editor_instance,
+            editor_instance.element_container.selected_indices,
             temp_dir,
             extension_primitive,
             extension_pointcloud,
@@ -127,6 +141,8 @@ extensions.append(
         "function": export_current,
         "menu": MENU_NAME,
         "inputs": "internal",
+        "hotkey": "E",
+        "lctrl": True,
         "parameters": {
             "path": {
                 "type": "path",

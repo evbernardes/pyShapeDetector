@@ -506,38 +506,38 @@ class InternalFunctions:
         dlg.set_on_done(_on_done)
         window.show_dialog(dlg)
 
-    def _cb_export_current_element(self):
-        from .io import _write_one_element
+    # def _cb_export_current_element(self):
+    #     from .io import _write_one_element
 
-        editor_instance = self._editor_instance
-        window = self._editor_instance._main_window
+    #     editor_instance = self._editor_instance
+    #     window = self._editor_instance._main_window
 
-        dlg = gui.FileDialog(
-            gui.FileDialog.SAVE,
-            "Export current element to file",
-            window.theme,
-        )
-        if editor_instance._scene_file_path is not None:
-            try:
-                dlg.set_path(Path(editor_instance._scene_file_path).parent.as_posix())
-            except Exception:
-                pass
+    #     dlg = gui.FileDialog(
+    #         gui.FileDialog.SAVE,
+    #         "Export current element to file",
+    #         window.theme,
+    #     )
+    #     if editor_instance._scene_file_path is not None:
+    #         try:
+    #             dlg.set_path(Path(editor_instance._scene_file_path).parent.as_posix())
+    #         except Exception:
+    #             pass
 
-        def _on_cancel():
-            editor_instance._close_dialog()
+    #     def _on_cancel():
+    #         editor_instance._close_dialog()
 
-        def _on_done(filename):
-            current_element = editor_instance.element_container.current_element
-            if current_element is None:
-                return
+    #     def _on_done(filename):
+    #         current_element = editor_instance.element_container.current_element
+    #         if current_element is None:
+    #             return
 
-            if _write_one_element(current_element, filename) is not None:
-                editor_instance._close_dialog()
+    #         if _write_one_element(current_element, filename) is not None:
+    #             editor_instance._close_dialog()
 
-        # A file dialog MUST define on_cancel and on_done functions
-        dlg.set_on_cancel(_on_cancel)
-        dlg.set_on_done(_on_done)
-        window.show_dialog(dlg)
+    #     # A file dialog MUST define on_cancel and on_done functions
+    #     dlg.set_on_cancel(_on_cancel)
+    #     dlg.set_on_done(_on_done)
+    #     window.show_dialog(dlg)
 
     def _cb_quit_app(self):
         window = self._editor_instance._main_window

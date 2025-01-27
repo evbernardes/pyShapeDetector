@@ -156,7 +156,7 @@ def _load_one_element(filename):
     return element
 
 
-def _write_one_element(element, filename):
+def _write_one_element(element, filename, raise_error=False):
     """Write one element from the ElementContainer."""
     path = Path(filename)
     if isinstance(element.raw, Primitive):
@@ -165,9 +165,13 @@ def _write_one_element(element, filename):
         type_name = type(element.raw).__name__
 
     if type_name not in RECOGNIZED_EXTENSION:
-        warnings.warn(
+        error_text = (
             f"Cannot export element {element}, writer for type '{type_name}' undefined."
         )
+        if raise_error:
+            raise RuntimeError(error_text)
+
+        warnings.warn(error_text)
         return None
 
     extensions = RECOGNIZED_EXTENSION[type_name]
