@@ -22,8 +22,7 @@ from open3d.visualization import gui, rendering
 from pyShapeDetector.primitives import Primitive
 from pyShapeDetector.geometry import TriangleMesh
 
-from .extension import Extension
-from .extensions import default_extensions
+from .extensions import default_extensions, Extension
 from .element import ElementGeometry
 from .element_container import ElementContainer
 from .settings import Settings

@@ -1,3 +1,3 @@
-from .extension import Extension
-from .editor_app import Editor
-from .editor_app import __main__
+from .extensions import Extension
+from .editor_app import Editor, __main__
+# from .editor_app import __main__

@@ -15,15 +15,15 @@ from typing import Union, Callable, TYPE_CHECKING
 from open3d.visualization import gui
 
 if TYPE_CHECKING:
-    from .editor_app import Editor
-from .parameter import (
+    from ..editor_app import Editor
+from ..parameter import (
     ParameterBase,
     ParameterPath,
     ParameterPanel,
     ParameterCurrentElement,
 )
-from .binding import Binding
-from .settings import Settings
+from ..binding import Binding
+from ..settings import Settings
 
 INPUT_TYPES_WITH_ELEMENTS = ("current", "selected", "global", "internal")
 INPUT_TYPES_ONLY_PARAMETERS = ("none",)

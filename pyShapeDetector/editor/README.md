@@ -48,5 +48,5 @@ The scene can be fully saved and load as a `.sdscene` file, which is a specializ
 
 ## Extensions
 Extra functionality can be created by defining extensions as Python `dict`s. 
-For more information, see: [Extension](https://github.com/evbernardes/pyShapeDetector/tree/main/pyShapeDetector/editor/default_extensions)
-For examples extension descriptors, see: [Default Extensions](https://github.com/evbernardes/pyShapeDetector/tree/main/pyShapeDetector/editor/extension.py)
+For more information, see: [Extension](https://github.com/evbernardes/pyShapeDetector/tree/main/pyShapeDetector/editor/extensions)
+For examples extension descriptors, see: [Default Extensions](https://github.com/evbernardes/pyShapeDetector/tree/main/pyShapeDetector/editor/extensions/default_extensions)
