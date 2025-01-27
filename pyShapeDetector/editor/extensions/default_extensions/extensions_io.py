@@ -21,6 +21,17 @@ if TYPE_CHECKING:
 extensions = []
 MENU_NAME = "File/Export"
 
+ALL_SUFFIXES_SEPARATED = {}
+
+for type_name, file_extensions in RECOGNIZED_EXTENSION.items():
+    if type_name == "all":
+        continue
+
+    for suffix, description in file_extensions.items():
+        if suffix[0] != ".":
+            continue
+        ALL_SUFFIXES_SEPARATED[suffix] = description
+
 
 def _export_multiple(
     editor_instance: "Editor",
@@ -53,6 +64,13 @@ def _export_multiple(
         except Exception:
             warnings.warn("Could not save element {element}.")
     return filenames
+
+
+def export_current(
+    editor_instance: "Editor",
+    path: Path,
+):
+    pass
 
 
 def export_selected_to_directory(
@@ -102,6 +120,22 @@ def export_selected_to_tar_file(
             for filename in filenames:
                 tar.add(temp_dir / filename, arcname=filename)
 
+
+extensions.append(
+    {
+        "name": "Export current element",
+        "function": export_current,
+        "menu": MENU_NAME,
+        "inputs": "internal",
+        "parameters": {
+            "path": {
+                "type": "path",
+                "path_type": "save",
+                "suffixes": ALL_SUFFIXES_SEPARATED,
+            },
+        },
+    }
+)
 
 extensions.append(
     {
