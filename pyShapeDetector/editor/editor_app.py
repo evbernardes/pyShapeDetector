@@ -487,7 +487,7 @@ class Editor:
             f"{number_extensions} extensions loaded.",
         )
 
-        # 3) Finally, other menus that should be at the end
+        # 2) Finally, other menus that should be at the end
         self._settings._create_menu()
         self._menu_show = MenuShow(self)
         self._menu_show._create_menu()
