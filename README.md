@@ -63,7 +63,7 @@ For more examples, see the `examples` directory.
 
 ## Editor
 A Graphical User Interface is also available. 
-For more information, see: [Editor](https://github.com/evbernardes/pyShapeDetector/tree/main/pyShapeDetector/editor/parameter/README.md).
+For more information, see: [Editor](https://github.com/evbernardes/pyShapeDetector/tree/main/pyShapeDetector/editor/README.md).
 
 ## Tests
 
