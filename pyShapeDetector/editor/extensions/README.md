@@ -41,7 +41,7 @@ from pyShapeDetector.primitives import Sphere
 
 def create_sphere(radius, center)
     return Sphere.from_center_radius(center, radius)
-``` 
+```
 
 The extension `parameters` descriptor should be set, for example, as:
 
