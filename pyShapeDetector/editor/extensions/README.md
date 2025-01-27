@@ -75,6 +75,6 @@ editor_instance.run()
 ```
 
 ### Examples
-For a complete set of possible parameters, see: [Parameter](https://github.com/evbernardes/pyShapeDetector/tree/main/pyShapeDetector/parameter/README.md).
+For a complete set of possible parameters, see: [Parameter](https://github.com/evbernardes/pyShapeDetector/tree/main/pyShapeDetector/editor/parameter/README.md).
 For more examples of extension descriptor definitions, see: [Default Extensions](https://github.com/evbernardes/pyShapeDetector/tree/main/pyShapeDetector/editor/extensions/default_extensions)
 
