@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .editor_app import Editor
 
 from .parameter import (
+    ParameterBase,
     ParameterBool,
     ParameterNumeric,
     ParameterNDArray,
@@ -106,7 +107,7 @@ class Settings:
         print("[DEBUG] " + text)
 
     def __init__(self, editor_instance: "Editor", menu="Preferences", **kwargs):
-        self._dict = {
+        dict_of_parameters: dict[str, ParameterBase] = {
             "extensions_on_window": ParameterBool(
                 label="Open extensions on window",
                 default=_extensions_on_panel,
@@ -307,6 +308,8 @@ class Settings:
                 limits=(1, 10),
             ),
         }
+
+        self._dict = dict_of_parameters
 
         if TEST_PARAMETER_REFERENCES:
             for key, param in PARAMETERS_TEST_DICTIONARY.items():
