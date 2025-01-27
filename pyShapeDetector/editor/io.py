@@ -301,7 +301,7 @@ def _save_scene(path: Union[Path, str], editor_instance: "Editor"):
         warnings.warn(f"Extension '{path.suffix}' invalid.")
         return False
 
-    print(f"Saving scene to {path.as_posix}...")
+    print(f"Saving scene to {path.as_posix()}...")
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir = Path(temp_dir)
