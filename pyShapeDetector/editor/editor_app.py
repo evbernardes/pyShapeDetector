@@ -23,11 +23,11 @@ from pyShapeDetector.primitives import Primitive
 from pyShapeDetector.geometry import TriangleMesh
 
 from .extension import Extension
+from .extensions import default_extensions
 from .element import ElementGeometry
 from .element_container import ElementContainer
 from .settings import Settings
 from .internal_functions import InternalFunctions
-from .default_extensions import default_extensions
 
 from .menu_show import MenuShow
 from .hotkeys import Hotkeys
@@ -81,6 +81,7 @@ class Editor:
         testing: bool = False,
         **kwargs,
     ):
+        self._testing = testing
         self._extensions = []
         self._settings = Settings(self, **kwargs)
 
@@ -116,7 +117,7 @@ class Editor:
 
         if load_default_extensions:
             for extension in default_extensions:
-                self.add_extension(extension, testing=testing)
+                self.add_extension(extension, testing=self._testing)
 
     def _create_simple_dialog(
         self,

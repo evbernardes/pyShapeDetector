@@ -10,8 +10,7 @@ import tempfile
 import tarfile
 from pathlib import Path
 from typing import TYPE_CHECKING
-from ..io import _write_one_element, RECOGNIZED_EXTENSION
-# from ..element import ElementPrimitive, ElementPointCloud, ElementTriangleMesh
+from ...io import _write_one_element, RECOGNIZED_EXTENSION
 
 from pyShapeDetector.primitives import Primitive
 from pyShapeDetector.geometry import PointCloud, TriangleMesh
