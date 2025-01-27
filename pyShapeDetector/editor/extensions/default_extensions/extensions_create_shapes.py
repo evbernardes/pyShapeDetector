@@ -192,89 +192,6 @@ extensions.append(
 )
 
 
-@_apply_to(PointCloud)
-def detect_shapes(
-    pcds_input,
-    PointCloud_density,
-    method,
-    shapes_per_cluster,
-    inliers_min,
-    use_adaptative_threshold,
-    threshold_distance_ratio,
-    adaptative_threshold_k,
-    limit_sample_distance,
-    max_sample_distance_ratio,
-    threshold_angle_degrees,
-    threshold_refit_ratio,
-    num_iterations,
-    num_samples,
-    downsample,
-    compare_metric,
-    metric_min,
-    debug,
-    detect_PlaneBounded,
-    detect_Sphere,
-    detect_Cylinder,
-    detect_Cone,
-    detect_PlaneTriangulated,
-    detect_PlaneRectangular,
-):
-    detector = dict_methods[method]()
-    detector.options.inliers_min = inliers_min
-
-    if limit_sample_distance:
-        detector.options.max_sample_distance = (
-            max_sample_distance_ratio * PointCloud_density
-        )
-    detector.options.threshold_angle_degrees = threshold_angle_degrees
-    detector.options.threshold_refit_ratio = threshold_refit_ratio
-    detector.options.num_iterations = num_iterations
-    detector.options.num_samples = num_samples
-    detector.options.downsample = downsample
-    if use_adaptative_threshold:
-        detector.options.adaptative_threshold_k = adaptative_threshold_k
-    else:
-        detector.options.threshold_distance = (
-            threshold_distance_ratio * PointCloud_density
-        )
-
-    if detect_PlaneBounded:
-        detector.add(PlaneBounded)
-    if detect_Sphere:
-        detector.add(Sphere)
-    if detect_Cylinder:
-        detector.add(Cylinder)
-    if detect_Cone:
-        detector.add(Cone)
-    if detect_PlaneTriangulated:
-        detector.add(PlaneTriangulated)
-    if detect_PlaneRectangular:
-        detector.add(PlaneRectangular)
-
-    if debug:
-        print("Calling 'detect_shapes_with_BDSAC' with following parameters: ")
-        print(f"PointCloud_density = {PointCloud_density}")
-        print(detector.options)
-
-    shape_detector = MultiDetector(
-        detector,
-        pcds_input,
-        debug=False,
-        normals_reestimate=False,
-        points_min=10,
-        shapes_per_cluster=shapes_per_cluster,
-        compare_metric=compare_metric,
-        metric_min=metric_min,
-        fuse_shapes=False,
-    )
-
-    shapes = shape_detector.shapes
-    for shape in shapes:
-        shape.color = shape.inliers.colors.mean(axis=0)
-
-    return shape_detector.shapes + shape_detector.pcds_rest
-
-
 @_apply_to(PlaneBounded)
 def extrude_with_vector(planes_input, vector, close, as_mesh):
     extrusions = []
@@ -388,6 +305,90 @@ extensions.append(
     }
 )
 
+
+@_apply_to(PointCloud)
+def detect_shapes(
+    pcds_input,
+    PointCloud_density,
+    method,
+    shapes_per_cluster,
+    inliers_min,
+    use_adaptative_threshold,
+    threshold_distance_ratio,
+    adaptative_threshold_k,
+    limit_sample_distance,
+    max_sample_distance_ratio,
+    threshold_angle_degrees,
+    threshold_refit_ratio,
+    num_iterations,
+    num_samples,
+    downsample,
+    compare_metric,
+    metric_min,
+    debug,
+    detect_PlaneBounded,
+    detect_Sphere,
+    detect_Cylinder,
+    detect_Cone,
+    # detect_PlaneTriangulated,
+    # detect_PlaneRectangular,
+):
+    detector = dict_methods[method]()
+    detector.options.inliers_min = inliers_min
+
+    if limit_sample_distance:
+        detector.options.max_sample_distance = (
+            max_sample_distance_ratio * PointCloud_density
+        )
+    detector.options.threshold_angle_degrees = threshold_angle_degrees
+    detector.options.threshold_refit_ratio = threshold_refit_ratio
+    detector.options.num_iterations = num_iterations
+    detector.options.num_samples = num_samples
+    detector.options.downsample = downsample
+    if use_adaptative_threshold:
+        detector.options.adaptative_threshold_k = adaptative_threshold_k
+    else:
+        detector.options.threshold_distance = (
+            threshold_distance_ratio * PointCloud_density
+        )
+
+    if detect_PlaneBounded:
+        detector.add(PlaneBounded)
+    if detect_Sphere:
+        detector.add(Sphere)
+    if detect_Cylinder:
+        detector.add(Cylinder)
+    if detect_Cone:
+        detector.add(Cone)
+    # if detect_PlaneTriangulated:
+    #     detector.add(PlaneTriangulated)
+    # if detect_PlaneRectangular:
+    #     detector.add(PlaneRectangular)
+
+    if debug:
+        print("Calling 'detect_shapes_with_BDSAC' with following parameters: ")
+        print(f"PointCloud_density = {PointCloud_density}")
+        print(detector.options)
+
+    shape_detector = MultiDetector(
+        detector,
+        pcds_input,
+        debug=False,
+        normals_reestimate=False,
+        points_min=10,
+        shapes_per_cluster=shapes_per_cluster,
+        compare_metric=compare_metric,
+        metric_min=metric_min,
+        fuse_shapes=False,
+    )
+
+    shapes = shape_detector.shapes
+    for shape in shapes:
+        shape.color = shape.inliers.colors.mean(axis=0)
+
+    return shape_detector.shapes + shape_detector.pcds_rest
+
+
 extensions.append(
     {
         "name": "Detect shapes with RANSAC-based method",
@@ -478,9 +479,9 @@ extensions.append(
             "detect_Sphere": {"type": bool, "subpanel": "Primitives"},
             "detect_Cylinder": {"type": bool, "subpanel": "Primitives"},
             "detect_Cone": {"type": bool, "subpanel": "Primitives"},
-            "detect_PlaneTriangulated": {"type": bool, "subpanel": "Primitives"},
-            "detect_PlaneRectangular": {"type": bool, "subpanel": "Primitives"},
-            "debug": {"type": "preference"},
+            # "detect_PlaneTriangulated": {"type": bool, "subpanel": "Primitives"},
+            # "detect_PlaneRectangular": {"type": bool, "subpanel": "Primitives"},
+            # "debug": {"type": "preference"},
         },
     }
 )
