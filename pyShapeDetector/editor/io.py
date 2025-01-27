@@ -301,6 +301,8 @@ def _save_scene(path: Union[Path, str], editor_instance: "Editor"):
         warnings.warn(f"Extension '{path.suffix}' invalid.")
         return False
 
+    print(f"Saving scene to {path.as_posix()}...")
+
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir = Path(temp_dir)
         temp_scene_file = temp_dir / "scene.sdscene"
@@ -366,6 +368,8 @@ def _save_scene(path: Union[Path, str], editor_instance: "Editor"):
             path.unlink()
 
         temp_scene_file.rename(path)
+
+    print("Scene saved successfully.")
     # else:
     #     raise ValueError(
     #         f"Acceptable extensions are 'tar' and 'json', got {path.suffix}."
