@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, Union
 from open3d.visualization import gui
 from .parameter import ParameterBase
-from ..element_container import ElementContainer
+from pyShapeDetector.editor.element import ElementContainer
 
 
 class ParameterNumeric(ParameterBase[type]):

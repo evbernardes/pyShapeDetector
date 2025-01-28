@@ -23,8 +23,7 @@ from pyShapeDetector.primitives import Primitive
 from pyShapeDetector.geometry import TriangleMesh
 
 from .extension import default_extensions, Extension
-from .element import ElementGeometry
-from .element_container import ElementContainer
+from .element import ElementGeometry, ElementContainer
 from .settings import Settings
 from .internal_functions import InternalFunctions
 

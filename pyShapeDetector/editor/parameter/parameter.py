@@ -11,7 +11,7 @@ from typing import Callable, Union, TypeVar, Generic
 from abc import ABC, abstractmethod
 from open3d.visualization import gui
 
-from ..element_container import ElementContainer
+from pyShapeDetector.editor.element import ElementContainer
 
 T = TypeVar("T")
 
