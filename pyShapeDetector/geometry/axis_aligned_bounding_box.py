@@ -26,6 +26,10 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
 
     Almost every method and property are automatically copied and decorated.
 
+    Extra Attributes
+    ----------------
+    extent
+
     Extra Methods
     -------------
     from_multiple_elements
@@ -41,6 +45,10 @@ class AxisAlignedBoundingBox(Numpy_Geometry):
     as_planes
     as_lineset
     """
+
+    @property
+    def extent(self):
+        return self.max_bound - self.min_bound
 
     @classmethod
     def from_multiple_elements(
