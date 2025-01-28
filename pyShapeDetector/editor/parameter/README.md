@@ -58,12 +58,6 @@ This class is used to create an array of 1 or 2 dimensions.
 #### Attributes
 - `default`: An array-like element of length of shape `(N, )` or `(N, M)`. Both the `dtype` and `shape` of the array will be taken from the default value, which is why it's non-optional.
 
-### `ParameterNDArray`
-This class is used to create an array of 1 or 2 dimensions. 
-
-#### Attributes
-- `default`: An array-like element of length of shape `(N, )` or `(N, M)`. Both the `dtype` and `shape` of the array will be taken from the default value, which is why it's non optional.
-
 ### `ParameterOptions`
 This class defines a combobox to choose between different values. 
 
