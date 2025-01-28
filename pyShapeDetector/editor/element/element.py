@@ -407,12 +407,7 @@ class ElementPrimitive(Element[Primitive]):
 
     def _set_extra_elements(self):
         # self._drawable = self.raw.copy().mesh.as_open3d
-        self._drawable = self.raw.mesh.as_open3d
-
-    def transform(self, transformation_matrix):
-        # Translating raw already translates the internal mesh
-        self.raw.transform(transformation_matrix)
-        self.update_on_scene()
+        self._drawable = copy.copy(self.raw.mesh).as_open3d
 
 
 class ElementGeometry(Element[geometry.Numpy_Geometry], Generic[T]):
