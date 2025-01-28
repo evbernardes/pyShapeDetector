@@ -476,7 +476,7 @@ class Editor:
         self._scene.scene.set_lighting(
             rendering.Open3DScene.LightingProfile.NO_SHADOWS, (0, 0, 0)
         )
-        self._global_axes_visible = False
+        self._global_axes_visible = True
         self._scene.scene.show_axes(self._global_axes_visible)
 
         self._ground_plane_visible = True
