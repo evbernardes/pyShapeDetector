@@ -76,7 +76,30 @@ This class defines a path selector with a button to search manually.
 - `suffixes`, optional: Dictionary mapping `suffix: str -> description: str`, to add as filters to the path selection.
 - 
 ### `ParameterCurrent`
-This class defines a convenient way of passing a specific `Element` as a separated input to an extension. 
+This class defines a convenient way of passing a specific `Element` as a separated input to an extension.
 
+## Creating by `dict` descriptors
+To define parameters by a `dict` descriptor, `ParameterBase.create_from_dict` can be used instead of the direct class initialized of the other instances, as long as the `type` is set directly as an argument. 
+
+For example, both `type=int` and `type=float` create instances of `ParameterNumeric`.
+
+The descriptors follow the following `type -> Class` mapping:
+
+- `"bool"` -> `ParameterBool`
+- `int` -> `ParameterNumeric`
+- `"int"` -> `ParameterNumeric`
+- `float` -> `ParameterNumeric`
+- `"float"` -> `ParameterNumeric`
+- `list` -> `ParameterOptions`
+- `"list"` -> `ParameterOptions`
+- `"options"` -> `ParameterOptions`
+- `numpy.ndarray` -> `ParameterNDArray`
+- `"ndarray"` -> `ParameterNDArray`
+- `"array"` -> `ParameterNDArray`
+- `open3d.visualization.gui.Color` -> `ParameterColor`
+- `"color"` -> `ParameterColor`
+- `"current"` -> `ParameterCurrentElement`
+- `pathlib.Path` -> `ParameterPath`
+- `"path"` -> `ParameterPath`
 
 
