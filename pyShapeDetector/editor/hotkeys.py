@@ -25,19 +25,22 @@ class Hotkeys:
 
         self._bindings_map[key] = binding
 
-    def __init__(self, editor_instance: "Editor"):
+    def __init__(self, editor_instance: "Editor", bindings: list[Binding]):
         self._editor_instance = editor_instance
         self._is_lctrl_pressed = False
         self._is_lshift_pressed = False
         self._bindings_map = {}
 
-        # First, add internal bindings
-        for binding in editor_instance._internal_functions.bindings:
+        for binding in bindings:
             self.add_one_binding(binding)
 
-        # Then, get extension bindings
-        for extension in editor_instance.extensions:
-            self.add_one_binding(extension.binding)
+        # # First, add internal bindings
+        # for binding in editor_instance._internal_functions.bindings:
+        #     self.add_one_binding(binding)
+
+        # # Then, get extension bindings
+        # for extension in editor_instance.extensions:
+        #     self.add_one_binding(extension.binding)
 
     @property
     def bindings_map(self):

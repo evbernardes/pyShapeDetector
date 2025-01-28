@@ -8,6 +8,7 @@ Created on 2025-01-27 14:38:17
 import warnings
 from typing import Union, Callable, TYPE_CHECKING, Generator
 from pathlib import Path
+import numpy as np
 from open3d.visualization import gui
 
 if TYPE_CHECKING:
@@ -140,6 +141,25 @@ class Binding:
             binding._menu_id = menu_id
             bindings_per_id[menu_id] = binding
         return bindings_per_id
+
+    @staticmethod
+    def _add_multiple_to_menu(
+        bindings: list["Binding"], editor_instance: "Editor"
+    ) -> list["Binding"]:
+        bindings_per_id = Binding._set_binding_ids_with_generator(
+            bindings, editor_instance._submenu_id_generator
+        )
+
+        successfully_added = []
+        for idx in np.sort(list(bindings_per_id.keys())):
+            binding = bindings_per_id[idx]
+            try:
+                binding.add_to_menu(editor_instance)
+                successfully_added.append(binding)
+            except Exception:
+                warnings.warn(f"Could not add binding {binding}.")
+
+        return successfully_added
 
     def __init__(
         self,

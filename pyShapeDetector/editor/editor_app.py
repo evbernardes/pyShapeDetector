@@ -83,6 +83,7 @@ class Editor:
         self._testing = testing
         self._extensions = []
         self._settings = Settings(self, **kwargs)
+        self._menu_show = MenuShow(self)
 
         self._init_window_size = (width, height)
         self._copied_elements = []
@@ -413,6 +414,33 @@ class Editor:
     def _get_setting(self, key):
         return self._settings.get_setting(key)
 
+    def _setup_bindings_and_hotkeys(self):
+        all_bindings = (
+            self._internal_functions.bindings
+            + self._menu_show.bindings
+            + self.extension_bindings
+        )
+
+        # 1) Add hotkeys for bindings
+        self._hotkeys = Hotkeys(self, all_bindings)
+        self._reset_on_key()
+        self._scene.set_on_mouse(self._on_mouse)
+
+        successfully_added = Binding._add_multiple_to_menu(all_bindings, self)
+
+        number_internal_functions = sum(
+            binding in successfully_added
+            for binding in self._internal_functions.bindings
+        )
+        number_extensions = sum(
+            binding in successfully_added for binding in self.extension_bindings
+        )
+
+        self._settings.print_debug(
+            f"{number_internal_functions} internal functions and "
+            f"{number_extensions} extensions loaded.",
+        )
+
     def _setup_window_and_scene(self):
         # Set up the application
         self.app = gui.Application.instance
@@ -459,36 +487,11 @@ class Editor:
         self._main_window.add_child(self._right_side_panel)
         self._right_side_panel.visible = True
 
-        # 1) Add hotkeys for both internal functions and extensions
-        self._hotkeys = Hotkeys(self)
-        self._reset_on_key()
-        self._scene.set_on_mouse(self._on_mouse)
+        # First setup menu and hotkey bindings
+        self._setup_bindings_and_hotkeys()
 
-        internal_functions_bindings = self._internal_functions.bindings
-        extension_bindings = self.extension_bindings
-
-        bindings_per_id = Binding._set_binding_ids_with_generator(
-            internal_functions_bindings + extension_bindings, self._submenu_id_generator
-        )
-
-        number_internal_functions = 0
-        number_extensions = 0
-        for idx in np.sort(list(bindings_per_id.keys())):
-            binding = bindings_per_id[idx]
-            binding.add_to_menu(self)
-            if binding in internal_functions_bindings:
-                number_internal_functions += 1
-            elif binding in extension_bindings:
-                number_extensions += 1
-
-        self._settings.print_debug(
-            f"{number_internal_functions} internal functions and "
-            f"{number_extensions} extensions loaded.",
-        )
-
-        # 2) Finally, other menus that should be at the end
+        # Then, add other menus and panels
         self._settings._create_menu()
-        self._menu_show = MenuShow(self)
         self._menu_show._create_menu()
 
         self._tools_panel = gui.CollapsableVert(
