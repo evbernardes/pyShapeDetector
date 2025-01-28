@@ -502,7 +502,7 @@ class Extension:
                 )
                 return
         except Exception:
-            warnings.warn("Error with output elements {output_elements}.")
+            warnings.warn(f"Error with output elements {output_elements}.")
             traceback.print_exc()
             editor_instance._close_dialog()
             return
@@ -529,7 +529,7 @@ class Extension:
                 editor_instance.element_container.insert_multiple(
                     output_elements,
                     to_gui=True,
-                    is_selected=editor_instance.element_container.current_element.selected,
+                    is_selected=editor_instance.element_container.current_element.is_selected,
                 )
                 editor_instance.element_container.update_current_index(
                     len(editor_instance.element_container) - 1
