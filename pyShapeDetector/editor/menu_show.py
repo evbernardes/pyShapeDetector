@@ -57,6 +57,15 @@ class MenuShow:
                 menu=self._menu,
             ),
             Binding(
+                key=gui.KeyName.R,
+                menu_id=next(MENU_SHOW_ID_GENERATOR),
+                lctrl=True,
+                lshift=True,
+                description="Reset Camera",
+                callback=self._cb_reset_camera,
+                menu=self._menu,
+            ),
+            Binding(
                 description="About",
                 menu_id=next(MENU_SHOW_ID_GENERATOR),
                 callback=self._cb_about,
@@ -170,6 +179,9 @@ class MenuShow:
             editor_instance._info_visible,
         )
         editor_instance._update_info()
+
+    def _cb_reset_camera(self):
+        self._editor_instance._reset_camera()
 
     def _cb_about(self):
         self._editor_instance._create_simple_dialog(

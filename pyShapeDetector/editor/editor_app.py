@@ -687,8 +687,13 @@ class Editor:
     def _reset_camera(self):
         bounds = self._scene.scene.bounding_box
         center = bounds.get_center()
+
+        self._settings.print_debug(
+            f"Resetting camera. Bounds: {bounds}, center: {center}"
+        )
+
         self._scene.setup_camera(60, bounds, center)
-        self._scene.look_at(center, center + [1, 1, 0], [0, 0, 1])
+        self._scene.look_at(center, center + [3] * 3, [0, 0, 1])
 
     def _startup(self):
         """Runs all necessary startups, might be useful for testing."""

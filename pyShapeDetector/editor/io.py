@@ -290,6 +290,8 @@ def _open_scene(input_path: Union[Path, str], editor_instance: "Editor"):
                     )
                     traceback.print_exc()
 
+    editor_instance._reset_camera()
+
 
 def _save_scene(path: Union[Path, str], editor_instance: "Editor"):
     """Save all elements from the current ElementContainer into a file, overwriting."""
