@@ -70,6 +70,16 @@ class Editor:
         Should be deprecated.
     """
 
+    @property
+    def all_bindings(self) -> list[Binding]:
+        """All bindings related to internals, extensions and menus."""
+        return (
+            self._internal_functions.bindings
+            + self._menu_show.bindings
+            + self.extension_bindings
+            + self._settings.bindings
+        )
+
     def __init__(
         self,
         width: int = 1024,
@@ -419,11 +429,7 @@ class Editor:
         return self._settings.get_setting(key)
 
     def _setup_bindings_and_hotkeys(self):
-        all_bindings = (
-            self._internal_functions.bindings
-            + self._menu_show.bindings
-            + self.extension_bindings
-        )
+        all_bindings = self.all_bindings
 
         # 1) Add hotkeys for bindings
         self._hotkeys = Hotkeys(self, all_bindings)

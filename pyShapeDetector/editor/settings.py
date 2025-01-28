@@ -4,6 +4,8 @@ import numpy as np
 from typing import TYPE_CHECKING
 from open3d.visualization import gui
 from open3d.visualization.rendering import MaterialRecord
+from pyShapeDetector.editor.binding import Binding
+
 
 if TYPE_CHECKING:
     from .editor_app import Editor
@@ -17,6 +19,8 @@ from .parameter import (
     ParameterColor,
     ParameterPanel,
 )
+
+MENU_PREFERENCES_ID = 2000
 
 # Uncomment this to create extension for testing reference parameters
 TEST_PARAMETER_REFERENCES = False
@@ -106,7 +110,23 @@ class Settings:
         text = str(text)
         print("[DEBUG] " + text)
 
+    @property
+    def bindings(self) -> list[Binding]:
+        return [self._binding]
+
     def __init__(self, editor_instance: "Editor", menu="Preferences", **kwargs):
+        self._editor_instance = editor_instance
+        self._menu = menu
+        self._binding = Binding(
+            key=gui.KeyName.P,
+            menu_id=MENU_PREFERENCES_ID,
+            lctrl=False,
+            lshift=False,
+            description="Show Preferences",
+            callback=self._cb_show_preferences,
+            menu=self._menu,
+        )
+
         dict_of_parameters: dict[str, ParameterBase] = {
             "extensions_on_window": ParameterBool(
                 label="Open extensions on window",
@@ -316,8 +336,6 @@ class Settings:
                 self._dict[key] = param
 
         # self._dict = {param.name: param for param in options}
-        self._editor_instance = editor_instance
-        self._menu = menu
 
         for key, value in kwargs.items():
             if key in self._dict:
@@ -540,21 +558,13 @@ class Settings:
         self._panel = _panel_collapsable
 
     def _create_menu(self):
-        editor_instance = self._editor_instance
-
         self._create_panel()
 
-        self._preferences_binding = editor_instance._internal_functions._dict[
-            "Show Preferences"
-        ]
-        self._preferences_binding._menu = self._menu
-        self._preferences_binding.add_to_menu(editor_instance)
-
-    def _on_menu_toggle(self):
+    def _cb_show_preferences(self):
         window = self._editor_instance._main_window
         menubar = self._editor_instance.app.menubar
         self._panel.visible = not self._panel.visible
-        menubar.set_checked(self._preferences_binding._menu_id, self._panel.visible)
+        menubar.set_checked(self._binding._menu_id, self._panel.visible)
         window.set_needs_layout()
 
 

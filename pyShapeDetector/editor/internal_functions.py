@@ -15,8 +15,6 @@ if has_pyperclip := find_spec("pyperclip"):
 if TYPE_CHECKING:
     from .editor_app import Editor
 
-MENU_PREFERENCES_ID = 2000
-
 
 class InternalFunctions:
     @property
@@ -147,15 +145,6 @@ class InternalFunctions:
                 description="Paste",
                 callback=self._cb_paste,
                 menu="Edit",
-            ),
-            Binding(
-                key=gui.KeyName.P,
-                menu_id=MENU_PREFERENCES_ID,
-                lctrl=False,
-                lshift=False,
-                description="Show Preferences",
-                callback=self._cb_toggle_settings_panel,
-                menu=None,  # This is added later
             ),
             Binding(
                 key=gui.KeyName.R,
@@ -778,9 +767,6 @@ class InternalFunctions:
                 f"Re-applying last function: {ext.name}"
             )
             ext._apply_to_elements()
-
-    def _cb_toggle_settings_panel(self):
-        self._editor_instance._settings._on_menu_toggle()
 
     def _cb_hide(
         self,
