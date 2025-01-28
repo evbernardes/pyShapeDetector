@@ -85,7 +85,7 @@ For example, both `type=int` and `type=float` create instances of `ParameterNume
 
 The descriptors follow the following `type -> Class` mapping:
 
-- `bool` -> `ParameterBool`
+- `bool` → `ParameterBool`
 - `"bool"` -> `ParameterBool`
 - `int` -> `ParameterNumeric`
 - `"int"` -> `ParameterNumeric`
