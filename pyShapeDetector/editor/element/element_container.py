@@ -13,7 +13,7 @@ if has_psutil := find_spec("psutil"):
     process = psutil.Process()
 
 if TYPE_CHECKING:
-    from .settings import Settings
+    from pyShapeDetector.editor.settings import Settings
 
 
 class ElementContainer:
