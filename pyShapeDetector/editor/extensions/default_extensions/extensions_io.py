@@ -67,22 +67,41 @@ def _export_multiple(
     return filenames
 
 
-def export_current(
-    editor_instance: "Editor",
-    path: Path,
-):
-    directory = path.parent
+# def export_current(
+#     editor_instance: "Editor",
+#     path: Path,
+# ):
+#     directory = path.parent
 
-    if not directory.exists():
-        directory.mkdir()
+#     if not directory.exists():
+#         directory.mkdir()
 
-    element = editor_instance.element_container.current_element
-    idx = editor_instance.element_container.current_index
+#     element = editor_instance.element_container.current_element
+#     idx = editor_instance.element_container.current_index
 
-    if path.stem == "":
-        path = path.with_stem(f"element_{idx}")
+#     if path.stem == "":
+#         path = path.with_stem(f"element_{idx}")
 
-    _write_one_element(element, path, raise_error=True)
+#     _write_one_element(element, path, raise_error=True)
+
+
+# extensions.append(
+#     {
+#         "name": "Export current element",
+#         "function": export_current,
+#         "menu": MENU_NAME,
+#         "inputs": "internal",
+#         "hotkey": "E",
+#         "lctrl": True,
+#         "parameters": {
+#             "path": {
+#                 "type": "path",
+#                 "path_type": "save",
+#                 "suffixes": ALL_SUFFIXES_SEPARATED,
+#             },
+#         },
+#     }
+# )
 
 
 def export_selected_to_directory(
@@ -104,54 +123,6 @@ def export_selected_to_directory(
         extension_trianglemesh,
     )
 
-
-def export_selected_to_tar_file(
-    editor_instance: "Editor",
-    path: Path,
-    extension_primitive,
-    extension_pointcloud,
-    extension_trianglemesh,
-):
-    if path.suffix == "":
-        path = path.with_suffix(".tar")
-
-    elif path.suffix != ".tar":
-        raise ValueError(f"Extension '{path.suffix}' invalid.")
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_dir = Path(temp_dir)
-
-        filenames = _export_multiple(
-            editor_instance,
-            editor_instance.element_container.selected_indices,
-            temp_dir,
-            extension_primitive,
-            extension_pointcloud,
-            extension_trianglemesh,
-        )
-
-        with tarfile.open(path, "w") as tar:
-            for filename in filenames:
-                tar.add(temp_dir / filename, arcname=filename)
-
-
-extensions.append(
-    {
-        "name": "Export current element",
-        "function": export_current,
-        "menu": MENU_NAME,
-        "inputs": "internal",
-        "hotkey": "E",
-        "lctrl": True,
-        "parameters": {
-            "path": {
-                "type": "path",
-                "path_type": "save",
-                "suffixes": ALL_SUFFIXES_SEPARATED,
-            },
-        },
-    }
-)
 
 extensions.append(
     {
@@ -191,6 +162,37 @@ extensions.append(
         },
     }
 )
+
+
+def export_selected_to_tar_file(
+    editor_instance: "Editor",
+    path: Path,
+    extension_primitive,
+    extension_pointcloud,
+    extension_trianglemesh,
+):
+    if path.suffix == "":
+        path = path.with_suffix(".tar")
+
+    elif path.suffix != ".tar":
+        raise ValueError(f"Extension '{path.suffix}' invalid.")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_dir = Path(temp_dir)
+
+        filenames = _export_multiple(
+            editor_instance,
+            editor_instance.element_container.selected_indices,
+            temp_dir,
+            extension_primitive,
+            extension_pointcloud,
+            extension_trianglemesh,
+        )
+
+        with tarfile.open(path, "w") as tar:
+            for filename in filenames:
+                tar.add(temp_dir / filename, arcname=filename)
+
 
 extensions.append(
     {
