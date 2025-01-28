@@ -346,7 +346,7 @@ class Settings:
         # Uncomment and this and the definition to test   #
         ###################################################
         if TEST_PARAMETER_REFERENCES:
-            from .extensions.extension import Extension
+            from .extension.extension import Extension
 
             extension = Extension(test_extension, self, editor_instance)
             extension.add_to_application()
