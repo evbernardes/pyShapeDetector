@@ -15,7 +15,7 @@ from pyShapeDetector.primitives import Primitive, Plane
 from pyShapeDetector import geometry
 
 if TYPE_CHECKING:
-    from .settings import Settings
+    from pyShapeDetector.editor.settings import Settings
 
 ELEMENT_TYPE = Union[Primitive, geometry.Numpy_Geometry]
 T = TypeVar("T", Primitive, geometry.Numpy_Geometry)
