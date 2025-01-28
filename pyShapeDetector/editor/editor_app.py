@@ -688,7 +688,7 @@ class Editor:
         bounds = self._scene.scene.bounding_box
         center = bounds.get_center()
         self._scene.setup_camera(60, bounds, center)
-        self._scene.look_at(center, center - [0, 0, 3], [0, 1, 0])
+        self._scene.look_at(center, center + [1, 1, 0], [0, 0, 1])
 
     def _startup(self):
         """Runs all necessary startups, might be useful for testing."""
