@@ -19,108 +19,109 @@ class MenuShow:
         self._menu = menu
         self._editor_instance = editor_instance
 
-        self._dict = {
-            "ground": Binding(
+        self._bindings = [
+            Binding(
                 key=gui.KeyName.G,
                 menu_id=next(MENU_SHOW_ID_GENERATOR),
                 lctrl=False,
                 lshift=False,
                 description="Show Ground Plane",
-                callback=self._on_ground_plane_toggle,
+                callback=self._cb_show_ground_plane,
                 menu=self._menu,
             ),
-            "axes": Binding(
+            Binding(
                 key=gui.KeyName.A,
                 menu_id=next(MENU_SHOW_ID_GENERATOR),
                 lctrl=False,
                 lshift=False,
                 description="Show Global Axes",
-                callback=self._on_global_axes_toggle,
+                callback=self._cb_show_global_axes,
                 menu=self._menu,
             ),
-            "hotkeys": Binding(
+            Binding(
                 key=gui.KeyName.H,
                 menu_id=next(MENU_SHOW_ID_GENERATOR),
                 lctrl=False,
                 lshift=False,
-                description="Show Hotkeys",
-                callback=self._on_hotkeys_toggle,
+                description="Show Help",
+                callback=self._cb_show_help,
                 menu=self._menu,
             ),
-            "info": Binding(
+            Binding(
                 key=gui.KeyName.I,
                 menu_id=next(MENU_SHOW_ID_GENERATOR),
                 lctrl=False,
                 lshift=False,
                 description="Show Info",
-                callback=self._on_info_toggle,
+                callback=self._cb_show_info,
                 menu=self._menu,
             ),
-            "about": Binding(
+            Binding(
                 description="About",
                 menu_id=next(MENU_SHOW_ID_GENERATOR),
-                callback=self._on_menu_about,
+                callback=self._cb_about,
                 creates_window=True,
                 menu=self._menu,
             ),
-        }
+        ]
 
-    def _create_hotkeys_panel(self):
+        self._dict = {binding.description: binding for binding in self._bindings}
+
+    def _create_help_panel(self):
         window = self._editor_instance._main_window
         em = window.theme.font_size
+        dlg_layout = gui.Vert(em, gui.Margins(0, 0, 0, 0))
 
-        hotkeys_panel_collapsable = gui.CollapsableVert(
-            self._menu, em, gui.Margins(0, 0, 0, 0)
+        help_panel_collapsable = gui.CollapsableVert(
+            "Help", em, gui.Margins(0, 0, 0, 0)
         )
 
-        dlg_layout = gui.Vert(em, gui.Margins(0, 0, 0, 0))
-        hotkeys_panel_text = gui.Label("")
-        dlg_layout.add_child(hotkeys_panel_text)
+        help_panel_collapsable.add_child(dlg_layout)
+        help_panel_collapsable.visible = False
 
-        hotkeys_panel_collapsable.add_child(dlg_layout)
+        self._editor_instance._right_side_panel.add_child(help_panel_collapsable)
+        self._help_panel = help_panel_collapsable
+        self._help_panel_text = gui.Label("")
 
-        hotkeys_panel_collapsable.visible = False
-        self._editor_instance._right_side_panel.add_child(hotkeys_panel_collapsable)
-        self._hotkeys_panel = hotkeys_panel_collapsable
-        self._hotkeys_panel_text = hotkeys_panel_text
+        dlg_layout.add_child(self._help_panel_text)
 
     def _create_menu(self):
-        self._create_hotkeys_panel()
+        self._create_help_panel()
 
         editor_instance = self._editor_instance
         menubar = editor_instance.app.menubar
         menubar.set_checked(
-            self._dict["ground"].menu_id, editor_instance._ground_plane_visible
+            self._dict["Show Ground Plane"].menu_id,
+            editor_instance._ground_plane_visible,
         )
         menubar.set_checked(
-            self._dict["axes"].menu_id, editor_instance._global_axes_visible
+            self._dict["Show Global Axes"].menu_id,
+            editor_instance._global_axes_visible,
         )
-        menubar.set_checked(self._dict["info"].menu_id, editor_instance._info_visible)
+        menubar.set_checked(
+            self._dict["Show Info"].menu_id,
+            editor_instance._info_visible,
+        )
 
-    def _on_hotkeys_toggle(self):
+    def _cb_show_help(self):
         editor_instance = self._editor_instance
         window = editor_instance._main_window
         menubar = editor_instance.app.menubar
-        self._hotkeys_panel.visible = not self._hotkeys_panel.visible
+        self._help_panel.visible = not self._help_panel.visible
 
-        if self._hotkeys_panel.visible:
-            self._hotkeys_panel_text.text = (
-                "\n\n".join(
-                    [
-                        f"({binding.key_instruction}):\n- {binding.description}"
-                        for binding in self._editor_instance._hotkeys._bindings_map.values()
-                    ]
-                )
+        if self._help_panel.visible:
+            self._help_panel_text.text = (
+                self._editor_instance._hotkeys.help_text
                 + "\n\n(Ctrl):"
                 + "\n- Set current with mouse"
                 + "\n\n(Ctrl + Shift):"
                 + "\n- Set current with mouse and toggle"
             )
 
-        menubar.set_checked(self._dict["hotkeys"].menu_id, self._hotkeys_panel.visible)
+        menubar.set_checked(self._dict["hotkeys"].menu_id, self._help_panel.visible)
         window.set_needs_layout()
 
-    def _on_ground_plane_toggle(self):
+    def _cb_show_ground_plane(self):
         editor_instance = self._editor_instance
         window = editor_instance._main_window
         menubar = editor_instance.app.menubar
@@ -132,12 +133,15 @@ class MenuShow:
             ground_plane_visible, editor_instance._ground_plane
         )
 
-        menubar.set_checked(self._dict["ground"].menu_id, ground_plane_visible)
+        menubar.set_checked(
+            self._dict["Show Ground Plane"].menu_id,
+            ground_plane_visible,
+        )
         window.set_needs_layout()
 
         editor_instance._ground_plane_visible = ground_plane_visible
 
-    def _on_global_axes_toggle(self):
+    def _cb_show_global_axes(self):
         editor_instance = self._editor_instance
         window = editor_instance._main_window
         menubar = editor_instance.app.menubar
@@ -147,62 +151,34 @@ class MenuShow:
 
         editor_instance._scene.scene.show_axes(global_axes_visible)
 
-        menubar.set_checked(self._dict["axes"].menu_id, global_axes_visible)
+        menubar.set_checked(
+            self._dict["Show Global Axes"].menu_id,
+            global_axes_visible,
+        )
         window.set_needs_layout()
 
         editor_instance._global_axes_visible = global_axes_visible
 
-    def _on_info_toggle(self):
+    def _cb_show_info(self):
         editor_instance = self._editor_instance
         menubar = editor_instance.app.menubar
 
         editor_instance._info_visible = not editor_instance._info_visible
 
-        menubar.set_checked(self._dict["info"].menu_id, editor_instance._info_visible)
+        menubar.set_checked(
+            self._dict["Show Info"].menu_id,
+            editor_instance._info_visible,
+        )
         editor_instance._update_info()
 
-    def _on_menu_about(self):
-        window = self._editor_instance._main_window
-        em = window.theme.font_size
-        dlg = gui.Dialog("About")
-
-        # Add the text
-        dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
-
-        title = gui.Horiz()
-        title.add_stretch()
-        title.add_child(gui.Label("Shape Detector"))
-        title.add_stretch()
-
-        dlg_layout.add_child(title)
-
-        dlg_layout.add_child(
-            gui.Label(
+    def _cb_about(self):
+        self._editor_instance._create_simple_dialog(
+            content_text=(
                 "Developed by:\n\n\tEvandro Bernardes"
                 "\n\nAt:\n\n\tVrije Universiteit Brussel (VUB)"
-            )
+            ),
+            create_button=True,
+            button_text="Ok",
+            button_callback=None,
+            title_text="Shape Detector",
         )
-
-        ok = gui.Button("OK")
-        ok.set_on_clicked(self._on_about_ok)
-
-        button_stretch = gui.Horiz()
-        button_stretch.add_stretch()
-        button_stretch.add_child(ok)
-        button_stretch.add_stretch()
-
-        dlg_layout.add_child(button_stretch)
-
-        dlg.add_child(dlg_layout)
-        window.show_dialog(dlg)
-
-        def _on_key_event(event):
-            if event.type == gui.KeyEvent.DOWN and event.key == gui.KeyName.ENTER:
-                self._on_about_ok()
-                return True
-            return False
-
-        window.set_on_key(_on_key_event)
-
-    def _on_about_ok(self):
-        self._editor_instance._close_dialog()

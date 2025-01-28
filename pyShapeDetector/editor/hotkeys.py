@@ -8,6 +8,12 @@ if TYPE_CHECKING:
 
 
 class Hotkeys:
+    """Class to create a hotkey system with all bindings."""
+
+    _is_lctrl_pressed: bool = False
+    _is_lshift_pressed: bool = False
+    _bindings_map: dict[str, Binding] = {}
+
     def add_one_binding(self, binding: Binding):
         key = (binding.key, binding.lctrl, binding.lshift)
         if binding.key is None:
@@ -25,22 +31,20 @@ class Hotkeys:
 
         self._bindings_map[key] = binding
 
+    @property
+    def help_text(self) -> str:
+        return "\n\n".join(
+            [
+                f"({binding.key_instruction}):\n- {binding.description}"
+                for binding in self._bindings_map.values()
+            ]
+        )
+
     def __init__(self, editor_instance: "Editor", bindings: list[Binding]):
         self._editor_instance = editor_instance
-        self._is_lctrl_pressed = False
-        self._is_lshift_pressed = False
-        self._bindings_map = {}
 
         for binding in bindings:
             self.add_one_binding(binding)
-
-        # # First, add internal bindings
-        # for binding in editor_instance._internal_functions.bindings:
-        #     self.add_one_binding(binding)
-
-        # # Then, get extension bindings
-        # for extension in editor_instance.extensions:
-        #     self.add_one_binding(extension.binding)
 
     @property
     def bindings_map(self):

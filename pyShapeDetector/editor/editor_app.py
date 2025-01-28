@@ -121,23 +121,27 @@ class Editor:
 
     def _create_simple_dialog(
         self,
-        text: str,
+        title_text: str = "",
+        content_text: str = "",
         create_button: bool = True,
         button_text: str = "Close",
         button_callback: Union[Callable, None] = None,
     ):
         window = self._main_window
         em = window.theme.font_size
-        dlg = gui.Dialog(text)
+
+        dlg = gui.Dialog(title_text)
 
         dlg_layout = gui.Vert(em, gui.Margins(em, em, em, em))
 
         title = gui.Horiz()
         title.add_stretch()
-        title.add_child(gui.Label(text))
+        title.add_child(gui.Label(title_text))
         title.add_stretch()
 
         dlg_layout.add_child(title)
+        if content_text != "":
+            dlg_layout.add_child(gui.Label(content_text))
 
         if create_button:
             button = gui.Button(button_text)

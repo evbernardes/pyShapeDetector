@@ -398,7 +398,7 @@ class Extension:
 
         self._cancelled = False
         editor_instance._create_simple_dialog(
-            f"Applying {self.name}...",
+            title_text=f"Applying {self.name}...",
             create_button=self.cancellable,
             button_text="Cancel",
             button_callback=_on_cancel,
@@ -474,7 +474,7 @@ class Extension:
             traceback.print_exc()
 
             editor_instance._create_simple_dialog(
-                f"Extension '{self.name}' failed: \n\n{e}."
+                title_text=f"Extension '{self.name}' failed: \n\n{e}."
             )
             editor_instance._close_dialog()
             return

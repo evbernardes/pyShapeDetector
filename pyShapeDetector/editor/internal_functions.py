@@ -368,7 +368,7 @@ class InternalFunctions:
                 editor_instance._close_dialog()
 
             editor_instance._create_simple_dialog(
-                f"Saving scene to {path}...",
+                title_text=f"Saving scene to {path}...",
                 create_button=False,
             )
 
