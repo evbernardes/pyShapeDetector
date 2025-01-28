@@ -126,8 +126,8 @@ class Editor:
         self._started = False
 
         if load_default_extensions:
-            for extension in default_extensions:
-                self.add_extension(extension, testing=self._testing)
+            for extension_descriptor in default_extensions:
+                self.add_extension(extension_descriptor, testing=self._testing)
 
     def _create_simple_dialog(
         self,
