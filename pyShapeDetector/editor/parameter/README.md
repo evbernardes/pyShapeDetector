@@ -23,3 +23,66 @@ parameter_descriptor = {
 }
 number_parameter = ParameterBase.create_from_dict("number", parameter_descriptor)
 ```
+
+## Common attributes
+All types of parameters have the following common attributes:
+- `on_update`, type `Callable`: Defines a function to be called whenever the variable is changed.  
+- `subpanel`, type `str`: Defines a sub-panel for the variable, useful when creating panels with many variables.
+
+## Types of parameters
+
+### `ParameterNumeric`
+This class is used to define `int` or `float` type parameters.
+
+#### Attributes
+- `limits`, optional: Defines limits for value.
+- `default`: Non-optional if `limits` is not given.
+- `use_slider`, optional: Graphical widget uses as slider if `True`, only if limits are available. Default value is `False`. 
+- `type`, optional: `int` or `float`. By default, uses type of `default`. 
+
+### `ParameterBool`
+This class is used to define `bool` type parameters.
+
+#### Attributes
+- `default`, optional: Can be `True` or `False`. If nothing is given, `default=False`.
+
+### `ParameterColor`
+This class is used to create a color selector. The value is always a `ndarray` of shape `(3, )`.
+
+#### Attributes
+- `default`, optional: An array-like element of length 3. If nothing is given, `default=(0, 0, 0)`.
+
+### `ParameterNDArray`
+This class is used to create an array of 1 or 2 dimensions. 
+
+#### Attributes
+- `default`: An array-like element of length of shape `(N, )` or `(N, M)`. Both the `dtype` and `shape` of the array will be taken from the default value, which is why it's non-optional.
+
+### `ParameterNDArray`
+This class is used to create an array of 1 or 2 dimensions. 
+
+#### Attributes
+- `default`: An array-like element of length of shape `(N, )` or `(N, M)`. Both the `dtype` and `shape` of the array will be taken from the default value, which is why it's non optional.
+
+### `ParameterOptions`
+This class defines a combobox to choose between different values. 
+
+#### Attributes
+- `options`: `list` of possible values.
+- `default`: Original default value must be in `options`.
+
+### `ParameterPath`
+This class defines a path selector with a button to search manually. 
+
+#### Attributes
+- `path_type`, optional: 
+  - `"open"`: Open files (**Default**).
+  - `"open_dir"`: Open directory. 
+  - `"save"`: Save file.
+- `suffixes`, optional: Dictionary mapping `suffix: str -> description: str`, to add as filters to the path selection.
+- 
+### `ParameterCurrent`
+This class defines a convenient way of passing a specific `Element` as a separated input to an extension. 
+
+
+
