@@ -93,8 +93,8 @@ class Editor:
         self._testing = testing
         self._extensions = []
         self._settings = Settings(self, **kwargs)
-        self._menu_show = MenuShow(self)
         self._internal_functions = InternalFunctions(self)
+        self._menu_show = MenuShow(self)
         self._hotkeys = Hotkeys(self)
 
         self._init_window_size = (width, height)
