@@ -386,11 +386,11 @@ class Settings:
     def _cb_PCD_downsample_when_drawing(self, value):
         from .element import ElementPointCloud
 
-        for elem in self._editor_instance.element_container:
+        for elem in self._editor_instance.element_container.elements:
             if not isinstance(elem, ElementPointCloud):
                 continue
 
-            elem._get_drawable()
+            elem._set_extra_elements()
             elem._init_colors()
             elem.update(is_current=elem.current, update_scene=True, reset=True)
 

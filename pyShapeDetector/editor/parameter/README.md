@@ -102,5 +102,3 @@ The descriptors follow the following `type -> Class` mapping:
 - `"current"` → `ParameterCurrentElement`
 - `pathlib.Path` → `ParameterPath`
 - `"path"` → `ParameterPath`
-
-
