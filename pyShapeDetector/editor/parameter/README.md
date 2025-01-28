@@ -86,21 +86,21 @@ For example, both `type=int` and `type=float` create instances of `ParameterNume
 The descriptors follow the following `type -> Class` mapping:
 
 - `bool` → `ParameterBool`
-- `"bool"` -> `ParameterBool`
-- `int` -> `ParameterNumeric`
-- `"int"` -> `ParameterNumeric`
-- `float` -> `ParameterNumeric`
-- `"float"` -> `ParameterNumeric`
-- `list` -> `ParameterOptions`
-- `"list"` -> `ParameterOptions`
-- `"options"` -> `ParameterOptions`
-- `numpy.ndarray` -> `ParameterNDArray`
-- `"ndarray"` -> `ParameterNDArray`
-- `"array"` -> `ParameterNDArray`
-- `open3d.visualization.gui.Color` -> `ParameterColor`
-- `"color"` -> `ParameterColor`
-- `"current"` -> `ParameterCurrentElement`
-- `pathlib.Path` -> `ParameterPath`
-- `"path"` -> `ParameterPath`
+- `"bool"` → `ParameterBool`
+- `int` → `ParameterNumeric`
+- `"int"` → `ParameterNumeric`
+- `float` → `ParameterNumeric`
+- `"float"` → `ParameterNumeric`
+- `list` → `ParameterOptions`
+- `"list"` → `ParameterOptions`
+- `"options"` → `ParameterOptions`
+- `numpy.ndarray` → `ParameterNDArray`
+- `"ndarray"` → `ParameterNDArray`
+- `"array"` → `ParameterNDArray`
+- `open3d.visualization.gui.Color` → `ParameterColor`
+- `"color"` → `ParameterColor`
+- `"current"` → `ParameterCurrentElement`
+- `pathlib.Path` → `ParameterPath`
+- `"path"` → `ParameterPath`
 
 
