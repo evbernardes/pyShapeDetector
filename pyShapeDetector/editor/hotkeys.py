@@ -31,6 +31,10 @@ class Hotkeys:
 
         self._bindings_map[key] = binding
 
+    def add_multiple_bindings(self, bindings: list["Binding"]):
+        for binding in bindings:
+            self.add_one_binding(binding)
+
     @property
     def help_text(self) -> str:
         return "\n\n".join(
@@ -40,11 +44,8 @@ class Hotkeys:
             ]
         )
 
-    def __init__(self, editor_instance: "Editor", bindings: list[Binding]):
+    def __init__(self, editor_instance: "Editor"):
         self._editor_instance = editor_instance
-
-        for binding in bindings:
-            self.add_one_binding(binding)
 
     @property
     def bindings_map(self):

@@ -94,6 +94,8 @@ class Editor:
         self._extensions = []
         self._settings = Settings(self, **kwargs)
         self._menu_show = MenuShow(self)
+        self._internal_functions = InternalFunctions(self)
+        self._hotkeys = Hotkeys(self)
 
         self._init_window_size = (width, height)
         self._copied_elements = []
@@ -122,8 +124,6 @@ class Editor:
 
         self.finish = False
         self._started = False
-
-        self._internal_functions = InternalFunctions(self)
 
         if load_default_extensions:
             for extension in default_extensions:
@@ -432,7 +432,7 @@ class Editor:
         all_bindings = self.all_bindings
 
         # 1) Add hotkeys for bindings
-        self._hotkeys = Hotkeys(self, all_bindings)
+        self._hotkeys.add_multiple_bindings(all_bindings)
         self._reset_on_key()
         self._scene.set_on_mouse(self._on_mouse)
 
