@@ -109,7 +109,7 @@ class Editor:
         self._pre_selected = []
         self._current_bbox = None
         self._current_bbox_axes = None
-        self._last_used_extension = None
+        self._last_used_extension: Union[Extension, None] = None
         self._window_name = window_name
         self.return_finish_flag = return_finish_flag
         self._submenu_id_generator = itertools.count(1, 1)
