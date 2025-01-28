@@ -7,7 +7,6 @@ from importlib.util import find_spec
 from typing import List, Union, TYPE_CHECKING
 from pathlib import Path
 from open3d.visualization import gui
-from multiprocessing import Process
 from .binding import Binding
 
 if has_pyperclip := find_spec("pyperclip"):
