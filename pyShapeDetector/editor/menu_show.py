@@ -27,6 +27,7 @@ class MenuShow:
                 lshift=False,
                 description="Show Ground Plane",
                 callback=self._on_ground_plane_toggle,
+                menu=self._menu,
             ),
             "axes": Binding(
                 key=gui.KeyName.A,
@@ -35,6 +36,7 @@ class MenuShow:
                 lshift=False,
                 description="Show Global Axes",
                 callback=self._on_global_axes_toggle,
+                menu=self._menu,
             ),
             "hotkeys": Binding(
                 key=gui.KeyName.H,
@@ -43,6 +45,7 @@ class MenuShow:
                 lshift=False,
                 description="Show Hotkeys",
                 callback=self._on_hotkeys_toggle,
+                menu=self._menu,
             ),
             "info": Binding(
                 key=gui.KeyName.I,
@@ -51,12 +54,14 @@ class MenuShow:
                 lshift=False,
                 description="Show Info",
                 callback=self._on_info_toggle,
+                menu=self._menu,
             ),
             "about": Binding(
                 description="About",
                 menu_id=next(MENU_SHOW_ID_GENERATOR),
                 callback=self._on_menu_about,
                 creates_window=True,
+                menu=self._menu,
             ),
         }
 
@@ -82,10 +87,6 @@ class MenuShow:
     def _create_menu(self):
         self._create_hotkeys_panel()
 
-        for binding in self._dict.values():
-            binding._menu = self._menu
-            binding.add_to_menu(self._editor_instance)
-
         editor_instance = self._editor_instance
         menubar = editor_instance.app.menubar
         menubar.set_checked(
@@ -94,7 +95,7 @@ class MenuShow:
         menubar.set_checked(
             self._dict["axes"].menu_id, editor_instance._global_axes_visible
         )
-        menubar.set_checked(self._dict["info"].menu_id, editor_instance._info.visible)
+        menubar.set_checked(self._dict["info"].menu_id, editor_instance._info_visible)
 
     def _on_hotkeys_toggle(self):
         editor_instance = self._editor_instance
@@ -153,7 +154,6 @@ class MenuShow:
 
     def _on_info_toggle(self):
         editor_instance = self._editor_instance
-        window = editor_instance._main_window
         menubar = editor_instance.app.menubar
 
         editor_instance._info_visible = not editor_instance._info_visible
