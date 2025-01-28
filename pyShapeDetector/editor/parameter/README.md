@@ -74,7 +74,7 @@ This class defines a path selector with a button to search manually.
   - `"open_dir"`: Open directory. 
   - `"save"`: Save file.
 - `suffixes`, optional: Dictionary mapping `suffix: str -> description: str`, to add as filters to the path selection.
-- 
+
 ### `ParameterCurrent`
 This class defines a convenient way of passing a specific `Element` as a separated input to an extension.
 
@@ -85,6 +85,7 @@ For example, both `type=int` and `type=float` create instances of `ParameterNume
 
 The descriptors follow the following `type -> Class` mapping:
 
+- `bool` -> `ParameterBool`
 - `"bool"` -> `ParameterBool`
 - `int` -> `ParameterNumeric`
 - `"int"` -> `ParameterNumeric`
