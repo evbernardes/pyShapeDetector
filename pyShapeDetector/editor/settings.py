@@ -34,7 +34,7 @@ COLOR_UNSELECTED_DEFAULT = np.array([76.5, 76.5, 76.5]) / 255
 # DEFAULT VALUES
 _extensions_on_panel = False
 _empty_extensions_on_panel_window = False
-_run_extensions_in_thread = False
+_run_extensions_in_thread = True
 _PointCloud_density = 0.00224
 _draw_boundary_lines = True
 _line_width = 7
