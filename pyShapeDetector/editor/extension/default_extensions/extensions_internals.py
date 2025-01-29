@@ -16,48 +16,47 @@ if TYPE_CHECKING:
 extensions = []
 
 
-def _test(editor_instance: "Editor", raise_error: bool = False):
-    if raise_error:
-        raise RuntimeError("Test")
-    return
+# def _test(editor_instance: "Editor", raise_error: bool = False):
+#     if raise_error:
+#         raise RuntimeError("Test")
+#     return
 
 
-extensions.append(
-    {
-        "name": "Do nothing",
-        "function": lambda editor_instance: _test(editor_instance),
-        "inputs": "internal",
-        "menu": "Test",
-        "hotkey": "T",
-    }
-)
+# extensions.append(
+#     {
+#         "name": "Do nothing",
+#         "function": lambda editor_instance: _test(editor_instance),
+#         "inputs": "internal",
+#         "menu": "Test",
+#         "hotkey": "T",
+#     }
+# )
 
-extensions.append(
-    {
-        "name": "Raise Error",
-        "function": lambda editor_instance: _test(editor_instance, True),
-        "inputs": "internal",
-        "menu": "Test",
-        "hotkey": "G",
-    }
-)
+# extensions.append(
+#     {
+#         "name": "Raise Error",
+#         "function": lambda editor_instance: _test(editor_instance, True),
+#         "inputs": "internal",
+#         "menu": "Test",
+#         "hotkey": "G",
+#     }
+# )
+#
+# def _create_random_spheres():
+#     sphere = Sphere.from_center_radius(np.random.random(3) * 10, np.random.random() * 2)
+#     sphere.color = np.random.random(3)
+#     return sphere
 
 
-def _create_random_spheres():
-    sphere = Sphere.from_center_radius(np.random.random(3) * 10, np.random.random() * 2)
-    sphere.color = np.random.random(3)
-    return sphere
-
-
-extensions.append(
-    {
-        "name": "Test sphere",
-        "function": _create_random_spheres,
-        "inputs": "none",
-        "menu": "Test",
-        "hotkey": "Y",
-    }
-)
+# extensions.append(
+#     {
+#         "name": "Test sphere",
+#         "function": _create_random_spheres,
+#         "inputs": "none",
+#         "menu": "Test",
+#         "hotkey": "Y",
+#     }
+# )
 
 
 def estimate_pointcloud_density(
