@@ -281,13 +281,14 @@ extensions.append(
 
 
 @_apply_to(PointCloud)
-def split_along_axis(pcds_input: list[PointCloud], axis, number_of_boxes):
+def split_along_axis(pcds_input: list[PointCloud], axis, number_of_boxes, frame):
     dim = "xyz".index(axis)
+    is_local = frame == "local"
 
     return [
         pcd
         for input_pcd in pcds_input
-        for pcd in input_pcd.split(num_boxes=number_of_boxes, dim=dim)
+        for pcd in input_pcd.split(num_boxes=number_of_boxes, dim=dim, local=is_local)
     ]
 
 
@@ -307,6 +308,7 @@ extensions.append(
                 "default": 2,
                 "limits": (2, 20),
             },
+            "frame": {"type": list, "options": ["local", "global"]},
         },
     }
 )
