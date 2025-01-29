@@ -499,13 +499,13 @@ class Extension:
                 output_elements = list(output_elements)
             elif not isinstance(output_elements, list):
                 output_elements = [output_elements]
-            if self.inputs == "current" and len(output_elements) != 1:
-                warnings.warn(
-                    "Only one output expected for extensions with "
-                    f"'current' input type, got {len(output_elements)}."
-                )
-                editor_instance._close_dialog()
-                return
+            # if self.inputs == "current" and len(output_elements) != 1:
+            #     warnings.warn(
+            #         "Only one output expected for extensions with "
+            #         f"'current' input type, got {len(output_elements)}."
+            #     )
+            #     editor_instance._close_dialog()
+            #     return
         except Exception:
             warnings.warn(f"Error with output elements {output_elements}.")
             traceback.print_exc()
