@@ -7,7 +7,7 @@ Created on 2025-01-14 10:13:36
 """
 from typing import TYPE_CHECKING
 import numpy as np
-from pyShapeDetector.primitives import Primitive
+from pyShapeDetector.primitives import Primitive, Sphere
 from pyShapeDetector.geometry import PointCloud
 
 if TYPE_CHECKING:
@@ -26,6 +26,18 @@ extensions.append(
         "inputs": "internal",
         "menu": "Test",
         "hotkey": "T",
+    }
+)
+
+extensions.append(
+    {
+        "name": "Test sphere",
+        "function": lambda: Sphere.from_center_radius(
+            np.random.random(3), np.random.random()
+        ),
+        "inputs": "none",
+        "menu": "Test",
+        "hotkey": "Y",
     }
 )
 

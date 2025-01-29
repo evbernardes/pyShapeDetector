@@ -26,6 +26,8 @@ from ..parameter import (
 from ..binding import Binding
 from ..settings import Settings
 
+# Defines minimun amount of seconds between two extension runs
+MIN_TIME_BETWEEN_RUNS = 0.2
 INPUT_TYPES_WITH_ELEMENTS = ("current", "selected", "global", "internal")
 INPUT_TYPES_ONLY_PARAMETERS = ("none",)
 ALL_VALID_INPUT_TYPES = INPUT_TYPES_WITH_ELEMENTS + INPUT_TYPES_ONLY_PARAMETERS
@@ -391,6 +393,10 @@ class Extension:
 
     def _apply_to_elements_in_thread(self):
         editor_instance = self._editor_instance
+        if editor_instance._running_extension:
+            return
+
+        editor_instance._running_extension = True
 
         def _on_cancel():
             self._cancelled = True
@@ -410,13 +416,29 @@ class Extension:
 
         Thread(target=self._worker).start()
 
+    def _stop(self):
+        """Graciously stop"""
+        editor_instance = self._editor_instance
+        editor_instance._close_dialog()
+        editor_instance._time_last_used_extension = time.time()
+        editor_instance._running_extension = False
+
     def _worker(self):
         editor_instance = self._editor_instance
 
         # TODO: without this time sleep, a Segmentation fault might happen
         # running extensions repeatedly and fast
         # I have no idea why :)
-        time.sleep(0.1)
+        time_last = editor_instance._time_last_used_extension
+        elapsed = time.time() - time_last
+        editor_instance._settings.print_debug(
+            f"{time_last=}s, {elapsed=}s", require_verbose=True
+        )
+        if (diff := MIN_TIME_BETWEEN_RUNS - elapsed) > 0:
+            editor_instance._settings.print_debug(
+                f"Waiting {diff}s", require_verbose=True
+            )
+            time.sleep(diff)
 
         if self.inputs == "none":
             indices = []
@@ -435,7 +457,7 @@ class Extension:
             input_elements = editor_instance
         else:
             # This should never happen
-            editor_instance._close_dialog()
+            self._stop()
             raise RuntimeError(
                 f"Invalid input instruction {self.inputs} "
                 f"found in extension {self.name}."
@@ -462,10 +484,9 @@ class Extension:
                 output_elements = self.function(input_elements, **kwargs)
             editor_instance._settings.print_debug("Extension function complete!")
         except KeyboardInterrupt:
-            editor_instance._close_dialog()
+            self._stop()
             return
         except Exception as e:
-            editor_instance._close_dialog()
             if self.inputs == "internal":
                 warnings.warn(
                     f"Failed to apply {self.name} internal extension to, got:"
@@ -475,10 +496,10 @@ class Extension:
                     f"Failed to apply {self.name} extension to "
                     f"elements in indices {indices}, got:"
                 )
+            self._stop()
             editor_instance._create_simple_dialog(
                 title_text=f"Extension '{self.name}' failed: \n\n{e}."
             )
-            # editor_instance._close_dialog()
             return
 
         if self._cancelled:
@@ -486,7 +507,6 @@ class Extension:
                 f"Extensions '{self.name}' thread ended, but call was canceled. "
                 "Ignoring output."
             )
-            editor_instance._close_dialog()
             return
 
         # Assuring output is a list
@@ -502,12 +522,12 @@ class Extension:
                     "Only one output expected for extensions with "
                     f"'current' input type, got {len(output_elements)}."
                 )
-                editor_instance._close_dialog()
+                self._stop()
                 return
         except Exception:
             warnings.warn(f"Error with output elements {output_elements}.")
             traceback.print_exc()
-            editor_instance._close_dialog()
+            self._stop()
             return
 
         # Saving state for undoing purposes
@@ -524,7 +544,7 @@ class Extension:
         except Exception:
             warnings.warn("Could not save state! Ignoring extension output.")
             traceback.print_exc()
-            editor_instance._close_dialog()
+            self._stop()
             return
 
         try:
@@ -544,8 +564,7 @@ class Extension:
                 )
         except Exception:
             warnings.warn("Could not insert output elements!")
-            traceback.print_exc()
-            editor_instance._close_dialog()
+            self._stop()
             return
 
         try:
@@ -559,7 +578,7 @@ class Extension:
         except Exception:
             warnings.warn("Could not remove input elements!")
             traceback.print_exc()
-            editor_instance._close_dialog()
+            self._stop()
             return
 
         editor_instance._last_used_extension = self
@@ -568,7 +587,7 @@ class Extension:
         editor_instance._update_plane_boundaries()
         editor_instance._update_info()
         editor_instance._update_BBOX_and_axes()
-        editor_instance._close_dialog()
+        self._stop()
         # editor_instance._set_gray_overlay(False)
 
     def _create_extension_window(self):
