@@ -450,7 +450,7 @@ class Extension:
             settings.print_debug(f"Extension has input type {self.inputs}")
             settings.print_debug(f"Indices: {indices}.", require_verbose=True)
         if len(self.parameters) > 0:
-            settings.print_debug(f"Parameters: {self.parameters}.")
+            settings.print_debug(f"Parameters: {list(self.parameters.values())}.")
 
         # MAIN FUNCTION EXECUTION
         try:
@@ -493,19 +493,17 @@ class Extension:
         try:
             if self.inputs == "internal":
                 pass
-            elif output_elements is None:
-                output_elements = []
             elif isinstance(output_elements, tuple):
                 output_elements = list(output_elements)
             elif not isinstance(output_elements, list):
                 output_elements = [output_elements]
-            # if self.inputs == "current" and len(output_elements) != 1:
-            #     warnings.warn(
-            #         "Only one output expected for extensions with "
-            #         f"'current' input type, got {len(output_elements)}."
-            #     )
-            #     editor_instance._close_dialog()
-            #     return
+            if self.inputs == "current" and len(output_elements) != 1:
+                warnings.warn(
+                    "Only one output expected for extensions with "
+                    f"'current' input type, got {len(output_elements)}."
+                )
+                editor_instance._close_dialog()
+                return
         except Exception:
             warnings.warn(f"Error with output elements {output_elements}.")
             traceback.print_exc()
