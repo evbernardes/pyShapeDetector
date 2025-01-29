@@ -93,6 +93,9 @@ class ParameterBase(ABC, Generic[T]):
             )
         self._label = new_label
 
+    def __repr__(self):
+        return self.__class__.__name__ + f"('{self.label}', {self.value})"
+
     # @property
     # def label(self) -> str:
     #     words = self.label.replace("_", " ").split()
