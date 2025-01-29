@@ -16,6 +16,20 @@ if TYPE_CHECKING:
 extensions = []
 
 
+def segfault_test(editor_instance: "Editor"):
+    return
+
+
+extensions.append(
+    {
+        "function": segfault_test,
+        "inputs": "internal",
+        "menu": "Test",
+        "hotkey": "T",
+    }
+)
+
+
 def estimate_pointcloud_density(
     editor_instance: "Editor", PointCloud_density, number_of_neighbors, split
 ):
