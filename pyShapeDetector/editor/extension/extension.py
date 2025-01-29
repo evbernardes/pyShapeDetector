@@ -507,15 +507,15 @@ class Extension:
         try:
             editor_instance._settings.print_debug("Trying to run extension function...")
 
-            # kwargs = self.parameters_kwargs
-            # if self.inputs == "none":
-            #     output_elements = self.function(**kwargs)
-            # else:
-            #     output_elements = self.function(input_elements, **kwargs)
-            output_elements = []
-            t = threading.Thread(target=self._worker(input_elements, output_elements))
-            t.start()
-            t.join()
+            kwargs = self.parameters_kwargs
+            if self.inputs == "none":
+                output_elements = self.function(**kwargs)
+            else:
+                output_elements = self.function(input_elements, **kwargs)
+            # output_elements = []
+            # t = threading.Thread(target=self._worker(input_elements, output_elements))
+            # t.start()
+            # t.join()
 
             editor_instance._settings.print_debug("Extension function complete!")
         except KeyboardInterrupt:
