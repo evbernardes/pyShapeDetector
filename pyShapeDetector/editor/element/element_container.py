@@ -7,6 +7,7 @@ from typing import List, Union, TYPE_CHECKING
 from open3d.visualization.rendering import Open3DScene
 from .element import Element, ELEMENT_TYPE
 
+
 if has_psutil := find_spec("psutil"):
     import psutil
 

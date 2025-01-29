@@ -766,7 +766,7 @@ class InternalFunctions:
             editor_instance._settings.print_debug(
                 f"Re-applying last function: {ext.name}"
             )
-            ext._apply_to_elements_in_thread()
+            ext._run()
 
     def _cb_hide(
         self,

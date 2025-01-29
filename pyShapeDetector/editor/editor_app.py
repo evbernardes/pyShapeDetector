@@ -16,6 +16,7 @@ import traceback
 import warnings
 import itertools
 import numpy as np
+import threading
 from typing import Callable, Union
 from pathlib import Path
 from open3d.visualization import gui, rendering
@@ -112,6 +113,7 @@ class Editor:
         self._last_used_extension: Union[Extension, None] = None
         self._time_last_used_extension: float = -1
         self._running_extension: bool = False
+        self._extension_thread_lock = threading.Lock()
         self._window_name = window_name
         self.return_finish_flag = return_finish_flag
         self._submenu_id_generator = itertools.count(1, 1)
@@ -738,3 +740,7 @@ class Editor:
 def __main__():
     editor = Editor()
     editor.run()
+
+
+if __name__ == "__main__":
+    __main__()

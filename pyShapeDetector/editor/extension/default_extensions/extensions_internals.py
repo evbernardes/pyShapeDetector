@@ -35,19 +35,24 @@ extensions.append(
 extensions.append(
     {
         "name": "Raise Error",
-        "function": lambda editor_instance: _test(editor_instance, true),
+        "function": lambda editor_instance: _test(editor_instance, True),
         "inputs": "internal",
         "menu": "Test",
         "hotkey": "G",
     }
 )
 
+
+def _create_random_spheres():
+    sphere = Sphere.from_center_radius(np.random.random(3) * 10, np.random.random() * 2)
+    sphere.color = np.random.random(3)
+    return sphere
+
+
 extensions.append(
     {
         "name": "Test sphere",
-        "function": lambda: Sphere.from_center_radius(
-            np.random.random(3), np.random.random()
-        ),
+        "function": _create_random_spheres,
         "inputs": "none",
         "menu": "Test",
         "hotkey": "Y",

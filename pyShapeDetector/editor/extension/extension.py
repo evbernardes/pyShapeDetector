@@ -10,7 +10,8 @@ import copy
 import warnings
 import inspect
 import traceback
-from threading import Thread
+import threading
+import queue
 from typing import Union, Callable, TYPE_CHECKING
 
 from open3d.visualization import gui
@@ -27,7 +28,7 @@ from ..binding import Binding
 from ..settings import Settings
 
 # Defines minimun amount of seconds between two extension runs
-MIN_TIME_BETWEEN_RUNS = 0.2
+MIN_TIME_BETWEEN_RUNS = 0.05
 INPUT_TYPES_WITH_ELEMENTS = ("current", "selected", "global", "internal")
 INPUT_TYPES_ONLY_PARAMETERS = ("none",)
 ALL_VALID_INPUT_TYPES = INPUT_TYPES_WITH_ELEMENTS + INPUT_TYPES_ONLY_PARAMETERS
@@ -344,7 +345,7 @@ class Extension:
             lshift=self.lshift,
             description=self.name,
             menu=self.menu,
-            callback=self.run,
+            callback=self._on_click,
             creates_window=len(self.parameters) > 0,
         )
 
@@ -370,14 +371,14 @@ class Extension:
     def add_menu_item(self):
         self.binding.add_to_menu(self._editor_instance)
 
-    def run(self):
+    def _on_click(self):
         _on_window = self._editor_instance._settings.get_setting("extensions_on_window")
         _empty_extensions_on_panel_window = self._editor_instance._settings.get_setting(
             "empty_extensions_on_panel_window"
         )
 
         if len(self.parameters) == 0 and not _empty_extensions_on_panel_window:
-            self._apply_to_elements_in_thread()
+            self._run()
         else:
             if self._extension_window_opened and _on_window:
                 warnings.warn(
@@ -391,11 +392,11 @@ class Extension:
                 warnings.warn("Could not create extension window.")
                 traceback.print_exc()
 
-    def _apply_to_elements_in_thread(self):
+    def _run(self):
         editor_instance = self._editor_instance
         if editor_instance._running_extension:
             editor_instance._settings.print_debug(
-                "Extension already running, stopped.",
+                "Some extension is already running, cancel or wait execution.",
                 require_verbose=False,
             )
             return
@@ -413,24 +414,32 @@ class Extension:
             return
 
         editor_instance._running_extension = True
+        self._cancelled = False
 
-        # def _on_cancel():
-        #     self._cancelled = True
-        #     editor_instance._close_dialog()
-        #     warnings.warn(f"User cancelled extension {self.name}.")
+        if not editor_instance._get_setting("run_extensions_in_thread"):
+            warnings.warn(
+                f"'Run extensions in thread' set to False, {self.name} "
+                "cannot be cancelled and window will be irresponsive..."
+            )
+            self._apply_function()
+            return
 
-        # self._cancelled = False
-        # editor_instance._create_simple_dialog(
-        #     title_text=f"Applying {self.name}...",
-        #     create_button=self.cancellable,
-        #     button_text="Cancel",
-        #     button_callback=_on_cancel,
-        # )
+        def _on_cancel():
+            self._cancelled = True
+            self._stop()
+            warnings.warn(f"User cancelled extension {self.name}.")
 
-        # editor_instance._settings.print_debug("Running extension in thread...")
+        editor_instance._create_simple_dialog(
+            title_text=f"Applying {self.name}...",
+            create_button=self.cancellable,
+            button_text="Cancel",
+            button_callback=_on_cancel,
+        )
 
-        # editor_instance.app.run_in_thread(self._worker)
-        Thread(target=self._worker).start()
+        threading.Thread(target=self._apply_function).start()
+        editor_instance._settings.print_debug(
+            f"Running extension in thread, number of threads: {threading.active_count()}"
+        )
 
     def _stop(self):
         """Graciously stop"""
@@ -439,26 +448,24 @@ class Extension:
         editor_instance._time_last_used_extension = time.time()
         editor_instance._running_extension = False
 
-    def _worker(self):
+    def _worker(self, input_elements, output_elements: list):
+        kwargs = self.parameters_kwargs
+        if self.inputs == "none":
+            result = self.function(**kwargs)
+        else:
+            result = self.function(input_elements, **kwargs)
+
+        if result is None:
+            return
+
+        if not isinstance(result, (list, tuple)):
+            result = [result]
+
+        for element in result:
+            output_elements.append(element)
+
+    def _apply_function(self):
         editor_instance = self._editor_instance
-
-        # TODO: without this time sleep, a Segmentation fault might happen
-        # running extensions repeatedly and fast
-        # I have no idea why :)
-        # time_last = editor_instance._time_last_used_extension
-        # elapsed = time.time() - time_last
-        # editor_instance._settings.print_debug(
-        #     f"{time_last=}s, {elapsed=}s", require_verbose=True
-        # )
-        # if (diff := MIN_TIME_BETWEEN_RUNS - elapsed) > 0:
-        #     editor_instance._settings.print_debug(
-        #         f"Re-running extensions too soon, should wait {diff}s",
-        #         require_verbose=True,
-        #     )
-        #     self._stop()
-        #     return
-
-        # time.sleep(diff)
 
         if self.inputs == "none":
             indices = []
@@ -499,11 +506,17 @@ class Extension:
         # MAIN FUNCTION EXECUTION
         try:
             editor_instance._settings.print_debug("Trying to run extension function...")
-            kwargs = self.parameters_kwargs
-            if self.inputs == "none":
-                output_elements = self.function(**kwargs)
-            else:
-                output_elements = self.function(input_elements, **kwargs)
+
+            # kwargs = self.parameters_kwargs
+            # if self.inputs == "none":
+            #     output_elements = self.function(**kwargs)
+            # else:
+            #     output_elements = self.function(input_elements, **kwargs)
+            output_elements = []
+            t = threading.Thread(target=self._worker(input_elements, output_elements))
+            t.start()
+            t.join()
+
             editor_instance._settings.print_debug("Extension function complete!")
         except KeyboardInterrupt:
             self._stop()
@@ -653,7 +666,7 @@ class Extension:
 
         def _on_apply_button():
             self._ran_at_least_once = True
-            self._apply_to_elements_in_thread()
+            self._run()
 
         def _on_close_button():
             if not _on_panel:
