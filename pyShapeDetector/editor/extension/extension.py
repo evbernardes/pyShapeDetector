@@ -489,7 +489,7 @@ class Extension:
                 f"Invalid input instruction {self.inputs} found in extension {self.name}."
             )
 
-        # # DEBUG LINES
+        # DEBUG LINES
         try:
             settings = editor_instance._settings
             if self.inputs == "internal":
