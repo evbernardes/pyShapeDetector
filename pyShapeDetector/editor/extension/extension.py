@@ -493,6 +493,8 @@ class Extension:
         try:
             if self.inputs == "internal":
                 pass
+            elif output_elements is None:
+                output_elements = []
             elif isinstance(output_elements, tuple):
                 output_elements = list(output_elements)
             elif not isinstance(output_elements, list):
