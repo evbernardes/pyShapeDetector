@@ -406,11 +406,11 @@ class Extension:
         )
 
         editor_instance._settings.print_debug("Running extension in thread...")
-        # editor_instance.app.run_in_thread(self._apply_to_elements)
+        # editor_instance.app.run_in_thread(self._worker)
 
-        Thread(target=self._apply_to_elements).start()
+        Thread(target=self._worker).start()
 
-    def _apply_to_elements(self):
+    def _worker(self):
         editor_instance = self._editor_instance
 
         # TODO: without this time sleep, a Segmentation fault might happen
