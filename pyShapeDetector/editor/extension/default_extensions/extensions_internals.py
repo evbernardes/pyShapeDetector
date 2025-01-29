@@ -16,16 +16,29 @@ if TYPE_CHECKING:
 extensions = []
 
 
-def segfault_test(editor_instance: "Editor"):
+def _test(editor_instance: "Editor", raise_error: bool = False):
+    if raise_error:
+        raise RuntimeError("Test")
     return
 
 
 extensions.append(
     {
-        "function": segfault_test,
+        "name": "Do nothing",
+        "function": lambda editor_instance: _test(editor_instance),
         "inputs": "internal",
         "menu": "Test",
         "hotkey": "T",
+    }
+)
+
+extensions.append(
+    {
+        "name": "Raise Error",
+        "function": lambda editor_instance: _test(editor_instance, true),
+        "inputs": "internal",
+        "menu": "Test",
+        "hotkey": "G",
     }
 )
 

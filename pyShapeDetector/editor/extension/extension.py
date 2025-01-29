@@ -394,26 +394,42 @@ class Extension:
     def _apply_to_elements_in_thread(self):
         editor_instance = self._editor_instance
         if editor_instance._running_extension:
+            editor_instance._settings.print_debug(
+                "Extension already running, stopped.",
+                require_verbose=False,
+            )
+            return
+
+        time_last = editor_instance._time_last_used_extension
+        elapsed = time.time() - time_last
+        editor_instance._settings.print_debug(
+            f"{time_last=}s, {elapsed=}s", require_verbose=True
+        )
+        if (diff := MIN_TIME_BETWEEN_RUNS - elapsed) > 0:
+            editor_instance._settings.print_debug(
+                f"Re-running extensions too soon, should wait {diff}s",
+                require_verbose=False,
+            )
             return
 
         editor_instance._running_extension = True
 
-        def _on_cancel():
-            self._cancelled = True
-            editor_instance._close_dialog()
-            warnings.warn(f"User cancelled extension {self.name}.")
+        # def _on_cancel():
+        #     self._cancelled = True
+        #     editor_instance._close_dialog()
+        #     warnings.warn(f"User cancelled extension {self.name}.")
 
-        self._cancelled = False
-        editor_instance._create_simple_dialog(
-            title_text=f"Applying {self.name}...",
-            create_button=self.cancellable,
-            button_text="Cancel",
-            button_callback=_on_cancel,
-        )
+        # self._cancelled = False
+        # editor_instance._create_simple_dialog(
+        #     title_text=f"Applying {self.name}...",
+        #     create_button=self.cancellable,
+        #     button_text="Cancel",
+        #     button_callback=_on_cancel,
+        # )
 
-        editor_instance._settings.print_debug("Running extension in thread...")
+        # editor_instance._settings.print_debug("Running extension in thread...")
+
         # editor_instance.app.run_in_thread(self._worker)
-
         Thread(target=self._worker).start()
 
     def _stop(self):
@@ -429,16 +445,20 @@ class Extension:
         # TODO: without this time sleep, a Segmentation fault might happen
         # running extensions repeatedly and fast
         # I have no idea why :)
-        time_last = editor_instance._time_last_used_extension
-        elapsed = time.time() - time_last
-        editor_instance._settings.print_debug(
-            f"{time_last=}s, {elapsed=}s", require_verbose=True
-        )
-        if (diff := MIN_TIME_BETWEEN_RUNS - elapsed) > 0:
-            editor_instance._settings.print_debug(
-                f"Waiting {diff}s", require_verbose=True
-            )
-            time.sleep(diff)
+        # time_last = editor_instance._time_last_used_extension
+        # elapsed = time.time() - time_last
+        # editor_instance._settings.print_debug(
+        #     f"{time_last=}s, {elapsed=}s", require_verbose=True
+        # )
+        # if (diff := MIN_TIME_BETWEEN_RUNS - elapsed) > 0:
+        #     editor_instance._settings.print_debug(
+        #         f"Re-running extensions too soon, should wait {diff}s",
+        #         require_verbose=True,
+        #     )
+        #     self._stop()
+        #     return
+
+        # time.sleep(diff)
 
         if self.inputs == "none":
             indices = []
@@ -459,20 +479,22 @@ class Extension:
             # This should never happen
             self._stop()
             raise RuntimeError(
-                f"Invalid input instruction {self.inputs} "
-                f"found in extension {self.name}."
+                f"Invalid input instruction {self.inputs} found in extension {self.name}."
             )
 
-        # DEBUG LINES
-        settings = editor_instance._settings
-        if self.inputs == "internal":
-            settings.print_debug(f"Applying internal extension {self.name}")
-        else:
-            settings.print_debug(f"Applying {self.name} to {len(indices)} elements")
-            settings.print_debug(f"Extension has input type {self.inputs}")
-            settings.print_debug(f"Indices: {indices}.", require_verbose=True)
-        if len(self.parameters) > 0:
-            settings.print_debug(f"Parameters: {list(self.parameters.values())}.")
+        # # DEBUG LINES
+        try:
+            settings = editor_instance._settings
+            if self.inputs == "internal":
+                settings.print_debug(f"Applying internal extension {self.name}")
+            else:
+                settings.print_debug(f"Applying {self.name} to {len(indices)} elements")
+                settings.print_debug(f"Extension has input type {self.inputs}")
+                settings.print_debug(f"Indices: {indices}.", require_verbose=True)
+            if len(self.parameters) > 0:
+                settings.print_debug(f"Parameters: {list(self.parameters.values())}.")
+        except Exception:
+            traceback.print_exc()
 
         # MAIN FUNCTION EXECUTION
         try:
@@ -496,6 +518,7 @@ class Extension:
                     f"Failed to apply {self.name} extension to "
                     f"elements in indices {indices}, got:"
                 )
+            # _stop before creating new dialog
             self._stop()
             editor_instance._create_simple_dialog(
                 title_text=f"Extension '{self.name}' failed: \n\n{e}."
@@ -569,26 +592,26 @@ class Extension:
 
         try:
             if self.inputs != "internal" and not self.keep_inputs and len(indices) > 0:
-                assert (
-                    editor_instance.element_container.pop_multiple(
-                        indices, from_gui=True
-                    )
-                    == input_elements
+                popped_elements = editor_instance.element_container.pop_multiple(
+                    indices, from_gui=True
                 )
+                assert popped_elements == input_elements
         except Exception:
             warnings.warn("Could not remove input elements!")
             traceback.print_exc()
             self._stop()
             return
 
-        editor_instance._last_used_extension = self
-        # editor_instance._future_states = []
-        editor_instance.element_container.update_current_index()
-        editor_instance._update_plane_boundaries()
-        editor_instance._update_info()
-        editor_instance._update_BBOX_and_axes()
+        try:
+            editor_instance._last_used_extension = self
+            editor_instance.element_container.update_current_index()
+            editor_instance._update_plane_boundaries()
+            editor_instance._update_info()
+            editor_instance._update_BBOX_and_axes()
+        except Exception:
+            traceback.print_exc()
+
         self._stop()
-        # editor_instance._set_gray_overlay(False)
 
     def _create_extension_window(self):
         _on_panel = not self._editor_instance._settings.get_setting(

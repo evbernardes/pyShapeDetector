@@ -465,7 +465,10 @@ class ElementContainer:
         self, idx: Union[None, int] = None, update_old: bool = True
     ):
         if self.current_index is None and idx is None:
-            return
+            if len(self.elements) == 0:
+                return
+            else:
+                idx = len(self.elements) - 1
 
         if idx is not None:
             self._previous_index = self.current_index
