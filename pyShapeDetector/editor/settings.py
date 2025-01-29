@@ -34,7 +34,7 @@ COLOR_UNSELECTED_DEFAULT = np.array([76.5, 76.5, 76.5]) / 255
 # DEFAULT VALUES
 _extensions_on_panel = False
 _empty_extensions_on_panel_window = False
-_run_extensions_in_thread = True
+_run_extensions_in_thread = False
 _PointCloud_density = 0.00224
 _draw_boundary_lines = True
 _line_width = 7
@@ -142,7 +142,7 @@ class Settings:
                 subpanel="Extensions",
             ),
             "run_extensions_in_thread": ParameterBool(
-                label="Run extensions in thread",
+                label="Run extensions in thread (Experimental)",
                 default=_run_extensions_in_thread,
                 on_update=self._cb_run_extensions_in_thread,
                 subpanel="Extensions",
