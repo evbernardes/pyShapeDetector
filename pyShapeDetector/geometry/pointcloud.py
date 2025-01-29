@@ -401,6 +401,7 @@ class PointCloud(Numpy_Geometry):
         num_boxes: int,
         dim: Union[int, None] = None,
         return_only_indices: bool = False,
+        local: bool = False,
     ) -> list["PointCloud"]:
         """Split the bounding box of the pointcloud in multiple sub boxes and
         return a list of sub pointclouds.
@@ -415,13 +416,20 @@ class PointCloud(Numpy_Geometry):
         return_only_indices : boolean, optional
             If True, returns indices instead of pointclouds. This is much
             slower for bigger pointclouds. Default: False.
+        local : boolean, optional
+            If True, use OrientedBoundingBox and local frame axes for dimenions.
+            If False, use AxisAlignedBoundingBox and global frame axes for dimensions.
+            Default: True
 
         Returns
         -------
         list
             Divided pointclouds
         """
-        sub_aabbs = self.get_axis_aligned_bounding_box().split(num_boxes, dim)
+        if local:
+            sub_aabbs = self.get_oriented_bounding_box().split(num_boxes, dim)
+        else:
+            sub_aabbs = self.get_axis_aligned_bounding_box().split(num_boxes, dim)
 
         if return_only_indices:
             return [
