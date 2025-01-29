@@ -366,6 +366,10 @@ class Editor:
 
         # for window in self._temp_windows:
         #     window.close()
+        try:
+            self.app.menubar = None
+        except Exception:
+            pass
         self.app.quit()
         return True
 
