@@ -57,6 +57,9 @@ def _get_tranformation_matrix(rotation_center, rotation_matrix, translation_vect
 def _transform_elements_and_save_state(
     editor_instance: "Editor", indices, transformation_matrix
 ):
+    if len(indices) == 0:
+        return
+
     for index in indices:
         element = editor_instance.element_container.elements[index]
         element.transform(transformation_matrix)

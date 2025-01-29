@@ -464,6 +464,9 @@ class ElementContainer:
     def update_current_index(
         self, idx: Union[None, int] = None, update_old: bool = True
     ):
+        if self.current_index is None and idx is None:
+            return
+
         if idx is not None:
             self._previous_index = self.current_index
             self._current_index = idx

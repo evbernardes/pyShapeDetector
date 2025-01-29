@@ -10,6 +10,7 @@ import copy
 import warnings
 import inspect
 import traceback
+from threading import Thread
 from typing import Union, Callable, TYPE_CHECKING
 
 from open3d.visualization import gui
@@ -405,9 +406,11 @@ class Extension:
         )
 
         editor_instance._settings.print_debug("Running extension in thread...")
-        editor_instance.app.run_in_thread(self._worker)
+        # editor_instance.app.run_in_thread(self._apply_to_elements)
 
-    def _worker(self):
+        Thread(target=self._apply_to_elements).start()
+
+    def _apply_to_elements(self):
         editor_instance = self._editor_instance
 
         # TODO: without this time sleep, a Segmentation fault might happen
@@ -432,6 +435,7 @@ class Extension:
             input_elements = editor_instance
         else:
             # This should never happen
+            editor_instance._close_dialog()
             raise RuntimeError(
                 f"Invalid input instruction {self.inputs} "
                 f"found in extension {self.name}."
@@ -461,6 +465,7 @@ class Extension:
             editor_instance._close_dialog()
             return
         except Exception as e:
+            editor_instance._close_dialog()
             if self.inputs == "internal":
                 warnings.warn(
                     f"Failed to apply {self.name} internal extension to, got:"
@@ -470,13 +475,10 @@ class Extension:
                     f"Failed to apply {self.name} extension to "
                     f"elements in indices {indices}, got:"
                 )
-            editor_instance._close_dialog()
-            traceback.print_exc()
-
             editor_instance._create_simple_dialog(
                 title_text=f"Extension '{self.name}' failed: \n\n{e}."
             )
-            editor_instance._close_dialog()
+            # editor_instance._close_dialog()
             return
 
         if self._cancelled:
@@ -500,6 +502,7 @@ class Extension:
                     "Only one output expected for extensions with "
                     f"'current' input type, got {len(output_elements)}."
                 )
+                editor_instance._close_dialog()
                 return
         except Exception:
             warnings.warn(f"Error with output elements {output_elements}.")
