@@ -409,7 +409,7 @@ class Extension:
         if (diff := MIN_TIME_BETWEEN_RUNS - elapsed) > 0:
             editor_instance._settings.print_debug(
                 f"Re-running extensions too soon, should wait {diff}s",
-                require_verbose=False,
+                require_verbose=True,
             )
             return
 
