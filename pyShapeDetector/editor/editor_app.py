@@ -703,6 +703,10 @@ class Editor:
         self._scene.setup_camera(60, bounds, center)
         self._scene.look_at(center, center + [3] * 3, [0, 0, 1])
 
+        self._settings.print_debug(
+            "Camera reset sucessfully reset.", require_verbose=True
+        )
+
     def _startup(self):
         """Runs all necessary startups, might be useful for testing."""
         self._settings.print_debug(f"Starting {type(self).__name__}.")

@@ -303,11 +303,10 @@ class InternalFunctions:
             try:
                 _open_scene(path, editor_instance)
                 editor_instance._scene_file_path = path
+                print("c")
             except Exception:
                 warnings.warn(f"Could not open scene on file '{path}'.")
                 traceback.print_exc()
-            # finally:
-            # editor_instance._close_dialog()
             return
 
         window = self._editor_instance._main_window
@@ -331,11 +330,13 @@ class InternalFunctions:
         def _on_done(path):
             try:
                 self._cb_open_scene(path)
+                print("a")
             except Exception:
                 warnings.warn(f"Could not open file on path '{path}'.")
                 traceback.print_exc()
             finally:
                 editor_instance._close_dialog()
+            print("b")
 
         # A file dialog MUST define on_cancel and on_done functions
         dlg.set_on_cancel(_on_cancel)

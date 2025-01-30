@@ -289,7 +289,7 @@ def _open_scene(input_path: Union[Path, str], editor_instance: "Editor"):
                         f"file '{input_path}' into settings."
                     )
                     traceback.print_exc()
-
+    editor_instance._settings.print_debug("Finished opening scene.")
     editor_instance._reset_camera()
 
 
