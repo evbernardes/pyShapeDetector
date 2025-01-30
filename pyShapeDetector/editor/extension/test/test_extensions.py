@@ -5,7 +5,8 @@ Created on 2025-01-23 09:44:19
 
 @author: evbernardes
 """
-from pyShapeDetector.editor import Editor, Extension
+from pyShapeDetector.editor import Editor
+from pyShapeDetector.editor.extension import Extension
 import pytest
 
 param_radius = {"radius": {"type": float, "default": 0}}

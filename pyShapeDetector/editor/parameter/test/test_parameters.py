@@ -10,7 +10,8 @@ import numpy as np
 from pathlib import Path
 from numpy.testing import assert_array_equal
 from open3d.visualization import gui
-from pyShapeDetector.editor import Editor, Extension
+from pyShapeDetector.editor import Editor
+from pyShapeDetector.editor.extension import Extension
 from pyShapeDetector.editor.parameter import (
     ParameterBase,
     ParameterNumeric,
