@@ -533,8 +533,8 @@ class Settings:
         self._editor_instance.element_container.update_indices(indices)
 
     def _cb_number_points_distance(self, value):
-        for elem in self._editor_instance.element_container:
-            elem._get_distance_checker(0)
+        for element in self._editor_instance.element_container.elements:
+            element._set_distance_checker()
 
     def get_element_color(self, is_selected, is_current, is_bbox=False):
         # highlight = self._dict["highlight_ratio"].value

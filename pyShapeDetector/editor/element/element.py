@@ -171,6 +171,9 @@ class Element(ABC, Generic[T]):
     def _set_extra_elements(self):
         pass
 
+    def _set_distance_checker(self):
+        pass
+
     def _delete_extra_elements(self):
         del self._drawable
         del self._color_original
