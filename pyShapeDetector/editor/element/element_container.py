@@ -252,9 +252,10 @@ class ElementContainer:
 
     def insert_multiple(
         self,
-        elements_new: Union[ELEMENT_TYPE, list[ELEMENT_TYPE]],
-        indices=None,
-        is_selected=False,
+        elements_new: Union[Element, ELEMENT_TYPE, list[Element], list[ELEMENT_TYPE]],
+        indices: Union[None, list[int]] = None,
+        is_selected: Union[bool, list[bool]] = False,
+        is_hidden: Union[bool, list[bool]] = False,
     ):
         if not isinstance(elements_new, (tuple, list)):
             elements_new = [elements_new]
@@ -264,8 +265,26 @@ class ElementContainer:
         if indices is None:
             indices = range(len(self), len(self) + len(elements_new))
 
+        if len(indices) != len(elements_new):
+            raise ValueError(
+                f"Got {len(indices)} indices but {len(elements_new)} elements."
+            )
+
         if isinstance(is_selected, bool):
             is_selected = [is_selected] * len(indices)
+
+        if len(indices) != len(is_selected):
+            raise ValueError(
+                f"Got {len(indices)} indices but {len(is_selected)} 'selected' flags."
+            )
+
+        if isinstance(is_hidden, bool):
+            is_hidden = [is_hidden] * len(indices)
+
+        if len(indices) != len(is_hidden):
+            raise ValueError(
+                f"Got {len(indices)} indices but {len(is_hidden)} 'hidden' flags."
+            )
 
         if self.current_index is None:
             self._current_index = 0
@@ -291,6 +310,9 @@ class ElementContainer:
 
             if isinstance(elements_new[i], Element):
                 elem = elements_new[i]
+                elem.is_selected = is_selected[i]
+                elem.is_hidden = is_hidden[i]
+
                 if elem.is_color_fixed != self._is_color_fixed:
                     warnings.warn(
                         "Changing element to a container with a different color type."
@@ -304,6 +326,7 @@ class ElementContainer:
                     is_current,
                     self._is_color_fixed,
                 )
+                elem.is_hidden = is_hidden[i]
                 if elem is None:
                     warnings.warn(f"Could not create element for {elements_new[i]}.")
                     failed_indices.append(idx)
