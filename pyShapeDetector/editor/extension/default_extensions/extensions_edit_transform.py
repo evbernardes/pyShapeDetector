@@ -95,56 +95,17 @@ def transform_with_angles(
 
     rotation_center = bbox.center
 
-    if frame == "global":
-        rotation_matrix = Rotation.from_euler(
-            "zyx", angles_ZYX_degrees, degrees=True
-        ).as_matrix()
+    rotation = Rotation.from_euler("zyx", angles_ZYX_degrees, degrees=True)
 
-    elif frame == "local":
+    if frame == "local":
         vector = bbox.R @ vector
-        rotation_center = bbox.center
-        rotation = Rotation.identity()
-        for angle, rot_axis in zip(angles_ZYX_degrees, bbox.R.T):
-            rotation *= Rotation.from_rotvec(rot_axis * angle, degrees=True)
-        rotation_matrix = rotation.as_matrix()
+        bbox_rotation = Rotation.from_matrix(np.array(bbox.R))
+        rotation = bbox_rotation * rotation * bbox_rotation.inv()
 
-    else:
-        raise RuntimeError(f"Valid frame options are 'global' and 'local', got {frame}")
-
-    # if not isinstance(elements_raw, list):
-    #     print("is not list")
-    #     try:
-    #         bbox = elements_raw.get_oriented_bounding_box()
-    #         vector = bbox.R @ vector
-    #         rotation_center = bbox.center
-    #         rotation = Rotation.identity()
-    #         for angle, rot_axis in zip(angles_ZYX_degrees, bbox.R.T):
-    #             rotation *= Rotation.from_rotvec(rot_axis * angle, degrees=True)
-    #         rotation_matrix = rotation.as_matrix()
-
-    #     except Exception:
-    #         warnings.warn("Could not get Bounding Box")
-    #         rotation_center = np.array([0.0, 0.0, 0.0])
-    #         rotation_matrix = Rotation.from_euler(
-    #             "zyx", angles_ZYX_degrees, degrees=True
-    #         ).as_matrix()
-    # else:
-    #     print("is list")
-    #     vector = vector
-    #     rotation_matrix = Rotation.from_euler(
-    #         "zyx", angles_ZYX_degrees, degrees=True
-    #     ).as_matrix()
-    #     rotation_center = np.array([0.0, 0.0, 0.0])
-    #     try:
-    #         for elem in elements_raw:
-    #             rotation_center += elem.get_oriented_bounding_box().center
-    #         rotation_center /= len(elements_raw)
-    #     except Exception:
-    #         warnings.warn("Could not get center for transform.")
-    #         traceback.print_exc()
+    rotation_matrix = rotation.as_matrix()
 
     if reverse_rotation:
-        rotation = rotation.T
+        rotation_matrix = rotation_matrix.T
 
     if reverse_translation:
         vector = -vector
