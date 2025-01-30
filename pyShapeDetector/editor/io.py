@@ -374,6 +374,7 @@ def _save_scene(path: Union[Path, str], editor_instance: "Editor"):
             path.unlink()
 
         temp_scene_file.rename(path)
+        editor_instance._scene_file_path = path
 
     print("Scene saved successfully.")
     # else:

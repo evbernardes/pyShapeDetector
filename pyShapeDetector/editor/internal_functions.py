@@ -3,6 +3,7 @@ import copy
 import numpy as np
 import warnings
 import traceback
+import threading
 from importlib.util import find_spec
 from typing import List, Union, TYPE_CHECKING
 from pathlib import Path
@@ -338,29 +339,37 @@ class InternalFunctions:
         dlg.set_on_done(_on_done)
         window.show_dialog(dlg)
 
-    def _cb_save_scene(self, quitting=False):
+    def _cb_save_scene(self, path=None, quitting=False):
         from .io import _save_scene
 
         editor_instance = self._editor_instance
-        path = editor_instance._scene_file_path
+
+        if path is None:
+            path = editor_instance._scene_file_path
+        elif not isinstance(path, (Path, str)):
+            raise TypeError(f"{path} is not a valid path.")
 
         if path is None:
             self._cb_save_scene_as(quitting)
-        else:
+            return
 
-            def _save_thread():
-                _save_scene(path, editor_instance)
+        def _save_thread():
+            _save_scene(path, editor_instance)
+            if editor_instance._main_window is not None:
+                # App is running
                 editor_instance._close_dialog()
 
+        if editor_instance._main_window is not None:
+            # App is running
             editor_instance._create_simple_dialog(
                 title_text=f"Saving scene to {path}...",
                 create_button=False,
             )
+        editor_instance._run_in_thread(_save_thread)
 
-            editor_instance.app.run_in_thread(_save_thread)
-            if quitting:
-                self._editor_instance._closing_app = True
-                self._editor_instance._main_window.close()
+        if quitting:
+            self._editor_instance._closing_app = True
+            self._editor_instance.app.quit()
 
     def _cb_save_scene_as(self, quitting=False):
         from .io import _create_overwrite_warning, SCENE_FILE_EXTENSION
