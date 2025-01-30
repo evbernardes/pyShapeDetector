@@ -8,10 +8,14 @@ Created on Mon Sep 25 15:42:59 2023
 import tempfile
 import tarfile
 import json
+from typing import TYPE_CHECKING
 from pathlib import Path
 import warnings
 from abc import ABC, abstractmethod
 from itertools import combinations
+
+if TYPE_CHECKING:
+    from pyShapeDetector.geometry import TriangleMesh
 
 import numpy as np
 
@@ -327,7 +331,7 @@ class Primitive(ABC):
             self._mesh.paint_uniform_color(new_color)
 
     @property
-    def mesh(self):
+    def mesh(self) -> "TriangleMesh":
         if self._mesh is None:
             self._mesh = self.get_mesh()
             self._mesh.paint_uniform_color(self.color)
