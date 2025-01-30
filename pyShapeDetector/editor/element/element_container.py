@@ -255,7 +255,6 @@ class ElementContainer:
         elements_new: Union[ELEMENT_TYPE, list[ELEMENT_TYPE]],
         indices=None,
         is_selected=False,
-        to_gui=False,
     ):
         if not isinstance(elements_new, (tuple, list)):
             elements_new = [elements_new]
@@ -280,7 +279,7 @@ class ElementContainer:
         )
 
         failed_indices = []
-        tested_indices = []
+        # tested_indices = []
 
         for i, idx in enumerate(indices):
             idx -= len([failed for failed in failed_indices if failed < idx])
@@ -306,35 +305,46 @@ class ElementContainer:
                     self._is_color_fixed,
                 )
                 if elem is None:
-                    warnings.warn(f"Could not insert element {elements_new[i]}.")
+                    warnings.warn(f"Could not create element for {elements_new[i]}.")
+                    failed_indices.append(idx)
                     continue
 
-            self._settings.print_debug(
-                f"Added {elem.raw} at index {idx}.",
-                require_verbose=True,
-            )
-            self.elements.insert(idx, elem)
-            tested_indices.append(idx)
+            try:
+                if self.scene is not None:
+                    elem.add_to_scene(self.scene)
+                    self._settings.print_debug(
+                        f"Added {elem.raw} at index {idx} on scene.",
+                        require_verbose=True,
+                    )
+                self.elements.insert(idx, elem)
+                # tested_indices.append(idx)
+            except Exception:
+                warnings.warn(f"Could not insert {elem}.")
+                failed_indices.append(idx)
+                continue
 
         if self.scene is not None:
-            for idx in tested_indices:
-                self._settings.print_debug(
-                    f"Adding element of index = {idx} to scene.", require_verbose=True
-                )
-                self[idx]._scene = self.scene
-                # Updating vis explicitly in order not to remove it
-                self.update_indices(idx, update_gui=False)
-                if to_gui:
-                    self[idx].add_to_scene()
+            # for idx in tested_indices:
+            #     element = self.elements[idx]
+            #     self._settings.print_debug(
+            #         f"Adding element of index = {idx} to scene.", require_verbose=True
+            #     )
+            #     # self.elements[idx].add_to_scene(self.scene, update_gui=True)
+            #     # element._scene = self.scene
+            #     element.add_to_scene(self.scene)
+            #     # Updating vis explicitly in order not to remove it
+            #     self.update_indices(idx, update_gui=True)
+            #     # if to_gui:
+            #     #     element.add_to_scene()
 
-            self._settings.print_debug(
-                f"Added {len(tested_indices)} elements to scene."
-            )
+            # self._settings.print_debug(
+            #     f"Added {len(tested_indices)} elements to scene."
+            # )
 
-            self._settings.print_debug(
-                f"{len(self)} now.",
-                require_verbose=True,
-            )
+            # self._settings.print_debug(
+            #     f"{len(self)} now.",
+            #     require_verbose=True,
+            # )
 
             idx_new = max(min(idx_new, len(self) - 1), 0)
             self.update_current_index(idx_new, update_old=self.scene is not None)

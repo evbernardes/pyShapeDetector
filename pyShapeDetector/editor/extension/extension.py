@@ -587,7 +587,6 @@ class Extension:
             if self.inputs == "current":
                 editor_instance.element_container.insert_multiple(
                     output_elements,
-                    to_gui=True,
                     is_selected=editor_instance.element_container.current_element.is_selected,
                 )
                 editor_instance.element_container.update_current_index(
@@ -596,7 +595,7 @@ class Extension:
             elif self.inputs != "internal":
                 # editor_instance._insert_elements(
                 editor_instance.element_container.insert_multiple(
-                    output_elements, to_gui=True, is_selected=self.select_outputs
+                    output_elements, is_selected=self.select_outputs
                 )
         except Exception:
             warnings.warn("Could not insert output elements!")

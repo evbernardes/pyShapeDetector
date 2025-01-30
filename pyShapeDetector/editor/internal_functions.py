@@ -241,9 +241,7 @@ class InternalFunctions:
             self._editor_instance._settings.print_debug(f"Loaded element: {element}")
             if element is not None:
                 try:
-                    self._editor_instance.element_container.insert_multiple(
-                        element, to_gui=True
-                    )
+                    self._editor_instance.element_container.insert_multiple(element)
                     editor_instance._update_info()
                     editor_instance._reset_camera()
                 except Exception:
@@ -303,7 +301,6 @@ class InternalFunctions:
             try:
                 _open_scene(path, editor_instance)
                 editor_instance._scene_file_path = path
-                print("c")
             except Exception:
                 warnings.warn(f"Could not open scene on file '{path}'.")
                 traceback.print_exc()
@@ -330,13 +327,11 @@ class InternalFunctions:
         def _on_done(path):
             try:
                 self._cb_open_scene(path)
-                print("a")
             except Exception:
                 warnings.warn(f"Could not open file on path '{path}'.")
                 traceback.print_exc()
             finally:
                 editor_instance._close_dialog()
-            print("b")
 
         # A file dialog MUST define on_cancel and on_done functions
         dlg.set_on_cancel(_on_cancel)
@@ -444,7 +439,7 @@ class InternalFunctions:
                         elements_flattened.append(element)
 
                 self._editor_instance.element_container.insert_multiple(
-                    elements_flattened, to_gui=True
+                    elements_flattened
                 )
             except Exception:
                 warnings.warn("Failed to insert imported files.")
@@ -609,7 +604,7 @@ class InternalFunctions:
                 f"Pasting {len(editor_instance._copied_elements)} elements.",
             )
             editor_instance.element_container.insert_multiple(
-                editor_instance._copied_elements, to_gui=True
+                editor_instance._copied_elements
             )
         except Exception:
             warnings.warn(
@@ -878,7 +873,7 @@ class InternalFunctions:
         )
 
         editor_instance.element_container.insert_multiple(
-            elements, indices, is_selected=True, to_gui=True
+            elements, indices, is_selected=True
         )
 
         # editor_instance._future_states.append()
@@ -948,9 +943,7 @@ class InternalFunctions:
 
         editor_instance.element_container.current_index = future_state["current_index"]
         editor_instance.element_container.pop_multiple(indices, from_gui=True)
-        editor_instance.element_container.insert_multiple(
-            modified_elements, to_gui=True
-        )
+        editor_instance.element_container.insert_multiple(modified_elements)
         editor_instance.element_container.update_current_index(
             len(editor_instance.element_container) - 1
         )

@@ -434,9 +434,10 @@ def apply_function_manually(
 
     element_selector = Editor(**kwargs)
     element_selector.element_container.insert_multiple(
-        elements, is_selected=pre_selected, to_gui=False
+        elements,
+        is_selected=pre_selected,
     )
-    element_selector.elements_fixed.insert_multiple(fixed_elements, to_gui=False)
+    element_selector.elements_fixed.insert_multiple(fixed_elements)
 
     for function in functions:
         element_selector.add_extension(function)

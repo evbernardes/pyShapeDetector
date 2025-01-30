@@ -243,7 +243,7 @@ def _open_scene(input_path: Union[Path, str], editor_instance: "Editor"):
 
             is_selected = [idx in selected_indices for idx in range(len(new_elements))]
 
-            elements.insert_multiple(new_elements, is_selected=is_selected, to_gui=True)
+            elements.insert_multiple(new_elements, is_selected=is_selected)
 
             for idx in hidden_indices:
                 editor_instance.element_container[idx].is_hidden = True
