@@ -110,6 +110,8 @@ class Editor:
         self._pre_selected = []
         self._current_bbox = None
         self._current_bbox_axes = None
+        self._active_threads_dict: dict[int, threading.Thread] = {}
+        self._thread_count_generator = itertools.count(1, 1)
         self._last_used_extension: Union[Extension, None] = None
         self._time_last_used_extension: float = -1
         self._running_extension: bool = False
@@ -133,6 +135,22 @@ class Editor:
             for extension_descriptor in default_extensions:
                 self.add_extension(extension_descriptor, testing=self._testing)
 
+    def _wait_for_active_threads(self):
+        threads = copy.copy(list(self._active_threads_dict.values()))
+        for thread in threads:
+            thread.join()
+
+    def _run_in_thread(self, target: Callable):
+        thread_count = next(self._thread_count_generator)
+
+        def _decorated_target():
+            target()
+            self._active_threads_dict.pop(thread_count)
+
+        thread = threading.Thread(target=_decorated_target)
+        self._active_threads_dict[thread_count] = thread
+        thread.start()
+
     def _create_simple_dialog(
         self,
         title_text: str = "",
@@ -141,6 +159,9 @@ class Editor:
         button_text: str = "Close",
         button_callback: Union[Callable, None] = None,
     ):
+        if self._main_window is None:
+            warnings.warn("Cannot create dialog, app is not running.")
+            return
         window = self._main_window
         em = window.theme.font_size
 
@@ -176,6 +197,15 @@ class Editor:
 
         dlg.add_child(dlg_layout)
         window.show_dialog(dlg)
+
+    def _close_dialog(self):
+        """Closes dialog, if any, then resets keys to original hotkeys."""
+        if self._main_window is None:
+            warnings.warn("Cannot close dialog, app is not running.")
+            return
+        self._main_window.set_on_key(None)
+        self._main_window.close_dialog()
+        self._reset_on_key()
 
     def _get_submenu_from_path(self, path: Union[str, Path]) -> gui.Menu:
         if path in self._submenus:
@@ -286,12 +316,6 @@ class Editor:
     def _reset_on_key(self):
         """Reset keys to original hotkeys."""
         self._scene.set_on_key(self._hotkeys._on_key)
-
-    def _close_dialog(self):
-        """Closes dialog, if any, then resets keys to original hotkeys."""
-        self._main_window.set_on_key(None)
-        self._main_window.close_dialog()
-        self._reset_on_key()
 
     def _save_state(
         self, current_state: dict, to_future: bool = False, delete_future: bool = True
@@ -693,6 +717,10 @@ class Editor:
         self._update_info()
 
     def _reset_camera(self):
+        if self._main_window is None:
+            # App not running
+            return
+
         bounds = self._scene.scene.bounding_box
         center = bounds.get_center()
 
