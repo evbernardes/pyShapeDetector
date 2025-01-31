@@ -82,3 +82,20 @@ def test_save_scene_open_scene():
         assert isinstance(element.raw, type(elements[i]))
         assert element.is_selected == is_selected[i]
         assert element.is_hidden == is_hidden[i]
+
+
+# def test_import_export():
+#     old_instance = Editor(load_default_extensions=False)
+#     new_instance = Editor(load_default_extensions=False)
+
+#     elements, _, _ = _get_test_elements()
+
+#     old_instance.element_container.insert_multiple(elements)
+
+#     with tempfile.TemporaryDirectory() as temp_dir:
+#         temp_dir = Path(temp_dir)
+
+#         for i in range(len(old_instance.element_container.elements)):
+#             path = temp_dir / f"element_{i}"
+#             old_instance.element_container.update_current_index(i)
+#             old_instance._internal_functions._cb_export_current_element(path)
