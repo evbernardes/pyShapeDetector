@@ -11,6 +11,7 @@ import functools
 import numpy as np
 import json
 from itertools import compress
+from typing import TypeVar, Type, Any
 
 from pyShapeDetector.primitives import (
     Primitive,
@@ -23,6 +24,8 @@ from pyShapeDetector import methods
 from datetime import datetime
 
 format_int = lambda i, N: "0" * (len(str(N)) - len(str(i))) + str(i)
+
+T = TypeVar("T")
 
 
 def _get_pointcloud_sizes(elements):
@@ -42,8 +45,9 @@ def _get_shape_areas(elements):
     return (min(areas), max(areas))
 
 
-def _extract_element_by_type(elements, element_type):
-    mask = np.array([isinstance(elem, element_type) for elem in elements])
+def _extract_element_by_type(
+    elements: list, element_type: Type[T]
+) -> tuple[list[T], list[Any]]:
     elements_selected = []
     other = []
     for element in elements:

@@ -11,8 +11,8 @@ from pyShapeDetector.geometry import PointCloud
 from pyShapeDetector.primitives import (
     Plane,
     PlaneBounded,
-    PlaneTriangulated,
-    PlaneRectangular,
+    # PlaneTriangulated,
+    # PlaneRectangular,
     Sphere,
     Cylinder,
     Cone,
@@ -20,7 +20,7 @@ from pyShapeDetector.primitives import (
 from pyShapeDetector.methods import list_methods_RANSAC
 from pyShapeDetector.utility import MultiDetector
 from .helpers import _apply_to
-from .extensions_simple import fuse_primitives_as_mesh
+from .extensions_edit_meshes import convert_primitives_to_meshes
 
 
 MENU_NAME = "Create Shapes"
@@ -198,7 +198,7 @@ def extrude_with_vector(planes_input, vector, close, as_mesh):
     for plane in planes_input:
         new_extrusions = plane.extrude(vector, close)
         if as_mesh:
-            extrusions += fuse_primitives_as_mesh(new_extrusions)
+            extrusions += convert_primitives_to_meshes(new_extrusions, fuse=True)
         else:
             extrusions += new_extrusions
 
@@ -224,7 +224,7 @@ def extrude_along_normal(planes_input, scale, close, as_mesh):
     for plane in planes_input:
         new_extrusions = plane.extrude(scale * plane.normal, close)
         if as_mesh:
-            extrusions += fuse_primitives_as_mesh(new_extrusions)
+            extrusions += convert_primitives_to_meshes(new_extrusions, True)
         else:
             extrusions += new_extrusions
 
@@ -254,7 +254,7 @@ extensions.append(
 #     for plane in planes_input:
 #         new_extrusions = plane.extrude(biggest_plane, close)
 #         if as_mesh:
-#             extrusions += fuse_primitives_as_mesh(new_extrusions)
+#             extrusions += convert_primitives_to_meshes(new_extrusions, True)
 #         else:
 #             extrusions += new_extrusions
 
