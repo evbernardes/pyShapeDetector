@@ -34,7 +34,7 @@ extensions.append(
         "function": lambda center, vectors, scale: PlaneBounded.from_vectors_center(
             scale * vectors, center
         ),
-        "menu": MENU_NAME + "/Create Plane...",
+        "menu": MENU_NAME + "/Plane...",
         "inputs": None,
         "parameters": {
             "vectors": {
@@ -53,7 +53,7 @@ extensions.append(
         "function": lambda vectors, center, sides, radius: Plane.from_vectors_center(
             vectors, center
         ).get_polygon_plane(sides, radius, center),
-        "menu": MENU_NAME + "/Create Plane...",
+        "menu": MENU_NAME + "/Plane...",
         "inputs": None,
         "parameters": {
             "vectors": {
@@ -71,7 +71,7 @@ extensions.append(
     {
         "name": "Create Sphere from center and radius",
         "function": lambda center, radius: Sphere.from_center_radius(center, radius),
-        "menu": MENU_NAME + "/Create Sphere...",
+        "menu": MENU_NAME + "/Sphere...",
         "inputs": None,
         "parameters": {
             "radius": {
@@ -90,7 +90,7 @@ extensions.append(
         "function": lambda center,
         vector,
         radius: Cylinder.from_center_half_vector_radius(center, vector, radius),
-        "menu": MENU_NAME + "/Create Cylinder...",
+        "menu": MENU_NAME + "/Cylinder...",
         "inputs": None,
         "parameters": {
             "radius": {
@@ -116,7 +116,7 @@ extensions.append(
         "function": lambda base, top, radius: Cylinder.from_base_top_radius(
             base, top, radius
         ),
-        "menu": MENU_NAME + "/Create Cylinder...",
+        "menu": MENU_NAME + "/Cylinder...",
         "inputs": None,
         "parameters": {
             "radius": {
@@ -142,7 +142,7 @@ extensions.append(
         "function": lambda base, vector, radius: Cylinder.from_base_vector_radius(
             base, vector, radius
         ),
-        "menu": MENU_NAME + "/Create Cylinder...",
+        "menu": MENU_NAME + "/Cylinder...",
         "inputs": None,
         "parameters": {
             "radius": {
@@ -163,6 +163,43 @@ extensions.append(
 )
 
 
+@_apply_to(Cylinder)
+def _create_circular_base_planes_from_cylinder(
+    cylinders: list[Cylinder], resolution: int
+):
+    planes = []
+    for cylinder in cylinders:
+        base = PlaneBounded.create_circle(
+            cylinder.base, -cylinder.axis, cylinder.radius, resolution=resolution
+        )
+        top = PlaneBounded.create_circle(
+            cylinder.top, cylinder.axis, cylinder.radius, resolution=resolution
+        )
+
+        base.color = top.color = cylinder.color
+        planes.append(base)
+        planes.append(top)
+    return planes
+
+
+extensions.append(
+    {
+        "name": "Create circular base planes from Cylinder",
+        "function": _create_circular_base_planes_from_cylinder,
+        "menu": MENU_NAME + "/Cylinder...",
+        "inputs": "selected",
+        "keep_inputs": True,
+        "parameters": {
+            "resolution": {
+                "type": int,
+                "default": 30,
+                "limits": (10, 50),
+            },
+        },
+    }
+)
+
+
 extensions.append(
     {
         "name": "Create Cone from appex, vector and half angle",
@@ -171,7 +208,7 @@ extensions.append(
         half_angle_degrees: Cone.from_appex_vector_half_angle(
             appex, vector, np.deg2rad(half_angle_degrees)
         ),
-        "menu": MENU_NAME + "/Create Cone...",
+        "menu": MENU_NAME + "/Cone...",
         "inputs": None,
         "parameters": {
             "half_angle_degrees": {
