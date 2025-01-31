@@ -22,7 +22,7 @@ from .helpers import (
     _get_shape_areas,
 )
 
-MENU_NAME = "Simple functions"
+MENU_NAME = "Misc"
 
 extensions = []
 
