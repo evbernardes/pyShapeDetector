@@ -285,7 +285,7 @@ def extrude_to_current_plane(planes_input, target_plane, close, as_mesh):
     for plane in planes_input:
         new_extrusions = plane.extrude(target_plane, close)
         if as_mesh:
-            extrusions += fuse_primitives_as_mesh(new_extrusions)
+            extrusions += convert_primitives_to_meshes(new_extrusions, fuse=True)
         else:
             extrusions += new_extrusions
 
