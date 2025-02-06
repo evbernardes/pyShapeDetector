@@ -5,11 +5,14 @@ Created on Tur Oct 17 13:17:55 2024
 
 @author: ebernardes
 """
+
 # import time
 import copy
 
 # import inspect
 import traceback
+import argparse
+import os
 
 # import signal
 # import sys
@@ -770,7 +773,23 @@ class Editor:
 
 
 def __main__():
+    from .io import SCENE_FILE_EXTENSION
+
+    parser = argparse.ArgumentParser(description="GUI Editor for pyShapeDetector")
+    parser.add_argument(
+        "scene_file",
+        nargs="?",
+        help=f"Path to {SCENE_FILE_EXTENSION} scene file",
+        default=None,
+    )
+    args = parser.parse_args()
+
+    if args.scene_file is not None and not os.path.exists(args.scene_file):
+        raise RuntimeError(f"Error: File {args.scene_file} not found.")
+
     editor = Editor()
+    if args.scene_file is not None:
+        editor._internal_functions._cb_open_scene(args.scene_file)
     editor.run()
 
 

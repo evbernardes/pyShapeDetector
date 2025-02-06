@@ -21,6 +21,7 @@ _save_scene
 
 @author: evbernardes
 """
+
 import traceback
 import warnings
 import tempfile
@@ -75,14 +76,14 @@ RECOGNIZED_EXTENSION = {
 }
 
 if has_h5py:
-    RECOGNIZED_EXTENSION["PointCloud"][
-        ".h5"
-    ] = "Point Cloud in Hierarchical Data Format (.h5)"
+    RECOGNIZED_EXTENSION["PointCloud"][".h5"] = (
+        "Point Cloud in Hierarchical Data Format (.h5)"
+    )
 
 if has_pye57:
-    RECOGNIZED_EXTENSION["PointCloud"][
-        ".e57"
-    ] = "Point Cloud in ASTM E57 file format (.e57)"
+    RECOGNIZED_EXTENSION["PointCloud"][".e57"] = (
+        "Point Cloud in ASTM E57 file format (.e57)"
+    )
 
 for type_name, extensions in RECOGNIZED_EXTENSION.items():
     extensions["all"] = " ".join([key for key in extensions.keys() if key[0] == "."])
@@ -309,7 +310,7 @@ def _save_scene(path: Union[Path, str], editor_instance: "Editor"):
 
     print(f"Saving scene to {path.as_posix()}...")
 
-    with tempfile.TemporaryDirectory() as temp_dir:
+    with tempfile.TemporaryDirectory(dir=path.parent) as temp_dir:
         temp_dir = Path(temp_dir)
         temp_scene_file = temp_dir / "scene.sdscene"
 
